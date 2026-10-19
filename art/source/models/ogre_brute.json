@@ -1,0 +1,50 @@
+{
+  "id": "ogre_brute",
+  "triangles": 1142,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 86,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 40,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 52,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 17,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 58,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 69,
+      "loop": false
+    }
+  ],
+  "height": 2.781,
+  "sockets": [],
+  "skin": "monsters_3_skin"
+}

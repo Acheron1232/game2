@@ -1,0 +1,17 @@
+{
+  "id": "fountain_of_life",
+  "triangles": 188,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 1.89,
+  "sockets": [
+    "water"
+  ],
+  "skin": "buildings_3_skin"
+}

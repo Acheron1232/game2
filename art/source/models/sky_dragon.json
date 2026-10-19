@@ -1,0 +1,54 @@
+{
+  "id": "sky_dragon",
+  "triangles": 1098,
+  "bones": 22,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 24,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 20,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 44,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 40,
+      "loop": false
+    }
+  ],
+  "height": 3.43,
+  "sockets": [
+    "mouth",
+    "chest",
+    "tail"
+  ],
+  "skin": "sky_dragon_skin"
+}

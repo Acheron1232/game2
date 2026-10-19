@@ -1,0 +1,50 @@
+{
+  "id": "troll_shaman",
+  "triangles": 1170,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 58,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 27,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 27,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 27,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 35,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 38,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 46,
+      "loop": false
+    }
+  ],
+  "height": 2.231,
+  "sockets": [],
+  "skin": "monsters_2_skin"
+}

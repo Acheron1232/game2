@@ -1,0 +1,52 @@
+{
+  "id": "tree_guardian",
+  "triangles": 1010,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 75,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 35,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 35,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 35,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 45,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 15,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 50,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 60,
+      "loop": false
+    }
+  ],
+  "height": 2.34,
+  "sockets": [
+    "crown"
+  ],
+  "skin": "units_4_skin"
+}

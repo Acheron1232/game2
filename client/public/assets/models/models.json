@@ -1,0 +1,685 @@
+{
+  "alpha_wolf": {
+    "skin": "monsters_1_skin",
+    "height": 1.729,
+    "triangles": 414,
+    "sockets": [],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "arcane_huntress": {
+    "skin": "arcane_huntress_skin",
+    "height": 1.968,
+    "triangles": 1342,
+    "sockets": [
+      "bow",
+      "arrow",
+      "quiver"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "archer": {
+    "skin": "units_1_skin",
+    "height": 1.812,
+    "triangles": 1318,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "archery_range": {
+    "skin": "buildings_2_skin",
+    "height": 3.29,
+    "triangles": 416,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "bandit": {
+    "skin": "monsters_1_skin",
+    "height": 1.788,
+    "triangles": 1154,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "bandit_archer": {
+    "skin": "monsters_1_skin",
+    "height": 1.77,
+    "triangles": 1226,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "barracks": {
+    "skin": "buildings_2_skin",
+    "height": 3.49,
+    "triangles": 308,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "blood_witch": {
+    "skin": "blood_witch_skin",
+    "height": 2.545,
+    "triangles": 1236,
+    "sockets": [
+      "crystal",
+      "hand_l",
+      "hem"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "bush": {
+    "skin": null,
+    "height": 0.71,
+    "triangles": 192,
+    "sockets": [],
+    "clips": []
+  },
+  "catapult": {
+    "skin": "units_4_skin",
+    "height": 1.72,
+    "triangles": 696,
+    "sockets": [
+      "stone"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "hit",
+      "death",
+      "cast",
+      "victory"
+    ]
+  },
+  "centaur_raider": {
+    "skin": "centaur_raider_skin",
+    "height": 2.868,
+    "triangles": 2274,
+    "sockets": [
+      "hooves",
+      "spear",
+      "chest"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "chapel": {
+    "skin": "buildings_2_skin",
+    "height": 5.85,
+    "triangles": 264,
+    "sockets": [
+      "window"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "citadel": {
+    "skin": "buildings_1_skin",
+    "height": 9.89,
+    "triangles": 628,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "cleric": {
+    "skin": "units_2_skin",
+    "height": 1.805,
+    "triangles": 1070,
+    "sockets": [
+      "staff"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "forest_elf": {
+    "skin": "forest_elf_skin",
+    "height": 2.413,
+    "triangles": 1320,
+    "sockets": [
+      "aura",
+      "bow",
+      "antlers"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "forest_troll": {
+    "skin": "monsters_2_skin",
+    "height": 1.871,
+    "triangles": 1138,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "forge": {
+    "skin": "buildings_2_skin",
+    "height": 3.7,
+    "triangles": 316,
+    "sockets": [
+      "furnace",
+      "smoke"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "fountain_of_life": {
+    "skin": "buildings_3_skin",
+    "height": 1.89,
+    "triangles": 188,
+    "sockets": [
+      "water"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "gold_mine": {
+    "skin": null,
+    "height": 2.1,
+    "triangles": 796,
+    "sockets": [],
+    "clips": []
+  },
+  "grey_wolf": {
+    "skin": "monsters_1_skin",
+    "height": 1.33,
+    "triangles": 378,
+    "sockets": [],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "harpy": {
+    "skin": "monsters_2_skin",
+    "height": 1.509,
+    "triangles": 478,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "harpy_matron": {
+    "skin": "monsters_2_skin",
+    "height": 1.978,
+    "triangles": 538,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "hawk_rider": {
+    "skin": "units_3_skin",
+    "height": 2.846,
+    "triangles": 458,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "hawk_roost": {
+    "skin": "buildings_2_skin",
+    "height": 6.79,
+    "triangles": 412,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "house": {
+    "skin": "buildings_2_skin",
+    "height": 2.8,
+    "triangles": 252,
+    "sockets": [
+      "smoke"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "lancer": {
+    "skin": "units_3_skin",
+    "height": 2.539,
+    "triangles": 1340,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "light_healer": {
+    "skin": "light_healer_skin",
+    "height": 2.202,
+    "triangles": 1380,
+    "sockets": [
+      "halo",
+      "mace",
+      "hand_l"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "ogre_brute": {
+    "skin": "monsters_3_skin",
+    "height": 2.781,
+    "triangles": 1142,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "ogre_warlord": {
+    "skin": "monsters_3_skin",
+    "height": 3.081,
+    "triangles": 1286,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "rock_spider": {
+    "skin": "monsters_3_skin",
+    "height": 1.034,
+    "triangles": 388,
+    "sockets": [],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "side_shop": {
+    "skin": "buildings_3_skin",
+    "height": 3.7,
+    "triangles": 220,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "sky_dragon": {
+    "skin": "sky_dragon_skin",
+    "height": 3.43,
+    "triangles": 1098,
+    "sockets": [
+      "mouth",
+      "chest",
+      "tail"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "spider_queen": {
+    "skin": "monsters_3_skin",
+    "height": 2.08,
+    "triangles": 448,
+    "sockets": [],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "staff_warrior": {
+    "skin": "staff_warrior_skin",
+    "height": 2.354,
+    "triangles": 2082,
+    "sockets": [
+      "ring",
+      "aura",
+      "fist_l"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "stone_golem": {
+    "skin": "stone_golem_skin",
+    "height": 2.071,
+    "triangles": 888,
+    "sockets": [
+      "core",
+      "crystals_l",
+      "crystals_r",
+      "feet",
+      "eyes"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "stone_sentinel": {
+    "skin": "monsters_4_skin",
+    "height": 2.428,
+    "triangles": 1134,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "stronghold": {
+    "skin": "buildings_1_skin",
+    "height": 7.59,
+    "triangles": 464,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "swordsman": {
+    "skin": "units_1_skin",
+    "height": 1.73,
+    "triangles": 1224,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "temple_market": {
+    "skin": "buildings_3_skin",
+    "height": 3.3,
+    "triangles": 376,
+    "sockets": [
+      "lantern",
+      "lantern2"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "town_hall": {
+    "skin": "buildings_1_skin",
+    "height": 7.69,
+    "triangles": 384,
+    "sockets": [
+      "smoke"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "tree_dead": {
+    "skin": null,
+    "height": 2.426,
+    "triangles": 88,
+    "sockets": [],
+    "clips": []
+  },
+  "tree_guardian": {
+    "skin": "units_4_skin",
+    "height": 2.34,
+    "triangles": 1010,
+    "sockets": [
+      "crown"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "tree_oak": {
+    "skin": null,
+    "height": 3.209,
+    "triangles": 360,
+    "sockets": [],
+    "clips": []
+  },
+  "tree_pine": {
+    "skin": null,
+    "height": 4.1,
+    "triangles": 96,
+    "sockets": [],
+    "clips": []
+  },
+  "troll_shaman": {
+    "skin": "monsters_2_skin",
+    "height": 2.231,
+    "triangles": 1170,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "watchtower": {
+    "skin": "buildings_3_skin",
+    "height": 7.49,
+    "triangles": 308,
+    "sockets": [
+      "lookout"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "worker": {
+    "skin": "units_2_skin",
+    "height": 1.52,
+    "triangles": 1270,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "workshop": {
+    "skin": "buildings_2_skin",
+    "height": 3.85,
+    "triangles": 324,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  }
+}

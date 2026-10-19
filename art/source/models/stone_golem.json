@@ -1,0 +1,56 @@
+{
+  "id": "stone_golem",
+  "triangles": 888,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 81,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 38,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 38,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 38,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 49,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 16,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 54,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 65,
+      "loop": false
+    }
+  ],
+  "height": 2.071,
+  "sockets": [
+    "core",
+    "crystals_l",
+    "crystals_r",
+    "feet",
+    "eyes"
+  ],
+  "skin": "stone_golem_skin"
+}

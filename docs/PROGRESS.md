@@ -4,11 +4,11 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
-- **Phase 3 is done** (2026-10-19). Next: **Phase 4 — 3D models and animation**.
-- Notes for Phase 4:
-  - First ask the user to pick the model source (A Blender scripts / B CC0 packs / C code-only). Blender is not installed yet.
-  - Model references: `art/source/heroes_concept/` (8 heroes × front / side / back) and `art/source/world_concept/` (units, monsters, buildings). Material swatches: `client/public/assets/materials/` (32 × 128 px, team parts have `_team` masks).
-  - Codex painted some magenta where it should not (Trader's Tent, Temple Market, Spider Queen crystals): treat those parts as normal color when modeling.
+- **Phase 4 is done** (2026-10-19), except LODs and baked vertex animation (moved to Phase 10, see "Not done"). Next: **Phase 5 — Client engine and loading**.
+- Notes for Phase 5:
+  - Load models by `client/public/assets/models/models.json` (skin atlas, height, sockets, clips per model) and `applyModelMaterials()` + `createModelMaterials()` from `client/src/render/team-material.ts`. Scenes that show models must set `scene.useRightHandedSystem = true`.
+  - Hero effects: `attachHeroEffects()` in `client/src/render/hero-effects.ts` (particles on `fx_*` sockets + glow pulse).
+  - Models face +Z in the game, 1 unit = 1 m.
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
 
 ## Phases
@@ -18,13 +18,42 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 1 | Design and tech spec | **Done** | 8 design docs, 11 JSON data files, map data + preview |
 | 2 | Project skeleton | **Done** | pnpm monorepo, Babylon client with WebGPU/WebGL2, ws server, binary protocol, typed data, 17 tests |
 | 3 | 2D art with Codex | **Done** | 7 Codex images → 340 assets, 2.7 MB WebP; UI skin in menu / lobby |
-| 4 | 3D models and animation | Not started | Model source A / B / C not chosen yet |
+| 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
 | 5 | Client engine and loading | Not started | |
 | 6 | Server and multiplayer | Not started | |
 | 7 | Combat, heroes, camps, items | Not started | |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
+
+## Phase 4b — what was made (user feedback: classic RTS hero look, better hands and weapon grip, light effects)
+
+- Style from the user's reference (a classic RTS hero model): angular faceted shapes, heroic hunched pose, huge shoulders and hands, team bands everywhere.
+- `tools/models/blender/chunky.py`: shared body kit — torso, faceted head, arms with deltoid / elbow / bracer / team band, closed fist around a grip point (weapons pass through the fist), open spell hand with fingers, legs with knee knob and big feet, belt, loincloth, spiked shoulder pads, beads, cape.
+- `humanoid.py`: elbow bend (arms ready to hold weapons). `rigs.py`: four-legged rig (wolves, horses) and clips.
+- **Animation direction fix** (user: "he hits backward"): all X rotations are flipped in one place (`kit.Model.action`); checked with a test rig and the side-view attack render (the swing now goes forward).
+- 8 heroes rebuilt, each with its own 20-cell Codex skin: Staff Warrior, Blood Witch (open horned hood), Sky Dragon (redone: heavy chest, S-neck, horned head with a fire mouth, big wings with sagging membranes, spiked tail), Stone Golem (+ a carved stone head with glowing eyes and a crystal horn, user asked), Light Healer (sun halo), Arcane Huntress (light bow), Centaur Raider (redone: real horse barrel, haunches, hocks, flowing tail), Forest Elf (antlers, leaf cloak).
+- Hero effects (user liked the staff ring sparks): 3-5 small particle emitters per hero on bone sockets + a slow glow pulse (`client/src/render/hero-effects.ts`).
+- Units (8): swordsman, archer, cleric, worker, lancer (knight on a horse), hawk rider, catapult, tree guardian. Monsters (13): grey / alpha wolf, bandit / bandit archer, forest troll / troll shaman, harpy / matron, rock spider / spider queen, ogre brute / warlord, stone sentinel. Buildings (14): town hall, stronghold, citadel, house, barracks, archery range, forge, chapel, workshop, hawk roost, watchtower, trader's tent, temple market, fountain. Units / monsters / buildings use compact 8-cells-per-model skins (2 models per Codex image).
+- `client/public/assets/models/models.json`: model index (skin, height, triangles, sockets, clips).
+- Codex calls in Phase 4: 8 hero skins + 11 unit / monster / building skins (+1 first Staff Warrior test). Rate limits (429) happened; the batch script waits and retries.
+
+How it was checked: every model built in Blender with a preview (RTS / front / side / attack / walk / death) and looked at; viewer (WebGPU) loads heroes, units and buildings with their atlases and team colors, effects run on sockets, no console errors; `pnpm build`, `pnpm lint`, `pnpm test` (26) pass. Total models + skins: **11 MB**.
+
+Not done (moved to Phase 10): LOD meshes, baked vertex animation for mass units, meshopt compression. Known weak spots: hawk body is thin, lancer horse head is simple, some building walls repeat their texture.
+
+## Phase 4a — what was made
+
+- `tools/models/blender/kit.py`: build models from rounded parts (sphere, cylinder, cone, rounded box, lathe profile, torus), lay a texture slot on each part (`box`, `front` + `back`, `wrap`, `top`, shared `frame`, `sub` area), painted light in vertex colors (top lighter, feet darker), rigid binding to bones, join into one mesh (one draw call), GLB export with all clips.
+- `tools/models/blender/humanoid.py`: 20-bone humanoid rig with proportions, clips `idle, walk, attack, attack2, cast, hit, death, victory` in 3 styles (melee, caster, ranged).
+- Models: `staff_warrior` (own painted skin, 2,076 tris), `blood_witch` (palette version, 1,816 tris), `tree_pine` 96, `tree_oak` 360, `tree_dead` 88, `bush` 192, `gold_mine` 796 tris.
+- `tools/models/build-palette.ts`: shared palette atlas (43 slots of 128 px) + team mask for models without their own skin.
+- Model skins: new sheet kind `skin` → 1024² atlas (4×4 × 256 px) + team mask + red-team preview for Blender. First sheet: `skin_staff_warrior` (1 Codex image).
+- `tools/models/build.ts`: runs Blender, removes the embedded texture (the game sets textures itself), converts vertex colors to sRGB (our material is gamma space), dedup + prune + KHR_mesh_quantization, checks UVs / colors / clips, updates the manifest.
+- `client/src/render/team-material.ts`: StandardMaterial + team-color plugin (GLSL and WGSL), glow material, loaders for palette or own skin. `client/dev/models.html` viewer: model list, clips, 4 team colors, RTS / front / side camera, triangles and file size.
+
+How it was checked: every model built in Blender and rendered (RTS, front, side, attack, walk, death) to `art/source/models/<id>.png`; in the browser viewer (WebGPU) Staff Warrior loads with its own skin, all 8 clips play, team color switches red → blue. Sizes: hero ~200 KB (8 clips), trees 5–18 KB.
+Known issues: a seam where the belly and chest parts meet; the viewer light is a bit darker than the Blender preview; Blood Witch still uses the plain palette (gets her skin in 4b).
 
 ## Phase 3b — what was made
 
@@ -83,6 +112,11 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-19 — Models: Blender 5.2 + Python scripts (user's choice). Rigid binding (one bone per part), like classic RTS models.
+- 2026-10-19 — Heroes (and later units) get their own Codex-painted texture sheet; the shared palette stays for trees, rocks and props.
+- 2026-10-19 — GLB compression: KHR_mesh_quantization only (no decoder needed in the browser). Meshopt later with a bundled decoder (the default Babylon decoder loads from a CDN).
+- 2026-10-19 — Vertex colors in our GLBs are stored as sRGB (not linear as glTF says), because the game material is Babylon StandardMaterial (gamma space).
+
 - 2026-10-19 — Dense sheets (user's wish): 8×8 / 9×8 grids, ~150 px cells, textures and icons ship at 128 px, small UI at 96 px. 6 calls instead of 16 for the rest of the 2D art.
 
 - 2026-10-19 — Codex model for images: `gpt-5.6-sol` (the user's default `gpt-6.1-sol` is refused for ChatGPT accounts; `gpt-6-astra` needs a newer CLI). Override with `CODEX_MODEL`. Updating the Codex CLI is the user's call.
@@ -119,7 +153,6 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 
 ## Open questions
 
-- Model source for Phase 4 (Blender scripts / CC0 packs / code-only). Asked at the start of Phase 4.
 - Game title: "Temple Wars" is a working title.
 - Hosting for the server (Phase 10).
 
@@ -127,12 +160,12 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 
 | What | Target | Now |
 |---|---|---|
-| First download | < 100 MB | 2D art 2.7 MB (no models yet) |
+| First download | < 100 MB | ~14 MB (2D art 2.7 MB + models and skins 11 MB) |
 | All assets | < 500 MB | — |
 | FPS (laptop, 300 units) | 60 | — |
 | Server tick (4 players, full armies) | < 10 ms | — |
 | Bandwidth per player | < 20 KB/s down | — |
-| Codex image calls used | 7 planned + 1–2 fixes | 7 (+2 refused, no image), no fix sheets needed |
+| Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
 

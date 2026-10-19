@@ -1,0 +1,50 @@
+{
+  "id": "bandit",
+  "triangles": 1154,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 28,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 28,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 28,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 48,
+      "loop": false
+    }
+  ],
+  "height": 1.788,
+  "sockets": [],
+  "skin": "monsters_1_skin"
+}

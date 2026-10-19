@@ -1,0 +1,15 @@
+{
+  "id": "hawk_roost",
+  "triangles": 412,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 6.79,
+  "sockets": [],
+  "skin": "buildings_2_skin"
+}

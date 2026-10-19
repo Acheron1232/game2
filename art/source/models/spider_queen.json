@@ -1,0 +1,50 @@
+{
+  "id": "spider_queen",
+  "triangles": 448,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "walk",
+      "frames": 16,
+      "loop": true
+    },
+    {
+      "name": "idle",
+      "frames": 40,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 20,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 20,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 30,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 30,
+      "loop": false
+    }
+  ],
+  "height": 2.08,
+  "sockets": [],
+  "skin": "monsters_3_skin"
+}

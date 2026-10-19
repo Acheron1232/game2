@@ -611,6 +611,1141 @@
           ]
         }
       ]
+    },
+    {
+      "id": "skin_staff_warrior",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_staff_warrior.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "staff_warrior_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_blood_witch",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_blood_witch.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "blood_witch_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_sky_dragon",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_sky_dragon.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "sky_dragon_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            {
+              "name": "back",
+              "teamColor": true
+            },
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_stone_golem",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_stone_golem.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "stone_golem_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_light_healer",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_light_healer.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "light_healer_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_arcane_huntress",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_arcane_huntress.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "arcane_huntress_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_centaur_raider",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_centaur_raider.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "centaur_raider_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            {
+              "name": "extra_1",
+              "teamColor": true
+            },
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_forest_elf",
+      "grid": [
+        4,
+        5
+      ],
+      "aspect": "square",
+      "prompt": "skin_forest_elf.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "forest_elf_skin",
+          "cells": [
+            "face",
+            "head_back",
+            "chest",
+            "back",
+            "arm",
+            "forearm",
+            "hand",
+            "legs",
+            "shin",
+            "foot",
+            "belt",
+            {
+              "name": "cloth",
+              "teamColor": true
+            },
+            {
+              "name": "shoulder",
+              "teamColor": true
+            },
+            {
+              "name": "trim",
+              "teamColor": true
+            },
+            "weapon_a",
+            "weapon_b",
+            "extra_1",
+            "extra_2",
+            "extra_3",
+            "extra_4"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_units_1",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_units_1.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "units_1_skin",
+          "cells": [
+            {
+              "name": "swordsman__face",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__body",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__arm",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__legs",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__team",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman__weapon_b",
+              "teamColor": true
+            },
+            {
+              "name": "archer__face",
+              "teamColor": true
+            },
+            {
+              "name": "archer__body",
+              "teamColor": true
+            },
+            {
+              "name": "archer__arm",
+              "teamColor": true
+            },
+            {
+              "name": "archer__legs",
+              "teamColor": true
+            },
+            {
+              "name": "archer__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "archer__team",
+              "teamColor": true
+            },
+            {
+              "name": "archer__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "archer__weapon_b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_units_2",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_units_2.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "units_2_skin",
+          "cells": [
+            {
+              "name": "cleric__face",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__body",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__arm",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__legs",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__team",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "cleric__weapon_b",
+              "teamColor": true
+            },
+            {
+              "name": "worker__face",
+              "teamColor": true
+            },
+            {
+              "name": "worker__body",
+              "teamColor": true
+            },
+            {
+              "name": "worker__arm",
+              "teamColor": true
+            },
+            {
+              "name": "worker__legs",
+              "teamColor": true
+            },
+            {
+              "name": "worker__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "worker__team",
+              "teamColor": true
+            },
+            {
+              "name": "worker__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "worker__weapon_b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_units_3",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_units_3.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "units_3_skin",
+          "cells": [
+            {
+              "name": "lancer__face",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__body",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__arm",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__legs",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__team",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "lancer__weapon_b",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__face",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__body",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__arm",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__legs",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__team",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider__weapon_b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_units_4",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_units_4.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "units_4_skin",
+          "cells": [
+            {
+              "name": "catapult__face",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__body",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__arm",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__legs",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__team",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "catapult__weapon_b",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__face",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__body",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__arm",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__legs",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__foot_hand",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__team",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__weapon_a",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian__weapon_b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_monsters_1",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_monsters_1.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "monsters_1_skin",
+          "cells": [
+            "grey_wolf__face",
+            "grey_wolf__body",
+            "grey_wolf__arm",
+            "grey_wolf__legs",
+            "grey_wolf__foot_hand",
+            {
+              "name": "grey_wolf__team",
+              "teamColor": true
+            },
+            "grey_wolf__weapon_a",
+            "grey_wolf__weapon_b",
+            "bandit__face",
+            "bandit__body",
+            "bandit__arm",
+            "bandit__legs",
+            "bandit__foot_hand",
+            {
+              "name": "bandit__team",
+              "teamColor": true
+            },
+            "bandit__weapon_a",
+            "bandit__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_monsters_2",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_monsters_2.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "monsters_2_skin",
+          "cells": [
+            "forest_troll__face",
+            "forest_troll__body",
+            "forest_troll__arm",
+            "forest_troll__legs",
+            "forest_troll__foot_hand",
+            {
+              "name": "forest_troll__team",
+              "teamColor": true
+            },
+            "forest_troll__weapon_a",
+            "forest_troll__weapon_b",
+            "harpy__face",
+            "harpy__body",
+            "harpy__arm",
+            "harpy__legs",
+            "harpy__foot_hand",
+            {
+              "name": "harpy__team",
+              "teamColor": true
+            },
+            "harpy__weapon_a",
+            "harpy__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_monsters_3",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_monsters_3.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "monsters_3_skin",
+          "cells": [
+            "rock_spider__face",
+            "rock_spider__body",
+            "rock_spider__arm",
+            "rock_spider__legs",
+            "rock_spider__foot_hand",
+            {
+              "name": "rock_spider__team",
+              "teamColor": true
+            },
+            "rock_spider__weapon_a",
+            "rock_spider__weapon_b",
+            "ogre_brute__face",
+            "ogre_brute__body",
+            "ogre_brute__arm",
+            "ogre_brute__legs",
+            "ogre_brute__foot_hand",
+            {
+              "name": "ogre_brute__team",
+              "teamColor": true
+            },
+            "ogre_brute__weapon_a",
+            "ogre_brute__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_monsters_4",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_monsters_4.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "monsters_4_skin",
+          "cells": [
+            "stone_sentinel__face",
+            "stone_sentinel__body",
+            "stone_sentinel__arm",
+            "stone_sentinel__legs",
+            "stone_sentinel__foot_hand",
+            {
+              "name": "stone_sentinel__team",
+              "teamColor": true
+            },
+            "stone_sentinel__weapon_a",
+            "stone_sentinel__weapon_b",
+            "monster_misc__face",
+            "monster_misc__body",
+            "monster_misc__arm",
+            "monster_misc__legs",
+            "monster_misc__foot_hand",
+            {
+              "name": "monster_misc__team",
+              "teamColor": true
+            },
+            "monster_misc__weapon_a",
+            "monster_misc__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_buildings_1",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_buildings_1.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "buildings_1_skin",
+          "cells": [
+            {
+              "name": "m0a",
+              "teamColor": true
+            },
+            {
+              "name": "m0b",
+              "teamColor": true
+            },
+            {
+              "name": "m1a",
+              "teamColor": true
+            },
+            {
+              "name": "m1b",
+              "teamColor": true
+            },
+            {
+              "name": "m2a",
+              "teamColor": true
+            },
+            {
+              "name": "m2b",
+              "teamColor": true
+            },
+            {
+              "name": "m3a",
+              "teamColor": true
+            },
+            {
+              "name": "m3b",
+              "teamColor": true
+            },
+            {
+              "name": "m4a",
+              "teamColor": true
+            },
+            {
+              "name": "m4b",
+              "teamColor": true
+            },
+            {
+              "name": "m5a",
+              "teamColor": true
+            },
+            {
+              "name": "m5b",
+              "teamColor": true
+            },
+            {
+              "name": "m6a",
+              "teamColor": true
+            },
+            {
+              "name": "m6b",
+              "teamColor": true
+            },
+            {
+              "name": "m7a",
+              "teamColor": true
+            },
+            {
+              "name": "m7b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_buildings_2",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_buildings_2.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "buildings_2_skin",
+          "cells": [
+            {
+              "name": "m0a",
+              "teamColor": true
+            },
+            {
+              "name": "m0b",
+              "teamColor": true
+            },
+            {
+              "name": "m1a",
+              "teamColor": true
+            },
+            {
+              "name": "m1b",
+              "teamColor": true
+            },
+            {
+              "name": "m2a",
+              "teamColor": true
+            },
+            {
+              "name": "m2b",
+              "teamColor": true
+            },
+            {
+              "name": "m3a",
+              "teamColor": true
+            },
+            {
+              "name": "m3b",
+              "teamColor": true
+            },
+            {
+              "name": "m4a",
+              "teamColor": true
+            },
+            {
+              "name": "m4b",
+              "teamColor": true
+            },
+            {
+              "name": "m5a",
+              "teamColor": true
+            },
+            {
+              "name": "m5b",
+              "teamColor": true
+            },
+            {
+              "name": "m6a",
+              "teamColor": true
+            },
+            {
+              "name": "m6b",
+              "teamColor": true
+            },
+            {
+              "name": "m7a",
+              "teamColor": true
+            },
+            {
+              "name": "m7b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_buildings_3",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "skin_buildings_3.md",
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "buildings_3_skin",
+          "cells": [
+            {
+              "name": "m0a",
+              "teamColor": true
+            },
+            {
+              "name": "m0b",
+              "teamColor": true
+            },
+            {
+              "name": "m1a",
+              "teamColor": true
+            },
+            {
+              "name": "m1b",
+              "teamColor": true
+            },
+            {
+              "name": "m2a",
+              "teamColor": true
+            },
+            {
+              "name": "m2b",
+              "teamColor": true
+            },
+            {
+              "name": "m3a",
+              "teamColor": true
+            },
+            {
+              "name": "m3b",
+              "teamColor": true
+            },
+            {
+              "name": "m4a",
+              "teamColor": true
+            },
+            {
+              "name": "m4b",
+              "teamColor": true
+            },
+            {
+              "name": "m5a",
+              "teamColor": true
+            },
+            {
+              "name": "m5b",
+              "teamColor": true
+            },
+            {
+              "name": "m6a",
+              "teamColor": true
+            },
+            {
+              "name": "m6b",
+              "teamColor": true
+            },
+            {
+              "name": "m7a",
+              "teamColor": true
+            },
+            {
+              "name": "m7b",
+              "teamColor": true
+            }
+          ]
+        }
+      ]
     }
   ]
 }

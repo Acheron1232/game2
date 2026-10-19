@@ -1,0 +1,15 @@
+{
+  "id": "citadel",
+  "triangles": 628,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 9.89,
+  "sockets": [],
+  "skin": "buildings_1_skin"
+}

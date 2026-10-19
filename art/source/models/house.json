@@ -1,0 +1,17 @@
+{
+  "id": "house",
+  "triangles": 252,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 2.8,
+  "sockets": [
+    "smoke"
+  ],
+  "skin": "buildings_2_skin"
+}

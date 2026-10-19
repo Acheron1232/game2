@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 1833354,
+  "totalBytes": 13038513,
   "files": [
     {
       "path": "effects/effects.json",
@@ -666,6 +666,624 @@
       "path": "materials/wood_planks.webp",
       "bytes": 4618,
       "hash": "d31ee71c58",
+      "group": "Units"
+    },
+    {
+      "path": "models/alpha_wolf.glb",
+      "bytes": 110820,
+      "hash": "cc959e68d8",
+      "group": "Units"
+    },
+    {
+      "path": "models/arcane_huntress.glb",
+      "bytes": 196580,
+      "hash": "3d7ababf00",
+      "group": "Units"
+    },
+    {
+      "path": "models/arcane_huntress_skin.json",
+      "bytes": 2424,
+      "hash": "c90b8cefef",
+      "group": "Units"
+    },
+    {
+      "path": "models/arcane_huntress_skin.webp",
+      "bytes": 236144,
+      "hash": "9ce66202c0",
+      "group": "Units"
+    },
+    {
+      "path": "models/arcane_huntress_skin_team.webp",
+      "bytes": 10074,
+      "hash": "9e9ab319b9",
+      "group": "Units"
+    },
+    {
+      "path": "models/archer.glb",
+      "bytes": 196872,
+      "hash": "f011def065",
+      "group": "Units"
+    },
+    {
+      "path": "models/archery_range.glb",
+      "bytes": 31540,
+      "hash": "5e12be2fdf",
+      "group": "Units"
+    },
+    {
+      "path": "models/bandit.glb",
+      "bytes": 189024,
+      "hash": "00e4d7d6ca",
+      "group": "Units"
+    },
+    {
+      "path": "models/bandit_archer.glb",
+      "bytes": 190728,
+      "hash": "0eb53641ab",
+      "group": "Units"
+    },
+    {
+      "path": "models/barracks.glb",
+      "bytes": 24408,
+      "hash": "0561898387",
+      "group": "Units"
+    },
+    {
+      "path": "models/blood_witch.glb",
+      "bytes": 185320,
+      "hash": "b9545bf59a",
+      "group": "Units"
+    },
+    {
+      "path": "models/blood_witch_skin.json",
+      "bytes": 2420,
+      "hash": "b3d29e56dd",
+      "group": "Units"
+    },
+    {
+      "path": "models/blood_witch_skin.webp",
+      "bytes": 244624,
+      "hash": "16999770c7",
+      "group": "Units"
+    },
+    {
+      "path": "models/blood_witch_skin_team.webp",
+      "bytes": 19384,
+      "hash": "a5694d109a",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_1_skin.json",
+      "bytes": 1979,
+      "hash": "c3229ffd22",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_1_skin.webp",
+      "bytes": 249980,
+      "hash": "dba23423bf",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_1_skin_team.webp",
+      "bytes": 13464,
+      "hash": "1af9302a2c",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_2_skin.json",
+      "bytes": 1980,
+      "hash": "2118680b30",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_2_skin.webp",
+      "bytes": 284576,
+      "hash": "85c95b0731",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_3_skin.json",
+      "bytes": 1980,
+      "hash": "85882c2c62",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_3_skin.webp",
+      "bytes": 264590,
+      "hash": "c99aee02ce",
+      "group": "Units"
+    },
+    {
+      "path": "models/bush.glb",
+      "bytes": 9076,
+      "hash": "14f23d850b",
+      "group": "Units"
+    },
+    {
+      "path": "models/catapult.glb",
+      "bytes": 63500,
+      "hash": "36579caeb1",
+      "group": "Units"
+    },
+    {
+      "path": "models/centaur_raider.glb",
+      "bytes": 296176,
+      "hash": "52cdd86a8f",
+      "group": "Units"
+    },
+    {
+      "path": "models/centaur_raider_skin.json",
+      "bytes": 2423,
+      "hash": "41ba5d8fa5",
+      "group": "Units"
+    },
+    {
+      "path": "models/centaur_raider_skin.webp",
+      "bytes": 250360,
+      "hash": "ae158c7359",
+      "group": "Units"
+    },
+    {
+      "path": "models/centaur_raider_skin_team.webp",
+      "bytes": 15322,
+      "hash": "0746a480b0",
+      "group": "Units"
+    },
+    {
+      "path": "models/chapel.glb",
+      "bytes": 22368,
+      "hash": "867e32241a",
+      "group": "Units"
+    },
+    {
+      "path": "models/citadel.glb",
+      "bytes": 45080,
+      "hash": "91f2baec2f",
+      "group": "Units"
+    },
+    {
+      "path": "models/cleric.glb",
+      "bytes": 181628,
+      "hash": "6278bef2de",
+      "group": "Units"
+    },
+    {
+      "path": "models/forest_elf.glb",
+      "bytes": 195756,
+      "hash": "a0751cb3f7",
+      "group": "Units"
+    },
+    {
+      "path": "models/forest_elf_skin.json",
+      "bytes": 2419,
+      "hash": "5731188a35",
+      "group": "Units"
+    },
+    {
+      "path": "models/forest_elf_skin.webp",
+      "bytes": 324810,
+      "hash": "95f12faa7b",
+      "group": "Units"
+    },
+    {
+      "path": "models/forest_elf_skin_team.webp",
+      "bytes": 14674,
+      "hash": "4c4457869f",
+      "group": "Units"
+    },
+    {
+      "path": "models/forest_troll.glb",
+      "bytes": 188464,
+      "hash": "1e761706ef",
+      "group": "Units"
+    },
+    {
+      "path": "models/forge.glb",
+      "bytes": 27268,
+      "hash": "5214aa0de4",
+      "group": "Units"
+    },
+    {
+      "path": "models/fountain_of_life.glb",
+      "bytes": 13568,
+      "hash": "932330705f",
+      "group": "Units"
+    },
+    {
+      "path": "models/gold_mine.glb",
+      "bytes": 37096,
+      "hash": "5bc372e828",
+      "group": "Units"
+    },
+    {
+      "path": "models/grey_wolf.glb",
+      "bytes": 106476,
+      "hash": "fdb6593c50",
+      "group": "Units"
+    },
+    {
+      "path": "models/harpy.glb",
+      "bytes": 129956,
+      "hash": "7e193e0031",
+      "group": "Units"
+    },
+    {
+      "path": "models/harpy_matron.glb",
+      "bytes": 133900,
+      "hash": "96a5e7a526",
+      "group": "Units"
+    },
+    {
+      "path": "models/hawk_rider.glb",
+      "bytes": 133312,
+      "hash": "1f05ef4c2b",
+      "group": "Units"
+    },
+    {
+      "path": "models/hawk_roost.glb",
+      "bytes": 29200,
+      "hash": "4f2aec127a",
+      "group": "Units"
+    },
+    {
+      "path": "models/house.glb",
+      "bytes": 20952,
+      "hash": "822e05049f",
+      "group": "Units"
+    },
+    {
+      "path": "models/lancer.glb",
+      "bytes": 222192,
+      "hash": "875e11c48e",
+      "group": "Units"
+    },
+    {
+      "path": "models/light_healer.glb",
+      "bytes": 194884,
+      "hash": "aa41756091",
+      "group": "Units"
+    },
+    {
+      "path": "models/light_healer_skin.json",
+      "bytes": 2421,
+      "hash": "b9c643b251",
+      "group": "Units"
+    },
+    {
+      "path": "models/light_healer_skin.webp",
+      "bytes": 259312,
+      "hash": "b754d68a2f",
+      "group": "Units"
+    },
+    {
+      "path": "models/light_healer_skin_team.webp",
+      "bytes": 13514,
+      "hash": "f3ebb52d8a",
+      "group": "Units"
+    },
+    {
+      "path": "models/models.json",
+      "bytes": 10777,
+      "hash": "83bb65fb9b",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_1_skin.json",
+      "bytes": 2171,
+      "hash": "67a776cb23",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_1_skin.webp",
+      "bytes": 212820,
+      "hash": "939887729d",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_2_skin.json",
+      "bytes": 2187,
+      "hash": "835049af8e",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_2_skin.webp",
+      "bytes": 245520,
+      "hash": "e822974933",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_3_skin.json",
+      "bytes": 2218,
+      "hash": "bbebdcdc09",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_3_skin.webp",
+      "bytes": 278154,
+      "hash": "f80b0315b6",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_3_skin_team.webp",
+      "bytes": 19300,
+      "hash": "3cf0cefd34",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_4_skin.json",
+      "bytes": 2259,
+      "hash": "7e223f9afd",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_4_skin.webp",
+      "bytes": 317414,
+      "hash": "1aeb96adb1",
+      "group": "Units"
+    },
+    {
+      "path": "models/ogre_brute.glb",
+      "bytes": 198392,
+      "hash": "48a7c766f7",
+      "group": "Units"
+    },
+    {
+      "path": "models/ogre_warlord.glb",
+      "bytes": 211584,
+      "hash": "46df12f8e7",
+      "group": "Units"
+    },
+    {
+      "path": "models/palette.webp",
+      "bytes": 213322,
+      "hash": "96b4142798",
+      "group": "Units"
+    },
+    {
+      "path": "models/palette_team.webp",
+      "bytes": 2012,
+      "hash": "01bed9ad82",
+      "group": "Units"
+    },
+    {
+      "path": "models/rock_spider.glb",
+      "bytes": 103172,
+      "hash": "b76cbb541a",
+      "group": "Units"
+    },
+    {
+      "path": "models/side_shop.glb",
+      "bytes": 18316,
+      "hash": "85104f2d90",
+      "group": "Units"
+    },
+    {
+      "path": "models/sky_dragon.glb",
+      "bytes": 185988,
+      "hash": "176bf83e40",
+      "group": "Units"
+    },
+    {
+      "path": "models/sky_dragon_skin.json",
+      "bytes": 2419,
+      "hash": "d522c8ec4b",
+      "group": "Units"
+    },
+    {
+      "path": "models/sky_dragon_skin.webp",
+      "bytes": 276736,
+      "hash": "cb412094b0",
+      "group": "Units"
+    },
+    {
+      "path": "models/sky_dragon_skin_team.webp",
+      "bytes": 19392,
+      "hash": "f905c74f7b",
+      "group": "Units"
+    },
+    {
+      "path": "models/spider_queen.glb",
+      "bytes": 107108,
+      "hash": "5f2ffa06b2",
+      "group": "Units"
+    },
+    {
+      "path": "models/staff_warrior.glb",
+      "bytes": 266244,
+      "hash": "cb27959b65",
+      "group": "Units"
+    },
+    {
+      "path": "models/staff_warrior_skin.json",
+      "bytes": 2422,
+      "hash": "b4415e090b",
+      "group": "Units"
+    },
+    {
+      "path": "models/staff_warrior_skin.webp",
+      "bytes": 298266,
+      "hash": "bb4bb3dbb9",
+      "group": "Units"
+    },
+    {
+      "path": "models/staff_warrior_skin_team.webp",
+      "bytes": 21144,
+      "hash": "eb5a7f0440",
+      "group": "Units"
+    },
+    {
+      "path": "models/stone_golem.glb",
+      "bytes": 181596,
+      "hash": "bcf1446827",
+      "group": "Units"
+    },
+    {
+      "path": "models/stone_golem_skin.json",
+      "bytes": 2420,
+      "hash": "5158001b20",
+      "group": "Units"
+    },
+    {
+      "path": "models/stone_golem_skin.webp",
+      "bytes": 358292,
+      "hash": "c98f2cdb86",
+      "group": "Units"
+    },
+    {
+      "path": "models/stone_golem_skin_team.webp",
+      "bytes": 16038,
+      "hash": "b3c2ff2a45",
+      "group": "Units"
+    },
+    {
+      "path": "models/stone_sentinel.glb",
+      "bytes": 193792,
+      "hash": "cbf688bf8b",
+      "group": "Units"
+    },
+    {
+      "path": "models/stronghold.glb",
+      "bytes": 34536,
+      "hash": "8880ce58be",
+      "group": "Units"
+    },
+    {
+      "path": "models/swordsman.glb",
+      "bytes": 195292,
+      "hash": "c08a51668f",
+      "group": "Units"
+    },
+    {
+      "path": "models/temple_market.glb",
+      "bytes": 27628,
+      "hash": "9593fd39a3",
+      "group": "Units"
+    },
+    {
+      "path": "models/town_hall.glb",
+      "bytes": 29808,
+      "hash": "0426835302",
+      "group": "Units"
+    },
+    {
+      "path": "models/tree_dead.glb",
+      "bytes": 5984,
+      "hash": "530ed1b8c7",
+      "group": "Units"
+    },
+    {
+      "path": "models/tree_guardian.glb",
+      "bytes": 184736,
+      "hash": "1fb19da7d8",
+      "group": "Units"
+    },
+    {
+      "path": "models/tree_oak.glb",
+      "bytes": 19812,
+      "hash": "fe491abc87",
+      "group": "Units"
+    },
+    {
+      "path": "models/tree_pine.glb",
+      "bytes": 6112,
+      "hash": "13f8b5767e",
+      "group": "Units"
+    },
+    {
+      "path": "models/troll_shaman.glb",
+      "bytes": 189500,
+      "hash": "5c2cf30583",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_1_skin.json",
+      "bytes": 2167,
+      "hash": "9ac343b9a0",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_1_skin.webp",
+      "bytes": 218002,
+      "hash": "16038edcdf",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_1_skin_team.webp",
+      "bytes": 21686,
+      "hash": "12d240be8c",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_2_skin.json",
+      "bytes": 2143,
+      "hash": "1e200d8b82",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_2_skin.webp",
+      "bytes": 236106,
+      "hash": "8d25f34490",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_2_skin_team.webp",
+      "bytes": 16958,
+      "hash": "64aaef3cd5",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_3_skin.json",
+      "bytes": 2175,
+      "hash": "8e493dad77",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_3_skin.webp",
+      "bytes": 251114,
+      "hash": "62ce429ec3",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_3_skin_team.webp",
+      "bytes": 11666,
+      "hash": "ce69cb5fe7",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_4_skin.json",
+      "bytes": 2215,
+      "hash": "562785be65",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_4_skin.webp",
+      "bytes": 317784,
+      "hash": "de03c8608b",
+      "group": "Units"
+    },
+    {
+      "path": "models/units_4_skin_team.webp",
+      "bytes": 14362,
+      "hash": "55d382a529",
+      "group": "Units"
+    },
+    {
+      "path": "models/watchtower.glb",
+      "bytes": 25540,
+      "hash": "99dcba203c",
+      "group": "Units"
+    },
+    {
+      "path": "models/worker.glb",
+      "bytes": 198132,
+      "hash": "81b7aa6ded",
+      "group": "Units"
+    },
+    {
+      "path": "models/workshop.glb",
+      "bytes": 25208,
+      "hash": "b4b835f204",
       "group": "Units"
     },
     {

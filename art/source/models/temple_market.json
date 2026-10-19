@@ -1,0 +1,18 @@
+{
+  "id": "temple_market",
+  "triangles": 376,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 3.3,
+  "sockets": [
+    "lantern",
+    "lantern2"
+  ],
+  "skin": "buildings_3_skin"
+}

@@ -1,0 +1,50 @@
+{
+  "id": "hawk_rider",
+  "triangles": 458,
+  "bones": 23,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 20,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 16,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 30,
+      "loop": false
+    }
+  ],
+  "height": 2.846,
+  "sockets": [],
+  "skin": "units_3_skin"
+}

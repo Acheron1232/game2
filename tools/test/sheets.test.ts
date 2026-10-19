@@ -13,7 +13,7 @@ describe('art sheets', () => {
 
   it('uses about 6 calls for the rest of the 2D art', () => {
     const cells = loadSheets()
-      .filter((s) => s.id !== 'ui_kit_a')
+      .filter((s) => s.id !== 'ui_kit_a' && !s.id.startsWith('skin_'))
       .reduce((n, s) => n + s.cells.length, 0);
     expect(cells).toBe(324);
   });

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 export const ROOT = join(import.meta.dirname, '..', '..', '..');
 export const ART_DIR = join(ROOT, 'tools', 'art');
 
-export type CellKind = 'tile' | 'sprite' | 'frame' | 'concept' | 'icon' | 'additive';
+export type CellKind = 'tile' | 'sprite' | 'frame' | 'concept' | 'icon' | 'additive' | 'skin';
 
 export interface Cell {
   name: string;

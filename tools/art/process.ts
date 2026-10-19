@@ -64,6 +64,7 @@ async function processCell(cell: Cell, raw: Rgba, transparentSheet: boolean): Pr
       img = await resizeRgba(removeBackdrop(img, transparentSheet), cell.size, cell.size, 'fill');
       break;
     case 'icon':
+    case 'skin':
       img = await resizeRgba(img, cell.size, cell.size, 'cover');
       break;
     case 'additive':
@@ -81,6 +82,7 @@ async function processCell(cell: Cell, raw: Rgba, transparentSheet: boolean): Pr
     }
   }
   let mask: Rgba | null = null;
+  // Model skins mark their team cells by hand: skin tones can look a bit magenta to the detector.
   if (cell.teamColor || cell.kind === 'concept' || cell.kind === 'tile') {
     const split = splitTeamColor(img);
     if (split.mask) {
@@ -92,23 +94,47 @@ async function processCell(cell: Cell, raw: Rgba, transparentSheet: boolean): Pr
   return { cell, image: img, mask, note };
 }
 
-/** Cells in one image, slot by slot, plus UV rects. Sprites stand on the bottom of their slot. */
+/**
+ * Cells in one image, slot by slot, plus UV rects. Sprites stand on the bottom of their slot.
+ * Skin atlases (model textures) have no padding, so they stay a power of two; their UV rects
+ * are pulled in by 3 px instead, so filtering never reads the next cell. If any cell has a
+ * team mask, a matching <name>_team.webp is written too, plus a red-team preview for Blender.
+ */
 async function writeAtlas(name: string, results: CellResult[], dir: string): Promise<void> {
-  const cols = Math.ceil(Math.sqrt(results.length));
+  const skin = results.every((r) => r.cell.kind === 'skin');
+  // Skin atlases are always 4 slots wide (1024 px), so 16 or 20 cells stay easy to use.
+  const cols = skin ? 4 : Math.ceil(Math.sqrt(results.length));
   const slot = Math.max(...results.map((r) => r.cell.size));
-  const pad = 2;
+  const pad = skin ? 0 : 2;
+  const inset = skin ? 3 : 0;
   const rows = Math.ceil(results.length / cols);
   const width = cols * (slot + pad * 2), height = rows * (slot + pad * 2);
   const composites: OverlayOptions[] = [];
+  const masks: OverlayOptions[] = [];
   const rects: Record<string, { x: number; y: number; w: number; h: number }> = {};
   for (const [i, r] of results.entries()) {
     const sx = (i % cols) * (slot + pad * 2) + pad, sy = Math.floor(i / cols) * (slot + pad * 2) + pad;
     const left = sx + Math.floor((slot - r.image.width) / 2), top = sy + (slot - r.image.height);
     composites.push({ input: await toSharp(r.image).png().toBuffer(), left, top });
-    rects[r.cell.name] = { x: left / width, y: top / height, w: r.image.width / width, h: r.image.height / height };
+    if (r.mask) masks.push({ input: await toSharp(r.mask).png().toBuffer(), left, top });
+    rects[r.cell.name] = { x: (left + inset) / width, y: (top + inset) / height, w: (r.image.width - 2 * inset) / width, h: (r.image.height - 2 * inset) / height };
   }
-  await sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).composite(composites).webp(WEBP).toFile(join(dir, `${name}.webp`));
-  writeFileSync(join(dir, `${name}.json`), JSON.stringify({ image: `${name}.webp`, width, height, rects }, null, 2) + '\n');
+  const blank = () => sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: skin ? 1 : 0 } } });
+  await blank().composite(composites).webp(WEBP).toFile(join(dir, `${name}.webp`));
+  if (masks.length) {
+    await blank().composite(masks).flatten({ background: '#000000' }).webp({ quality: 90 }).toFile(join(dir, `${name}_team.webp`));
+    // Blender preview copy: team parts in red, so they are easy to see in renders.
+    const base = await blank().composite(composites).removeAlpha().raw().toBuffer();
+    const mask = await blank().composite(masks).flatten({ background: '#000000' }).removeAlpha().raw().toBuffer();
+    const red = [0xc4, 0x2a, 0x24];
+    for (let i = 0; i < base.length; i += 3) {
+      const k = mask[i]! / 255;
+      for (let c = 0; c < 3; c++) base[i + c] = Math.min(255, base[i + c]! * (1 - k) + ((base[i + c]! * red[c]!) / 255) * 1.75 * k);
+    }
+    mkdirSync(join(ROOT, 'art', 'source', 'models'), { recursive: true });
+    await sharp(base, { raw: { width, height, channels: 3 } }).png().toFile(join(ROOT, 'art', 'source', 'models', `${name}_preview.png`));
+  }
+  writeFileSync(join(dir, `${name}.json`), JSON.stringify({ image: `${name}.webp`, width, height, team: masks.length > 0, rects }, null, 2) + '\n');
 }
 
 /** A quick look at all cells on a checkerboard, for reviewing the cut. */

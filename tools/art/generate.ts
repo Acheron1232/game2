@@ -35,7 +35,11 @@ function buildPrompt(): string {
   }
   if (/\{[a-zA-Z_.]+\}/.test(body)) throw new Error(`Prompt ${sheet.prompt} still has a {placeholder}`);
   const shape = sheet.aspect === 'landscape' ? 'a wide landscape image (3:2)' : 'a square image (1:1)';
-  return `${style.trim()}\n\nMake ${shape}.\n\n${body.trim()}`;
+  // Model texture sheets get extra rules about flat, full-cell texture swatches.
+  const skinRules = sheet.cells.every((c) => c.kind === 'skin')
+    ? '\n\n' + readFileSync(join(ART_DIR, 'prompts', '_skin.md'), 'utf8').replace(/<!--[\s\S]*?-->\s*/g, '').trim()
+    : '';
+  return `${style.trim()}${skinRules}\n\nMake ${shape}.\n\n${body.trim()}`;
 }
 
 const prompt = buildPrompt();

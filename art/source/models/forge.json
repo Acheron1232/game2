@@ -1,0 +1,18 @@
+{
+  "id": "forge",
+  "triangles": 316,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 3.7,
+  "sockets": [
+    "furnace",
+    "smoke"
+  ],
+  "skin": "buildings_2_skin"
+}

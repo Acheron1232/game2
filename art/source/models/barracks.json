@@ -1,0 +1,15 @@
+{
+  "id": "barracks",
+  "triangles": 308,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 3.49,
+  "sockets": [],
+  "skin": "buildings_2_skin"
+}
