@@ -1,0 +1,15 @@
+{
+  "id": "ruin_pillar",
+  "triangles": 110,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 2.45,
+  "sockets": [],
+  "skin": null
+}

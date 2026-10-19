@@ -39,20 +39,34 @@ export class RtsCamera {
     this.camera.maxZ = 400;
     this.camera.fov = 0.78;
     this.camera.inputs.clear();
-    window.addEventListener('keydown', (e) => this.keys.add(e.key));
+    window.addEventListener('keydown', (e) => {
+      if (!this.enabled || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key.startsWith('Arrow')) e.preventDefault();
+      this.keys.add(e.key);
+    });
     window.addEventListener('keyup', (e) => this.keys.delete(e.key));
-    window.addEventListener('blur', () => this.keys.clear());
-    canvas.addEventListener('pointermove', (e) => {
-      this.mouse = { x: e.clientX, y: e.clientY, inside: true };
+    window.addEventListener('blur', () => {
+      this.keys.clear();
+      this.mouse.inside = false;
+      this.drag = null;
+    });
+    // HUD panels cover the top and bottom edges. Track them too, not just the canvas.
+    window.addEventListener('pointermove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      this.mouse.x = e.clientX - rect.left;
+      this.mouse.y = e.clientY - rect.top;
+      this.mouse.inside = this.mouse.x >= 0 && this.mouse.y >= 0 && this.mouse.x < rect.width && this.mouse.y < rect.height;
       if (this.drag) {
         const k = (this.camera.radius / canvas.clientHeight) * 1.6;
         this.goal.x = this.drag.tx - (e.clientX - this.drag.x) * k;
         this.goal.y = this.drag.ty + (e.clientY - this.drag.y) * k;
       }
     });
-    canvas.addEventListener('pointerleave', () => (this.mouse.inside = false));
+    window.addEventListener('pointerout', (e) => {
+      if (e.relatedTarget === null) this.mouse.inside = false;
+    });
     canvas.addEventListener('pointerdown', (e) => {
-      if (e.button === 1) {
+      if (this.enabled && e.button === 1) {
         e.preventDefault();
         this.drag = { x: e.clientX, y: e.clientY, tx: this.goal.x, ty: this.goal.y };
         this.follow = null;
@@ -63,6 +77,7 @@ export class RtsCamera {
       'wheel',
       (e) => {
         e.preventDefault();
+        if (!this.enabled) return;
         this.zoomGoal = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, this.zoomGoal * (e.deltaY > 0 ? 1.08 : 0.93)));
       },
       { passive: false },
@@ -73,8 +88,13 @@ export class RtsCamera {
 
   /** Jump (or glide when smooth) to a game position. */
   lookAt(x: number, y: number, smooth = false): void {
-    this.goal = { x, y };
-    if (!smooth) this.target = { x, y };
+    this.goal.x = x;
+    this.goal.y = y;
+    this.clampGoal();
+    if (!smooth) {
+      this.target.x = this.goal.x;
+      this.target.y = this.goal.y;
+    }
     this.apply();
   }
 
@@ -95,13 +115,16 @@ export class RtsCamera {
     }
     if (mx || my) {
       this.follow = null;
-      this.goal.x += mx * SPEED * this.zoom * dt;
-      this.goal.y += my * SPEED * this.zoom * dt;
+      const length = Math.hypot(mx, my);
+      this.goal.x += (mx / length) * SPEED * this.zoom * dt;
+      this.goal.y += (my / length) * SPEED * this.zoom * dt;
     }
-    if (this.follow) this.goal = { ...this.follow() };
-    const pad = 12;
-    this.goal.x = Math.max(pad, Math.min(this.mapSize - pad, this.goal.x));
-    this.goal.y = Math.max(pad - 8, Math.min(this.mapSize - pad, this.goal.y));
+    if (this.follow) {
+      const p = this.follow();
+      this.goal.x = p.x;
+      this.goal.y = p.y;
+    }
+    this.clampGoal();
     const k = 1 - Math.exp(-dt * 12);
     this.target.x += (this.goal.x - this.target.x) * k;
     this.target.y += (this.goal.y - this.target.y) * k;
@@ -113,5 +136,20 @@ export class RtsCamera {
     const h = this.heightAt(this.target.x, this.target.y);
     this.camera.target.set(this.target.x, h, -this.target.y);
     this.camera.radius = BASE_RADIUS * this.zoom;
+  }
+
+  /** Keep the visible ground inside the map, including at wide aspect ratios and max zoom. */
+  private clampGoal(): void {
+    const height = BASE_RADIUS * Math.max(this.zoom, this.zoomGoal) * Math.cos(TILT);
+    const halfFov = this.camera.fov / 2;
+    const north = height * (Math.tan(TILT + halfFov) - Math.tan(TILT));
+    const south = height * (Math.tan(TILT) - Math.tan(TILT - halfFov));
+    const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
+    const side = (height * Math.tan(halfFov) * aspect) / (Math.cos(TILT) - Math.sin(TILT) * Math.tan(halfFov));
+    const px = Math.min(this.mapSize / 2, side + 2);
+    const pn = Math.min(this.mapSize / 2, north + 2);
+    const ps = Math.min(this.mapSize / 2, south + 2);
+    this.goal.x = Math.max(px, Math.min(this.mapSize - px, this.goal.x));
+    this.goal.y = Math.max(ps, Math.min(this.mapSize - pn, this.goal.y));
   }
 }

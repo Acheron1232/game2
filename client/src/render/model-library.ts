@@ -115,10 +115,12 @@ export class ModelLibrary {
     for (const id of this.ids) {
       for (const team of this.assets.models[id]?.skin === null ? ['red'] : teams) {
         const inst = this.spawn(id, team);
-        for (const m of inst.meshes) {
-          if (m.material) jobs.push(m.material.forceCompilationAsync(m, { useInstances: false }).catch(() => undefined));
-        }
-        jobs.push(Promise.all(jobs).then(() => inst.dispose()));
+        const compiled = inst.meshes.map((m) => m.material?.forceCompilationAsync(m, { useInstances: false }));
+        jobs.push(
+          Promise.all(compiled)
+            .then(() => undefined)
+            .finally(() => inst.dispose()),
+        );
       }
     }
     await Promise.all(jobs);

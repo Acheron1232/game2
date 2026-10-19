@@ -1,0 +1,15 @@
+{
+  "id": "fence",
+  "triangles": 176,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 1.0,
+  "sockets": [],
+  "skin": null
+}

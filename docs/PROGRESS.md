@@ -4,6 +4,9 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
+- **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
+- **Client audit and polish** (2026-10-19): current working map is 256 × 256, with 7,451 baked trees, 6,679 decor objects and 58 model entries. These additions follow the original Phase 5 snapshot below. Fixed HUD clipping, minimap sizing, camera bounds, per-frame allocations, shader warm-up error handling and blocked-corner navigation. WebGPU and WebGL2 checked in the browser; build, typecheck, 30 tests and lint passed. See [CLIENT_AUDIT.md](CLIENT_AUDIT.md) for sampled performance numbers, limits and remaining visual work. Earlier Phase 5 numbers below describe the earlier map.
 - **Phase 5 is done** (2026-10-19). Next: **Phase 6 — Server and multiplayer**.
 - Notes for Phase 6:
   - The hero moves on the client with `shared/src/nav/nav-grid.ts` (A*) and `shared/src/sim/movement.ts`. Phase 6 runs the same code on the server; the client keeps it for prediction.

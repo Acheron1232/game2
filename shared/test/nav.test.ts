@@ -7,6 +7,16 @@ const terrain = parseTerrain(readFileSync(join(import.meta.dirname, '..', 'data'
 const nav = buildNavGrid(terrain);
 
 describe('nav grid and paths', () => {
+  it('does not cross blocked corners or skip a briefly crossed obstacle', () => {
+    const corner = { cols: 2, rows: 2, cellSize: 1, walk: new Uint8Array([1, 0, 0, 1]) };
+    expect(lineWalkable(corner, 0.5, 0.5, 1.5, 1.5)).toBe(false);
+    expect(findPath(corner, 0.5, 0.5, 1.5, 1.5)).toEqual([]);
+    const edge = { cols: 3, rows: 2, cellSize: 1, walk: new Uint8Array([1, 0, 1, 1, 1, 1]) };
+    expect(lineWalkable(edge, 0.9, 0.9, 2.5, 1.1)).toBe(false);
+    expect(lineWalkable(edge, 2.5, 1.1, 0.9, 0.9)).toBe(false);
+    expect(findPath(edge, 0.5, 0.5, 2.5, 0.5).length).toBeGreaterThan(1);
+  });
+
   it('every hero spawn can walk to the temple market and to every other spawn', () => {
     const spawns = gameData.map.starts.map((s) => s.heroSpawn);
     const market = gameData.map.shops.find((s) => s.type === 'temple_market')!.pos;

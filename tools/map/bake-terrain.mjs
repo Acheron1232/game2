@@ -173,6 +173,17 @@ const lakes = layout.water.filter((w) => w.tag !== 'temple_pool');
 const pools = layout.water.filter((w) => w.tag === 'temple_pool');
 const temple = layout.plateaus[0];
 
+/** Soft hills from the layout: a smooth bump (or dip) per hill, in terrain levels. */
+const hills = layout.hills ?? [];
+function hillLevel(px, py) {
+  let h = 0;
+  for (const hl of hills) {
+    const d = Math.hypot(px - hl.center[0], py - hl.center[1]) / hl.radius;
+    if (d < 1) h += hl.level * (0.5 + 0.5 * Math.cos(Math.PI * d));
+  }
+  return h;
+}
+
 // ---------- bake the grid ----------
 const ground = new Uint8Array(N * N);
 const flags = new Uint8Array(N * N);
@@ -198,11 +209,15 @@ for (let row = 0; row < N; row++) {
 
     // Map border
     const edge = Math.min(px, py, SIZE - px, SIZE - py);
-    if (edge < layout.border.width + 1.5 + 1.5 * edgeN) {
-      ground[i] = G.forest_floor;
+    const borderW = layout.border.width + 2 * edgeN;
+    if (edge < borderW) {
+      // Mountains around the map: rise to the edge, rocky near the top, forest at the foot.
+      const t = 1 - edge / borderW;
+      const hb = Math.min(1.5, 0.15 + t * t * 1.5 + 0.2 * detail);
+      ground[i] = t > 0.45 ? G.cliff : G.forest_floor;
       flags[i] = FLAG.passable | FLAG.forest | FLAG.border;
-      height[i] = 100;
-      level[i] = 0;
+      height[i] = Math.round((hb + 1) * 100);
+      level[i] = hb;
       continue;
     }
 
@@ -293,14 +308,21 @@ for (let row = 0; row < N; row++) {
         } else if (areaD < 0 && area.ground !== 'grass') {
           g = areaD > -1.5 && detail > 0 ? G.rough_dirt : G[area.ground];
         } else {
-          g = patch > 0.35 ? G.grass_dry : patch < -0.45 || wSdf < 6 ? G.grass_lush : G.grass;
-          if (pathD < 1.2 && detail > 0.2) g = G.rough_dirt; // soft road edge
+          // Plains: grass, lush near water and forests, dry patches on open fields.
+          g = patch > 0.45 ? G.grass_dry : patch < -0.3 || wSdf < 8 || openD > margin - 1.2 ? G.grass_lush : G.grass;
+          if (pathD < 0.8 && detail > 0.35) g = G.rough_dirt; // soft road edge
         }
       }
     }
+    if (!(f & (FLAG.high | FLAG.ramp))) {
+      // Hills everywhere outside the temple; forests get extra bumps, roads stay smooth.
+      const forest = (f & FLAG.forest) !== 0;
+      const bumps = forest ? 0.22 * (symNoise(px, py, 11, 51) + 1) : 0.05 * symNoise(px, py, 13, 52);
+      h += hillLevel(px, py) + bumps;
+    }
     ground[i] = g;
     flags[i] = f;
-    height[i] = Math.round((h + 1) * 100);
+    height[i] = Math.max(0, Math.min(255, Math.round((h + 1) * 100)));
     level[i] = h;
   }
 }
@@ -315,7 +337,7 @@ for (let i = 0; i < N * N; i++) {
 // ---------- trees ----------
 // Jittered grid in the north-east quarter, then turned 4 times (keeps symmetry).
 const trees = [];
-const SPACING = 2.1;
+const SPACING = 1.75;
 const cellAt = (x, y) => {
   const c = Math.floor(x / CELL),
     r = Math.floor(y / CELL);
@@ -356,6 +378,133 @@ for (let gy = 0; gy * SPACING < C; gy++) {
     }
   }
 }
+
+// ---------- decor ----------
+// Small things that make the map feel alive. Nothing here blocks movement.
+// [x, y, type, scale, yaw in degrees]. Generated in one quarter, then turned 4 times like trees.
+export const DECOR_TYPES = [
+  'grass',
+  'flowers_yellow',
+  'flowers_blue',
+  'flowers_red',
+  'fern',
+  'mushrooms',
+  'reeds',
+  'pebbles',
+  'rock_small',
+  'rock_big',
+  'stump',
+  'log',
+  'ruin_pillar',
+  'ruin_block',
+  'statue',
+  'fence',
+  'crate',
+  'barrel',
+];
+const D = Object.fromEntries(DECOR_TYPES.map((t, i) => [t, i]));
+const decor = [];
+const near = (mx, my, test, r = 2) =>
+  [
+    [r, 0],
+    [-r, 0],
+    [0, r],
+    [0, -r],
+    [r, r],
+    [-r, -r],
+    [r, -r],
+    [-r, r],
+  ].some(([dx, dy]) => {
+    const j = cellAt(mx + dx, my + dy);
+    return j >= 0 && test(j);
+  });
+const isOpen = (j) => flags[j] & FLAG.passable && !(flags[j] & (FLAG.forest | FLAG.water | FLAG.cliff));
+const isRoad = (j) => ground[j] === G.dirt || ground[j] === G.rough_dirt || ground[j] === G.temple_stone;
+const DSPACE = 1.3;
+for (let gy = 0; gy * DSPACE < C; gy++) {
+  for (let gx = 0; gx * DSPACE < C; gx++) {
+    const rx = (gx + 0.5) * DSPACE + (hash(gx, gy, 91) - 0.5) * DSPACE,
+      ry = (gy + 0.5) * DSPACE + (hash(gx, gy, 92) - 0.5) * DSPACE;
+    if (rx >= C || ry >= C) continue;
+    const roll = hash(gx, gy, 93),
+      roll2 = hash(gx, gy, 94);
+    const sc = 0.8 + 0.4 * hash(gx, gy, 95);
+    const yaw0 = Math.round(hash(gx, gy, 96) * 360);
+    let [x, y] = [rx, ry];
+    for (let k = 0; k < 4; k++) {
+      const mx = Math.round((x + C) * 10) / 10,
+        my = Math.round((y + C) * 10) / 10;
+      const i = cellAt(mx, my);
+      const yaw = (yaw0 - 90 * k + 720) % 360;
+      let type = -1,
+        scale = sc;
+      if (i >= 0 && !(flags[i] & FLAG.border)) {
+        const f = flags[i];
+        const fromCenter = Math.hypot(x, y);
+        const meadow = symNoise(rx + C, ry + C, 9, 97);
+        if (f & FLAG.forest) {
+          // Forest floor: rocks and stumps at the edges, a few big mossy rocks inside.
+          if (near(mx, my, isOpen) && roll < 0.22)
+            type = roll2 < 0.4 ? D.fern : roll2 < 0.65 ? D.rock_small : roll2 < 0.85 ? D.stump : D.mushrooms;
+          else if (roll < 0.02) type = D.rock_big;
+        } else if (ground[i] === G.sand) {
+          if (roll < 0.35) type = D.reeds;
+          else if (roll < 0.45) type = D.pebbles;
+        } else if (f & FLAG.high) {
+          // Temple top: broken pillars, stone blocks and statues off the paved cross.
+          if (ground[i] !== G.temple_stone && !(f & FLAG.cliff) && roll < 0.05)
+            type = roll2 < 0.45 ? D.ruin_pillar : roll2 < 0.85 ? D.ruin_block : D.statue;
+          else if (roll < 0.25 && ground[i] !== G.temple_stone) type = D.grass;
+        } else if (isRoad(i)) {
+          if (roll < 0.03) type = D.pebbles;
+        } else if (isOpen(i)) {
+          if (fromCenter < 92 && fromCenter > 76 && roll < 0.03 && !near(mx, my, isRoad, 3))
+            type = roll2 < 0.6 ? D.ruin_block : D.ruin_pillar;
+          else if (meadow > 0.35 && roll < 0.5) type = roll2 < 0.4 ? D.flowers_yellow : roll2 < 0.7 ? D.flowers_blue : D.flowers_red;
+          else if (roll < 0.42) type = D.grass;
+          else if (roll < 0.445) type = D.rock_small;
+          else if (roll < 0.452 && near(mx, my, (j) => flags[j] & FLAG.forest, 3)) type = roll2 < 0.5 ? D.stump : D.log;
+        }
+      }
+      if (type >= 0) decor.push([mx, my, type, Math.round(scale * 100) / 100, yaw]);
+      [x, y] = [y, -x];
+    }
+  }
+}
+// Base props: crates and barrels next to each town hall, fence pieces around the base.
+for (const s of layout.starts) {
+  const [tx, ty] = s.townHall;
+  const toC = Math.atan2(C - ty, C - tx);
+  const side = toC + Math.PI / 2;
+  for (const [d, a, type] of [
+    [4.2, side, D.crate],
+    [4.6, side + 0.25, D.barrel],
+    [4.0, side - 0.2, D.barrel],
+    [4.4, side + Math.PI, D.crate],
+    [4.9, side + Math.PI - 0.2, D.crate],
+  ]) {
+    decor.push([
+      Math.round((tx + Math.cos(a) * d) * 10) / 10,
+      Math.round((ty + Math.sin(a) * d) * 10) / 10,
+      type,
+      1,
+      Math.round(((a * 180) / Math.PI + 360) % 360),
+    ]);
+  }
+  const R = s.buildArea.radius + 2;
+  for (let k = 0; k < 28; k++) {
+    const a = (k / 28) * Math.PI * 2;
+    const fx = s.buildArea.center[0] + Math.cos(a) * R,
+      fy = s.buildArea.center[1] + Math.sin(a) * R;
+    const j = cellAt(fx, fy);
+    if (j < 0 || !isOpen(j) || isRoad(j) || near(fx, fy, isRoad, 3)) continue;
+    decor.push([Math.round(fx * 10) / 10, Math.round(fy * 10) / 10, D.fence, 1, Math.round(((-a * 180) / Math.PI + 360) % 360)]);
+  }
+}
+writeFileSync(
+  join(ROOT, 'shared', 'data', 'map-decor.json'),
+  `{\n  "version": 1,\n  "note": "Generated by tools/map/bake-terrain.mjs. Each item is [x, y, type index, scale, yaw degrees]. Decor never blocks movement.",\n  "types": ${JSON.stringify(DECOR_TYPES)},\n  "decor": [\n${decor.map((t) => '    ' + JSON.stringify(t)).join(',\n')}\n  ]\n}\n`,
+);
 
 // ---------- write data ----------
 const header = Buffer.alloc(14);
@@ -546,4 +695,5 @@ const pct = (n) => `${Math.round((n / (N * N)) * 100)}%`;
 console.log(
   `map-terrain.bin: ${N}x${N} cells. forest ${pct(count((i) => flags[i] & FLAG.forest))}, open ground ${pct(count((i) => flags[i] & FLAG.passable && !(flags[i] & FLAG.forest)))}, water ${pct(count((i) => flags[i] & FLAG.water))}`,
 );
+console.log(`map-decor.json: ${decor.length} items.`);
 console.log(`map-trees.json: ${trees.length} trees. map-preview.png: ${W}x${W}`);

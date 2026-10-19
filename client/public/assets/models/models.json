@@ -101,6 +101,15 @@
       "idle"
     ]
   },
+  "barrel": {
+    "skin": null,
+    "height": 0.85,
+    "triangles": 172,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "blood_witch": {
     "skin": "blood_witch_skin",
     "height": 2.545,
@@ -202,6 +211,24 @@
       "hit",
       "death",
       "victory"
+    ]
+  },
+  "crate": {
+    "skin": null,
+    "height": 1.25,
+    "triangles": 88,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "fence": {
+    "skin": null,
+    "height": 1,
+    "triangles": 176,
+    "sockets": [],
+    "clips": [
+      "idle"
     ]
   },
   "forest_elf": {
@@ -390,6 +417,15 @@
       "victory"
     ]
   },
+  "log": {
+    "skin": null,
+    "height": 0.562,
+    "triangles": 64,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "ogre_brute": {
     "skin": "monsters_3_skin",
     "height": 2.781,
@@ -422,6 +458,24 @@
       "victory"
     ]
   },
+  "rock_big": {
+    "skin": null,
+    "height": 1.7,
+    "triangles": 78,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "rock_small": {
+    "skin": null,
+    "height": 0.395,
+    "triangles": 52,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "rock_spider": {
     "skin": "monsters_3_skin",
     "height": 1.034,
@@ -436,6 +490,24 @@
       "hit",
       "death",
       "victory"
+    ]
+  },
+  "ruin_block": {
+    "skin": null,
+    "height": 0.6,
+    "triangles": 88,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "ruin_pillar": {
+    "skin": null,
+    "height": 2.45,
+    "triangles": 110,
+    "sockets": [],
+    "clips": [
+      "idle"
     ]
   },
   "side_shop": {
@@ -503,6 +575,15 @@
       "victory"
     ]
   },
+  "statue": {
+    "skin": null,
+    "height": 2.4,
+    "triangles": 144,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "stone_golem": {
     "skin": "stone_golem_skin",
     "height": 2.071,
@@ -545,6 +626,15 @@
     "skin": "buildings_1_skin",
     "height": 7.59,
     "triangles": 464,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "stump": {
+    "skin": null,
+    "height": 0.43,
+    "triangles": 140,
     "sockets": [],
     "clips": [
       "idle"

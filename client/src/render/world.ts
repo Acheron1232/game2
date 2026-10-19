@@ -17,6 +17,9 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import '@babylonjs/core/Culling/ray';
 import { Scene } from '@babylonjs/core/scene';
+import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
+import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
+import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
 import {
   blockRect,
   buildNavGrid,
@@ -35,6 +38,8 @@ import { attachHeroEffects, type HeroEffects } from './hero-effects';
 import { ModelLibrary, type ModelInstance } from './model-library';
 import { RtsCamera, TILT } from './rts-camera';
 import { TEAM_COLORS } from './team-material';
+import { createDecor, type DecorItem } from './decor';
+import { scatterInstances } from './instancing';
 import { createTerrain, type Terrain } from './terrain';
 
 export type TreeList = [number, number, number, number][];
@@ -53,7 +58,8 @@ const FOOTPRINT: Record<string, [number, number]> = {
 /** Game position + facing -> world transform. North is -z, models face +z. */
 function place(node: { position: Vector3; rotationQuaternion: Quaternion | null }, x: number, y: number, h: number, facing: number): void {
   node.position.set(x, h, -y);
-  node.rotationQuaternion = Quaternion.RotationAxis(Vector3.Up(), facing + Math.PI);
+  node.rotationQuaternion ??= new Quaternion();
+  Quaternion.RotationAxisToRef(Vector3.UpReadOnly, facing + Math.PI, node.rotationQuaternion);
 }
 
 export interface Unit {
@@ -98,33 +104,41 @@ export class GameWorld {
     canvas: HTMLCanvasElement,
     grid: TerrainGrid,
     trees: TreeList,
+    decor: { types: string[]; decor: DecorItem[] },
     assets: GameAssets,
   ): Promise<GameWorld> {
     const scene = new Scene(engine);
     scene.useRightHandedSystem = true; // same as glTF and Blender: models load without mirroring
-    scene.clearColor = new Color4(0.42, 0.52, 0.6, 1);
+    scene.clearColor = new Color4(0.55, 0.62, 0.68, 1);
     scene.ambientColor = new Color3(0.3, 0.3, 0.3);
+    // Light haze far from the camera, tinted like the sky; it also softens the far mountains.
     scene.fogMode = Scene.FOGMODE_LINEAR;
-    scene.fogColor = new Color3(0.42, 0.52, 0.6);
-    scene.fogStart = 70;
-    scene.fogEnd = 160;
+    scene.fogColor = new Color3(0.62, 0.66, 0.66);
+    scene.fogStart = 55;
+    scene.fogEnd = 150;
     scene.skipPointerMovePicking = true;
     scene.animationPropertiesOverride = new AnimationPropertiesOverride();
     scene.animationPropertiesOverride.enableBlending = true;
     scene.animationPropertiesOverride.blendingSpeed = 0.12;
 
+    // Cool sky light from above, warm bounce from the ground.
     const sky = new HemisphericLight('sky', new Vector3(0, 1, 0), scene);
-    sky.intensity = 0.62;
-    sky.diffuse = new Color3(0.86, 0.9, 1);
-    sky.groundColor = new Color3(0.36, 0.33, 0.28);
-    // Warm afternoon sun from the south-west (game), i.e. from -x and +z in world space.
-    const sun = new DirectionalLight('sun', new Vector3(0.55, -1, -0.45).normalize(), scene);
-    sun.intensity = 1.05;
-    sun.diffuse = new Color3(1, 0.93, 0.8);
-    sun.position = new Vector3(-60, 120, 60);
-    const shadows = new ShadowGenerator(2048, sun);
+    sky.intensity = 0.6;
+    sky.diffuse = new Color3(0.75, 0.84, 1);
+    sky.groundColor = new Color3(0.48, 0.42, 0.33);
+    // Low warm late-afternoon sun from the south-west (game), i.e. from -x and +z in world
+    // space: longer shadows and golden light give the hills more shape.
+    const sun = new DirectionalLight('sun', new Vector3(0.62, -0.72, -0.5).normalize(), scene);
+    sun.intensity = 1.15;
+    sun.diffuse = new Color3(1, 0.93, 0.82);
+    sun.specular = new Color3(0.4, 0.35, 0.3);
+    sun.position = new Vector3(-80, 110, 80);
+    sun.shadowFrustumSize = 100;
+    sun.shadowMinZ = 1;
+    sun.shadowMaxZ = 240;
+    const shadows = new ShadowGenerator(1024, sun);
     shadows.usePercentageCloserFiltering = true;
-    shadows.filteringQuality = ShadowGenerator.QUALITY_MEDIUM;
+    shadows.filteringQuality = ShadowGenerator.QUALITY_LOW;
     shadows.bias = 0.0008;
     shadows.normalBias = 0.02;
     shadows.darkness = 0.35;
@@ -135,44 +149,49 @@ export class GameWorld {
     await library.loadAll();
     const nav = buildNavGrid(grid);
 
-    // ---- trees: one thin-instanced mesh set per tree type
+    // ---- trees: one thin-instanced mesh set per tree type. Pines also grow on the lower
+    // mountain slopes outside the map, so the world does not end at a hard line.
+    const size = grid.cols * grid.cellSize;
     const byType: TreeList[] = [[], [], [], []];
     for (const t of trees) byType[t[2]]?.push(t);
+    for (let k = 0; k < 2600; k++) {
+      const a = Math.sin(k * 12.9898) * 43758.5453,
+        b = Math.sin(k * 78.233) * 12345.6789;
+      const u = a - Math.floor(a),
+        v = b - Math.floor(b);
+      const side = k % 4,
+        along = u * (size + 40) - 20,
+        out = 2 + v * v * 26;
+      const [x, y] = side === 0 ? [along, -out] : side === 1 ? [along, size + out] : side === 2 ? [-out, along] : [size + out, along];
+      byType[v > 0.15 ? 0 : 2]!.push([x, y, 0, 0.9 + u * 0.5]);
+    }
     TREE_MODELS.forEach((id, k) => {
       const list = byType[k]!;
       if (!list.length) return;
+      const q = new Quaternion();
+      const sc = new Vector3();
+      const pos = new Vector3();
       for (const mesh of library.staticMeshes(id)) {
-        // The mesh node's own transform holds the quantization scale (KHR_mesh_quantization):
-        // keep it by baking it into every instance matrix, then clear the node.
-        const local = mesh.computeWorldMatrix(true).clone();
-        mesh.parent = null;
-        mesh.position.setAll(0);
-        mesh.rotationQuaternion = null;
-        mesh.scaling.setAll(1);
-        const buf = new Float32Array(list.length * 16);
-        const m = new Matrix();
-        const out = new Matrix();
-        list.forEach(([x, y, , s], i) => {
-          const rot = Quaternion.RotationAxis(Vector3.Up(), ((x * 7.13 + y * 3.71) % 6.283) - 3.14);
-          Matrix.ComposeToRef(
-            new Vector3(s, s * (0.92 + ((x * 13.7 + y) % 0.16)), s),
-            rot,
-            new Vector3(x, terrain.heightAt(x, y) - 0.05, -y),
-            m,
-          );
-          local.multiplyToRef(m, out);
-          out.copyToArray(buf, i * 16);
-        });
-        mesh.thinInstanceSetBuffer('matrix', buf, 16, true);
-        mesh.alwaysSelectAsActiveMesh = false;
-        mesh.thinInstanceRefreshBoundingInfo(false);
-        mesh.freezeWorldMatrix();
-        mesh.doNotSyncBoundingInfo = true;
+        scatterInstances(
+          mesh,
+          list.length,
+          (i) => [list[i]![0], list[i]![1]],
+          (i, out) => {
+            const [x, y, , s] = list[i]!;
+            Quaternion.RotationAxisToRef(Vector3.Up(), ((x * 7.13 + y * 3.71) % 6.283) - 3.14, q);
+            sc.set(s, s * (0.92 + ((x * 13.7 + y) % 0.16)), s);
+            pos.set(x, terrain.heightAt(x, y) - 0.05, -y);
+            Matrix.ComposeToRef(sc, q, pos, out);
+          },
+        );
       }
     });
 
+    // ---- decor: rocks, stumps, ruins, fences, crates, grass and flowers
+    await createDecor(scene, decor.decor, decor.types, terrain.heightAt, library, assets);
+
     // ---- buildings and neutral places
-    const center = 96;
+    const center = size / 2;
     const facingTo = (x: number, y: number) => Math.atan2(-(center - x), center - y);
     const put = (id: string, x: number, y: number, team: string, shadow = true) => {
       const inst = library.spawn(id, team);
@@ -204,8 +223,9 @@ export class GameWorld {
     ring.isPickable = false;
     ring.setEnabled(false);
 
-    const camera = new RtsCamera(scene, canvas, terrain.heightAt, grid.cols * grid.cellSize);
+    const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
     const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav);
+    world.setupPostProcess();
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
     return world;
@@ -216,7 +236,8 @@ export class GameWorld {
     const def = gameData.heroes.find((h) => h.id === heroId);
     const model = this.library.spawn(heroId, team);
     const mover = createMover(x, y, def?.moveSpeed ?? 3);
-    mover.facing = Math.atan2(-(96 - x), 96 - y);
+    const c = (this.grid.cols * this.grid.cellSize) / 2;
+    mover.facing = Math.atan2(-(c - x), c - y);
     for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
     const unit: Unit = { model, mover, team, effects: attachHeroEffects(this.scene, heroId, model.nodes, model.materials.glow), anim: '' };
     this.play(unit, 'idle');
@@ -258,8 +279,8 @@ export class GameWorld {
       this.stress = [];
       return 0;
     }
-    const cx = this.hero?.mover.x ?? 96,
-      cy = this.hero?.mover.y ?? 96;
+    const cx = this.hero?.mover.x ?? (this.grid.cols * this.grid.cellSize) / 2,
+      cy = this.hero?.mover.y ?? (this.grid.cols * this.grid.cellSize) / 2;
     const base = this.library.spawn(id, 'blue');
     base.animations.get('walk')?.start(true);
     this.stress.push(base);
@@ -282,6 +303,33 @@ export class GameWorld {
     return count;
   }
 
+  /** One color-grading pass and FXAA; particles supply glow without full-screen bloom. */
+  private setupPostProcess(): void {
+    const pipe = new DefaultRenderingPipeline('post', true, this.scene, [this.camera.camera]);
+    pipe.fxaaEnabled = true;
+    pipe.imageProcessingEnabled = true;
+    const ip = pipe.imageProcessing;
+    ip.toneMappingEnabled = true;
+    ip.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
+    ip.exposure = 1.05;
+    ip.contrast = 1.04;
+    ip.vignetteEnabled = true;
+    ip.vignetteWeight = 0.8;
+    ip.vignetteColor = new Color4(0.08, 0.05, 0.02, 0);
+    ip.colorCurvesEnabled = true;
+    // Warm highlights, cool shadows: the classic "painted fantasy" look.
+    const curves = new ColorCurves();
+    curves.globalSaturation = -8;
+    curves.highlightsHue = 40;
+    curves.highlightsDensity = 8;
+    curves.highlightsSaturation = 8;
+    curves.shadowsHue = 220;
+    curves.shadowsDensity = 10;
+    curves.shadowsSaturation = 10;
+    ip.colorCurves = curves;
+    pipe.bloomEnabled = false;
+  }
+
   private play(unit: Unit, name: string): void {
     if (unit.anim === name) return;
     const next = unit.model.animations.get(name);
@@ -299,6 +347,13 @@ export class GameWorld {
 
   private tick(dt: number): void {
     dt = Math.min(dt, 0.1);
+    // Spend shadow texels on the current view instead of spreading them across all four bases.
+    const sun = this.shadows.getLight() as DirectionalLight;
+    const target = this.camera.camera.target;
+    sun.position.set(target.x - sun.direction.x * 100, target.y - sun.direction.y * 100, target.z - sun.direction.z * 100);
+    sun.shadowFrustumSize = this.menuMode
+      ? this.grid.cols * this.grid.cellSize + 80
+      : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     for (const u of this.units) {
       stepMover(u.mover, dt);
       this.play(u, isMoving(u.mover) ? 'walk' : 'idle');
@@ -306,10 +361,11 @@ export class GameWorld {
     }
     if (this.menuMode) {
       const t = performance.now() / 1000;
+      const c = (this.grid.cols * this.grid.cellSize) / 2;
       this.camera.camera.alpha = Math.PI / 2 + t * 0.03;
       this.camera.camera.beta = 0.95;
-      this.camera.camera.radius = 120;
-      this.camera.camera.target.set(96, 0, -96);
+      this.camera.camera.radius = 150;
+      this.camera.camera.target.set(c, 0, -c);
     } else {
       this.camera.camera.alpha = Math.PI / 2;
       this.camera.camera.beta = TILT;

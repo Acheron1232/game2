@@ -1,0 +1,15 @@
+{
+  "id": "rock_big",
+  "triangles": 78,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 1.7,
+  "sockets": [],
+  "skin": null
+}

@@ -7,10 +7,13 @@ import './ui-skin.css';
 import { gameData, parseTerrain } from '@game/shared';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
 import treesUrl from '@game/shared/data/map-trees.json?url';
+import decorUrl from '@game/shared/data/map-decor.json?url';
 import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
+import { GAME_FPS, MENU_FPS } from './render/render-budget';
+import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { Minimap } from './ui/minimap';
 import { startDebugOverlay } from './ui/debug-overlay';
@@ -63,7 +66,6 @@ async function main(): Promise<void> {
   net.connect();
 
   const { engine, kind } = await createEngine(canvas);
-  window.addEventListener('resize', () => engine.resize());
   registerAssetCache();
 
   // Loading starts at once, so it is done (or nearly) when the player reaches the lobby.
@@ -78,13 +80,15 @@ async function main(): Promise<void> {
     ...uiUrls.map((url) => ({ group: 'Interface' as const, url })),
     { group: 'Map', url: terrainUrl },
     { group: 'Map', url: treesUrl },
+    { group: 'Map', url: decorUrl },
   ]);
-  const [terrainUrlBlob, treesUrlBlob] = extra.slice(-2);
+  const [terrainUrlBlob, treesUrlBlob, decorUrlBlob] = extra.slice(-3);
   await document.fonts.ready;
   const terrain = parseTerrain(await (await fetch(terrainUrlBlob!)).arrayBuffer());
   const trees = ((await (await fetch(treesUrlBlob!)).json()) as { trees: TreeList }).trees;
+  const decor = (await (await fetch(decorUrlBlob!)).json()) as { types: string[]; decor: DecorItem[] };
 
-  const world = await GameWorld.create(engine, canvas, terrain, trees, assets);
+  const world = await GameWorld.create(engine, canvas, terrain, trees, decor, assets);
   if (import.meta.env.DEV) (window as unknown as { world: GameWorld }).world = world; // for debugging in the console
   // Compile every material and model now, not when the match starts.
   await world.library.warmUp(TEAMS);
@@ -109,7 +113,7 @@ async function main(): Promise<void> {
   setInterval(() => {
     if (router.screen !== 'game') return;
     const h = world.hero!.mover;
-    const view = { x: world.camera.target.x, y: world.camera.target.y + 4, w: 52, h: 34 };
+    const view = { x: world.camera.target.x, y: world.camera.target.y + 4, w: 46, h: 30 };
     minimap.draw([...townHalls, { x: h.x, y: h.y, color: '#ffffff', size: 5 }], view);
   }, 120);
 
@@ -126,7 +130,7 @@ async function main(): Promise<void> {
       e.preventDefault();
       const h = world.hero!.mover;
       const now = performance.now();
-      world.camera.follow = now - lastSpace < 350 ? () => ({ x: world.hero!.mover.x, y: world.hero!.mover.y }) : null;
+      world.camera.follow = now - lastSpace < 350 ? () => world.hero!.mover : null;
       lastSpace = now;
       world.camera.lookAt(h.x, h.y, true);
     }
@@ -136,10 +140,15 @@ async function main(): Promise<void> {
     }
   });
 
-  router.onChange((name) => world.setMenuMode(name !== 'game'));
+  router.onChange((name) => {
+    engine.maxFPS = name === 'game' ? GAME_FPS : MENU_FPS;
+    world.setMenuMode(name !== 'game');
+  });
   // Dev shortcut: ?play opens the game screen as soon as loading is done.
   if (params.has('play')) router.show('game');
-  engine.runRenderLoop(() => world.scene.render());
+  engine.runRenderLoop(() => {
+    if (!document.hidden) world.scene.render();
+  });
 }
 
 const TEAM_HEX = ['#D42A2A', '#2A5BD4', '#1FB5A8', '#7B2FBF'];

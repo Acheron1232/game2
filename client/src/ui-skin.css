@@ -239,3 +239,117 @@ input {
 .end-panel .divider {
   margin: 0 auto 16px;
 }
+
+/* Keep the existing HUD inside a resized desktop window. The map stays square so
+   pointer positions match the map image at every size. */
+.hud-bottom {
+  --hud-height: 180px;
+  height: var(--hud-height);
+  grid-template-columns: 200px minmax(0, 1fr) 220px;
+}
+.hud-bottom > .panel {
+  min-width: 0;
+  min-height: 0;
+  border-width: 12px;
+  border-image-width: 12px;
+  padding: 8px;
+}
+.hud-bottom > .minimap {
+  padding: 0;
+}
+.minimap-canvas {
+  display: block;
+  width: min(100%, calc(var(--hud-height) - 40px));
+  height: auto;
+  aspect-ratio: 1;
+}
+.hero-panel {
+  grid-template-columns: 90px minmax(0, 1fr);
+}
+.bars,
+.abilities {
+  min-width: 0;
+}
+.hud-top,
+#debug {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1000px) {
+  .hud-bottom {
+    --hud-height: 164px;
+    grid-template-columns: 144px minmax(0, 1fr) 170px;
+    gap: 6px;
+  }
+  .hero-panel {
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 6px;
+  }
+  .ability,
+  .item-slot {
+    width: 44px;
+    height: 44px;
+  }
+  .abilities {
+    gap: 4px;
+  }
+  .inventory {
+    grid-template-columns: repeat(3, 44px);
+    grid-auto-rows: 44px;
+    gap: 4px;
+  }
+}
+@media (max-width: 700px) {
+  .hud-bottom {
+    grid-template-columns: 124px minmax(0, 1fr) 170px;
+    padding: 6px;
+  }
+  .hero-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero-panel .portrait {
+    display: none;
+  }
+  .hud-top {
+    gap: 8px;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  .ai-status {
+    width: 200px;
+    border-width: 14px;
+    border-image-width: 14px;
+    padding: 6px;
+    font-size: 14px;
+  }
+  #debug {
+    max-width: calc(100vw - 16px);
+    font-size: 10px;
+  }
+}
+@media (max-width: 540px) {
+  .hud-bottom {
+    --hud-height: 188px;
+    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-rows: 92px 72px;
+  }
+  .hud-bottom > .minimap {
+    grid-row: span 2;
+  }
+  .hud-bottom > .hero-panel {
+    padding: 2px;
+    gap: 0;
+  }
+  .hud-bottom > .inventory {
+    padding: 2px;
+    grid-column: 2;
+    grid-template-columns: repeat(6, 30px);
+    grid-auto-rows: 30px;
+    gap: 2px;
+  }
+  .inventory .item-slot {
+    width: 30px;
+    height: 30px;
+    border-width: 5px;
+    border-image-width: 5px;
+  }
+}

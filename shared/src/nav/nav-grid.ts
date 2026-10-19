@@ -62,13 +62,37 @@ export function nearestWalkable(g: NavGrid, x: number, y: number, maxRadius = 40
   return null;
 }
 
-/** Straight walkable line between two points (samples every half cell). */
+/** Visits every crossed cell, including both neighbors at diagonal corners. */
 export function lineWalkable(g: NavGrid, ax: number, ay: number, bx: number, by: number): boolean {
-  const d = Math.hypot(bx - ax, by - ay);
-  const steps = Math.max(1, Math.ceil(d / (g.cellSize * 0.5)));
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    if (!isWalkable(g, ax + (bx - ax) * t, ay + (by - ay) * t)) return false;
+  if (!isWalkable(g, ax, ay) || !isWalkable(g, bx, by)) return false;
+  let c = Math.floor(ax / g.cellSize),
+    r = Math.floor(ay / g.cellSize);
+  const ec = Math.floor(bx / g.cellSize),
+    er = Math.floor(by / g.cellSize);
+  const dx = bx - ax,
+    dy = by - ay;
+  const sx = Math.sign(dx),
+    sy = Math.sign(dy);
+  const stepX = dx === 0 ? Infinity : g.cellSize / Math.abs(dx);
+  const stepY = dy === 0 ? Infinity : g.cellSize / Math.abs(dy);
+  let nextX = dx === 0 ? Infinity : ((sx > 0 ? c + 1 : c) * g.cellSize - ax) / dx;
+  let nextY = dy === 0 ? Infinity : ((sy > 0 ? r + 1 : r) * g.cellSize - ay) / dy;
+  const open = (x: number, y: number) => x >= 0 && y >= 0 && x < g.cols && y < g.rows && g.walk[y * g.cols + x] === 1;
+  while (c !== ec || r !== er) {
+    if (Math.abs(nextX - nextY) < 1e-10) {
+      if (!open(c + sx, r) || !open(c, r + sy)) return false;
+      c += sx;
+      r += sy;
+      nextX += stepX;
+      nextY += stepY;
+    } else if (nextX < nextY) {
+      c += sx;
+      nextX += stepX;
+    } else {
+      r += sy;
+      nextY += stepY;
+    }
+    if (!open(c, r)) return false;
   }
   return true;
 }

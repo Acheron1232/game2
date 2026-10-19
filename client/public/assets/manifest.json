@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 13025290,
+  "totalBytes": 13132074,
   "files": [
     {
       "path": "effects/effects.json",
@@ -729,6 +729,12 @@
       "group": "Units"
     },
     {
+      "path": "models/barrel.glb",
+      "bytes": 11032,
+      "hash": "89e58188b2",
+      "group": "Units"
+    },
+    {
       "path": "models/blood_witch.glb",
       "bytes": 185320,
       "hash": "b9545bf59a",
@@ -861,6 +867,18 @@
       "group": "Units"
     },
     {
+      "path": "models/crate.glb",
+      "bytes": 9308,
+      "hash": "35c0d1e162",
+      "group": "Units"
+    },
+    {
+      "path": "models/fence.glb",
+      "bytes": 15984,
+      "hash": "5ed44db2ec",
+      "group": "Units"
+    },
+    {
       "path": "models/forest_elf.glb",
       "bytes": 195756,
       "hash": "a0751cb3f7",
@@ -975,9 +993,15 @@
       "group": "Units"
     },
     {
+      "path": "models/log.glb",
+      "bytes": 6656,
+      "hash": "408f288b15",
+      "group": "Units"
+    },
+    {
       "path": "models/models.json",
-      "bytes": 10777,
-      "hash": "83bb65fb9b",
+      "bytes": 12097,
+      "hash": "131b43fe53",
       "group": "Units"
     },
     {
@@ -1077,9 +1101,33 @@
       "group": "Units"
     },
     {
+      "path": "models/rock_big.glb",
+      "bytes": 9868,
+      "hash": "bc2f0372fe",
+      "group": "Units"
+    },
+    {
+      "path": "models/rock_small.glb",
+      "bytes": 7160,
+      "hash": "5f547e5833",
+      "group": "Units"
+    },
+    {
       "path": "models/rock_spider.glb",
       "bytes": 103172,
       "hash": "b76cbb541a",
+      "group": "Units"
+    },
+    {
+      "path": "models/ruin_block.glb",
+      "bytes": 9328,
+      "hash": "bcd5f43981",
+      "group": "Units"
+    },
+    {
+      "path": "models/ruin_pillar.glb",
+      "bytes": 10808,
+      "hash": "63ecda6665",
       "group": "Units"
     },
     {
@@ -1143,6 +1191,12 @@
       "group": "Units"
     },
     {
+      "path": "models/statue.glb",
+      "bytes": 13780,
+      "hash": "adaa8099b3",
+      "group": "Units"
+    },
+    {
       "path": "models/stone_golem.glb",
       "bytes": 181596,
       "hash": "bcf1446827",
@@ -1176,6 +1230,12 @@
       "path": "models/stronghold.glb",
       "bytes": 34536,
       "hash": "8880ce58be",
+      "group": "Units"
+    },
+    {
+      "path": "models/stump.glb",
+      "bytes": 11540,
+      "hash": "cda89fb847",
       "group": "Units"
     },
     {

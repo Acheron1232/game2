@@ -17,7 +17,7 @@ import { ROOT } from '../art/lib/sheets';
 const BLENDER = process.env['BLENDER'] ?? '/Applications/Blender.app/Contents/MacOS/Blender';
 const MODELS_DIR = join(ROOT, 'tools', 'models', 'blender', 'models');
 const OUT = join(ROOT, 'client', 'public', 'assets', 'models');
-const HELPERS = new Set(['nature', 'kit', 'humanoid', 'chunky', 'rigs', 'unitkit', '_monsters', '_buildings']);
+const HELPERS = new Set(['nature', 'kit', 'humanoid', 'chunky', 'rigs', 'unitkit', '_monsters', '_buildings', '_decor']);
 
 const args = process.argv.slice(2);
 const preview = args.includes('--preview');
