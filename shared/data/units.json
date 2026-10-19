@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "notes": [
+    "group: faction (trained by the AI faction), neutral (camp monsters), summon (made by abilities).",
+    "level is used for XP (rules.json experience.xpForKillingUnitOfLevel).",
+    "bounty is gold for the killer, [min, max]. Faction units also give bounty to enemy heroes.",
+    "canHit lists the layers this unit's attack can reach. Melee can never hit 'air'.",
+    "skills are small built-in unit abilities. autoCast skills are used by the unit on its own."
+  ],
+  "units": [
+    {
+      "id": "worker", "name": "Worker", "group": "faction", "level": 1,
+      "hp": 220, "mana": 0, "armor": 0, "armorType": "medium",
+      "attackType": "normal", "damage": [5, 6], "attackCooldown": 2.0, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.6, "movementLayer": "ground", "sight": 10, "collisionRadius": 0.4,
+      "cost": { "gold": 75, "wood": 0 }, "supply": 1, "buildTime": 15, "trainedAt": "town_hall", "requires": [],
+      "bounty": [8, 10], "skills": [{ "id": "gather" }, { "id": "build" }, { "id": "repair" }],
+      "look": "Small sturdy villager with a pickaxe and a wood bundle on the back. Team color: cap and shirt."
+    },
+    {
+      "id": "swordsman", "name": "Swordsman", "group": "faction", "level": 2,
+      "hp": 420, "mana": 0, "armor": 2, "armorType": "heavy",
+      "attackType": "normal", "damage": [12, 14], "attackCooldown": 1.35, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.7, "movementLayer": "ground", "sight": 14, "collisionRadius": 0.5,
+      "cost": { "gold": 120, "wood": 0 }, "supply": 2, "buildTime": 18, "trainedAt": "barracks", "requires": [],
+      "bounty": [18, 24], "skills": [],
+      "look": "Armored foot soldier, kite shield, short sword, open helmet. Team color: shield face and shoulder pads."
+    },
+    {
+      "id": "archer", "name": "Archer", "group": "faction", "level": 2,
+      "hp": 300, "mana": 0, "armor": 0, "armorType": "medium",
+      "attackType": "pierce", "damage": [15, 18], "attackCooldown": 1.5, "attackRange": 6, "projectileSpeed": 18, "canHit": ["ground", "air"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 14, "collisionRadius": 0.45,
+      "cost": { "gold": 130, "wood": 20 }, "supply": 2, "buildTime": 20, "trainedAt": "archery_range", "requires": [],
+      "bounty": [18, 24], "skills": [],
+      "look": "Hooded archer with a longbow and a quiver, leather vest. Team color: hood and cape."
+    },
+    {
+      "id": "cleric", "name": "Cleric", "group": "faction", "level": 2,
+      "hp": 300, "mana": 200, "armor": 0, "armorType": "unarmored",
+      "attackType": "magic", "damage": [8, 10], "attackCooldown": 2.0, "attackRange": 5, "projectileSpeed": 14, "canHit": ["ground", "air"],
+      "moveSpeed": 2.7, "movementLayer": "ground", "sight": 14, "collisionRadius": 0.45,
+      "cost": { "gold": 160, "wood": 30 }, "supply": 2, "buildTime": 25, "trainedAt": "chapel", "requires": ["stronghold"],
+      "bounty": [18, 24],
+      "skills": [{ "id": "mend", "autoCast": true, "heal": 20, "manaCost": 5, "cooldown": 2, "range": 5 }],
+      "look": "Robed healer with a short staff and a book on the belt. Team color: robe stripe and hood."
+    },
+    {
+      "id": "lancer", "name": "Lancer", "group": "faction", "level": 4,
+      "hp": 800, "mana": 0, "armor": 4, "armorType": "heavy",
+      "attackType": "normal", "damage": [28, 34], "attackCooldown": 1.4, "attackRange": 1.4, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 3.5, "movementLayer": "ground", "sight": 14, "collisionRadius": 0.8,
+      "cost": { "gold": 240, "wood": 60 }, "supply": 4, "buildTime": 35, "trainedAt": "barracks", "requires": ["stronghold", "forge"],
+      "bounty": [30, 38], "skills": [],
+      "look": "Heavy rider on an armored horse with a long lance and a pennant. Team color: horse cloth and pennant."
+    },
+    {
+      "id": "catapult", "name": "Catapult", "group": "faction", "level": 3,
+      "hp": 450, "mana": 0, "armor": 2, "armorType": "heavy",
+      "attackType": "siege", "damage": [60, 70], "attackCooldown": 3.5, "attackRange": 10, "minRange": 2, "splashRadius": 1.5, "projectileSpeed": 9, "canHit": ["ground"],
+      "moveSpeed": 2.2, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.9,
+      "cost": { "gold": 220, "wood": 60 }, "supply": 3, "buildTime": 30, "trainedAt": "workshop", "requires": ["stronghold"],
+      "bounty": [26, 32], "skills": [],
+      "look": "Wooden wheeled catapult with iron bands, throws stones. Team color: banner on the frame."
+    },
+    {
+      "id": "hawk_rider", "name": "Hawk Rider", "group": "faction", "level": 4,
+      "hp": 700, "mana": 0, "armor": 1, "armorType": "light",
+      "attackType": "normal", "damage": [30, 36], "attackCooldown": 1.6, "attackRange": 2.5, "projectileSpeed": 0, "canHit": ["ground", "air"],
+      "moveSpeed": 3.6, "movementLayer": "air", "sight": 16, "collisionRadius": 0.8,
+      "cost": { "gold": 280, "wood": 70 }, "supply": 4, "buildTime": 40, "trainedAt": "hawk_roost", "requires": ["citadel"],
+      "bounty": [34, 42], "skills": [],
+      "look": "Rider with a war hammer on a giant hawk. Team color: saddle cloth and rider's tabard."
+    },
+
+    {
+      "id": "grey_wolf", "name": "Grey Wolf", "group": "neutral", "level": 1,
+      "hp": 200, "mana": 0, "armor": 1, "armorType": "medium",
+      "attackType": "normal", "damage": [9, 11], "attackCooldown": 1.3, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 3.2, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.5,
+      "bounty": [12, 16], "skills": [], "look": "Lean grey wolf, raised fur."
+    },
+    {
+      "id": "alpha_wolf", "name": "Alpha Wolf", "group": "neutral", "level": 3,
+      "hp": 450, "mana": 0, "armor": 2, "armorType": "medium",
+      "attackType": "normal", "damage": [18, 22], "attackCooldown": 1.3, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 3.3, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.6,
+      "bounty": [22, 28], "skills": [{ "id": "howl", "autoCast": true, "radius": 8, "damagePct": 15, "duration": 10, "cooldown": 30 }],
+      "look": "Big dark wolf with a white mane and scars."
+    },
+    {
+      "id": "bandit", "name": "Bandit", "group": "neutral", "level": 1,
+      "hp": 220, "mana": 0, "armor": 1, "armorType": "medium",
+      "attackType": "normal", "damage": [10, 12], "attackCooldown": 1.4, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.45,
+      "bounty": [12, 16], "skills": [], "look": "Masked thug with a short blade and a patched cloak."
+    },
+    {
+      "id": "bandit_archer", "name": "Bandit Archer", "group": "neutral", "level": 2,
+      "hp": 200, "mana": 0, "armor": 0, "armorType": "light",
+      "attackType": "pierce", "damage": [12, 15], "attackCooldown": 1.6, "attackRange": 5.5, "projectileSpeed": 18, "canHit": ["ground", "air"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.45,
+      "bounty": [16, 20], "skills": [], "look": "Thin bandit with a short bow and a scarf over the face."
+    },
+    {
+      "id": "forest_troll", "name": "Forest Troll", "group": "neutral", "level": 2,
+      "hp": 260, "mana": 0, "armor": 0, "armorType": "medium",
+      "attackType": "pierce", "damage": [13, 16], "attackCooldown": 1.5, "attackRange": 5, "projectileSpeed": 16, "canHit": ["ground", "air"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.5,
+      "bounty": [16, 20], "skills": [], "look": "Hunched green-skinned troll with tusks, throws spears."
+    },
+    {
+      "id": "troll_shaman", "name": "Troll Shaman", "group": "neutral", "level": 3,
+      "hp": 300, "mana": 200, "armor": 0, "armorType": "unarmored",
+      "attackType": "magic", "damage": [10, 12], "attackCooldown": 1.8, "attackRange": 5, "projectileSpeed": 14, "canHit": ["ground", "air"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.5,
+      "bounty": [22, 28], "skills": [{ "id": "mend", "autoCast": true, "heal": 25, "manaCost": 5, "cooldown": 2, "range": 5 }],
+      "look": "Troll with a bone mask, feathers and a skull staff."
+    },
+    {
+      "id": "harpy", "name": "Harpy", "group": "neutral", "level": 3,
+      "hp": 350, "mana": 0, "armor": 1, "armorType": "light",
+      "attackType": "pierce", "damage": [15, 18], "attackCooldown": 1.5, "attackRange": 4, "projectileSpeed": 16, "canHit": ["ground", "air"],
+      "moveSpeed": 3.2, "movementLayer": "air", "sight": 14, "collisionRadius": 0.5,
+      "bounty": [22, 28], "skills": [], "look": "Bird-woman with ragged wings, throws feathers."
+    },
+    {
+      "id": "harpy_matron", "name": "Harpy Matron", "group": "neutral", "level": 4,
+      "hp": 550, "mana": 0, "armor": 2, "armorType": "light",
+      "attackType": "pierce", "damage": [22, 26], "attackCooldown": 1.5, "attackRange": 4, "projectileSpeed": 16, "canHit": ["ground", "air"],
+      "moveSpeed": 3.2, "movementLayer": "air", "sight": 14, "collisionRadius": 0.6,
+      "bounty": [30, 38], "skills": [{ "id": "screech", "autoCast": true, "radius": 5, "slowPct": 25, "duration": 3, "cooldown": 12 }],
+      "look": "Larger harpy with a crown of feathers."
+    },
+    {
+      "id": "rock_spider", "name": "Rock Spider", "group": "neutral", "level": 2,
+      "hp": 320, "mana": 0, "armor": 3, "armorType": "heavy",
+      "attackType": "normal", "damage": [12, 15], "attackCooldown": 1.4, "attackRange": 1.0, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 3.0, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.6,
+      "bounty": [16, 20], "skills": [], "look": "Spider with a stone-like shell on its back."
+    },
+    {
+      "id": "spider_queen", "name": "Spider Queen", "group": "neutral", "level": 5,
+      "hp": 900, "mana": 0, "armor": 3, "armorType": "heavy",
+      "attackType": "normal", "damage": [30, 36], "attackCooldown": 1.5, "attackRange": 1.2, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 3.0, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.9,
+      "bounty": [40, 50], "skills": [{ "id": "web", "autoCast": true, "range": 6, "rootDuration": 2, "cooldown": 14 }],
+      "look": "Huge spider with crystal growths on its shell."
+    },
+    {
+      "id": "ogre_brute", "name": "Ogre Brute", "group": "neutral", "level": 5,
+      "hp": 1000, "mana": 0, "armor": 3, "armorType": "heavy",
+      "attackType": "normal", "damage": [35, 42], "attackCooldown": 1.8, "attackRange": 1.3, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.7, "movementLayer": "ground", "sight": 12, "collisionRadius": 0.9,
+      "bounty": [45, 55], "skills": [], "look": "Fat two-meter ogre with a wooden club."
+    },
+    {
+      "id": "ogre_warlord", "name": "Ogre Warlord", "group": "neutral", "level": 7,
+      "hp": 1600, "mana": 0, "armor": 4, "armorType": "heavy",
+      "attackType": "normal", "damage": [50, 60], "attackCooldown": 1.8, "attackRange": 1.4, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.7, "movementLayer": "ground", "sight": 12, "collisionRadius": 1.0,
+      "bounty": [70, 90], "skills": [{ "id": "ground_slam", "autoCast": true, "radius": 3.5, "damage": 80, "stunDuration": 1.5, "cooldown": 15 }],
+      "look": "Big ogre with spiked shoulder plates and a huge stone maul."
+    },
+    {
+      "id": "stone_sentinel", "name": "Stone Sentinel", "group": "neutral", "level": 6,
+      "hp": 1400, "mana": 0, "armor": 6, "armorType": "heavy",
+      "attackType": "normal", "damage": [40, 50], "attackCooldown": 2.0, "attackRange": 1.4, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.5, "movementLayer": "ground", "sight": 12, "collisionRadius": 1.0,
+      "bounty": [60, 75], "skills": [{ "id": "stone_guard", "passive": true, "spellReductionPct": 30 }],
+      "look": "Old temple statue come to life, holding a stone halberd, cracks with gold light."
+    },
+
+    {
+      "id": "tree_guardian", "name": "Tree Guardian", "group": "summon", "level": 2,
+      "hp": 400, "mana": 0, "armor": 2, "armorType": "heavy",
+      "attackType": "normal", "damage": [15, 15], "attackCooldown": 1.6, "attackRange": 1.2, "projectileSpeed": 0, "canHit": ["ground"],
+      "moveSpeed": 2.8, "movementLayer": "ground", "sight": 10, "collisionRadius": 0.7,
+      "bounty": [10, 10], "skills": [],
+      "notes": "hp and damage are overwritten by forest_spirit params per level.",
+      "look": "Walking young tree with a bark face and leafy head. Team color: glowing sap lines."
+    }
+  ]
+}

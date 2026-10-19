@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "notes": "Shops have endless stock. A hero must stand within 'useRange' to buy or sell. Anyone can use any shop.",
+  "shops": [
+    {
+      "id": "side_shop", "name": "Trader's Tent", "useRange": 6,
+      "items": ["healing_potion", "mana_potion", "scroll_of_return", "ward", "smoke_bomb",
+                "boots_of_haste", "iron_claws", "guard_ring", "swift_gloves",
+                "sage_cloak", "giant_belt", "thief_band", "life_pendant", "mana_stone"]
+    },
+    {
+      "id": "temple_market", "name": "Temple Market", "useRange": 6,
+      "items": ["healing_potion", "scroll_of_return", "ward", "ironwood_shield", "warblade", "royal_circlet"]
+    }
+  ]
+}

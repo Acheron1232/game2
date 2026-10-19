@@ -1,0 +1,21 @@
+{
+  "name": "@game/client",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@babylonjs/core": "9.29.0",
+    "@fontsource/alegreya-sans": "5.3.0",
+    "@fontsource/cinzel": "5.3.0",
+    "@game/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "8.3.4"
+  }
+}

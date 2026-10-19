@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "notes": "Core game rules. Distances in game units (~1 m), time in seconds. A number in a per-level list is the value for that level.",
+
+  "simulation": {
+    "tickRate": 20,
+    "aiFactionThinkRate": 3,
+    "heroBotThinkRate": 5,
+    "navCellSize": 0.5,
+    "flowFieldCellSize": 1.0
+  },
+
+  "match": {
+    "maxSlots": 4,
+    "winCondition": "A team loses when it has no Town Hall (any tier) left. The last team with a Town Hall wins.",
+    "defeatedPlayers": "spectate",
+    "reconnectWindowSec": 120
+  },
+
+  "attributes": {
+    "strength": { "hpPerPoint": 20, "hpRegenPerPoint": 0.05 },
+    "agility": { "armorPerPoint": 0.15, "attackSpeedPctPerPoint": 1.0 },
+    "intelligence": { "manaPerPoint": 12, "manaRegenPerPoint": 0.04 },
+    "mainStatDamagePerPoint": 1
+  },
+
+  "heroBase": {
+    "hp": 150,
+    "mana": 0,
+    "hpRegen": 0.25,
+    "manaRegen": 0.1,
+    "maxLevel": 10,
+    "itemSlots": 6,
+    "sightRange": 16,
+    "collisionRadius": 0.6,
+    "abilityLevelRule": "Basic ability level N needs hero level 2N-1 (levels 1, 3, 5). Ultimate needs hero level 6 and has 1 level.",
+    "skillPointsPerLevel": 1
+  },
+
+  "experience": {
+    "totalXpForLevel": [0, 200, 500, 900, 1400, 2000, 2700, 3500, 4400, 5400],
+    "xpForKillingUnitOfLevel": [25, 40, 60, 85, 115, 150, 190, 235, 285, 340],
+    "xpForKillingHero": { "base": 100, "perVictimLevel": 50 },
+    "shareRange": 12,
+    "shareRule": "XP is split equally between allied heroes in range. The killer does not need to be a hero.",
+    "neutralXpFactorByHeroLevel": { "1": 1.0, "6": 0.7, "8": 0.5 }
+  },
+
+  "gold": {
+    "startGold": 250,
+    "passiveIncomePerSec": 1,
+    "heroKillBounty": { "base": 150, "perVictimLevel": 15 },
+    "assistShare": 0.5,
+    "assistRange": 12,
+    "lastHitRule": "The unit that lands the killing blow gets the full bounty. Allied heroes in range get assistShare of it, split between them.",
+    "deathGoldLossPerLevel": 15,
+    "sellFactor": 0.5,
+    "dropItemSellValue": "Uses the item 'value' field"
+  },
+
+  "respawn": {
+    "heroBaseSec": 5,
+    "heroPerLevelSec": 3,
+    "location": "heroSpawn of the player's start, or the nearest own Town Hall if the main one is gone"
+  },
+
+  "combat": {
+    "armorFormula": "reduction = 0.06 * armor / (1 + 0.06 * armor). Negative armor makes damage bigger: factor = 2 - 0.94^(-armor).",
+    "meleeRange": 1.2,
+    "attackPointFraction": 0.35,
+    "missChanceUphill": 0.25,
+    "spellDamage": "Spell damage ignores armor and armor types. Heroes take 75% spell damage. Spells do not hurt buildings unless the ability says so.",
+    "airLayers": {
+      "ground": "Normal units. Blocked by trees, water, cliffs and buildings.",
+      "lowAir": "Flies over everything but can be attacked by melee and ranged. Used by the Sky Dragon.",
+      "air": "Flies over everything. Melee attacks can not reach it. Used by Hawk Riders and Harpies."
+    }
+  },
+
+  "damageTable": {
+    "notes": "Multiplier of attack damage. Rows are attack types, columns are armor types.",
+    "armorTypes": ["unarmored", "light", "medium", "heavy", "fortified", "hero"],
+    "attackTypes": {
+      "normal": { "unarmored": 1.0, "light": 1.0, "medium": 1.5, "heavy": 1.0, "fortified": 0.7, "hero": 1.0 },
+      "pierce": { "unarmored": 1.5, "light": 2.0, "medium": 0.75, "heavy": 0.9, "fortified": 0.35, "hero": 0.5 },
+      "siege": { "unarmored": 1.5, "light": 1.0, "medium": 0.5, "heavy": 1.0, "fortified": 1.5, "hero": 0.5 },
+      "magic": { "unarmored": 1.0, "light": 1.25, "medium": 0.75, "heavy": 2.0, "fortified": 0.35, "hero": 0.5 },
+      "hero": { "unarmored": 1.0, "light": 1.0, "medium": 1.0, "heavy": 1.0, "fortified": 0.5, "hero": 1.0 }
+    }
+  },
+
+  "crowdControl": {
+    "stun": "Can not move, attack or cast.",
+    "root": "Can not move. Can attack and cast.",
+    "silence": "Can not cast. Can move and attack.",
+    "slow": "Less move speed (and attack speed if the ability says so). Slows do not stack; the strongest one counts.",
+    "knockback": "Pushed along the ground, stops at cliffs, trees and buildings.",
+    "taunt": "Must attack the taunting unit.",
+    "heroDurationFactor": 1.0,
+    "stackRule": "The same buff from the same source refreshes its time. Different buffs stack."
+  },
+
+  "economy": {
+    "factionStartGold": 500,
+    "factionStartWood": 150,
+    "goldPerTrip": 10,
+    "woodPerTrip": 10,
+    "mineTimeSec": 1.0,
+    "chopTimeSec": 4.0,
+    "maxWorkersPerMine": 5,
+    "supplyCap": 100,
+    "playerAndFactionMoneyAreSeparate": true
+  },
+
+  "neutrals": {
+    "aggroRange": 5,
+    "leashRange": 14,
+    "returnHealPctPerSec": 10,
+    "respawnNeedsNoHeroInRange": 15,
+    "dropRule": "One roll on the camp's drop table when the last monster of the camp dies. The item falls where that monster died."
+  },
+
+  "fountain": {
+    "hpPctPerSec": 2.5,
+    "manaPctPerSec": 2.0,
+    "affects": "Heroes and faction units of every team. Not neutral monsters."
+  },
+
+  "sight": {
+    "dayOnly": true,
+    "blockers": "Trees and higher ground block sight. Units on high ground see low ground.",
+    "buildingSight": 10,
+    "towerSight": 16
+  }
+}

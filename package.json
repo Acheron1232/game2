@@ -1,0 +1,29 @@
+{
+  "name": "temple-wars",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @game/server --filter @game/client dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "data:check": "pnpm --filter @game/tools data:check",
+    "map:build": "pnpm --filter @game/tools map:build",
+    "docs:tables": "pnpm --filter @game/tools docs:tables"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.19.2",
+    "eslint": "10.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2",
+    "vitest": "5.0.5"
+  }
+}

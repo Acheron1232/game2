@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "notes": [
+    "All faction buildings belong to 'The Kingdom' faction (the only faction in the MVP).",
+    "Town Hall, Stronghold and Citadel are the same building at tiers 1, 2 and 3 (upgradesTo).",
+    "'requires' uses building ids. 'stronghold' means a Town Hall at tier 2 or higher, 'citadel' means tier 3.",
+    "footprint is [width, depth] in game units, snapped to a 1-unit build grid.",
+    "bounty is gold for the enemy hero who lands the last hit. Buildings give no XP."
+  ],
+  "buildings": [
+    {
+      "id": "town_hall", "name": "Town Hall", "tier": 1,
+      "hp": 2000, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 385, "wood": 185 }, "buildTime": 120, "footprint": [5, 5],
+      "supplyGiven": 12, "trains": ["worker"], "requires": [], "upgradesTo": "stronghold",
+      "dropOff": ["gold", "wood"], "sight": 12, "bounty": 150,
+      "look": "Big timber and stone hall with a tall roof and a bell tower. Team color: roof flags and banners over the door."
+    },
+    {
+      "id": "stronghold", "name": "Stronghold", "tier": 2,
+      "hp": 2500, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 300, "wood": 150 }, "buildTime": 90, "footprint": [5, 5],
+      "supplyGiven": 12, "trains": ["worker"], "requires": ["town_hall"], "upgradesTo": "citadel",
+      "dropOff": ["gold", "wood"], "sight": 13, "bounty": 200,
+      "look": "Town Hall with stone walls, a second floor and two small towers."
+    },
+    {
+      "id": "citadel", "name": "Citadel", "tier": 3,
+      "hp": 3000, "armor": 6, "armorType": "fortified",
+      "cost": { "gold": 350, "wood": 200 }, "buildTime": 110, "footprint": [5, 5],
+      "supplyGiven": 12, "trains": ["worker"], "requires": ["stronghold", "forge"], "upgradesTo": null,
+      "dropOff": ["gold", "wood"], "sight": 14, "bounty": 250,
+      "look": "Small castle with a central tower, golden roof tips and big banners."
+    },
+    {
+      "id": "house", "name": "House", "tier": 1,
+      "hp": 500, "armor": 3, "armorType": "fortified",
+      "cost": { "gold": 80, "wood": 20 }, "buildTime": 30, "footprint": [2, 2],
+      "supplyGiven": 8, "trains": [], "requires": [], "upgradesTo": null, "sight": 8, "bounty": 20,
+      "look": "Small cottage with a thatched roof and a chimney. Team color: door and window shutters."
+    },
+    {
+      "id": "barracks", "name": "Barracks", "tier": 1,
+      "hp": 1200, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 160, "wood": 50 }, "buildTime": 50, "footprint": [4, 4],
+      "supplyGiven": 0, "trains": ["swordsman", "lancer"], "requires": [], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "look": "Long wooden hall with crossed swords over the door and a training dummy. Team color: banners."
+    },
+    {
+      "id": "archery_range", "name": "Archery Range", "tier": 1,
+      "hp": 1100, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 150, "wood": 60 }, "buildTime": 50, "footprint": [4, 3],
+      "supplyGiven": 0, "trains": ["archer"], "requires": ["barracks"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "look": "Open wooden shed with straw targets and a fence. Team color: awning cloth."
+    },
+    {
+      "id": "forge", "name": "Forge", "tier": 1,
+      "hp": 1000, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 140, "wood": 60 }, "buildTime": 45, "footprint": [3, 3],
+      "supplyGiven": 0, "trains": [], "requires": [], "upgradesTo": null, "sight": 10, "bounty": 50,
+      "notes": "Needed before the hero can buy weapon and armor upgrades at the Town Hall.",
+      "look": "Stone smithy with a big chimney, glowing furnace and an anvil outside. Team color: roof cloth."
+    },
+    {
+      "id": "chapel", "name": "Chapel", "tier": 2,
+      "hp": 1000, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 180, "wood": 80 }, "buildTime": 55, "footprint": [3, 4],
+      "supplyGiven": 0, "trains": ["cleric"], "requires": ["stronghold"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "look": "White stone chapel with a round window and a small bell. Team color: stained glass and banner."
+    },
+    {
+      "id": "workshop", "name": "Workshop", "tier": 2,
+      "hp": 1100, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 160, "wood": 100 }, "buildTime": 55, "footprint": [4, 4],
+      "supplyGiven": 0, "trains": ["catapult"], "requires": ["stronghold", "forge"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "look": "Wooden workshop with a crane, gears and logs. Team color: roof cloth."
+    },
+    {
+      "id": "hawk_roost", "name": "Hawk Roost", "tier": 3,
+      "hp": 1200, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 200, "wood": 150 }, "buildTime": 60, "footprint": [4, 4],
+      "supplyGiven": 0, "trains": ["hawk_rider"], "requires": ["citadel"], "upgradesTo": null, "sight": 12, "bounty": 80,
+      "look": "Tall stone tower with a big nest of branches on top. Team color: flags around the nest."
+    },
+    {
+      "id": "watchtower", "name": "Watchtower", "tier": 1,
+      "hp": 550, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 110, "wood": 60 }, "buildTime": 35, "footprint": [2, 2],
+      "supplyGiven": 0, "trains": [], "requires": ["barracks"], "upgradesTo": null, "sight": 16, "bounty": 40,
+      "attack": { "attackType": "pierce", "damage": [22, 26], "attackCooldown": 1.0, "attackRange": 7, "projectileSpeed": 20, "canHit": ["ground", "air"] },
+      "look": "Thin wooden tower on a stone base with a roofed top. Team color: flag on top."
+    }
+  ],
+  "neutralBuildings": [
+    { "id": "gold_mine", "name": "Gold Mine", "hp": null, "footprint": [3, 3], "look": "Cave in a rock with wooden beams and glittering gold." },
+    { "id": "side_shop", "name": "Trader's Tent", "hp": null, "footprint": [3, 3], "look": "Colorful tent with crates, a scale and a short bearded merchant." },
+    { "id": "temple_market", "name": "Temple Market", "hp": null, "footprint": [4, 4], "look": "Old stone altar with lanterns and a hooded trader." },
+    { "id": "fountain_of_life", "name": "Fountain of Life", "hp": null, "footprint": [3, 3], "look": "Round stone fountain with glowing blue-green water." }
+  ]
+}

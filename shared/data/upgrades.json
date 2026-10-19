@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "notes": [
+    "Upgrades the hero buys for its own AI faction at its own Town Hall (useRange from the building edge).",
+    "Paid with the hero's gold. The effect is for the whole faction, right away, including units already alive.",
+    "requires lists what the AI faction must have for each level (building ids, see buildings.json notes).",
+    "Lists give one value per level."
+  ],
+  "useRange": 6,
+  "upgrades": [
+    { "id": "sharper_blades", "name": "Sharper Blades", "maxLevel": 3, "cost": [150, 250, 350],
+      "text": "Melee units deal more damage.", "effect": { "affects": "melee", "damagePct": [10, 20, 30] },
+      "requires": [["forge"], ["forge", "stronghold"], ["forge", "citadel"]] },
+    { "id": "better_arrows", "name": "Better Arrows", "maxLevel": 3, "cost": [150, 250, 350],
+      "text": "Ranged units and towers deal more damage.", "effect": { "affects": "ranged", "damagePct": [10, 20, 30] },
+      "requires": [["forge"], ["forge", "stronghold"], ["forge", "citadel"]] },
+    { "id": "iron_plates", "name": "Iron Plates", "maxLevel": 3, "cost": [175, 275, 375],
+      "text": "All units get more armor.", "effect": { "affects": "units", "bonusArmor": [2, 4, 6] },
+      "requires": [["forge"], ["forge", "stronghold"], ["forge", "citadel"]] },
+    { "id": "training_drills", "name": "Training Drills", "maxLevel": 2, "cost": [200, 300],
+      "text": "Units train faster.", "effect": { "affects": "training", "trainTimePct": [-10, -20] },
+      "requires": [[], ["stronghold"]] },
+    { "id": "stone_walls", "name": "Stone Walls", "maxLevel": 2, "cost": [200, 300],
+      "text": "Buildings and towers get more health and armor.", "effect": { "affects": "buildings", "maxHpPct": [20, 40], "bonusArmor": [2, 4] },
+      "requires": [[], ["stronghold"]] },
+    { "id": "siege_works", "name": "Siege Works", "maxLevel": 2, "cost": [150, 250],
+      "text": "Catapults deal more damage.", "effect": { "affects": "catapult", "damagePct": [20, 40] },
+      "requires": [["workshop"], ["workshop", "citadel"]] },
+    { "id": "rich_veins", "name": "Rich Veins", "maxLevel": 2, "cost": [150, 250],
+      "text": "Workers bring more gold and wood each trip.", "effect": { "affects": "workers", "gatherPct": [10, 20] },
+      "requires": [[], ["stronghold"]] },
+    { "id": "war_banner", "name": "War Banner", "maxLevel": 1, "cost": [200], "repeatable": true, "cooldown": 180,
+      "text": "Your army fights harder for 60 seconds: +15% damage, +10% move speed.",
+      "effect": { "affects": "army", "damagePct": [15], "moveSpeedPct": [10], "duration": 60 },
+      "requires": [[]] },
+    { "id": "tier_up_fund", "name": "Tier Up Fund", "maxLevel": 1, "cost": [200], "repeatable": true, "cooldown": 60,
+      "text": "Give 200 gold to your faction. It must be spent on the next Town Hall tier.",
+      "effect": { "affects": "economy", "giveGold": [200], "earmark": "next_tier" },
+      "requires": [[]], "disabledWhen": "Town Hall is already a Citadel" }
+  ]
+}

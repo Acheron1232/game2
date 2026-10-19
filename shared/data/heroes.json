@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "notes": "Attributes are [base at level 1, gain per level]. baseDamage is added to the main stat. Everything else comes from rules.json heroBase.",
+  "heroes": [
+    {
+      "id": "blood_witch",
+      "name": "Blood Witch",
+      "role": "Caster, drain",
+      "hotkeyOrder": 1,
+      "mainStat": "intelligence",
+      "attributes": { "strength": [17, 1.8], "agility": [14, 1.2], "intelligence": [22, 3.0] },
+      "baseDamage": [6, 12],
+      "baseArmor": 1,
+      "attackCooldown": 1.9,
+      "attackRange": 6,
+      "projectileSpeed": 14,
+      "moveSpeed": 3.0,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["blood_bolt", "bleed", "crimson_pact", "blood_moon"],
+      "look": {
+        "silhouette": "Tall thin woman, long crooked staff topped with a red crystal, hood with horns, ragged long dress.",
+        "palette": "Dark red, black, bone white, glowing red crystal.",
+        "teamColorParts": "Hood lining, shoulder cape, sash.",
+        "scale": 1.15
+      }
+    },
+    {
+      "id": "staff_warrior",
+      "name": "Staff Warrior",
+      "role": "Melee fighter",
+      "hotkeyOrder": 2,
+      "mainStat": "agility",
+      "attributes": { "strength": [19, 2.2], "agility": [22, 2.6], "intelligence": [14, 1.4] },
+      "baseDamage": [5, 11],
+      "baseArmor": 2,
+      "attackCooldown": 1.6,
+      "attackRange": 1.2,
+      "projectileSpeed": 0,
+      "moveSpeed": 3.2,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["sweep", "iron_stance", "flurry", "sky_pillar"],
+      "look": {
+        "silhouette": "Broad monk-like fighter, long iron-capped staff held across the body, topknot, big wrapped fists, bare arms.",
+        "palette": "Tan skin, brown and bronze, iron grey staff.",
+        "teamColorParts": "Big shoulder pad on one side, belt cloth, staff ribbons.",
+        "scale": 1.15
+      }
+    },
+    {
+      "id": "sky_dragon",
+      "name": "Sky Dragon",
+      "role": "Flying ranged bruiser",
+      "hotkeyOrder": 3,
+      "mainStat": "strength",
+      "attributes": { "strength": [23, 2.6], "agility": [14, 1.5], "intelligence": [15, 1.6] },
+      "baseDamage": [6, 12],
+      "baseArmor": 2,
+      "attackCooldown": 1.9,
+      "attackRange": 5,
+      "projectileSpeed": 12,
+      "moveSpeed": 3.0,
+      "movementLayer": "lowAir",
+      "hpBonus": -50,
+      "abilities": ["fire_breath", "wing_gust", "dragon_scales", "inferno_dive"],
+      "look": {
+        "silhouette": "Young dragon with very big wings, long neck and tail, horns swept back. Flies about 3 units above the ground and casts a clear shadow.",
+        "palette": "Copper-orange scales, cream belly, dark horns, fire glow in the mouth.",
+        "teamColorParts": "Wing membranes and back spikes.",
+        "scale": 1.6
+      }
+    },
+    {
+      "id": "stone_golem",
+      "name": "Stone Golem",
+      "role": "Tank",
+      "hotkeyOrder": 4,
+      "mainStat": "strength",
+      "attributes": { "strength": [25, 3.0], "agility": [10, 1.0], "intelligence": [13, 1.2] },
+      "baseDamage": [7, 15],
+      "baseArmor": 3,
+      "attackCooldown": 2.0,
+      "attackRange": 1.4,
+      "projectileSpeed": 0,
+      "moveSpeed": 2.8,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["boulder_toss", "stone_skin", "tremor", "mountain_form"],
+      "look": {
+        "silhouette": "Huge rounded rock body, tiny head sunk into the shoulders, very long arms with boulder fists, moss on top, glowing rune eyes.",
+        "palette": "Warm grey stone, green moss, blue rune glow.",
+        "teamColorParts": "Glowing runes on chest and arms, crystal shards on the shoulders.",
+        "scale": 1.5
+      }
+    },
+    {
+      "id": "light_healer",
+      "name": "Light Healer",
+      "role": "Support",
+      "hotkeyOrder": 5,
+      "mainStat": "intelligence",
+      "attributes": { "strength": [16, 1.6], "agility": [13, 1.2], "intelligence": [21, 3.0] },
+      "baseDamage": [4, 10],
+      "baseArmor": 1,
+      "attackCooldown": 1.9,
+      "attackRange": 6,
+      "projectileSpeed": 14,
+      "moveSpeed": 3.0,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["radiant_touch", "blessing", "sanctuary", "dawn_shield"],
+      "look": {
+        "silhouette": "Robed priestess with a big round sun halo behind the head, short mace with a glowing sun disk, long sleeves.",
+        "palette": "White and gold robes, pale blue trim, warm yellow light.",
+        "teamColorParts": "Tabard down the front, sleeve cuffs.",
+        "scale": 1.1
+      }
+    },
+    {
+      "id": "arcane_huntress",
+      "name": "Arcane Huntress",
+      "role": "Ranged magic damage",
+      "hotkeyOrder": 6,
+      "mainStat": "agility",
+      "attributes": { "strength": [15, 1.6], "agility": [22, 2.8], "intelligence": [17, 1.8] },
+      "baseDamage": [4, 10],
+      "baseArmor": 1,
+      "attackCooldown": 1.6,
+      "attackRange": 7,
+      "projectileSpeed": 18,
+      "moveSpeed": 3.1,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["arcane_arrow", "blink", "mana_mark", "arcane_storm"],
+      "look": {
+        "silhouette": "Slim agile woman, big curved bow made of light, short cape, light leather armor, long ponytail.",
+        "palette": "Deep purple and silver, cyan-violet magic glow on the bow and arrows.",
+        "teamColorParts": "Short cape, shoulder guards, quiver.",
+        "scale": 1.1
+      }
+    },
+    {
+      "id": "centaur_raider",
+      "name": "Centaur Raider",
+      "role": "Mobile bruiser",
+      "hotkeyOrder": 7,
+      "mainStat": "strength",
+      "attributes": { "strength": [22, 2.6], "agility": [17, 1.8], "intelligence": [14, 1.4] },
+      "baseDamage": [6, 12],
+      "baseArmor": 2,
+      "attackCooldown": 1.8,
+      "attackRange": 1.5,
+      "projectileSpeed": 0,
+      "moveSpeed": 3.4,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["spear_throw", "trample", "herd_call", "great_charge"],
+      "look": {
+        "silhouette": "Horse body with a strong human upper body, long spear, war paint, braided mane, round shield on the back.",
+        "palette": "Chestnut horse body, tanned skin, leather and bone ornaments.",
+        "teamColorParts": "Shoulder pads, saddle cloth, shield face.",
+        "scale": 1.45
+      }
+    },
+    {
+      "id": "forest_elf",
+      "name": "Forest Elf",
+      "role": "Ranger, nature",
+      "hotkeyOrder": 8,
+      "mainStat": "agility",
+      "attributes": { "strength": [16, 1.8], "agility": [20, 2.4], "intelligence": [18, 2.0] },
+      "baseDamage": [5, 11],
+      "baseArmor": 1,
+      "attackCooldown": 1.7,
+      "attackRange": 7,
+      "projectileSpeed": 20,
+      "moveSpeed": 3.1,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": ["vine_snare", "forest_spirit", "natures_gift", "wrath_of_the_grove"],
+      "look": {
+        "silhouette": "Tall elf with long pointed ears, leaf cloak, wooden longbow with leaves growing on it, antler circlet.",
+        "palette": "Forest green, bark brown, pale skin, small golden-green glow.",
+        "teamColorParts": "Leaf cloak edges, chest sash, bow string glow.",
+        "scale": 1.15
+      }
+    }
+  ]
+}

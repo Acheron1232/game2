@@ -1,0 +1,19 @@
+{
+  "name": "@game/tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo \"tools: nothing to build\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo \"tools: no tests yet\"",
+    "map:build": "node map/make-map-layout.mjs && node map/bake-terrain.mjs",
+    "docs:tables": "node data/fill-doc-tables.mjs",
+    "data:check": "tsx data/check-data.ts"
+  },
+  "dependencies": {
+    "@game/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

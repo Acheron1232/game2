@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "notes": [
+    "Camp types. Where each camp stands is in map-layout.json (camps[].type).",
+    "monsters: [unit id, count]. dropTable is rolled once when the whole camp is dead.",
+    "dropChancePct is the chance that anything drops. If it does, one item is picked by weight."
+  ],
+  "campTypes": [
+    { "id": "green_wolves", "tier": "green", "respawnSec": 180, "monsters": [["grey_wolf", 3]], "dropTable": "green" },
+    { "id": "green_bandits", "tier": "green", "respawnSec": 180, "monsters": [["bandit", 2], ["bandit_archer", 1]], "dropTable": "green" },
+    { "id": "orange_harpies", "tier": "orange", "respawnSec": 240, "monsters": [["harpy", 2], ["harpy_matron", 1]], "dropTable": "orange" },
+    { "id": "orange_trolls", "tier": "orange", "respawnSec": 240, "monsters": [["forest_troll", 2], ["troll_shaman", 1], ["alpha_wolf", 1]], "dropTable": "orange" },
+    { "id": "red_ogres", "tier": "red", "respawnSec": 300, "monsters": [["ogre_brute", 2], ["ogre_warlord", 1]], "dropTable": "red" },
+    { "id": "red_sentinels", "tier": "red", "respawnSec": 300, "monsters": [["stone_sentinel", 2], ["rock_spider", 2]], "dropTable": "temple" }
+  ],
+  "dropTables": {
+    "green": { "dropChancePct": 25, "items": [["healing_potion", 30], ["mana_potion", 25], ["ward", 15], ["tome_of_wisdom", 15], ["life_pendant", 10], ["guard_ring", 5]] },
+    "orange": { "dropChancePct": 60, "items": [["healing_potion", 15], ["tome_of_wisdom", 15], ["scroll_of_return", 10], ["iron_claws", 15], ["thief_band", 8], ["giant_belt", 8], ["sage_cloak", 8], ["smoke_bomb", 6], ["frost_orb", 8], ["vampire_fang", 7]] },
+    "red": { "dropChancePct": 100, "items": [["vampire_fang", 20], ["frost_orb", 20], ["storm_hammer", 20], ["phoenix_feather", 15], ["royal_circlet", 15], ["ironwood_shield", 10]] },
+    "temple": { "dropChancePct": 100, "items": [["storm_hammer", 25], ["phoenix_feather", 25], ["warblade", 20], ["temple_crown", 15], ["vampire_fang", 15]] }
+  }
+}
