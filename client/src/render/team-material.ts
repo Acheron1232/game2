@@ -110,6 +110,15 @@ export function loadModelTextures(scene: Scene, skin: string | null, version = '
   };
 }
 
+/** Color texture + team mask from two URLs (blob URLs in the game). */
+export function loadTexturePair(scene: Scene, colorUrl: string, teamUrl: string): { palette: Texture; teamMask: Texture } {
+  const opts = { noMipmap: false, invertY: false, samplingMode: Texture.TRILINEAR_SAMPLINGMODE, forcedExtension: '.webp' };
+  return {
+    palette: new Texture(colorUrl, scene, opts),
+    teamMask: new Texture(teamUrl, scene, { ...opts, samplingMode: Texture.BILINEAR_SAMPLINGMODE }),
+  };
+}
+
 export function loadPaletteTextures(scene: Scene, baseUrl = '/assets/models'): { palette: Texture; teamMask: Texture } {
   // glTF UVs have v = 0 at the top, so the textures must not be flipped.
   const palette = new Texture(`${baseUrl}/palette.webp`, scene, {

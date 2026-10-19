@@ -36,6 +36,10 @@ export default tseslint.config(
     },
   },
   {
+    files: ['client/public/sw.js'],
+    languageOptions: { globals: { self: 'readonly', location: 'readonly', caches: 'readonly', fetch: 'readonly', URL: 'readonly' } },
+  },
+  {
     files: ['tools/**/*.mjs'],
     languageOptions: { globals: { console: 'readonly', process: 'readonly', Buffer: 'readonly' } },
   },

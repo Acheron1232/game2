@@ -133,9 +133,12 @@ Keep this section current. Node 24+, pnpm 10+.
 | `pnpm --filter @game/tools art:gen <sheet> [--dry]` | One Codex image for a sheet → `art/raw/<sheet>.png` (`--dry` only prints the prompt, free) |
 | `pnpm --filter @game/tools art:process <sheet>\|--all` | Cut and clean a sheet → `art/source/<sheet>/` + WebP in `client/src/assets/ui` or `client/public/assets/...` + manifest |
 | `pnpm --filter @game/tools art:manifest` | Rewrite `client/public/assets/manifest.json` |
+| `pnpm --filter @game/tools models:build [ids] [--preview]` | Blender scripts → GLB (quantized) + `models.json` + manifest; `--preview` renders `art/source/models/<id>.png` |
+| `pnpm --filter @game/tools models:palette` | Rebuild the shared model palette atlas |
 
 Notes:
 - The server reads `GAME_PORT` / `GAME_HOST` (not `PORT`, which dev tools often set for Vite).
+- `?play` opens the game screen right after loading, `?hero=<id>` picks the hero, `/dev/models.html` is the model viewer, F4 in game = 300-unit stress test.
 - `?webgl` in the client URL forces the WebGL2 fallback. F3 toggles the debug corner. `/dev/atlas.html` shows all generated 2D art (tiles 4×4, team colors).
 - Browser preview: `.claude/launch.json` has a `dev` entry that runs `pnpm dev` on port 5173.
 - After changing any JSON in `shared/data/`, run `pnpm data:check`, `pnpm docs:tables` and `pnpm test`.

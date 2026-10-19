@@ -4,11 +4,11 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
-- **Phase 4 is done** (2026-10-19), except LODs and baked vertex animation (moved to Phase 10, see "Not done"). Next: **Phase 5 — Client engine and loading**.
-- Notes for Phase 5:
-  - Load models by `client/public/assets/models/models.json` (skin atlas, height, sockets, clips per model) and `applyModelMaterials()` + `createModelMaterials()` from `client/src/render/team-material.ts`. Scenes that show models must set `scene.useRightHandedSystem = true`.
-  - Hero effects: `attachHeroEffects()` in `client/src/render/hero-effects.ts` (particles on `fx_*` sockets + glow pulse).
-  - Models face +Z in the game, 1 unit = 1 m.
+- **Phase 5 is done** (2026-10-19). Next: **Phase 6 — Server and multiplayer**.
+- Notes for Phase 6:
+  - The hero moves on the client with `shared/src/nav/nav-grid.ts` (A*) and `shared/src/sim/movement.ts`. Phase 6 runs the same code on the server; the client keeps it for prediction.
+  - `GameWorld` (`client/src/render/world.ts`) is the scene: `spawnHero`, `moveHero`, `pickGround`, units list. Game coordinates: x east, y north; world: x, height, -y (right-handed scene).
+  - The lobby is still the Phase 2 placeholder; `?play` opens the game screen right after loading, `?hero=<id>` picks the hero.
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
 
 ## Phases
@@ -19,12 +19,27 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 2 | Project skeleton | **Done** | pnpm monorepo, Babylon client with WebGPU/WebGL2, ws server, binary protocol, typed data, 17 tests |
 | 3 | 2D art with Codex | **Done** | 7 Codex images → 340 assets, 2.7 MB WebP; UI skin in menu / lobby |
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
-| 5 | Client engine and loading | Not started | |
+| 5 | Client engine and loading | **Done** | Terrain with blended tiles, 2,755 instanced trees, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | Not started | |
 | 7 | Combat, heroes, camps, items | Not started | |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
+
+## Phase 5 — what was made
+
+- **Loading** (`client/src/loader/`): reads `assets/manifest.json`, downloads everything during the lobby into blob URLs with byte progress per group (Interface, Map, Units, Heroes, Effects, Shaders), 6 parallel downloads, retries; `public/sw.js` keeps assets in the Cache API (hashed URLs). After download: all models load into containers and every model x team material is compiled (`ModelLibrary.warmUp`) before the bar reaches 100%.
+- **Terrain** (`render/terrain.ts`): 36 chunks of a 1-unit height mesh from the baked grid (temple 2.2 units high, cliffs, lake beds), a material plugin (GLSL + WGSL) that blends the 4 nearest cells' tiles from a texture array of the Phase 3 ground tiles, painted shade under forests, animated water discs for lakes and temple pools.
+- **World** (`render/world.ts`): right-handed scene, sun + sky light, PCF shadows (hero and buildings), fog at the edges, 2,755 trees as thin instances (4 draw calls), town halls in 4 team colors, gold mines, shops, fountains; buildings block the nav grid.
+- **RTS camera** (`render/rts-camera.ts`): 48 degrees down, smooth edge scroll, arrow keys, middle-mouse drag, small wheel zoom, clamped to the map; Space = center on hero, double Space = follow.
+- **Hero**: right click on the ground -> A* path (`shared/src/nav/nav-grid.ts`) -> walk with turning (`shared/src/sim/movement.ts`), idle / walk animations with blending, team selection ring, hero effects.
+- **Minimap** (`ui/minimap.ts`): terrain drawn once, town halls, mines, shops, hero dot, camera box; left click moves the camera, right click moves the hero.
+- **Debug corner** (F3): renderer, FPS, frame ms, draw calls, triangles, ping. F4 = 300-unit stress test.
+- Fixes found on the way: quantized GLBs keep their scale on the mesh node (must be baked into thin-instance matrices); instantiated clips are renamed (`id:walk`).
+
+How it was checked (browser, WebGPU and `?webgl` WebGL2): menu shows the real map; lobby loading reaches 100% per group (Interface 161, Map 36, Units 110, Heroes 32, Effects 2, Shaders); game opens on the hero; right click walks with the walk animation; minimap draws; **120 FPS, ~1.5 ms frame, 43 draw calls, 610k triangles**; with 300 extra animated swordsmen **120 FPS, 2.0 ms, 44 draws, 792k triangles** (shared animation instances); 277 files in the Cache API after the first visit, service worker active. Tests: 29 pass (3 new nav / movement tests: every spawn reaches every other spawn and the market). No console errors from the new code.
+Not checked: a real weak laptop (the dev machine is an M5, 120 Hz cap); Firefox / Safari; the "no hitch in the first 30 seconds" was checked by eye and frame time only.
+Not done: wind sway on trees, small props (rocks, fences, ruins), LODs (Phase 10).
 
 ## Phase 4b — what was made (user feedback: classic RTS hero look, better hands and weapon grip, light effects)
 
@@ -162,7 +177,7 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 |---|---|---|
 | First download | < 100 MB | ~14 MB (2D art 2.7 MB + models and skins 11 MB) |
 | All assets | < 500 MB | — |
-| FPS (laptop, 300 units) | 60 | — |
+| FPS (laptop, 300 units) | 60 | 120 (capped) on M5, 2.0 ms frame, 44 draws |
 | Server tick (4 players, full armies) | < 10 ms | — |
 | Bandwidth per player | < 20 KB/s down | — |
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |

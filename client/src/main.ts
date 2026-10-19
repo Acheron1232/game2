@@ -7,10 +7,12 @@ import './ui-skin.css';
 import { gameData, parseTerrain } from '@game/shared';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
 import treesUrl from '@game/shared/data/map-trees.json?url';
+import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
-import { createMapPreviewScene, type TreeList } from './render/map-preview-scene';
+import { GameWorld, TEAMS, type TreeList } from './render/world';
+import { Minimap } from './ui/minimap';
 import { startDebugOverlay } from './ui/debug-overlay';
 import { Router } from './ui/router';
 import { createEndScreen, createGameScreen, createLobbyScreen, createMenuScreen, showFatalError, toggleFullScreen } from './ui/screens';
@@ -62,7 +64,7 @@ async function main(): Promise<void> {
 
   const { engine, kind } = await createEngine(canvas);
   window.addEventListener('resize', () => engine.resize());
-  startDebugOverlay(debugNode, engine, kind, net.state);
+  registerAssetCache();
 
   // Loading starts at once, so it is done (or nearly) when the player reaches the lobby.
   const loader = new Loader();
@@ -72,26 +74,75 @@ async function main(): Promise<void> {
   const uiUrls = Object.values(
     import.meta.glob('./assets/ui/*.{webp,png}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>,
   );
-  const loaded = await loader.loadAll([
+  const { assets, extra } = await loadGameAssets(loader, [
     ...uiUrls.map((url) => ({ group: 'Interface' as const, url })),
     { group: 'Map', url: terrainUrl },
     { group: 'Map', url: treesUrl },
   ]);
-  const [terrainBytes, treesBytes] = loaded.slice(-2);
+  const [terrainUrlBlob, treesUrlBlob] = extra.slice(-2);
   await document.fonts.ready;
-  const terrain = parseTerrain(terrainBytes!);
-  const trees = (JSON.parse(new TextDecoder().decode(treesBytes!)) as { trees: TreeList }).trees;
+  const terrain = parseTerrain(await (await fetch(terrainUrlBlob!)).arrayBuffer());
+  const trees = ((await (await fetch(treesUrlBlob!)).json()) as { trees: TreeList }).trees;
 
-  const preview = createMapPreviewScene(engine, terrain, trees);
-  preview.useMenuCamera();
-  // Compile every material now, not when the match starts.
-  await preview.scene.whenReadyAsync();
+  const world = await GameWorld.create(engine, canvas, terrain, trees, assets);
+  if (import.meta.env.DEV) (window as unknown as { world: GameWorld }).world = world; // for debugging in the console
+  // Compile every material and model now, not when the match starts.
+  await world.library.warmUp(TEAMS);
+  await world.scene.whenReadyAsync();
   shadersDone();
+  startDebugOverlay(debugNode, engine, kind, net.state, world.scene);
 
-  const firstStart = gameData.map.starts[0]!.heroSpawn;
-  router.onChange((name) => (name === 'game' ? preview.useGameCamera(firstStart) : name === 'menu' && preview.useMenuCamera()));
-  engine.runRenderLoop(() => preview.scene.render());
+  // ---- game screen wiring (local play until Phase 6)
+  const params = new URLSearchParams(location.search);
+  const heroId = params.get('hero') ?? 'staff_warrior';
+  const start = gameData.map.starts[0]!;
+  world.spawnHero(heroId, start.heroSpawn[0], start.heroSpawn[1], 'red');
+  const minimapHost = uiHost.querySelector<HTMLElement>('.minimap')!;
+  const minimap = new Minimap(
+    minimapHost,
+    terrain,
+    gameData.map,
+    (x, y) => world.camera.lookAt(x, y),
+    (x, y) => world.moveHero(x, y),
+  );
+  const townHalls = gameData.map.starts.map((s, i) => ({ x: s.townHall[0], y: s.townHall[1], color: TEAM_HEX[i]!, size: 6 }));
+  setInterval(() => {
+    if (router.screen !== 'game') return;
+    const h = world.hero!.mover;
+    const view = { x: world.camera.target.x, y: world.camera.target.y + 4, w: 52, h: 34 };
+    minimap.draw([...townHalls, { x: h.x, y: h.y, color: '#ffffff', size: 5 }], view);
+  }, 120);
+
+  let lastSpace = 0;
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvas.addEventListener('pointerdown', (e) => {
+    if (router.screen !== 'game' || e.button !== 2) return;
+    const p = world.pickGround(e.offsetX, e.offsetY);
+    if (p) world.moveHero(p.x, p.y);
+  });
+  window.addEventListener('keydown', (e) => {
+    if (router.screen !== 'game') return;
+    if (e.key === ' ' || e.key === 'F1') {
+      e.preventDefault();
+      const h = world.hero!.mover;
+      const now = performance.now();
+      world.camera.follow = now - lastSpace < 350 ? () => ({ x: world.hero!.mover.x, y: world.hero!.mover.y }) : null;
+      lastSpace = now;
+      world.camera.lookAt(h.x, h.y, true);
+    }
+    if (e.key === 'F4') {
+      e.preventDefault();
+      world.toggleStress(300);
+    }
+  });
+
+  router.onChange((name) => world.setMenuMode(name !== 'game'));
+  // Dev shortcut: ?play opens the game screen as soon as loading is done.
+  if (params.has('play')) router.show('game');
+  engine.runRenderLoop(() => world.scene.render());
 }
+
+const TEAM_HEX = ['#D42A2A', '#2A5BD4', '#1FB5A8', '#7B2FBF'];
 
 main().catch((err: unknown) => {
   console.error(err);

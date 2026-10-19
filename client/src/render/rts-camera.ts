@@ -1,0 +1,117 @@
+// RTS camera: fixed tilt (about 56 degrees down), moves over the map with the screen edges,
+// arrow keys and middle-mouse drag; the wheel zooms in a small range. Movement is smoothed.
+
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import type { Scene } from '@babylonjs/core/scene';
+
+export const TILT = (42 * Math.PI) / 180; // from straight down: the camera looks about 48 degrees down
+const BASE_RADIUS = 30;
+const ZOOM_MIN = 0.8;
+const ZOOM_MAX = 1.25;
+const EDGE = 12; // pixels from the screen edge that scroll
+const SPEED = 36; // units per second at default zoom
+
+export class RtsCamera {
+  readonly camera: ArcRotateCamera;
+  /** Game coordinates the camera looks at (x east, y north). */
+  target = { x: 96, y: 96 };
+  private goal = { x: 96, y: 96 };
+  private zoom = 1;
+  private zoomGoal = 1;
+  private keys = new Set<string>();
+  private mouse = { x: -1, y: -1, inside: false };
+  private drag: { x: number; y: number; tx: number; ty: number } | null = null;
+  enabled = true;
+  edgeScroll = true;
+  /** Set while following a unit (Space twice). */
+  follow: (() => { x: number; y: number }) | null = null;
+
+  constructor(
+    private readonly scene: Scene,
+    private readonly canvas: HTMLCanvasElement,
+    private readonly heightAt: (x: number, y: number) => number,
+    private readonly mapSize: number,
+  ) {
+    // Right-handed scene, north is -z: alpha = +90 degrees puts the camera south of the target.
+    this.camera = new ArcRotateCamera('rts', Math.PI / 2, TILT, BASE_RADIUS, Vector3.Zero(), scene);
+    this.camera.minZ = 1;
+    this.camera.maxZ = 400;
+    this.camera.fov = 0.78;
+    this.camera.inputs.clear();
+    window.addEventListener('keydown', (e) => this.keys.add(e.key));
+    window.addEventListener('keyup', (e) => this.keys.delete(e.key));
+    window.addEventListener('blur', () => this.keys.clear());
+    canvas.addEventListener('pointermove', (e) => {
+      this.mouse = { x: e.clientX, y: e.clientY, inside: true };
+      if (this.drag) {
+        const k = (this.camera.radius / canvas.clientHeight) * 1.6;
+        this.goal.x = this.drag.tx - (e.clientX - this.drag.x) * k;
+        this.goal.y = this.drag.ty + (e.clientY - this.drag.y) * k;
+      }
+    });
+    canvas.addEventListener('pointerleave', () => (this.mouse.inside = false));
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        this.drag = { x: e.clientX, y: e.clientY, tx: this.goal.x, ty: this.goal.y };
+        this.follow = null;
+      }
+    });
+    window.addEventListener('pointerup', (e) => e.button === 1 && (this.drag = null));
+    canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+        this.zoomGoal = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, this.zoomGoal * (e.deltaY > 0 ? 1.08 : 0.93)));
+      },
+      { passive: false },
+    );
+    scene.onBeforeRenderObservable.add(() => this.update(scene.getEngine().getDeltaTime() / 1000));
+    this.apply();
+  }
+
+  /** Jump (or glide when smooth) to a game position. */
+  lookAt(x: number, y: number, smooth = false): void {
+    this.goal = { x, y };
+    if (!smooth) this.target = { x, y };
+    this.apply();
+  }
+
+  private update(dt: number): void {
+    if (!this.enabled) return;
+    dt = Math.min(dt, 0.1);
+    let mx = 0,
+      my = 0;
+    if (this.keys.has('ArrowLeft')) mx -= 1;
+    if (this.keys.has('ArrowRight')) mx += 1;
+    if (this.keys.has('ArrowUp')) my += 1;
+    if (this.keys.has('ArrowDown')) my -= 1;
+    if (this.edgeScroll && this.mouse.inside && !this.drag) {
+      if (this.mouse.x < EDGE) mx -= 1;
+      if (this.mouse.x > this.canvas.clientWidth - EDGE) mx += 1;
+      if (this.mouse.y < EDGE) my += 1;
+      if (this.mouse.y > this.canvas.clientHeight - EDGE) my -= 1;
+    }
+    if (mx || my) {
+      this.follow = null;
+      this.goal.x += mx * SPEED * this.zoom * dt;
+      this.goal.y += my * SPEED * this.zoom * dt;
+    }
+    if (this.follow) this.goal = { ...this.follow() };
+    const pad = 12;
+    this.goal.x = Math.max(pad, Math.min(this.mapSize - pad, this.goal.x));
+    this.goal.y = Math.max(pad - 8, Math.min(this.mapSize - pad, this.goal.y));
+    const k = 1 - Math.exp(-dt * 12);
+    this.target.x += (this.goal.x - this.target.x) * k;
+    this.target.y += (this.goal.y - this.target.y) * k;
+    this.zoom += (this.zoomGoal - this.zoom) * (1 - Math.exp(-dt * 10));
+    this.apply();
+  }
+
+  private apply(): void {
+    const h = this.heightAt(this.target.x, this.target.y);
+    this.camera.target.set(this.target.x, h, -this.target.y);
+    this.camera.radius = BASE_RADIUS * this.zoom;
+  }
+}
