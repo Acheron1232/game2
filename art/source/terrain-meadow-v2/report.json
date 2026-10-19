@@ -1,0 +1,32 @@
+[
+  {
+    "id": "grass",
+    "bytes": 29524,
+    "edgeDifference": 10.64453125
+  },
+  {
+    "id": "grass_lush",
+    "bytes": 31738,
+    "edgeDifference": 12.374348958333334
+  },
+  {
+    "id": "grass_dry",
+    "bytes": 30288,
+    "edgeDifference": 12.604166666666666
+  },
+  {
+    "id": "dirt",
+    "bytes": 27360,
+    "edgeDifference": 10.295572916666666
+  },
+  {
+    "id": "rough_dirt",
+    "bytes": 28884,
+    "edgeDifference": 11.978515625
+  },
+  {
+    "id": "forest_floor",
+    "bytes": 28574,
+    "edgeDifference": 8.783854166666666
+  }
+]

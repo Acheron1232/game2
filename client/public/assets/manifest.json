@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 13132074,
+  "totalBytes": 13308442,
   "files": [
     {
       "path": "effects/effects.json",
@@ -1569,6 +1569,12 @@
       "group": "Map"
     },
     {
+      "path": "terrain/dirt_meadow_v2.webp",
+      "bytes": 27360,
+      "hash": "4da4b6ff80",
+      "group": "Map"
+    },
+    {
       "path": "terrain/fallen_leaves.webp",
       "bytes": 7694,
       "hash": "4ae6a9cde0",
@@ -1578,6 +1584,12 @@
       "path": "terrain/forest_floor.webp",
       "bytes": 7982,
       "hash": "17ab4809fa",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/forest_floor_meadow_v2.webp",
+      "bytes": 28574,
+      "hash": "552629fefe",
       "group": "Map"
     },
     {
@@ -1599,6 +1611,12 @@
       "group": "Map"
     },
     {
+      "path": "terrain/grass_dry_meadow_v2.webp",
+      "bytes": 30288,
+      "hash": "ca85591e9d",
+      "group": "Map"
+    },
+    {
       "path": "terrain/grass_flowers.webp",
       "bytes": 8404,
       "hash": "421c5b0bd8",
@@ -1608,6 +1626,18 @@
       "path": "terrain/grass_lush.webp",
       "bytes": 7296,
       "hash": "f08380bf53",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_lush_meadow_v2.webp",
+      "bytes": 31738,
+      "hash": "eb9271d771",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_meadow_v2.webp",
+      "bytes": 29524,
+      "hash": "7e4a431ce0",
       "group": "Map"
     },
     {
@@ -1674,6 +1704,12 @@
       "path": "terrain/rough_dirt.webp",
       "bytes": 6732,
       "hash": "8524cb902b",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rough_dirt_meadow_v2.webp",
+      "bytes": 28884,
+      "hash": "4984e965c0",
       "group": "Map"
     },
     {

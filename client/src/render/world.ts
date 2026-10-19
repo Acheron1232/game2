@@ -108,6 +108,7 @@ export class GameWorld {
     assets: GameAssets,
   ): Promise<GameWorld> {
     const scene = new Scene(engine);
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('noShadows')) scene.shadowsEnabled = false;
     scene.useRightHandedSystem = true; // same as glTF and Blender: models load without mirroring
     scene.clearColor = new Color4(0.55, 0.62, 0.68, 1);
     scene.ambientColor = new Color3(0.3, 0.3, 0.3);
@@ -123,14 +124,14 @@ export class GameWorld {
 
     // Cool sky light from above, warm bounce from the ground.
     const sky = new HemisphericLight('sky', new Vector3(0, 1, 0), scene);
-    sky.intensity = 0.6;
+    sky.intensity = 0.65;
     sky.diffuse = new Color3(0.75, 0.84, 1);
     sky.groundColor = new Color3(0.48, 0.42, 0.33);
     // Low warm late-afternoon sun from the south-west (game), i.e. from -x and +z in world
     // space: longer shadows and golden light give the hills more shape.
     const sun = new DirectionalLight('sun', new Vector3(0.62, -0.72, -0.5).normalize(), scene);
-    sun.intensity = 1.15;
-    sun.diffuse = new Color3(1, 0.93, 0.82);
+    sun.intensity = 1.2;
+    sun.diffuse = new Color3(1, 0.95, 0.88);
     sun.specular = new Color3(0.4, 0.35, 0.3);
     sun.position = new Vector3(-80, 110, 80);
     sun.shadowFrustumSize = 100;
@@ -319,7 +320,7 @@ export class GameWorld {
     ip.colorCurvesEnabled = true;
     // Warm highlights, cool shadows: the classic "painted fantasy" look.
     const curves = new ColorCurves();
-    curves.globalSaturation = -8;
+    curves.globalSaturation = 2;
     curves.highlightsHue = 40;
     curves.highlightsDensity = 8;
     curves.highlightsSaturation = 8;

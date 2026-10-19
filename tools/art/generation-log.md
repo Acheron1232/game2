@@ -114,3 +114,11 @@ Every `pnpm art:gen` call. Failed calls that made no image (and cost nothing) ar
 ## 2026-10-19 19:35 UTC — skin_buildings_3
 - Output: `art/raw/skin_buildings_3.png` (3402 KB, 87 s)
 - Prompt file: `tools/art/prompts/skin_buildings_3.md`
+
+## 2026-10-19 — terrain-meadow-v2
+- Built-in ImageGen, one call, six ground tiles in one 3 × 2 sheet.
+- Output: `art/raw/terrain-meadow-v2.png` (1536 × 1024).
+- Prompt file: `tools/art/prompts/terrain-meadow-v2.md`.
+- Process: `pnpm --filter @game/tools exec tsx art/terrain-meadow.ts`, then `pnpm --filter @game/tools art:manifest`.
+- Six 256 × 256 WebP files with `_meadow_v2` names; original terrain assets retained.
+- Four-by-four repeat preview inspected: `art/source/terrain-meadow-v2/_contact.png`.

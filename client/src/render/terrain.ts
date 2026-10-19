@@ -1,4 +1,4 @@
-// Terrain: height mesh in 6 x 6 chunks + a material plugin that paints the ground from the baked
+// Terrain: height mesh in 32-unit chunks + a material plugin that paints the ground from the baked
 // grid. Every 0.5 unit cell has a ground type; the shader blends the 4 nearest cells' tile
 // textures (a texture array of the Phase 3 terrain tiles), so edges between ground types are soft.
 //
@@ -33,16 +33,16 @@ const TILE_SIZE = 4;
 
 /** Ground type -> terrain tile file (Phase 3 sheet "textures"). */
 const TILE_OF: Record<string, string> = {
-  grass: 'grass',
-  grass_lush: 'grass_lush',
-  grass_dry: 'grass_dry',
-  dirt: 'dirt',
-  rough_dirt: 'rough_dirt',
+  grass: 'grass_meadow_v2',
+  grass_lush: 'grass_lush_meadow_v2',
+  grass_dry: 'grass_dry_meadow_v2',
+  dirt: 'dirt_meadow_v2',
+  rough_dirt: 'rough_dirt_meadow_v2',
   temple_stone: 'temple_stone',
   sand: 'sand',
   cliff: 'cliff_face',
   water_bed: 'sand_wet',
-  forest_floor: 'forest_floor',
+  forest_floor: 'forest_floor_meadow_v2',
 };
 
 export interface Terrain {
@@ -59,13 +59,14 @@ const WGSL = 1;
 class TerrainSplatPlugin extends MaterialPluginBase {
   index: RawTexture | null = null;
   tiles: RawTexture2DArray | null = null;
+  private reference = import.meta.env.DEV && new URLSearchParams(location.search).has('terrainReference');
 
   // Read inside getCustomCode, which the base constructor already calls: so these are static.
   static cols = 384;
   static cellSize = 0.5;
 
   constructor(material: StandardMaterial) {
-    super(material, 'TerrainSplat', 150, { TERRAINSPLAT: false });
+    super(material, 'TerrainSplat', 150, { TERRAINSPLAT: false, TERRAIN_REFERENCE: false });
     this._enable(true);
   }
 
@@ -79,6 +80,7 @@ class TerrainSplatPlugin extends MaterialPluginBase {
 
   override prepareDefines(defines: Record<string, unknown>): void {
     defines['TERRAINSPLAT'] = !!(this.index && this.tiles);
+    defines['TERRAIN_REFERENCE'] = this.reference;
   }
 
   override getSamplers(samplers: string[]): void {
@@ -114,15 +116,24 @@ fn terrainType(c: vec2<i32>) -> i32 {
   let gp = vec2<f32>(fragmentInputs.vPositionW.x, -fragmentInputs.vPositionW.z);
   let cell = gp / ${cs} - vec2<f32>(0.5);
   let c0 = vec2<i32>(floor(cell));
-  let f = smoothstep(vec2<f32>(0.15), vec2<f32>(0.85), fract(cell));
+  let f = smoothstep(vec2<f32>(0.0), vec2<f32>(1.0), fract(cell));
   let uv = gp / ${ts};
   let dx = dpdx(uv);
   let dy = dpdy(uv);
-  let a = textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, terrainType(c0), dx, dy).rgb;
-  let b = textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, terrainType(c0 + vec2<i32>(1, 0)), dx, dy).rgb;
-  let c = textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, terrainType(c0 + vec2<i32>(0, 1)), dx, dy).rgb;
-  let d = textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, terrainType(c0 + vec2<i32>(1, 1)), dx, dy).rgb;
-  baseColor = vec4<f32>(baseColor.rgb * mix(mix(a, b, f.x), mix(c, d, f.x), f.y), baseColor.a);
+  let t = vec4<i32>(terrainType(c0), terrainType(c0 + vec2<i32>(1, 0)), terrainType(c0 + vec2<i32>(0, 1)), terrainType(c0 + vec2<i32>(1, 1)));
+  var w = vec4<f32>((1.0-f.x)*(1.0-f.y), f.x*(1.0-f.y), (1.0-f.x)*f.y, f.x*f.y);
+  // Merge equal layers before sampling: a uniform patch needs one tile read, not four.
+  #ifndef TERRAIN_REFERENCE
+  if (t.y == t.x) { w.x += w.y; w.y = 0.0; }
+  if (t.z == t.x) { w.x += w.z; w.z = 0.0; } else if (t.z == t.y) { w.y += w.z; w.z = 0.0; }
+  if (t.w == t.x) { w.x += w.w; w.w = 0.0; } else if (t.w == t.y) { w.y += w.w; w.w = 0.0; } else if (t.w == t.z) { w.z += w.w; w.w = 0.0; }
+  #endif
+  var ground = vec3<f32>(0.0);
+  if (w.x > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.x, dx, dy).rgb * w.x; }
+  if (w.y > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.y, dx, dy).rgb * w.y; }
+  if (w.z > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.z, dx, dy).rgb * w.z; }
+  if (w.w > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.w, dx, dy).rgb * w.w; }
+  baseColor = vec4<f32>(baseColor.rgb * ground, baseColor.a);
 }
 #endif`,
       };
@@ -142,13 +153,23 @@ int terrainType(ivec2 c) {
   vec2 gp = vec2(vPositionW.x, -vPositionW.z);
   vec2 cell = gp / ${cs} - 0.5;
   ivec2 c0 = ivec2(floor(cell));
-  vec2 f = smoothstep(vec2(0.15), vec2(0.85), fract(cell));
+  vec2 f = smoothstep(vec2(0.0), vec2(1.0), fract(cell));
   vec2 uv = gp / ${ts};
-  vec3 a = texture(terrainTilesSampler, vec3(uv, float(terrainType(c0)))).rgb;
-  vec3 b = texture(terrainTilesSampler, vec3(uv, float(terrainType(c0 + ivec2(1, 0))))).rgb;
-  vec3 c = texture(terrainTilesSampler, vec3(uv, float(terrainType(c0 + ivec2(0, 1))))).rgb;
-  vec3 d = texture(terrainTilesSampler, vec3(uv, float(terrainType(c0 + ivec2(1, 1))))).rgb;
-  baseColor.rgb *= mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  vec2 dx = dFdx(uv), dy = dFdy(uv);
+  ivec4 t = ivec4(terrainType(c0), terrainType(c0 + ivec2(1, 0)), terrainType(c0 + ivec2(0, 1)), terrainType(c0 + ivec2(1, 1)));
+  vec4 w = vec4((1.0-f.x)*(1.0-f.y), f.x*(1.0-f.y), (1.0-f.x)*f.y, f.x*f.y);
+  #ifndef TERRAIN_REFERENCE
+  if (t.y == t.x) { w.x += w.y; w.y = 0.0; }
+  if (t.z == t.x) { w.x += w.z; w.z = 0.0; } else if (t.z == t.y) { w.y += w.z; w.z = 0.0; }
+  if (t.w == t.x) { w.x += w.w; w.w = 0.0; } else if (t.w == t.y) { w.y += w.w; w.w = 0.0; } else if (t.w == t.z) { w.z += w.w; w.w = 0.0; }
+  #endif
+  vec3 ground = vec3(0.0);
+  // Explicit gradients keep mip selection correct inside non-uniform branches.
+  if (w.x > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.x)), dx, dy).rgb * w.x;
+  if (w.y > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.y)), dx, dy).rgb * w.y;
+  if (w.z > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.z)), dx, dy).rgb * w.z;
+  if (w.w > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.w)), dx, dy).rgb * w.w;
+  baseColor.rgb *= ground;
 }
 #endif`,
     };
@@ -234,7 +255,7 @@ export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: Map
   };
 
   // ---- material: textures
-  const tileSize = 128;
+  const tileSize = 256;
   const layers = GROUND_TYPES.length;
   const tileData = new Uint8Array(tileSize * tileSize * 4 * layers);
   await Promise.all(
@@ -311,8 +332,12 @@ export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: Map
           const forest = ci >= 0 && ((grid.flags[ci] ?? 0) & TerrainFlag.Forest) !== 0;
           const around = (hl + hr + hd + hu) / 4;
           const cavity = Math.max(-0.18, Math.min(0.12, (h - around) * 0.9));
-          const shade = (forest ? 0.8 : 1) * (0.95 + 0.1 * hash2(gx * 3, gy * 7)) * (1 + cavity);
-          col.set([shade, shade, shade * 0.98, 1], k * 4);
+          // Broad color variation breaks tile repetition without another per-pixel texture read.
+          const macro = Math.sin(gx * 0.12) * Math.cos(gy * 0.09) + Math.sin(gx * 0.04 + gy * 0.07) * 0.5;
+          const shade = (forest ? 0.82 : 1) * (0.98 + 0.035 * macro) * (1 + cavity);
+          const meadow = ci >= 0 && (grid.ground[ci] ?? ROCK) < 2;
+          // Keep the new, quieter meadow green and readable under the warm sun.
+          col.set([shade * (meadow ? 1.04 : 1), shade * (meadow ? 1.24 : 1), shade * (meadow ? 1.08 : 0.98), 1], k * 4);
         }
       }
       let t = 0;
