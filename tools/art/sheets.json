@@ -1,0 +1,616 @@
+{
+  "version": 1,
+  "notes": [
+    "One sheet = one Codex image call. Cells are named left to right, top to bottom.",
+    "grid is [columns, rows]. Dense grids on purpose: many small cells per image saves Codex usage (the user prefers more, smaller images).",
+    "A sheet lists its cells directly (with cellDefaults) or as 'groups' in grid order; each group has its own kind, size, out folder and optional atlas.",
+    "kind: tile (seamless texture), sprite (background removed), frame (background removed, kept square for 9-slice), concept (model reference, not shipped), icon (square, full cell), additive (glow on black).",
+    "size: target size in pixels of each cell after slicing (longest side).",
+    "out: 'ui' = client/src/assets/ui (bundled by Vite), 'concept' = art/source only, others go to client/public/assets/<out>/.",
+    "atlas: cells with the same atlas name are packed into one image + JSON with UV rects instead of single files."
+  ],
+  "sheets": [
+    {
+      "id": "ui_kit_a",
+      "grid": [
+        4,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "ui_kit_a.md",
+      "out": "ui",
+      "cells": [
+        {
+          "name": "wood_dark",
+          "kind": "tile",
+          "size": 256
+        },
+        {
+          "name": "stone_dark",
+          "kind": "tile",
+          "size": 256
+        },
+        {
+          "name": "parchment",
+          "kind": "tile",
+          "size": 256
+        },
+        {
+          "name": "iron_plate",
+          "kind": "tile",
+          "size": 256
+        },
+        {
+          "name": "panel_frame",
+          "kind": "frame",
+          "size": 256
+        },
+        {
+          "name": "button_normal",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "button_hover",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "button_pressed",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "slot_frame",
+          "kind": "frame",
+          "size": 128
+        },
+        {
+          "name": "bar_frame",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "corner_ornament",
+          "kind": "sprite",
+          "size": 128
+        },
+        {
+          "name": "divider",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "banner",
+          "kind": "sprite",
+          "size": 256,
+          "teamColor": true
+        },
+        {
+          "name": "crest",
+          "kind": "sprite",
+          "size": 256
+        },
+        {
+          "name": "cursor",
+          "kind": "sprite",
+          "size": 64
+        },
+        {
+          "name": "gem_button",
+          "kind": "sprite",
+          "size": 96
+        }
+      ]
+    },
+    {
+      "id": "textures",
+      "grid": [
+        8,
+        8
+      ],
+      "aspect": "square",
+      "prompt": "textures.md",
+      "groups": [
+        {
+          "kind": "tile",
+          "size": 128,
+          "out": "terrain",
+          "cells": [
+            "grass",
+            "grass_lush",
+            "grass_dry",
+            "grass_flowers",
+            "grass_stones",
+            "grass_worn",
+            "grass_dark",
+            "moss_ground",
+            "dirt",
+            "rough_dirt",
+            "mud",
+            "cobble_road",
+            "gravel",
+            "cracked_earth",
+            "roots_dirt",
+            "fallen_leaves",
+            "temple_stone",
+            "temple_stone_mossy",
+            "temple_stone_broken",
+            "sand",
+            "sand_wet",
+            "forest_floor",
+            "water_shallow",
+            "water_deep",
+            "cliff_face",
+            "cliff_face_mossy",
+            "cliff_top",
+            "rock_grey",
+            "rock_mossy",
+            "rock_dark",
+            "pebbles_ground",
+            "rune_glow"
+          ]
+        },
+        {
+          "kind": "tile",
+          "size": 128,
+          "out": "materials",
+          "cells": [
+            "bark_pine",
+            "bark_oak",
+            "bark_dead",
+            "wood_planks",
+            "timber_dark",
+            "stone_wall",
+            "cobblestone_wall",
+            "brick_old",
+            "roof_tiles",
+            "roof_slate",
+            "thatch",
+            "iron_rivets",
+            "gold_trim",
+            "plaster_white",
+            "team_cloth",
+            "rope"
+          ]
+        },
+        {
+          "kind": "tile",
+          "size": 128,
+          "out": "materials",
+          "cells": [
+            "steel",
+            "dark_iron",
+            "gold",
+            "chainmail",
+            "leather_brown",
+            "leather_dark",
+            "team_armor",
+            "cloth_white",
+            "fur_grey",
+            "fur_brown",
+            "skin_light",
+            "skin_tan",
+            "dragon_scales",
+            "stone_skin",
+            "tree_bark_skin",
+            "feathers"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sprites",
+      "grid": [
+        8,
+        8
+      ],
+      "aspect": "square",
+      "prompt": "sprites.md",
+      "groups": [
+        {
+          "kind": "sprite",
+          "size": 96,
+          "out": "ui",
+          "cells": [
+            "minimap_frame",
+            "portrait_frame",
+            "tooltip_parchment",
+            "title_plaque",
+            "scroll_open",
+            "close_button",
+            "glow_ring",
+            {
+              "name": "selection_ring",
+              "teamColor": true
+            },
+            "cursor_attack",
+            "cursor_select",
+            "cursor_cast",
+            "cursor_move",
+            "cursor_shop",
+            "cursor_wait",
+            "cooldown_dark",
+            {
+              "name": "flag",
+              "teamColor": true
+            },
+            "res_gold",
+            "res_wood",
+            "res_supply",
+            "res_clock",
+            "res_skull",
+            "res_crown",
+            "level_up_arrow",
+            "star",
+            "stat_strength",
+            "stat_agility",
+            "stat_intelligence",
+            "stat_damage",
+            "stat_armor",
+            "stat_speed",
+            "ready_check",
+            "not_ready_cross",
+            "hp_fill",
+            "mana_fill",
+            "xp_fill",
+            "lock"
+          ]
+        },
+        {
+          "kind": "sprite",
+          "size": 128,
+          "out": "foliage",
+          "cells": [
+            "grass_tuft_a",
+            "grass_tuft_b",
+            "grass_tuft_dry",
+            "flowers_yellow",
+            "flowers_blue",
+            "fern",
+            "bush_round",
+            "bush_berry",
+            "leaves_pine",
+            "leaves_oak",
+            "leaves_birch",
+            "branches_dead",
+            "reeds",
+            "mushrooms",
+            "pebbles",
+            "moss_patch",
+            "rock_small",
+            "rock_big",
+            "tree_stump",
+            "log",
+            "flowers_red",
+            "flowers_white",
+            "ivy",
+            "lily_pad",
+            "bone_pile",
+            "mushroom_ring",
+            "puddle",
+            "leaves_scatter"
+          ],
+          "atlas": "foliage"
+        }
+      ]
+    },
+    {
+      "id": "icons",
+      "grid": [
+        9,
+        8
+      ],
+      "aspect": "square",
+      "prompt": "icons.md",
+      "groups": [
+        {
+          "kind": "icon",
+          "size": 128,
+          "out": "icons",
+          "cells": [
+            "blood_bolt",
+            "bleed",
+            "crimson_pact",
+            "blood_moon",
+            "sweep",
+            "iron_stance",
+            "flurry",
+            "sky_pillar",
+            "fire_breath",
+            "wing_gust",
+            "dragon_scales",
+            "inferno_dive",
+            "boulder_toss",
+            "stone_skin",
+            "tremor",
+            "mountain_form",
+            "radiant_touch",
+            "blessing",
+            "sanctuary",
+            "dawn_shield",
+            "arcane_arrow",
+            "blink",
+            "mana_mark",
+            "arcane_storm",
+            "spear_throw",
+            "trample",
+            "herd_call",
+            "great_charge",
+            "vine_snare",
+            "forest_spirit",
+            "natures_gift",
+            "wrath_of_the_grove",
+            "cmd_attack",
+            "cmd_move",
+            "cmd_stop",
+            "cmd_hold",
+            "healing_potion",
+            "mana_potion",
+            "scroll_of_return",
+            "ward",
+            "smoke_bomb",
+            "tome_of_wisdom",
+            "boots_of_haste",
+            "iron_claws",
+            "guard_ring",
+            "swift_gloves",
+            "sage_cloak",
+            "giant_belt",
+            "thief_band",
+            "life_pendant",
+            "mana_stone",
+            "ironwood_shield",
+            "warblade",
+            "royal_circlet",
+            "vampire_fang",
+            "frost_orb",
+            "storm_hammer",
+            "phoenix_feather",
+            "temple_crown",
+            "up_sharper_blades",
+            "up_better_arrows",
+            "up_iron_plates",
+            "up_training_drills",
+            "up_stone_walls",
+            "up_siege_works",
+            "up_rich_veins",
+            {
+              "name": "up_war_banner",
+              "teamColor": true
+            },
+            "up_tier_up_fund",
+            "icon_gold",
+            "icon_wood",
+            "icon_supply",
+            "icon_level_up"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "portraits_effects",
+      "grid": [
+        8,
+        8
+      ],
+      "aspect": "square",
+      "prompt": "portraits_effects.md",
+      "groups": [
+        {
+          "kind": "icon",
+          "size": 128,
+          "out": "portraits",
+          "cells": [
+            "blood_witch",
+            "staff_warrior",
+            "sky_dragon",
+            "stone_golem",
+            "light_healer",
+            "arcane_huntress",
+            "centaur_raider",
+            "forest_elf",
+            {
+              "name": "worker",
+              "teamColor": true
+            },
+            {
+              "name": "swordsman",
+              "teamColor": true
+            },
+            {
+              "name": "archer",
+              "teamColor": true
+            },
+            {
+              "name": "cleric",
+              "teamColor": true
+            },
+            {
+              "name": "lancer",
+              "teamColor": true
+            },
+            {
+              "name": "catapult",
+              "teamColor": true
+            },
+            {
+              "name": "hawk_rider",
+              "teamColor": true
+            },
+            {
+              "name": "tree_guardian",
+              "teamColor": true
+            },
+            "grey_wolf",
+            "bandit",
+            "forest_troll",
+            "harpy",
+            "rock_spider",
+            "spider_queen",
+            "ogre_brute",
+            "stone_sentinel"
+          ]
+        },
+        {
+          "kind": "additive",
+          "size": 128,
+          "out": "effects",
+          "cells": [
+            "fire_1",
+            "fire_2",
+            "fire_3",
+            "fire_4",
+            "smoke_1",
+            "smoke_2",
+            "smoke_3",
+            "smoke_4",
+            "spark_1",
+            "spark_2",
+            "spark_3",
+            "spark_4",
+            "arcane_1",
+            "arcane_2",
+            "arcane_3",
+            "arcane_4",
+            "heal_1",
+            "heal_2",
+            "heal_3",
+            "heal_4",
+            "blood_1",
+            "blood_2",
+            "blood_3",
+            "blood_4",
+            "dust_1",
+            "dust_2",
+            "dust_3",
+            "dust_4",
+            "nature_1",
+            "nature_2",
+            "nature_3",
+            "nature_4",
+            "frost_1",
+            "frost_2",
+            "frost_3",
+            "frost_4",
+            "lightning_1",
+            "lightning_2",
+            "lightning_3",
+            "lightning_4"
+          ],
+          "atlas": "effects"
+        }
+      ]
+    },
+    {
+      "id": "heroes_concept",
+      "grid": [
+        6,
+        4
+      ],
+      "aspect": "square",
+      "prompt": "heroes_concept.md",
+      "groups": [
+        {
+          "kind": "concept",
+          "size": 320,
+          "out": "concept",
+          "cells": [
+            "blood_witch_front",
+            "blood_witch_side",
+            "blood_witch_back",
+            "staff_warrior_front",
+            "staff_warrior_side",
+            "staff_warrior_back",
+            "sky_dragon_front",
+            "sky_dragon_side",
+            "sky_dragon_back",
+            "stone_golem_front",
+            "stone_golem_side",
+            "stone_golem_back",
+            "light_healer_front",
+            "light_healer_side",
+            "light_healer_back",
+            "arcane_huntress_front",
+            "arcane_huntress_side",
+            "arcane_huntress_back",
+            "centaur_raider_front",
+            "centaur_raider_side",
+            "centaur_raider_back",
+            "forest_elf_front",
+            "forest_elf_side",
+            "forest_elf_back"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "world_concept",
+      "grid": [
+        6,
+        6
+      ],
+      "aspect": "square",
+      "prompt": "world_concept.md",
+      "groups": [
+        {
+          "kind": "concept",
+          "size": 256,
+          "out": "concept",
+          "cells": [
+            "worker",
+            "swordsman",
+            "archer",
+            "cleric",
+            "lancer",
+            "catapult",
+            "hawk_rider",
+            "tree_guardian"
+          ]
+        },
+        {
+          "kind": "concept",
+          "size": 256,
+          "out": "concept",
+          "cells": [
+            "grey_wolf",
+            "alpha_wolf",
+            "bandit",
+            "bandit_archer",
+            "forest_troll",
+            "troll_shaman",
+            "harpy",
+            "harpy_matron",
+            "rock_spider",
+            "spider_queen",
+            "ogre_brute",
+            "stone_sentinel"
+          ]
+        },
+        {
+          "kind": "concept",
+          "size": 256,
+          "out": "concept",
+          "cells": [
+            "town_hall",
+            "stronghold",
+            "citadel",
+            "house",
+            "barracks",
+            "archery_range",
+            "forge",
+            "chapel",
+            "workshop",
+            "hawk_roost",
+            "watchtower",
+            "gold_mine",
+            "side_shop",
+            "temple_market",
+            "fountain_of_life",
+            "temple_ruin"
+          ]
+        }
+      ]
+    }
+  ]
+}

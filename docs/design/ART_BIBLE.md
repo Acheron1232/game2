@@ -60,16 +60,16 @@ The look: **classic early-2000s fantasy RTS**. Low-poly, hand-painted, colorful,
 
 | Thing | Triangles | Texture |
 |---|---|---|
-| Hero | 1,500 – 3,000 | 512 px palette/material atlas share, plus small unique parts |
-| Unit | 500 – 1,500 | 256 px |
-| Monster | 500 – 2,000 | 256 px |
+| Hero | 1,500 – 3,000 | material swatches (128 px each) through a palette atlas, plus small unique parts |
+| Unit | 500 – 1,500 | material swatches (128 px) |
+| Monster | 500 – 2,000 | material swatches (128 px) |
 | Building | 300 – 2,000 | uses building material atlas (tiling swatches) |
 | Tree | 100 – 400 | foliage card atlas + bark swatch |
 | Prop | 50 – 300 | prop atlas |
 | LOD1 | ~50% of LOD0 | same texture |
 
 - Texture style: hand-painted, soft gradients, some painted edge highlights, low noise. No photo textures.
-- Texture density about 40–60 px per unit for terrain tiles (a 256 px tile covers about 4–6 units).
+- Texture density about 32–40 px per unit for terrain tiles (a 128 px tile covers about 3–4 units). Small, painted textures are part of the classic look and keep the download small.
 - No normal maps on units in the MVP (painted look). Terrain may use a simple normal map.
 
 ## 6. Terrain
@@ -106,7 +106,7 @@ See [UI.md](UI.md). Materials: dark carved wood, dark iron with rivets, warm gol
 ## 10. Codex image sheet rules (for Phase 3)
 
 Every prompt follows these:
-- One image = one **sheet**, a strict grid (say rows × columns), thin dark lines between cells, every cell filled edge to edge.
+- One image = one **sheet**, a strict dense grid (8 × 8 or 9 × 8 cells, about 150 px each), thin dark lines between cells. More small pictures per sheet is better than fewer big ones.
 - Same style words in every prompt: "hand-painted, low-resolution fantasy RTS game texture, early-2000s style, soft top light, painterly, no text, no logo, no watermark".
 - Terrain tiles: "seamless tileable, flat top-down view, no perspective, no shadows".
 - Sprites, foliage cards, icons, concept views: background **pure green `#00FF00`**.

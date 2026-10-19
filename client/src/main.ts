@@ -3,6 +3,7 @@ import '@fontsource/cinzel/800.css';
 import '@fontsource/alegreya-sans/400.css';
 import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
+import './ui-skin.css';
 import { gameData, parseTerrain } from '@game/shared';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
 import treesUrl from '@game/shared/data/map-trees.json?url';
@@ -66,13 +67,18 @@ async function main(): Promise<void> {
   // Loading starts at once, so it is done (or nearly) when the player reaches the lobby.
   const loader = new Loader();
   loader.onProgress((s) => lobby.setLoad(s));
-  const fontsDone = loader.addStep('Interface');
-  void document.fonts.ready.then(fontsDone);
   const shadersDone = loader.addStep('Shaders');
-  const [terrainBytes, treesBytes] = await loader.loadAll([
+  // UI images are fetched here too, so they are in the browser cache before the lobby needs them.
+  const uiUrls = Object.values(
+    import.meta.glob('./assets/ui/*.{webp,png}', { eager: true, query: '?url', import: 'default' }) as Record<string, string>,
+  );
+  const loaded = await loader.loadAll([
+    ...uiUrls.map((url) => ({ group: 'Interface' as const, url })),
     { group: 'Map', url: terrainUrl },
     { group: 'Map', url: treesUrl },
   ]);
+  const [terrainBytes, treesBytes] = loaded.slice(-2);
+  await document.fonts.ready;
   const terrain = parseTerrain(terrainBytes!);
   const trees = (JSON.parse(new TextDecoder().decode(treesBytes!)) as { trees: TreeList }).trees;
 

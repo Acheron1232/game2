@@ -19,4 +19,4 @@ Every third-party asset, font or library that ships with the game is listed here
 
 ## Art and sound
 
-All art is made for this project (Codex image generation from Phase 3 on). No third-party art or sound yet.
+All 2D art is made for this project with Codex image generation (see `tools/art/generation-log.md` for every call). No third-party art or sound.

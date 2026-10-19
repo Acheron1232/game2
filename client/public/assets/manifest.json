@@ -1,0 +1,1020 @@
+{
+  "version": 1,
+  "totalBytes": 1833354,
+  "files": [
+    {
+      "path": "effects/effects.json",
+      "bytes": 6074,
+      "hash": "c38eab1d94",
+      "group": "Effects"
+    },
+    {
+      "path": "effects/effects.webp",
+      "bytes": 330554,
+      "hash": "e12834223f",
+      "group": "Effects"
+    },
+    {
+      "path": "foliage/foliage.json",
+      "bytes": 4358,
+      "hash": "2b1d8dfe35",
+      "group": "Map"
+    },
+    {
+      "path": "foliage/foliage.webp",
+      "bytes": 345412,
+      "hash": "0a7feb098d",
+      "group": "Map"
+    },
+    {
+      "path": "icons/arcane_arrow.webp",
+      "bytes": 6784,
+      "hash": "4d49ec01f4",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/arcane_storm.webp",
+      "bytes": 9244,
+      "hash": "15070f6f08",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/bleed.webp",
+      "bytes": 7368,
+      "hash": "8e66e5c2e4",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/blessing.webp",
+      "bytes": 9962,
+      "hash": "1345a5942c",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/blink.webp",
+      "bytes": 9718,
+      "hash": "d7e9b94e20",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/blood_bolt.webp",
+      "bytes": 7322,
+      "hash": "f8643fce26",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/blood_moon.webp",
+      "bytes": 6970,
+      "hash": "2adb304b62",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/boots_of_haste.webp",
+      "bytes": 7798,
+      "hash": "70fee6c7b0",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/boulder_toss.webp",
+      "bytes": 9230,
+      "hash": "ff7c1cdeb9",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/cmd_attack.webp",
+      "bytes": 8240,
+      "hash": "6e0a757ced",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/cmd_hold.webp",
+      "bytes": 9906,
+      "hash": "c2b2b7f230",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/cmd_move.webp",
+      "bytes": 7514,
+      "hash": "15b7ca1445",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/cmd_stop.webp",
+      "bytes": 6968,
+      "hash": "e66570158e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/crimson_pact.webp",
+      "bytes": 7684,
+      "hash": "a0e3ef9437",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/dawn_shield.webp",
+      "bytes": 8550,
+      "hash": "6a78159531",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/dragon_scales.webp",
+      "bytes": 8828,
+      "hash": "bac51caac2",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/fire_breath.webp",
+      "bytes": 8840,
+      "hash": "c5a98d99c1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/flurry.webp",
+      "bytes": 8030,
+      "hash": "ad895b7980",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/forest_spirit.webp",
+      "bytes": 11160,
+      "hash": "9ce2c0c8cf",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/frost_orb.webp",
+      "bytes": 8622,
+      "hash": "1467ae0d9a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/giant_belt.webp",
+      "bytes": 7224,
+      "hash": "5ed251bb55",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/great_charge.webp",
+      "bytes": 9102,
+      "hash": "e4c068031b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/guard_ring.webp",
+      "bytes": 8616,
+      "hash": "58c79e7c7d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/healing_potion.webp",
+      "bytes": 8150,
+      "hash": "6810ec989d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/herd_call.webp",
+      "bytes": 8886,
+      "hash": "f148a4a577",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/icon_gold.webp",
+      "bytes": 9348,
+      "hash": "944b265033",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/icon_level_up.webp",
+      "bytes": 6794,
+      "hash": "cfbe1ef36c",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/icon_supply.webp",
+      "bytes": 9030,
+      "hash": "3a58a20eb1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/icon_wood.webp",
+      "bytes": 8656,
+      "hash": "7d757beae7",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/inferno_dive.webp",
+      "bytes": 9452,
+      "hash": "91946b1657",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/iron_claws.webp",
+      "bytes": 8270,
+      "hash": "fd1bb5b1be",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/iron_stance.webp",
+      "bytes": 9460,
+      "hash": "43ae219b98",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/ironwood_shield.webp",
+      "bytes": 8494,
+      "hash": "367b1132e3",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/life_pendant.webp",
+      "bytes": 7128,
+      "hash": "ff9856453c",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mana_mark.webp",
+      "bytes": 8052,
+      "hash": "dfaeed1e38",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mana_potion.webp",
+      "bytes": 8402,
+      "hash": "d481ba6c73",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mana_stone.webp",
+      "bytes": 7324,
+      "hash": "456811b00f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mountain_form.webp",
+      "bytes": 9496,
+      "hash": "d0e6032ee1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/natures_gift.webp",
+      "bytes": 8804,
+      "hash": "56c31cc0c1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/phoenix_feather.webp",
+      "bytes": 7900,
+      "hash": "3fd130a62d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/radiant_touch.webp",
+      "bytes": 7614,
+      "hash": "62b78e092a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/royal_circlet.webp",
+      "bytes": 7558,
+      "hash": "aa2b6c2b04",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sage_cloak.webp",
+      "bytes": 8424,
+      "hash": "ba1c5d0844",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sanctuary.webp",
+      "bytes": 7822,
+      "hash": "4cecb600ce",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/scroll_of_return.webp",
+      "bytes": 7948,
+      "hash": "6519c789b4",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sky_pillar.webp",
+      "bytes": 8268,
+      "hash": "6c6560408e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/smoke_bomb.webp",
+      "bytes": 7160,
+      "hash": "7af1f9ebc3",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/spear_throw.webp",
+      "bytes": 7054,
+      "hash": "7ce78ed105",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/stone_skin.webp",
+      "bytes": 9156,
+      "hash": "54b7b2e3ab",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/storm_hammer.webp",
+      "bytes": 10062,
+      "hash": "9f3477a413",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sweep.webp",
+      "bytes": 7980,
+      "hash": "2eb9e1bf57",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/swift_gloves.webp",
+      "bytes": 8230,
+      "hash": "f78e47fdce",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/temple_crown.webp",
+      "bytes": 8488,
+      "hash": "20915e921e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/thief_band.webp",
+      "bytes": 7284,
+      "hash": "94ad3f03fa",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/tome_of_wisdom.webp",
+      "bytes": 8466,
+      "hash": "373bc6ddba",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/trample.webp",
+      "bytes": 9194,
+      "hash": "dea9f0e5f8",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/tremor.webp",
+      "bytes": 9428,
+      "hash": "65e3d5aa3f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_better_arrows.webp",
+      "bytes": 7448,
+      "hash": "885c689532",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_iron_plates.webp",
+      "bytes": 8530,
+      "hash": "0ea6ed9e1a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_rich_veins.webp",
+      "bytes": 10512,
+      "hash": "6bf898013f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_sharper_blades.webp",
+      "bytes": 8734,
+      "hash": "248d57426c",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_siege_works.webp",
+      "bytes": 8588,
+      "hash": "181578c30b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_stone_walls.webp",
+      "bytes": 9924,
+      "hash": "c8860797ad",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_tier_up_fund.webp",
+      "bytes": 9460,
+      "hash": "a054700c43",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_training_drills.webp",
+      "bytes": 8280,
+      "hash": "7d49885c4f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_war_banner.webp",
+      "bytes": 6408,
+      "hash": "3604dad92d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/up_war_banner_team.webp",
+      "bytes": 452,
+      "hash": "c84da48359",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/vampire_fang.webp",
+      "bytes": 6334,
+      "hash": "880678af6e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/vine_snare.webp",
+      "bytes": 10010,
+      "hash": "ccdeac2641",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/warblade.webp",
+      "bytes": 7592,
+      "hash": "12508be390",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/ward.webp",
+      "bytes": 7646,
+      "hash": "2e2723e443",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/wing_gust.webp",
+      "bytes": 8786,
+      "hash": "a11915f2bb",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/wrath_of_the_grove.webp",
+      "bytes": 10078,
+      "hash": "149958b557",
+      "group": "Interface"
+    },
+    {
+      "path": "materials/bark_dead.webp",
+      "bytes": 7096,
+      "hash": "ec99f8532a",
+      "group": "Units"
+    },
+    {
+      "path": "materials/bark_oak.webp",
+      "bytes": 8084,
+      "hash": "29f7626978",
+      "group": "Units"
+    },
+    {
+      "path": "materials/bark_pine.webp",
+      "bytes": 7198,
+      "hash": "1ad053ef9d",
+      "group": "Units"
+    },
+    {
+      "path": "materials/brick_old.webp",
+      "bytes": 6744,
+      "hash": "38ecc1cbcb",
+      "group": "Units"
+    },
+    {
+      "path": "materials/chainmail.webp",
+      "bytes": 6916,
+      "hash": "2a0e684558",
+      "group": "Units"
+    },
+    {
+      "path": "materials/cloth_white.webp",
+      "bytes": 3050,
+      "hash": "6642a9a57b",
+      "group": "Units"
+    },
+    {
+      "path": "materials/cobblestone_wall.webp",
+      "bytes": 6658,
+      "hash": "4caf4c3192",
+      "group": "Units"
+    },
+    {
+      "path": "materials/dark_iron.webp",
+      "bytes": 5124,
+      "hash": "848e1a029e",
+      "group": "Units"
+    },
+    {
+      "path": "materials/dragon_scales.webp",
+      "bytes": 6946,
+      "hash": "11de85687a",
+      "group": "Units"
+    },
+    {
+      "path": "materials/feathers.webp",
+      "bytes": 6188,
+      "hash": "8fde7f0b5b",
+      "group": "Units"
+    },
+    {
+      "path": "materials/fur_brown.webp",
+      "bytes": 6388,
+      "hash": "648a107358",
+      "group": "Units"
+    },
+    {
+      "path": "materials/fur_grey.webp",
+      "bytes": 5930,
+      "hash": "63fa4683c0",
+      "group": "Units"
+    },
+    {
+      "path": "materials/gold.webp",
+      "bytes": 4526,
+      "hash": "0e597e2e53",
+      "group": "Units"
+    },
+    {
+      "path": "materials/gold_trim.webp",
+      "bytes": 7444,
+      "hash": "9db56238b0",
+      "group": "Units"
+    },
+    {
+      "path": "materials/iron_rivets.webp",
+      "bytes": 4168,
+      "hash": "e62e55f2e9",
+      "group": "Units"
+    },
+    {
+      "path": "materials/leather_brown.webp",
+      "bytes": 5384,
+      "hash": "76c970f213",
+      "group": "Units"
+    },
+    {
+      "path": "materials/leather_dark.webp",
+      "bytes": 5528,
+      "hash": "94b221b941",
+      "group": "Units"
+    },
+    {
+      "path": "materials/plaster_white.webp",
+      "bytes": 3800,
+      "hash": "8fbcfbc134",
+      "group": "Units"
+    },
+    {
+      "path": "materials/roof_slate.webp",
+      "bytes": 4380,
+      "hash": "145946eeaf",
+      "group": "Units"
+    },
+    {
+      "path": "materials/roof_tiles.webp",
+      "bytes": 5322,
+      "hash": "0b4af52f04",
+      "group": "Units"
+    },
+    {
+      "path": "materials/rope.webp",
+      "bytes": 6366,
+      "hash": "9bfb8750ad",
+      "group": "Units"
+    },
+    {
+      "path": "materials/skin_light.webp",
+      "bytes": 3266,
+      "hash": "6086fbed31",
+      "group": "Units"
+    },
+    {
+      "path": "materials/skin_tan.webp",
+      "bytes": 3604,
+      "hash": "29d92784bf",
+      "group": "Units"
+    },
+    {
+      "path": "materials/steel.webp",
+      "bytes": 3640,
+      "hash": "b4f78e902f",
+      "group": "Units"
+    },
+    {
+      "path": "materials/stone_skin.webp",
+      "bytes": 6626,
+      "hash": "3ea9cf7577",
+      "group": "Units"
+    },
+    {
+      "path": "materials/stone_wall.webp",
+      "bytes": 6048,
+      "hash": "b730427ba4",
+      "group": "Units"
+    },
+    {
+      "path": "materials/team_armor.webp",
+      "bytes": 4156,
+      "hash": "3c239f6614",
+      "group": "Units"
+    },
+    {
+      "path": "materials/team_armor_team.webp",
+      "bytes": 162,
+      "hash": "d97dbeff0f",
+      "group": "Units"
+    },
+    {
+      "path": "materials/team_cloth.webp",
+      "bytes": 7540,
+      "hash": "46e89e2cd6",
+      "group": "Units"
+    },
+    {
+      "path": "materials/team_cloth_team.webp",
+      "bytes": 90,
+      "hash": "bc90e8cd1b",
+      "group": "Units"
+    },
+    {
+      "path": "materials/thatch.webp",
+      "bytes": 7036,
+      "hash": "cda0f3cdcf",
+      "group": "Units"
+    },
+    {
+      "path": "materials/timber_dark.webp",
+      "bytes": 4522,
+      "hash": "9514d5226d",
+      "group": "Units"
+    },
+    {
+      "path": "materials/tree_bark_skin.webp",
+      "bytes": 7384,
+      "hash": "bc62240f26",
+      "group": "Units"
+    },
+    {
+      "path": "materials/wood_planks.webp",
+      "bytes": 4618,
+      "hash": "d31ee71c58",
+      "group": "Units"
+    },
+    {
+      "path": "portraits/arcane_huntress.webp",
+      "bytes": 6002,
+      "hash": "8e0fcb90cb",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/archer.webp",
+      "bytes": 5930,
+      "hash": "f37fcff25c",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/bandit.webp",
+      "bytes": 5312,
+      "hash": "19f93bd7e4",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/blood_witch.webp",
+      "bytes": 6530,
+      "hash": "c3777321ff",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/catapult.webp",
+      "bytes": 5502,
+      "hash": "ecec9ffa81",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/centaur_raider.webp",
+      "bytes": 5884,
+      "hash": "833312ffe6",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/cleric.webp",
+      "bytes": 5192,
+      "hash": "b984f1669c",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/forest_elf.webp",
+      "bytes": 6718,
+      "hash": "cab46a53dd",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/forest_troll.webp",
+      "bytes": 6300,
+      "hash": "0c21c83397",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/grey_wolf.webp",
+      "bytes": 5768,
+      "hash": "da3281b398",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/harpy.webp",
+      "bytes": 6334,
+      "hash": "db4de3293e",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/hawk_rider.webp",
+      "bytes": 6082,
+      "hash": "fe1b7681b7",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/hawk_rider_team.webp",
+      "bytes": 352,
+      "hash": "f209f17eea",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/lancer.webp",
+      "bytes": 6478,
+      "hash": "196dd50add",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/lancer_team.webp",
+      "bytes": 684,
+      "hash": "a6b39b7580",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/light_healer.webp",
+      "bytes": 6632,
+      "hash": "4f4890e9f3",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/ogre_brute.webp",
+      "bytes": 6060,
+      "hash": "a83d840c4d",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/rock_spider.webp",
+      "bytes": 4938,
+      "hash": "98a6284aab",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/sky_dragon.webp",
+      "bytes": 6216,
+      "hash": "5ad1923f9f",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/spider_queen.webp",
+      "bytes": 6188,
+      "hash": "7b98bd6607",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/staff_warrior.webp",
+      "bytes": 5606,
+      "hash": "15224aa5de",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/stone_golem.webp",
+      "bytes": 7080,
+      "hash": "7f2a32add2",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/stone_sentinel.webp",
+      "bytes": 6278,
+      "hash": "1e5b6ec820",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/swordsman.webp",
+      "bytes": 5670,
+      "hash": "14ff956bb9",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/tree_guardian.webp",
+      "bytes": 7482,
+      "hash": "04085f6dd8",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/worker.webp",
+      "bytes": 4688,
+      "hash": "1d77361507",
+      "group": "Interface"
+    },
+    {
+      "path": "terrain/cliff_face.webp",
+      "bytes": 5664,
+      "hash": "7507886f9e",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/cliff_face_mossy.webp",
+      "bytes": 6504,
+      "hash": "543e09c66a",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/cliff_top.webp",
+      "bytes": 7428,
+      "hash": "b594f4d04e",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/cobble_road.webp",
+      "bytes": 7218,
+      "hash": "a3ac576e42",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/cracked_earth.webp",
+      "bytes": 7346,
+      "hash": "dfebb9f1f6",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/dirt.webp",
+      "bytes": 6270,
+      "hash": "922972df52",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/fallen_leaves.webp",
+      "bytes": 7694,
+      "hash": "4ae6a9cde0",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/forest_floor.webp",
+      "bytes": 7982,
+      "hash": "17ab4809fa",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass.webp",
+      "bytes": 7198,
+      "hash": "e8584ab3e6",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_dark.webp",
+      "bytes": 5320,
+      "hash": "5eeaf8fe27",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_dry.webp",
+      "bytes": 7798,
+      "hash": "91309dbb1c",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_flowers.webp",
+      "bytes": 8404,
+      "hash": "421c5b0bd8",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_lush.webp",
+      "bytes": 7296,
+      "hash": "f08380bf53",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_stones.webp",
+      "bytes": 7268,
+      "hash": "92656c60e9",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/grass_worn.webp",
+      "bytes": 7032,
+      "hash": "1843ea7aa7",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/gravel.webp",
+      "bytes": 8186,
+      "hash": "f8b4bf8d51",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/moss_ground.webp",
+      "bytes": 7474,
+      "hash": "ce4cd9aaee",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/mud.webp",
+      "bytes": 6326,
+      "hash": "dde36a72a6",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/pebbles_ground.webp",
+      "bytes": 7646,
+      "hash": "7a78fc005b",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rock_dark.webp",
+      "bytes": 6756,
+      "hash": "5f9c186dd9",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rock_grey.webp",
+      "bytes": 6820,
+      "hash": "f3b0dca7c7",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rock_mossy.webp",
+      "bytes": 7154,
+      "hash": "c228dbb339",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/roots_dirt.webp",
+      "bytes": 6762,
+      "hash": "977407a9c1",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rough_dirt.webp",
+      "bytes": 6732,
+      "hash": "8524cb902b",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/rune_glow.webp",
+      "bytes": 7248,
+      "hash": "8049b0d93a",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/sand.webp",
+      "bytes": 3402,
+      "hash": "3a56ad108f",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/sand_wet.webp",
+      "bytes": 3644,
+      "hash": "9d81c8b337",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/temple_stone.webp",
+      "bytes": 5828,
+      "hash": "88a9fdc02c",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/temple_stone_broken.webp",
+      "bytes": 7742,
+      "hash": "b596565b0c",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/temple_stone_mossy.webp",
+      "bytes": 6560,
+      "hash": "cbb7f97797",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/water_deep.webp",
+      "bytes": 2782,
+      "hash": "77d18bd655",
+      "group": "Map"
+    },
+    {
+      "path": "terrain/water_shallow.webp",
+      "bytes": 5390,
+      "hash": "b6bc241e2b",
+      "group": "Map"
+    }
+  ]
+}

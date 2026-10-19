@@ -18,7 +18,7 @@ export function createMenuScreen(router: Router, getName: () => string, setName:
   nameInput.addEventListener('change', () => setName(nameInput.value.trim() || 'Player'));
   const playPanel = el(
     'div',
-    { class: 'panel play-panel', hidden: true },
+    { class: 'panel ornate play-panel', hidden: true },
     el('label', { class: 'field-label' }, S.yourName, nameInput),
     el(
       'div',
@@ -31,7 +31,11 @@ export function createMenuScreen(router: Router, getName: () => string, setName:
   const root = el(
     'section',
     { class: 'screen menu' },
+    el('div', { class: 'banner left' }),
+    el('div', { class: 'banner right' }),
+    el('div', { class: 'crest' }),
     el('h1', { class: 'title' }, S.gameTitle),
+    el('div', { class: 'divider' }),
     el(
       'nav',
       { class: 'menu-buttons' },
@@ -87,7 +91,7 @@ export function createLobbyScreen(router: Router, getName: () => string): LobbyS
     { class: 'screen lobby' },
     el(
       'div',
-      { class: 'panel lobby-panel' },
+      { class: 'panel ornate lobby-panel' },
       el(
         'header',
         { class: 'lobby-head' },
@@ -95,6 +99,7 @@ export function createLobbyScreen(router: Router, getName: () => string): LobbyS
         net,
         el('button', { class: 'btn small', disabled: true, title: S.comingSoon }, S.copyLink),
       ),
+      el('div', { class: 'divider' }),
       el(
         'table',
         { class: 'slots' },
@@ -196,8 +201,10 @@ export function createEndScreen(router: Router): Screen {
     { class: 'screen end' },
     el(
       'div',
-      { class: 'panel end-panel' },
+      { class: 'panel ornate end-panel' },
+      el('div', { class: 'crest' }),
       el('h1', { class: 'title' }, S.victory),
+      el('div', { class: 'divider' }),
       el(
         'div',
         { class: 'row' },

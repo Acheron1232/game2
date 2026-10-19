@@ -5,13 +5,17 @@
   "scripts": {
     "build": "echo \"tools: nothing to build\"",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "echo \"tools: no tests yet\"",
+    "test": "vitest run --passWithNoTests",
     "map:build": "node map/make-map-layout.mjs && node map/bake-terrain.mjs",
     "docs:tables": "node data/fill-doc-tables.mjs",
-    "data:check": "tsx data/check-data.ts"
+    "data:check": "tsx data/check-data.ts",
+    "art:gen": "tsx art/generate.ts",
+    "art:process": "tsx art/process.ts",
+    "art:manifest": "tsx art/manifest.ts"
   },
   "dependencies": {
-    "@game/shared": "workspace:*"
+    "@game/shared": "workspace:*",
+    "sharp": "0.35.5"
   },
   "devDependencies": {
     "tsx": "4.23.15"

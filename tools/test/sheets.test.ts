@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest';
+import { loadSheets } from '../art/lib/sheets';
+
+describe('art sheets', () => {
+  it('every sheet has exactly one cell per grid slot and a known output', () => {
+    const sheets = loadSheets();
+    expect(sheets.length).toBeGreaterThanOrEqual(7);
+    for (const s of sheets) {
+      expect(s.cells).toHaveLength(s.grid[0] * s.grid[1]);
+      for (const c of s.cells) expect(c.out).toMatch(/^[a-z_]+$/);
+    }
+  });
+
+  it('uses about 6 calls for the rest of the 2D art', () => {
+    const cells = loadSheets()
+      .filter((s) => s.id !== 'ui_kit_a')
+      .reduce((n, s) => n + s.cells.length, 0);
+    expect(cells).toBe(324);
+  });
+});

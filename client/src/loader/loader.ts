@@ -44,7 +44,9 @@ export class Loader {
   state(): LoadState {
     const fileFraction = this.bytesTotal > 0 ? this.bytesLoaded / this.bytesTotal : 1;
     const steps = 1 + this.extraSteps;
-    return { groups: [...this.groups.values()], fraction: (fileFraction + this.extraDone) / steps };
+    const order: LoadGroup[] = ['Interface', 'Map', 'Shaders'];
+    const groups = [...this.groups.values()].sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group));
+    return { groups, fraction: (fileFraction + this.extraDone) / steps };
   }
 
   /** A loading step without a file (like shader compiling). Call the returned function when it is done. */

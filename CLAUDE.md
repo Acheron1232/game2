@@ -81,11 +81,14 @@ The user has the Codex CLI installed. It can create images. Use it for all 2D ar
 How to call it (non-interactive):
 
 ```bash
-codex exec --skip-git-repo-check -s workspace-write -C "$PWD" \
+codex exec -m gpt-5.6-sol --skip-git-repo-check -s workspace-write -C "$PWD" \
   -o tools/art/logs/<sheet-name>.txt \
   "Use your image generation tool to create one image. <PROMPT>. Save the final PNG to art/raw/<sheet-name>.png"
 ```
 
+- Use `pnpm art:gen <sheet>` (it runs this command). The user's default Codex model (`gpt-6.1-sol`) is refused for image calls on their ChatGPT account and `gpt-6-astra` needs a newer CLI, so we pass `-m gpt-5.6-sol` (override with `CODEX_MODEL`).
+- Codex often returns a **transparent** background instead of green. The tools handle both (transparent: only soft edges are cleaned; flat backdrop: removed by its sampled color).
+- After every `art:process`, look at `art/source/<sheet>/_contact.png`. If you change `tools/art/lib/pixels.ts`, re-run `art:process` for **all** sheets and look again.
 - If the PNG is not in `art/raw/`, take the newest file from `~/.codex/generated_images/` (each run has its own folder) and copy it.
 - Images come back at about 1024–2200 px, not in an exact size. The slicing tool must handle any size.
 - **Save usage.** The user's Codex limit is small:
@@ -127,9 +130,12 @@ Keep this section current. Node 24+, pnpm 10+.
 | `pnpm data:check` | Zod shape check + cross-file links of `shared/data/*.json` |
 | `pnpm map:build` | `make-map-layout.mjs` → `bake-terrain.mjs` (layout, terrain grid, trees, `docs/design/map-preview.png`) |
 | `pnpm docs:tables` | Refill `<!-- table:... -->` blocks in `docs/design/*.md` from the JSON |
+| `pnpm --filter @game/tools art:gen <sheet> [--dry]` | One Codex image for a sheet → `art/raw/<sheet>.png` (`--dry` only prints the prompt, free) |
+| `pnpm --filter @game/tools art:process <sheet>\|--all` | Cut and clean a sheet → `art/source/<sheet>/` + WebP in `client/src/assets/ui` or `client/public/assets/...` + manifest |
+| `pnpm --filter @game/tools art:manifest` | Rewrite `client/public/assets/manifest.json` |
 
 Notes:
 - The server reads `GAME_PORT` / `GAME_HOST` (not `PORT`, which dev tools often set for Vite).
-- `?webgl` in the client URL forces the WebGL2 fallback. F3 toggles the debug corner.
+- `?webgl` in the client URL forces the WebGL2 fallback. F3 toggles the debug corner. `/dev/atlas.html` shows all generated 2D art (tiles 4×4, team colors).
 - Browser preview: `.claude/launch.json` has a `dev` entry that runs `pnpm dev` on port 5173.
 - After changing any JSON in `shared/data/`, run `pnpm data:check`, `pnpm docs:tables` and `pnpm test`.

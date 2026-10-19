@@ -1,0 +1,241 @@
+/* Painted UI skin from the Codex UI kit (tools/art sheet "ui_kit_a").
+   Loaded after styles.css: it only adds textures, frames and ornaments on top of the base layout. */
+
+:root {
+  --tex-wood: url('./assets/ui/wood_dark.webp');
+  --tex-stone: url('./assets/ui/stone_dark.webp');
+  --tex-parchment: url('./assets/ui/parchment.webp');
+  --tex-iron: url('./assets/ui/iron_plate.webp');
+  --team-red: #d42a2a;
+  --team-blue: #2a5bd4;
+}
+
+html,
+body,
+button,
+input {
+  cursor:
+    url('./assets/ui/cursor.png') 8 3,
+    auto;
+}
+
+/* ---------- panels: wood inside a carved gold-trimmed frame ---------- */
+
+.panel {
+  border: 26px solid transparent;
+  border-radius: 0;
+  border-image: url('./assets/ui/panel_frame.webp') 40 / 26px stretch;
+  background:
+    linear-gradient(180deg, rgba(10, 6, 3, 0.25), rgba(10, 6, 3, 0.55)),
+    var(--tex-wood) 0 0 / 192px repeat;
+  background-clip: padding-box;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+  padding: 8px 14px;
+}
+
+.panel.inset {
+  border: 14px solid transparent;
+  border-image: url('./assets/ui/slot_frame.webp') 22 / 14px stretch;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.62)),
+    var(--tex-stone) 0 0 / 160px repeat;
+  background-clip: padding-box;
+  box-shadow: none;
+  padding: 10px 14px;
+}
+
+/* Gold corner pieces on the big panels. */
+.panel.ornate {
+  position: relative;
+}
+.panel.ornate::before,
+.panel.ornate::after {
+  content: '';
+  position: absolute;
+  top: -34px;
+  width: 84px;
+  height: 84px;
+  background: url('./assets/ui/corner_ornament.webp') center / contain no-repeat;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.8));
+}
+.panel.ornate::before {
+  left: -34px;
+}
+.panel.ornate::after {
+  right: -34px;
+  transform: scaleX(-1);
+}
+
+/* ---------- buttons: painted plate with gold end caps ---------- */
+
+.btn {
+  border: 14px solid transparent;
+  border-width: 14px 34px;
+  border-radius: 0;
+  border-image: url('./assets/ui/button_normal.webp') 26 44 fill / 14px 34px stretch;
+  background: none;
+  box-shadow: none;
+  padding: 2px 6px;
+  min-height: 46px;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.75));
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 205, 110, 0.65));
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  border-image-source: url('./assets/ui/button_pressed.webp');
+  box-shadow: none;
+}
+.btn:disabled {
+  filter: grayscale(0.9) brightness(0.55) drop-shadow(0 3px 2px rgba(0, 0, 0, 0.75));
+}
+.btn.big {
+  min-width: 300px;
+  min-height: 64px;
+  border-width: 18px 44px;
+  border-image-width: 18px 44px;
+  padding: 2px 10px;
+}
+.btn.small {
+  min-height: 34px;
+  border-width: 9px 22px;
+  border-image-width: 9px 22px;
+  padding: 0 4px;
+}
+.btn.on {
+  filter: brightness(1.15) drop-shadow(0 0 7px rgba(127, 207, 106, 0.8));
+}
+
+/* ---------- fields and bars ---------- */
+
+.field {
+  background: var(--tex-parchment) 0 0 / 160px repeat;
+  border: 2px solid #5a3f1c;
+  box-shadow:
+    inset 0 2px 5px rgba(60, 35, 10, 0.55),
+    0 1px 0 rgba(255, 220, 150, 0.15);
+}
+
+.bar {
+  height: 34px;
+  border: 0;
+  border-radius: 0;
+  background: url('./assets/ui/bar_frame.webp') center / 100% 100% no-repeat;
+  padding: 9px 16px;
+  overflow: visible;
+}
+.bar-fill {
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 200, 90, 0.5);
+}
+.bar-text {
+  line-height: 34px;
+}
+
+/* ---------- ornaments ---------- */
+
+.crest {
+  width: 150px;
+  height: 160px;
+  background: url('./assets/ui/crest.webp') center / contain no-repeat;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.85));
+  margin-bottom: -18px;
+}
+
+.divider {
+  width: min(520px, 80vw);
+  height: 40px;
+  background: url('./assets/ui/divider.webp') center / contain no-repeat;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.8));
+}
+
+/* Team-colored hanging banner: grey cloth + team mask tinted by --team. */
+.banner {
+  position: absolute;
+  top: 0;
+  width: clamp(110px, 12vw, 180px);
+  aspect-ratio: 229 / 256;
+  height: auto;
+  background: url('./assets/ui/banner.webp') center / contain no-repeat;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.8));
+  pointer-events: none;
+}
+.banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--team, var(--team-red));
+  mix-blend-mode: multiply;
+  -webkit-mask: url('./assets/ui/banner_team.webp') center / contain no-repeat;
+  mask: url('./assets/ui/banner_team.webp') center / contain no-repeat;
+}
+.banner.left {
+  left: clamp(16px, 8vw, 140px);
+  --team: var(--team-red);
+}
+.banner.right {
+  right: clamp(16px, 8vw, 140px);
+  --team: var(--team-blue);
+}
+
+/* ---------- menu ---------- */
+
+.menu {
+  gap: 10px;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.7) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0) 30%);
+}
+.menu-buttons {
+  margin-top: 6px;
+}
+
+/* ---------- lobby ---------- */
+
+.lobby-head h2 {
+  font-size: 26px;
+}
+.lobby .divider {
+  margin: 4px auto 0;
+}
+.slots {
+  background: rgba(0, 0, 0, 0.28);
+}
+.slots th {
+  background: linear-gradient(180deg, rgba(201, 162, 74, 0.18), rgba(201, 162, 74, 0.04));
+}
+.slots tbody tr:nth-child(odd) td {
+  background: rgba(255, 220, 160, 0.035);
+}
+
+/* ---------- HUD frame ---------- */
+
+.hud-top {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5)),
+    var(--tex-iron) 0 0 / 128px repeat;
+  border-bottom: 3px solid var(--gold);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+.ability,
+.item-slot {
+  border: 8px solid transparent;
+  border-radius: 0;
+  border-image: url('./assets/ui/slot_frame.webp') 22 fill / 8px stretch;
+  background: none;
+  box-shadow: none;
+}
+.portrait {
+  border: 10px solid transparent;
+  border-image: url('./assets/ui/slot_frame.webp') 22 fill / 10px stretch;
+  background: none;
+}
+
+.end-panel .crest {
+  margin: 0 auto -18px;
+}
+.end-panel .divider {
+  margin: 0 auto 16px;
+}
