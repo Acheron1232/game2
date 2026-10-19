@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 13038513,
+  "totalBytes": 13025290,
   "files": [
     {
       "path": "effects/effects.json",
@@ -783,6 +783,12 @@
       "group": "Units"
     },
     {
+      "path": "models/buildings_2_skin_team.webp",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
+      "group": "Units"
+    },
+    {
       "path": "models/buildings_3_skin.json",
       "bytes": 1980,
       "hash": "85882c2c62",
@@ -792,6 +798,12 @@
       "path": "models/buildings_3_skin.webp",
       "bytes": 264590,
       "hash": "c99aee02ce",
+      "group": "Units"
+    },
+    {
+      "path": "models/buildings_3_skin_team.webp",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
       "group": "Units"
     },
     {
@@ -981,6 +993,12 @@
       "group": "Units"
     },
     {
+      "path": "models/monsters_1_skin_team.webp",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
+      "group": "Units"
+    },
+    {
       "path": "models/monsters_2_skin.json",
       "bytes": 2187,
       "hash": "835049af8e",
@@ -993,21 +1011,27 @@
       "group": "Units"
     },
     {
+      "path": "models/monsters_2_skin_team.webp",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
+      "group": "Units"
+    },
+    {
       "path": "models/monsters_3_skin.json",
-      "bytes": 2218,
-      "hash": "bbebdcdc09",
+      "bytes": 2219,
+      "hash": "eff21b9ae2",
       "group": "Units"
     },
     {
       "path": "models/monsters_3_skin.webp",
-      "bytes": 278154,
-      "hash": "f80b0315b6",
+      "bytes": 272674,
+      "hash": "5a2fc58125",
       "group": "Units"
     },
     {
       "path": "models/monsters_3_skin_team.webp",
-      "bytes": 19300,
-      "hash": "3cf0cefd34",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
       "group": "Units"
     },
     {
@@ -1020,6 +1044,12 @@
       "path": "models/monsters_4_skin.webp",
       "bytes": 317414,
       "hash": "1aeb96adb1",
+      "group": "Units"
+    },
+    {
+      "path": "models/monsters_4_skin_team.webp",
+      "bytes": 1926,
+      "hash": "00f14a14ef",
       "group": "Units"
     },
     {

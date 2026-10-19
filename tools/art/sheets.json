@@ -1354,10 +1354,7 @@
             "grey_wolf__arm",
             "grey_wolf__legs",
             "grey_wolf__foot_hand",
-            {
-              "name": "grey_wolf__team",
-              "teamColor": true
-            },
+            "grey_wolf__team",
             "grey_wolf__weapon_a",
             "grey_wolf__weapon_b",
             "bandit__face",
@@ -1365,10 +1362,7 @@
             "bandit__arm",
             "bandit__legs",
             "bandit__foot_hand",
-            {
-              "name": "bandit__team",
-              "teamColor": true
-            },
+            "bandit__team",
             "bandit__weapon_a",
             "bandit__weapon_b"
           ]
@@ -1395,10 +1389,7 @@
             "forest_troll__arm",
             "forest_troll__legs",
             "forest_troll__foot_hand",
-            {
-              "name": "forest_troll__team",
-              "teamColor": true
-            },
+            "forest_troll__team",
             "forest_troll__weapon_a",
             "forest_troll__weapon_b",
             "harpy__face",
@@ -1406,10 +1397,7 @@
             "harpy__arm",
             "harpy__legs",
             "harpy__foot_hand",
-            {
-              "name": "harpy__team",
-              "teamColor": true
-            },
+            "harpy__team",
             "harpy__weapon_a",
             "harpy__weapon_b"
           ]
@@ -1436,10 +1424,7 @@
             "rock_spider__arm",
             "rock_spider__legs",
             "rock_spider__foot_hand",
-            {
-              "name": "rock_spider__team",
-              "teamColor": true
-            },
+            "rock_spider__team",
             "rock_spider__weapon_a",
             "rock_spider__weapon_b",
             "ogre_brute__face",
@@ -1447,10 +1432,7 @@
             "ogre_brute__arm",
             "ogre_brute__legs",
             "ogre_brute__foot_hand",
-            {
-              "name": "ogre_brute__team",
-              "teamColor": true
-            },
+            "ogre_brute__team",
             "ogre_brute__weapon_a",
             "ogre_brute__weapon_b"
           ]
@@ -1477,10 +1459,7 @@
             "stone_sentinel__arm",
             "stone_sentinel__legs",
             "stone_sentinel__foot_hand",
-            {
-              "name": "stone_sentinel__team",
-              "teamColor": true
-            },
+            "stone_sentinel__team",
             "stone_sentinel__weapon_a",
             "stone_sentinel__weapon_b",
             "monster_misc__face",
@@ -1488,10 +1467,7 @@
             "monster_misc__arm",
             "monster_misc__legs",
             "monster_misc__foot_hand",
-            {
-              "name": "monster_misc__team",
-              "teamColor": true
-            },
+            "monster_misc__team",
             "monster_misc__weapon_a",
             "monster_misc__weapon_b"
           ]

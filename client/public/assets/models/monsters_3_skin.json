@@ -2,7 +2,7 @@
   "image": "monsters_3_skin.webp",
   "width": 1024,
   "height": 1024,
-  "team": true,
+  "team": false,
   "rects": {
     "rock_spider__face": {
       "x": 0.0029296875,

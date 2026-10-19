@@ -121,6 +121,11 @@ async function writeAtlas(name: string, results: CellResult[], dir: string): Pro
   }
   const blank = () => sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: skin ? 1 : 0 } } });
   await blank().composite(composites).webp(WEBP).toFile(join(dir, `${name}.webp`));
+  // Model skins always get a team mask file (all black = no team color, e.g. neutral monsters),
+  // otherwise the game would load a missing mask and paint the whole model in team color.
+  if (skin && !masks.length) {
+    await blank().flatten({ background: '#000000' }).webp({ quality: 90 }).toFile(join(dir, `${name}_team.webp`));
+  }
   if (masks.length) {
     await blank().composite(masks).flatten({ background: '#000000' }).webp({ quality: 90 }).toFile(join(dir, `${name}_team.webp`));
     // Blender preview copy: team parts in red, so they are easy to see in renders.
