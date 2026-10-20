@@ -2,9 +2,9 @@
 
 2026-10-21, branch `codex/windows-render-performance`.
 
-The user reports stable 120 FPS on a Mac and 40–54 FPS in Windows Chrome on a PC with an RTX 3060. Reported Windows sample: 1920 × 868, scene CPU 5.0 ms, 160 draws, 544k triangles, ping 46 ms. After trying the WebGL comparison URL, the user reports GPU 15 ms with unchanged FPS. The renderer name and selected adapter still need confirmation.
+The user reports stable 120 FPS on a Mac and 40–54 FPS in Windows Chrome on a PC with an RTX 3060. Reported Windows sample: 1920 × 868, scene CPU 5.0 ms, 160 draws, 544k triangles, ping 46 ms. After trying the WebGL comparison URL, the user reports GPU 15 ms with unchanged FPS. **After the diagnostic update, the user confirmed that the selected adapter is Intel, not the RTX.** Switching Chrome's Windows graphics preference to the RTX is the next step. Performance after that switch is not yet measured.
 
-15 ms of measured GPU work exceeds the 8.33 ms budget for 120 FPS. The CPU number measures scene rendering, not the whole browser main thread; it cannot rule out other CPU work. Neither the triangle count nor the installed graphics card proves which adapter Chrome is using. No Windows hardware was available for direct testing. **The Windows FPS issue is still open.**
+15 ms of measured GPU work exceeds the 8.33 ms budget for 120 FPS. The CPU number measures scene rendering, not the whole browser main thread; it cannot rule out other CPU work. No Windows hardware was available for direct testing. **The wrong adapter is confirmed by the user; the resulting Windows FPS after correction is still open.**
 
 ## Changes
 
@@ -22,9 +22,11 @@ The user reports stable 120 FPS on a Mac and 40–54 FPS in Windows Chrome on a 
 - Local Mac WebGPU: native 2560 × 1440, 120/120 FPS, scene CPU 3.2 ms, GPU passes 5.3 ms in a base sample. Adapter `apple / metal-3`. No captured warnings/errors.
 - Local Mac WebGL2: native 2560 × 1440, 120/120 FPS, scene CPU 2.1–2.5 ms, GPU 2.0–2.3 ms. Adapter exposes Apple M5 via ANGLE. No captured warnings/errors.
 - These are startup/regression samples, not identical-scene cross-platform benchmarks or a measured Windows speedup.
+- Frontend `windows-b96c51b` is published on the existing HTTPS URL. HTML SHA-256 matches the local build; `/frontend-release.json` records the frontend revision. Files were atomically replaced in the existing web mount after uploading dependencies; old hashed bundles were retained. Server/tunnel containers were not restarted; the existing live match remained on server `controls-769607f` with continuous uptime. Rollback copies of overwritten files are in `/home/ubuntu/temple-wars/releases/windows-b96c51b/rollback`. Public Mac WebGPU menu startup and adapter/pass timing were checked, with no captured warnings/errors. Screenshot: [GPU diagnostics](screenshots/windows-gpu-diagnostics.jpg).
 
 ## Next Windows check
 
-After reloading the updated frontend, record the complete F3 line including renderer and adapter. Compare the same camera, match time and army on WebGPU and `?webgl`. If the adapter is integrated or software, inspect Chrome's graphics acceleration and the Windows app GPU preference before changing visual quality. If it is the RTX 3060, use GPU profiling and controlled shadow/render-scale comparisons to find the expensive pass. Do not infer that the issue is fixed from a successful Mac check.
+In Windows Settings → System → Display → Graphics, add/select Chrome and set its graphics preference to High performance (RTX 3060). Fully restart Chrome, then check the F3 adapter and FPS. The website cannot guarantee a GPU switch over the browser/OS selection; installing it as a PWA is not a guaranteed workaround. If RTX is selected but performance remains poor, compare the same camera, match time and army on WebGPU and `?webgl`, then profile expensive GPU passes. Do not infer that the issue is fixed from a successful Mac check.
 
 Reference: [MDN: requestAdapter and powerPreference](https://developer.mozilla.org/en-US/docs/Web/API/GPU/requestAdapter).
+Windows steps: [Microsoft graphics preferences](https://support.microsoft.com/en-au/windows/hardware/display-graphics/optimizations-for-windowed-games-in-windows-11).
