@@ -255,12 +255,13 @@ export class Factions {
     f.buildings.add(e.id);
     this.blockers.addRect(x, y, w, h);
     // Anyone standing on the new footprint steps out of it.
-    this.sim.grid.query(x, y, Math.max(w, h), (o) => {
-      if (o === e || o.building || o.stats.layer !== 'ground') return;
-      if (rectDistance(o.mover.x, o.mover.y, x, y, w, h) > 0.01) return;
+    // (A plain loop: placing is rare, and the neighbor grid may be from the last tick.)
+    for (const o of this.sim.entities) {
+      if (o === e || !o.alive || o.building || o.stats.layer !== 'ground') continue;
+      if (rectDistance(o.mover.x, o.mover.y, x, y, w, h) > 0.01) continue;
       const p = nearestWalkable(this.sim.nav, o.mover.x, o.mover.y, 16);
       if (p) this.sim.teleport(o, p[0], p[1]);
-    });
+    }
     return e;
   }
 
@@ -348,7 +349,7 @@ export class Factions {
     j.repathAt = 0;
     w.order = 'idle';
     w.targetId = 0;
-    if (kind === 'wood') this.treeTaken.set(target, w.id);
+    if (kind === 'wood' && target >= 0) this.treeTaken.set(target, w.id);
   }
 
   private releaseJob(w: SimEntity): void {

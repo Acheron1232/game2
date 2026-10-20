@@ -22,7 +22,10 @@ import {
 import { applyBuffs, buffFlags, hasBuff, maxBuff, sumBuffs, type Buff } from './buffs';
 import { createCamps, onCampMemberAttacked, onCampMemberDied, updateCamps, type CampState } from './camps';
 import { applyMove, CommandType, isPredicted, type GameCommand } from './commands';
-import { entityTypeIndex, ENTITY_TYPES, isHeroType } from './entity-types';
+import { entityTypeIndex, ENTITY_TYPES, isHeroType, statsOf } from './entity-types';
+import { Factions, type BuildingState, type Difficulty, type FactionState, type WorkerJob } from './faction/faction';
+import type { TerrainGrid } from '../map/terrain';
+import type { TreeList } from '../nav/trees';
 import { DamageKind, EventList, EventType } from './events';
 import { createMover, stepMover, type Mover } from './movement';
 import { Rng } from './rng';
@@ -35,6 +38,7 @@ import {
   heroStats,
   levelForXp,
   neutralXpFactor,
+  rectDistance,
   respawnSeconds,
   spellDamage,
   unitStats,
@@ -70,6 +74,16 @@ export interface MatchSlot {
   color: number;
   /** start spot index in the map layout */
   start: number;
+  /** faction AI difficulty (and the hero bot's, for bot slots) */
+  ai?: Difficulty;
+  /** no human plays this slot: a hero bot controls the hero */
+  bot?: boolean;
+}
+
+/** Map data the factions need: the terrain grid (buildable ground) and the tree list. */
+export interface MatchWorld {
+  terrain: TerrainGrid;
+  trees: TreeList;
 }
 
 export interface MatchSetup {
@@ -178,6 +192,14 @@ export interface SimEntity {
   skillReady: Record<string, number>;
   /** a teleport this tick: do not send it as a fast move */
   jumped: boolean;
+  /** buildings and gold mines (Phase 8) */
+  building: BuildingState | null;
+  /** worker jobs (Phase 8) */
+  job: WorkerJob | null;
+  /** can not be hurt or targeted (gold mines) */
+  invulnerable: boolean;
+  /** inside a gold mine: not drawn, can not be hurt or targeted */
+  hidden: boolean;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -260,9 +282,13 @@ export class MatchSim {
   private nextProjectile = 1;
   readonly size = gameData.map.size.width;
 
+  /** AI factions (Town Halls, workers, buildings), when the match has map data for them */
+  readonly factions: Factions | null;
+
   constructor(
     readonly setup: MatchSetup,
     readonly nav: NavGrid,
+    world?: MatchWorld,
   ) {
     this.rng = new Rng(setup.seed);
     this.grid = new SpatialGrid(this.size, 4);
@@ -288,6 +314,7 @@ export class MatchSim {
       this.predictionTick[s.index] = 0;
     }
     this.camps = setup.noCamps ? [] : createCamps(this);
+    this.factions = world ? new Factions(this, world.terrain, world.trees) : null;
     if (setup.testUnits) this.spawnTestUnits(setup.testUnits, setup.testArea ?? 'bases');
   }
 
@@ -296,12 +323,7 @@ export class MatchSim {
   }
 
   spawn(type: number, owner: number, team: number, color: number, x: number, y: number, facing?: number): SimEntity {
-    const stats = isHeroType(type)
-      ? heroStats(
-          gameData.heroes.find((h) => h.id === ENTITY_TYPES[type])!,
-          1,
-        )
-      : unitStats(gameData.units.find((u) => u.id === ENTITY_TYPES[type])!);
+    const stats = statsOf(type);
     const mover = createMover(x, y, stats.moveSpeed);
     // Face the map center at the start, like the buildings.
     mover.facing = facing ?? Math.atan2(-(this.size / 2 - x), this.size / 2 - y);
@@ -349,6 +371,10 @@ export class MatchSim {
       summonUntil: 0,
       skillReady: {},
       jumped: false,
+      building: null,
+      job: null,
+      invulnerable: false,
+      hidden: false,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
@@ -499,12 +525,18 @@ export class MatchSim {
     }
     this.queue.length = 0;
 
-    this.grid.rebuild(this.entities, (e) => e.alive);
+    this.factions?.blockers.refresh();
+    this.grid.rebuild(this.entities, (e) => e.alive && !e.hidden);
     this.updateBuffs();
     updateAuras(this);
     updateCamps(this);
     for (const e of this.entities) {
-      if (!e.alive) continue;
+      if (!e.alive || e.hidden) continue;
+      // Buildings only shoot (Watchtowers); they never think or move.
+      if (e.building) {
+        if (e.stats.attackRange > 0 && e.building.done) this.towerThink(e);
+        continue;
+      }
       if (e.forced) {
         this.stepForced(e);
         continue;
@@ -525,14 +557,18 @@ export class MatchSim {
       } else if (e.order === 'cast') {
         updateCast(this, e);
         continue;
-      } else if (e.camp < 0) this.think(e);
-      else monsterCast(this, e);
+      } else if (e.camp < 0) {
+        // A worker with a job only fights when it was ordered to (the brain decides).
+        if (e.job && e.job.kind !== 'idle' && e.order === 'idle') continue;
+        this.think(e);
+      } else monsterCast(this, e);
       if (e.targetId) this.engage(e);
     }
+    this.factions?.update();
     for (const e of this.entities) {
       const px = e.mover.x,
         py = e.mover.y;
-      const frozen = !e.alive || e.forced || e.swing === 1 || this.isStunned(e) || this.isRooted(e) || (e.cast && e.cast.castEnd > 0);
+      const frozen = !e.alive || e.hidden || e.building || e.forced || e.swing === 1 || this.isStunned(e) || this.isRooted(e) || (e.cast && e.cast.castEnd > 0);
       if (!frozen) {
         e.mover.speed = e.stats.moveSpeed;
         stepMover(e.mover, TICK_DT);
@@ -620,7 +656,7 @@ export class MatchSim {
     let best = 0,
       bestD = Infinity;
     this.grid.query(e.mover.x, e.mover.y, range, (o, d2) => {
-      if (o === e || !this.isEnemy(e, o) || !canAttackLayer(e.stats.canHitAir, o.stats.layer)) return;
+      if (o === e || o.invulnerable || !this.isEnemy(e, o) || !canAttackLayer(e.stats.canHitAir, o.stats.layer)) return;
       if (o.team === NEUTRAL_TEAM && !takeNeutrals) {
         const ot = o.targetId ? this.byId.get(o.targetId) : undefined;
         if (!ot || ot.team !== e.team) return;
@@ -633,25 +669,49 @@ export class MatchSim {
     return best;
   }
 
+  /** Watchtowers: shoot the nearest enemy in range. */
+  private towerThink(e: SimEntity): void {
+    if (!e.targetId && (this.tick + e.id) % THINK_EVERY === 0) e.targetId = this.acquire(e, e.stats.attackRange + e.stats.radius + 1, true);
+    if (e.targetId) this.engage(e);
+  }
+
+  /** Faction units: upgrades of their faction on top of the data stats (8c fills it in). */
+  applyFactionStats(e: SimEntity): void {
+    this.refreshStats(e);
+  }
+
+  /** Rich Veins (8c). */
+  gatherFactor(_f: FactionState): number {
+    return 1;
+  }
+
+  /** Training Drills (8c). */
+  trainTimeFactor(_f: FactionState): number {
+    return 1;
+  }
+
   /** Attack the current target: chase it, turn to it, swing, hit. */
   engage(e: SimEntity): void {
     const t = this.byId.get(e.targetId);
-    if (!t || !t.alive || !canAttackLayer(e.stats.canHitAir, t.stats.layer)) {
+    if (!t || !t.alive || t.invulnerable || t.hidden || !canAttackLayer(e.stats.canHitAir, t.stats.layer)) {
       e.targetId = 0;
       e.swing = 0;
       return;
     }
     const dx = t.mover.x - e.mover.x,
       dy = t.mover.y - e.mover.y;
-    const d = Math.hypot(dx, dy);
-    const range = e.stats.attackRange + e.stats.radius + t.stats.radius;
+    // Gap between the two edges: buildings are rectangles, units are circles.
+    const gap = t.building
+      ? rectDistance(e.mover.x, e.mover.y, t.mover.x, t.mover.y, t.building.w, t.building.h) - e.stats.radius
+      : Math.hypot(dx, dy) - e.stats.radius - t.stats.radius;
+    const range = e.stats.attackRange;
     if (e.swing === 1) {
-      if (d > range + 2)
+      if (gap > range + 2)
         e.swing = 0; // it got away during the wind-up
       else if (this.tick >= e.swingEnd) this.hit(e, t);
       return;
     }
-    if (d <= range) {
+    if (gap <= range) {
       e.mover.path = [];
       const want = Math.atan2(-dx, dy);
       const diff = wrap(want - e.mover.facing);
@@ -666,8 +726,8 @@ export class MatchSim {
       }
       return;
     }
-    if (e.order === 'hold' || this.isRooted(e)) {
-      if (e.order === 'hold') e.targetId = 0;
+    if (e.order === 'hold' || this.isRooted(e) || e.building) {
+      if (e.order === 'hold' || e.building) e.targetId = 0;
       return;
     }
     e.swing = 0;
@@ -827,6 +887,7 @@ export class MatchSim {
 
   /** Moves a unit to a point over some time, whatever it wants (jumps, dives, charges, knockback). */
   forceMove(e: SimEntity, x: number, y: number, seconds: number, kind: ForcedMove['kind'], onEnd?: () => void, onTick?: () => void): void {
+    if (e.building) return; // buildings do not move
     if (e.forced?.kind !== 'knock' && e.forced) return; // a jump is not stopped by a push
     e.swing = 0;
     e.mover.path = [];
@@ -885,12 +946,14 @@ export class MatchSim {
 
   /** Spell damage: no armor, 75% to heroes, less with spell reduction, more with Mana Mark. */
   spellHit(t: SimEntity, raw: number, source: DamageSource): number {
+    // Spells do not hurt buildings (rules.json combat.spellDamage).
+    if (t.building) return 0;
     return this.damage(t, spellDamage(raw, t.hero), source, DamageKind.Spell);
   }
 
   /** Applies damage after shields. Returns what was really taken. */
   damage(t: SimEntity, amount: number, source: DamageSource, kind: number): number {
-    if (!t.alive || amount <= 0) return 0;
+    if (!t.alive || amount <= 0 || t.invulnerable || t.hidden) return 0;
     if (kind === DamageKind.Spell) {
       amount *= 1 - Math.min(90, sumBuffs(t.buffs, 'spellReductionPct')) / 100;
       amount *= 1 + sumBuffs(t.buffs, 'spellDamageTakenPct') / 100;
@@ -925,7 +988,7 @@ export class MatchSim {
 
   /** Adds a buff; the same id from the same source refreshes it. */
   addBuff(e: SimEntity, b: Buff): void {
-    if (!e.alive) return;
+    if (!e.alive || e.building) return;
     const old = e.buffs.findIndex((x) => x.id === b.id && x.sourceId === b.sourceId);
     if (old >= 0) {
       const changed = JSON.stringify(e.buffs[old]) !== JSON.stringify({ ...b, until: e.buffs[old]!.until });
@@ -981,7 +1044,9 @@ export class MatchSim {
 
   // ---------- death, rewards, levels ----------
 
-  private kill(e: SimEntity, killer: DamageSource): void {
+  /** Kills an entity now (damage, a timed summon, a defeated faction, an empty mine). */
+  kill(e: SimEntity, killer: DamageSource): void {
+    if (!e.alive) return;
     e.alive = false;
     e.hp = 0;
     e.mover.path = [];
@@ -1001,6 +1066,7 @@ export class MatchSim {
       e.removeAt = this.tick + CORPSE_TICKS;
     }
     if (e.camp >= 0) onCampMemberDied(this, e);
+    if (this.factions) this.factions.onDeath(e);
   }
 
   /** Gold for the last hit (and allies near), XP for enemy heroes near the death. */
@@ -1017,6 +1083,8 @@ export class MatchSim {
       const share = Math.floor((gold * R.gold.assistShare) / Math.max(1, helpers.length));
       if (share > 0) for (const h of helpers) this.addGold(h, share, victim);
     }
+    // Buildings give gold, never XP.
+    if (victim.building) return;
     const xp = victim.heroState ? xpForKillingHero(victimLevel) : xpForKillingUnit(victimLevel);
     const takers: SimEntity[] = [];
     this.grid.query(victim.mover.x, victim.mover.y, R.experience.shareRange, (o) => {
@@ -1029,6 +1097,7 @@ export class MatchSim {
   }
 
   private bountyOf(e: SimEntity): number {
+    if (e.building) return e.building.def?.bounty ?? 0;
     if (e.summonUntil) return gameData.units.find((u) => u.id === ENTITY_TYPES[e.type])?.bounty[0] ?? 0;
     const def = gameData.units.find((u) => u.id === ENTITY_TYPES[e.type]);
     return def ? this.rng.int(def.bounty[0], def.bounty[1]) : 0;
@@ -1102,10 +1171,10 @@ export class MatchSim {
   /** Units do not stand inside each other: push overlapping ground units apart. Heroes are not pushed. */
   private separate(): void {
     for (const e of this.entities) {
-      if (!e.alive || e.hero || e.forced || e.stats.layer !== 'ground') continue;
+      if (!e.alive || e.hero || e.forced || e.building || e.stats.layer !== 'ground') continue;
       const r = e.stats.radius;
       this.grid.query(e.mover.x, e.mover.y, r + 0.8, (o, d2) => {
-        if (o === e || !o.alive || o.stats.layer !== 'ground') return;
+        if (o === e || !o.alive || o.building || o.stats.layer !== 'ground') return;
         const min = r + o.stats.radius;
         if (d2 >= min * min) return;
         const d = Math.sqrt(d2) || 0.01;

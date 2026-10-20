@@ -26,6 +26,18 @@ export const EventType = {
   LineShot: 11,
   /** A paid, completed cast. Same target as Cast; kind packs index (5 bits), level-1 (2), point (1). */
   AbilityEffect: 12,
+  /** a = tree index: it fell (its walk cells open) */
+  TreeGone: 13,
+  /** a = worker, b = tree index: a chop starts */
+  Chop: 14,
+  /** a = new unit, b = building that trained it */
+  Trained: 15,
+  /** a = building that reached the next tier */
+  Upgraded: 16,
+  /** a = slot of the faction that lost */
+  Defeated: 17,
+  /** a = winner team */
+  MatchOver: 18,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 

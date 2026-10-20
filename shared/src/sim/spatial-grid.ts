@@ -16,7 +16,7 @@ export class SpatialGrid<T extends Positioned> {
     private readonly cell = 4,
   ) {
     this.cols = Math.ceil(size / cell);
-    this.head = new Int32Array(this.cols * this.cols);
+    this.head = new Int32Array(this.cols * this.cols).fill(-1);
   }
 
   rebuild(list: readonly T[], keep: (e: T) => boolean): void {
