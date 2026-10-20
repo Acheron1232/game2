@@ -209,3 +209,46 @@ describe('combat in the simulation', () => {
     expect(s2.queueCommand(0, 1, { type: CommandType.Attack, target: h2.id })).toBe(true);
   });
 });
+
+describe('following allied units', () => {
+  it('tracks a moving ally, keeps a gap, and stops on a new order', () => {
+    const s = sim(['stone_golem', 'forest_elf']);
+    const hero = s.heroes[0]!;
+    const ally = s.heroes[1]!;
+    ally.team = hero.team;
+    const [x, y] = gameData.map.starts[0]!.heroSpawn;
+    hero.mover.x = x;
+    hero.mover.y = y;
+    ally.mover.x = x + 5;
+    ally.mover.y = y;
+    expect(s.queueCommand(0, 1, { type: CommandType.Follow, target: ally.id })).toBe(true);
+    run(s, 3);
+    expect(hero.order).toBe('follow');
+    expect(Math.hypot(hero.mover.x - ally.mover.x, hero.mover.y - ally.mover.y)).toBeLessThan(2.8);
+    expect(hero.targetId).toBe(0);
+    ally.mover.x = x;
+    ally.mover.y = y - 5;
+    run(s, 5);
+    expect(Math.hypot(hero.mover.x - ally.mover.x, hero.mover.y - ally.mover.y)).toBeLessThan(2.8);
+    s.queueCommand(0, 2, { type: CommandType.Hold });
+    run(s, 1);
+    expect(hero.order).toBe('hold');
+  });
+
+  it('rejects enemies and unseen units and stops if the ally dies', () => {
+    const s = sim(['stone_golem', 'forest_elf']);
+    const hero = s.heroes[0]!;
+    const ally = s.heroes[1]!;
+    expect(s.queueCommand(0, 1, { type: CommandType.Follow, target: ally.id })).toBe(false);
+    ally.team = hero.team;
+    s.canSee = () => false;
+    expect(s.queueCommand(0, 2, { type: CommandType.Follow, target: ally.id })).toBe(false);
+    s.canSee = () => true;
+    expect(s.queueCommand(0, 3, { type: CommandType.Follow, target: ally.id })).toBe(true);
+    s.step();
+    ally.alive = false;
+    s.step();
+    expect(hero.order).toBe('idle');
+    expect(hero.mover.path).toHaveLength(0);
+  });
+});

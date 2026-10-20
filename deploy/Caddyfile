@@ -17,7 +17,7 @@
     header @versioned Cache-Control "public, max-age=31536000, immutable"
     @hashed path_regexp hashed ^/assets/.*-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$
     header @hashed Cache-Control "public, max-age=31536000, immutable"
-    @fresh path / /index.html /sw.js /assets/manifest.json
+    @fresh path / /index.html /sw.js /assets/manifest.json /manifest.webmanifest
     header @fresh Cache-Control "no-cache"
     file_server
   }

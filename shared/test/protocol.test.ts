@@ -47,6 +47,13 @@ describe('binary writer and reader', () => {
 });
 
 describe('messages', () => {
+  it('round-trips a follow target without changing its id', () => {
+    const data = writeCommand(new BinaryWriter(), 42, { type: CommandType.Follow, target: 513 });
+    const reader = new BinaryReader(data);
+    expect(reader.u8()).toBe(MsgId.Command);
+    expect(readCommand(reader)).toEqual({ seq: 42, cmd: { type: CommandType.Follow, target: 513 } });
+    expect(reader.remaining).toBe(0);
+  });
   it('ping and pong survive a round trip', () => {
     const w = new BinaryWriter();
     expect(readBinaryMessage(writePing(w, { clientTime: 1234.5 }))).toEqual({ id: MsgId.Ping, clientTime: 1234.5 });

@@ -126,7 +126,7 @@ export interface MatchSetup {
   watch?: number;
 }
 
-export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold' | 'cast' | 'item';
+export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'follow' | 'hold' | 'cast' | 'item';
 
 export interface HeroState {
   def: HeroDef;
@@ -523,6 +523,10 @@ export class MatchSim {
           this.canSee(hero.team, t)
         );
       }
+      case CommandType.Follow: {
+        const t = this.byId.get(cmd.target);
+        return !!t && t !== hero && t.alive && !t.hidden && !t.building && t.team === hero.team && this.canSee(hero.team, t);
+      }
       case CommandType.Cast:
         return (
           cmd.slot >= 0 && cmd.slot < 4 && castProblem(this, hero, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y }) === null
@@ -587,6 +591,13 @@ export class MatchSim {
         e.orderTarget = cmd.target;
         e.targetId = cmd.target;
         e.repathAt = 0;
+        break;
+      case CommandType.Follow:
+        e.order = 'follow';
+        e.orderTarget = cmd.target;
+        e.targetId = 0;
+        e.repathAt = 0;
+        e.mover.path = [];
         break;
       case CommandType.AttackMove:
         e.order = 'attackMove';
@@ -729,6 +740,22 @@ export class MatchSim {
     const due = (this.tick + e.id) % THINK_EVERY === 0;
     if (e.leaderId) return this.followLeader(e, due);
     switch (e.order) {
+      case 'follow': {
+        const ally = this.byId.get(e.orderTarget);
+        e.targetId = 0;
+        if (!ally?.alive || ally.hidden || ally.team !== e.team || !this.canSee(e.team, ally)) {
+          e.order = 'idle';
+          e.mover.path = [];
+          break;
+        }
+        const gap = e.stats.radius + ally.stats.radius + 1;
+        if (Math.hypot(ally.mover.x - e.mover.x, ally.mover.y - e.mover.y) <= gap) e.mover.path = [];
+        else if (this.tick >= e.repathAt) {
+          applyMove(e.mover, this.nav, ally.mover.x, ally.mover.y, false, this.isFlying(e));
+          e.repathAt = this.tick + 10;
+        }
+        break;
+      }
       case 'move':
         if (!e.mover.path.length) e.order = 'idle';
         break;

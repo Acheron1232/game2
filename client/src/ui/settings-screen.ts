@@ -4,6 +4,8 @@
 import { ACTIONS, bindKey, DEFAULT_KEYS, keyLabel, QUALITY_PRESETS, type Action, type Quality, type Settings } from '../game/settings';
 import { el } from './dom';
 import type { Screen } from './router';
+import { toggleFullScreen } from './screens';
+import { createInstallControls } from './install-controls';
 import { S } from './strings';
 
 export interface SettingsScreen extends Screen {
@@ -104,6 +106,14 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
     S.resetKeys,
   );
 
+  const fullScreen = el('button', { class: 'btn small', onclick: toggleFullScreen }, 'Enter full screen');
+  const refreshFullscreen = () => {
+    fullScreen.textContent = document.fullscreenElement ? 'Exit full screen' : 'Enter full screen';
+    fullScreen.setAttribute('aria-label', fullScreen.textContent);
+  };
+  document.addEventListener('fullscreenchange', refreshFullscreen);
+  refresh.push(refreshFullscreen);
+
   const root = el(
     'section',
     { class: 'screen settings' },
@@ -119,6 +129,7 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
           {},
           section(
             S.graphics,
+            row('Display', fullScreen),
             row(
               S.quality,
               select<Quality>(
@@ -242,6 +253,12 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
           {},
           section(
             S.controls,
+            el(
+              'p',
+              { class: 'control-help' },
+              'Camera: arrow keys, screen edges, middle-mouse drag or Alt + left drag. Space: center hero; twice: follow. Drag works inside a browser window.',
+            ),
+            createInstallControls(),
             row(
               S.quickCast,
               toggle(

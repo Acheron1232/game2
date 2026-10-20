@@ -249,6 +249,10 @@ export class MatchClient {
     this.send({ type: CommandType.Move, x: qx, y: qy, queue });
   }
 
+  follow(target: NetEntity): void {
+    this.send({ type: CommandType.Follow, target: target.id });
+  }
+
   attack(target: NetEntity): void {
     this.send({ type: CommandType.Attack, target: target.id });
   }
@@ -398,15 +402,17 @@ export class MatchClient {
   pick(sx: number, sy: number): NetEntity | null {
     let best: NetEntity | null = null,
       bestD = Infinity;
+    const ground = this.world.pickGround(sx, sy);
     for (const e of this.entities.values()) {
       const u = e.unit;
-      if (!u || u.dead) continue;
+      if (!u || u.dead || e.state & UnitState.Hidden || !u.model.root.isEnabled()) continue;
       const height = u.height * u.model.root.scaling.y;
       const altitude = this.world.unitHeight(u) - this.world.terrain.heightAt(u.x, u.y);
       if (!this.world.screenPoint(u.x, u.y, altitude + height * 0.5, this.pt)) continue;
-      const d = Math.hypot(this.pt.x - sx, this.pt.y - sy);
-      // Bigger models are easier to click.
-      if (d < 18 + height * 10 && d < bestD) {
+      const body = Math.hypot(this.pt.x - sx, this.pt.y - sy) / (18 + height * 10);
+      const disk = ground && !isBuildingType(e.type) ? Math.hypot(ground.x - u.x, ground.y - u.y) / this.world.markerRadius(u) : Infinity;
+      const d = Math.min(body, disk);
+      if (d < 1 && d < bestD) {
         bestD = d;
         best = e;
       }
@@ -799,6 +805,7 @@ export class MatchClient {
     const team = e.owner === NEUTRAL ? 'red' : (TEAMS[e.color] ?? 'red');
     const facing = building ? this.world.buildingFacing(k.x, k.y) : k.facing;
     e.unit = this.world.addUnit(modelId, team, k.x, k.y, facing, moveSpeedOf(e.type), hero, isFlyingType(e.type), building);
+    e.unit.markerTeam = e.owner === NEUTRAL ? 'neutral' : team;
     if (scale !== 1) {
       e.unit.baseScale = e.unit.scale = scale;
       e.unit.height *= scale;

@@ -217,6 +217,7 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
       w.u16(qPos(cmd.x)).u16(qPos(cmd.y));
       break;
     case CommandType.Attack:
+    case CommandType.Follow:
       w.u16(cmd.target);
       break;
     case CommandType.Cast:
@@ -267,6 +268,7 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
     case CommandType.AttackMove:
       return { seq, cmd: { type, x: dqPos(r.u16()), y: dqPos(r.u16()) } };
     case CommandType.Attack:
+    case CommandType.Follow:
       return { seq, cmd: { type, target: r.u16() } };
     case CommandType.Stop:
     case CommandType.Hold:

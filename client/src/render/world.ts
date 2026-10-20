@@ -26,6 +26,7 @@ import selectionRingUrl from '../assets/ui/selection_ring.webp?url';
 import type { GameAssets } from '../loader/assets';
 import { attachHeroEffects, type HeroEffects } from './hero-effects';
 import { ModelLibrary, type ModelInstance } from './model-library';
+import { UnitGroundMarks, groundMarkRadius } from './unit-ground-marks';
 import { RtsCamera, TILT } from './rts-camera';
 import { TEAM_COLORS } from './team-material';
 import { createDecor, type DecorItem } from './decor';
@@ -58,6 +59,8 @@ export interface Unit {
   /** move speed, to play the walk animation at the right pace */
   speed: number;
   team: string;
+  markerTeam: string;
+  building: boolean;
   effects: HeroEffects | null;
   anim: string;
   /** a one-time animation (attack, death) runs until this time (ms), then walk / idle again */
@@ -106,6 +109,7 @@ export class GameWorld {
   readonly items: GroundItemViews;
   private shadows: ShadowGenerator;
   private ring: Mesh;
+  private groundMarks: UnitGroundMarks;
   private stress: ModelInstance[] = [];
   private menuMode = true;
   private readonly screenPosition = new Vector3();
@@ -131,6 +135,7 @@ export class GameWorld {
     this.camera = camera;
     this.shadows = shadows;
     this.ring = ring;
+    this.groundMarks = new UnitGroundMarks(scene);
     this.nav = nav;
     this.items = new GroundItemViews(scene, library, terrain.heightAt);
   }
@@ -346,6 +351,8 @@ export class GameWorld {
       moving: false,
       speed,
       team,
+      markerTeam: team,
+      building,
       effects,
       anim: '',
       actionUntil: 0,
@@ -379,7 +386,15 @@ export class GameWorld {
     if (!u) return;
     const radius = Math.max(1.1, (this.library.models[u.modelId]?.height ?? 2) * 0.42);
     this.ring.scaling.set(radius * 2.2, 1, radius * 2.2);
-    (this.ring.material as StandardMaterial).emissiveColor = Color3.FromHexString(TEAM_COLORS[u.team] ?? '#ffffff');
+    (this.ring.material as StandardMaterial).emissiveColor = Color3.FromHexString(TEAM_COLORS[u.markerTeam] ?? '#9b8870');
+  }
+
+  async warmUpGroundMarks(): Promise<void> {
+    await this.groundMarks.warmUp();
+  }
+
+  markerRadius(u: Unit): number {
+    return groundMarkRadius(u);
   }
 
   /** Ground point under the mouse in game coordinates, or null. */
@@ -567,6 +582,7 @@ export class GameWorld {
       }
       this.syncUnit(u, dt);
     }
+    this.groundMarks.update(this.units, this.terrain.heightAt, this.scene.shadowsEnabled);
     if (this.menuMode) {
       const t = performance.now() / 1000;
       const c = (this.grid.cols * this.grid.cellSize) / 2;

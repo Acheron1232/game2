@@ -8,8 +8,8 @@ import type { Router, Screen } from './router';
 import { S } from './strings';
 
 export function toggleFullScreen(): void {
-  if (document.fullscreenElement) void document.exitFullscreen();
-  else void document.documentElement.requestFullscreen().catch(() => undefined);
+  if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+  else if (document.documentElement.requestFullscreen) void document.documentElement.requestFullscreen().catch(() => undefined);
 }
 
 export interface MenuScreen extends Screen {
@@ -168,6 +168,8 @@ export interface AbilityButtonView {
   noMana: boolean;
   passive: boolean;
   canLearn: boolean;
+  stateLabel?: string;
+  blocked?: string | null;
   /** tooltip lines: name line, text, numbers */
   tooltip: string[];
 }
@@ -220,7 +222,7 @@ export interface GameScreen extends Screen {
   setStatus(text: string): void;
   setHero(v: HeroView): void;
   /** Info line for a selected unit that is not your hero, or null. */
-  setSelected(text: string | null): void;
+  setSelected(text: string | null, details?: string[], portrait?: string): void;
   /** The player's AI faction, or null before the first faction data. */
   setFaction(v: FactionView | null): void;
   /** Big line in the middle: Victory / Defeat. null hides it. */
@@ -344,7 +346,17 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const mpText = el('span', { class: 'bar-label' });
   const statLine = el('div', { class: 'hero-stats' });
   const deathNote = el('div', { class: 'death-note', hidden: true });
-  const selInfo = el('div', { class: 'sel-info', hidden: true });
+  const selectedTitle = el('strong');
+  const selectedDetails = el('div', { class: 'selected-details' });
+  const selectedPortrait = el('div', { class: 'selected-portrait' });
+  const selInfo = el(
+    'aside',
+    { class: 'sel-info', hidden: true, 'aria-label': 'Selected unit' },
+    selectedPortrait,
+    selectedTitle,
+    selectedDetails,
+  );
+  let selectedKey = '';
   let portraitUrl: string | null = null;
   const tooltip = el('div', { class: 'tooltip', hidden: true });
   const alertBox = el('div', { class: 'hud-alert', hidden: true });
@@ -379,7 +391,25 @@ export function createGameScreen(actions: GameActions): GameScreen {
       e.stopPropagation();
       actions.learn(slot);
     });
-    const root = el('div', { class: 'ability' }, icon, cd, cdText, el('span', { class: 'key' }, k), pips, plus);
+    const state = el('span', { class: 'ability-state' });
+    const root = el(
+      'div',
+      { class: 'ability', role: 'button', tabindex: '0', 'aria-label': `Ability ${k}` },
+      icon,
+      cd,
+      cdText,
+      el('span', { class: 'key' }, k),
+      state,
+      pips,
+      plus,
+    );
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        actions.cast(slot);
+      }
+    });
     root.addEventListener('click', () => actions.cast(slot));
     root.addEventListener('mouseenter', () => {
       hoveredAbility = slot;
@@ -389,7 +419,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       hoveredAbility = -1;
       hideTip();
     });
-    return { root, icon, cd, cdText, pips, plus, iconUrl: '' as string | null, pipKey: '' };
+    return { root, icon, cd, cdText, pips, plus, state, iconUrl: '' as string | null, pipKey: '' };
   });
   const abilityButtons = abilityParts.map((p) => p.root);
   // ---- inventory: click or key = use, drag = move / drop / give / sell
@@ -496,16 +526,17 @@ export function createGameScreen(actions: GameActions): GameScreen {
       ping,
       team,
       gold,
+      el('button', { class: 'btn small', title: 'Toggle full screen', onclick: toggleFullScreen }, '⛶'),
       el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
       el('button', { class: 'btn small', onclick: onEnd }, import.meta.env.DEV ? S.endMatchTest : S.leave),
-    ),
-    el(
-      'aside',
-      { class: 'panel ai-status', title: S.goToBase, onclick: () => actions.showBase() },
-      el('h3', {}, S.yourKingdom),
-      facRes,
-      facSupply,
-      status,
+      el(
+        'div',
+        { class: 'hud-kingdom' },
+        el('button', { class: 'kingdom-base', title: S.goToBase, onclick: () => actions.showBase() }, S.yourKingdom),
+        facRes,
+        facSupply,
+        status,
+      ),
     ),
     scoreboard,
     feed,
@@ -584,6 +615,11 @@ export function createGameScreen(actions: GameActions): GameScreen {
           p.iconUrl = a.icon;
           p.icon.style.backgroundImage = a.icon ? `url(${a.icon})` : '';
         }
+        setText(p.state, a.stateLabel ?? '');
+        p.state.hidden = !a.stateLabel;
+        p.root.setAttribute('aria-label', `${'QWER'[i]}: ${a.name}${a.stateLabel ? ` — ${a.stateLabel}` : ''}`);
+        p.root.title = a.blocked ?? `${a.name}: ready`;
+        p.plus.setAttribute('aria-label', `Learn ${a.name}`);
         p.root.classList.toggle('unlearned', a.level === 0);
         p.root.classList.toggle('passive', a.passive);
         p.root.classList.toggle('no-mana', a.noMana && !a.passive && a.level > 0);
@@ -665,9 +701,15 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (alertTimer) clearTimeout(alertTimer);
       alertTimer = setTimeout(() => (alertBox.hidden = true), 1800);
     },
-    setSelected(text) {
+    setSelected(text, details = [], portrait) {
       selInfo.hidden = !text;
-      if (text) setText(selInfo, text);
+      const key = `${text}/${details.join('/')}/${portrait ?? ''}`;
+      if (key === selectedKey) return;
+      selectedKey = key;
+      setText(selectedTitle, text ?? '');
+      selectedDetails.replaceChildren(...details.map((line) => el('p', {}, line)));
+      selectedPortrait.style.backgroundImage = portrait ? `url(${portrait})` : '';
+      selectedPortrait.hidden = !portrait;
     },
     setFaction(v) {
       facRes.hidden = facSupply.hidden = !v;
@@ -678,6 +720,11 @@ export function createGameScreen(actions: GameActions): GameScreen {
         `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
       );
       setText(status, v.status);
+      status.title = v.status.startsWith('Attacking')
+        ? 'Your army is fighting. Join it or pressure another lane.'
+        : v.status.startsWith('Defending')
+          ? 'Your base needs help.'
+          : 'Your army is preparing. Farm camps nearby and watch its supply target. Attack timing changes with losses, defense and income.';
     },
     setScores(rows) {
       scoreboard.hidden = !rows;

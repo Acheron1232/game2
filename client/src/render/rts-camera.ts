@@ -4,12 +4,13 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import type { Scene } from '@babylonjs/core/scene';
+import { APRON } from './terrain';
 
 export const TILT = (42 * Math.PI) / 180; // from straight down: the camera looks about 48 degrees down
 const BASE_RADIUS = 30;
 const ZOOM_MIN = 0.8;
 const ZOOM_MAX = 1.25;
-const EDGE = 12; // pixels from the screen edge that scroll
+const EDGE = 32; // pixels from the screen edge that scroll
 const SPEED = 36; // units per second at default zoom
 
 export class RtsCamera {
@@ -22,7 +23,21 @@ export class RtsCamera {
   private keys = new Set<string>();
   private mouse = { x: -1, y: -1, inside: false };
   private drag: { x: number; y: number; tx: number; ty: number } | null = null;
-  enabled = true;
+  private active = true;
+  get enabled(): boolean {
+    return this.active;
+  }
+  set enabled(value: boolean) {
+    this.active = value;
+    if (!value) {
+      this.keys.clear();
+      this.mouse.inside = false;
+      this.drag = null;
+    }
+  }
+  get dragging(): boolean {
+    return this.drag !== null;
+  }
   edgeScroll = true;
   /** settings: camera speed multiplier */
   speedScale = 1;
@@ -42,23 +57,24 @@ export class RtsCamera {
     this.camera.fov = 0.78;
     this.camera.inputs.clear();
     window.addEventListener('keydown', (e) => {
-      if (!this.enabled || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (!this.enabled || isTextEntry(e.target)) return;
       if (e.key.startsWith('Arrow')) e.preventDefault();
-      this.keys.add(e.key);
+      this.keys.add(e.code);
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.key));
+    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => {
       this.keys.clear();
       this.mouse.inside = false;
       this.drag = null;
+      globalThis.document?.body?.classList.remove('camera-dragging');
     });
     // HUD panels cover the top and bottom edges. Track them too, not just the canvas.
     window.addEventListener('pointermove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      this.mouse.x = e.clientX - rect.left;
-      this.mouse.y = e.clientY - rect.top;
-      this.mouse.inside = this.mouse.x >= 0 && this.mouse.y >= 0 && this.mouse.x < rect.width && this.mouse.y < rect.height;
-      if (this.drag) {
+      this.mouse.x = ((e.clientX - rect.left) * canvas.clientWidth) / Math.max(1, rect.width);
+      this.mouse.y = ((e.clientY - rect.top) * canvas.clientHeight) / Math.max(1, rect.height);
+      this.mouse.inside = this.mouse.x >= 0 && this.mouse.y >= 0 && this.mouse.x < canvas.clientWidth && this.mouse.y < canvas.clientHeight;
+      if (this.drag && this.enabled) {
         const k = (this.camera.radius / canvas.clientHeight) * 1.6;
         this.goal.x = this.drag.tx - (e.clientX - this.drag.x) * k;
         this.goal.y = this.drag.ty + (e.clientY - this.drag.y) * k;
@@ -68,13 +84,21 @@ export class RtsCamera {
       if (e.relatedTarget === null) this.mouse.inside = false;
     });
     canvas.addEventListener('pointerdown', (e) => {
-      if (this.enabled && e.button === 1) {
+      if (this.enabled && (e.button === 1 || (e.button === 0 && e.altKey))) {
         e.preventDefault();
+        canvas.setPointerCapture?.(e.pointerId);
+        globalThis.document?.body?.classList.add('camera-dragging');
         this.drag = { x: e.clientX, y: e.clientY, tx: this.goal.x, ty: this.goal.y };
         this.follow = null;
       }
     });
-    window.addEventListener('pointerup', (e) => e.button === 1 && (this.drag = null));
+    const endDrag = () => {
+      this.drag = null;
+      globalThis.document?.body?.classList.remove('camera-dragging');
+    };
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    canvas.addEventListener('lostpointercapture', endDrag);
     canvas.addEventListener(
       'wheel',
       (e) => {
@@ -140,7 +164,7 @@ export class RtsCamera {
     this.camera.radius = BASE_RADIUS * this.zoom;
   }
 
-  /** Keep the visible ground inside the map, including at wide aspect ratios and max zoom. */
+  /** Keep the view inside the rendered mountain apron, without locking cameras out of edge bases. */
   private clampGoal(): void {
     const height = BASE_RADIUS * Math.max(this.zoom, this.zoomGoal) * Math.cos(TILT);
     const halfFov = this.camera.fov / 2;
@@ -148,10 +172,16 @@ export class RtsCamera {
     const south = height * (Math.tan(TILT) - Math.tan(TILT - halfFov));
     const aspect = this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
     const side = (height * Math.tan(halfFov) * aspect) / (Math.cos(TILT) - Math.sin(TILT) * Math.tan(halfFov));
-    const px = Math.min(this.mapSize / 2, side + 2);
-    const pn = Math.min(this.mapSize / 2, north + 2);
-    const ps = Math.min(this.mapSize / 2, south + 2);
+    const px = Math.min(this.mapSize / 2, Math.max(8, side + 2 - APRON));
+    const pn = Math.min(this.mapSize / 2, Math.max(8, north + 2 - APRON));
+    const ps = Math.min(this.mapSize / 2, Math.max(8, south + 2 - APRON));
     this.goal.x = Math.max(px, Math.min(this.mapSize - px, this.goal.x));
     this.goal.y = Math.max(ps, Math.min(this.mapSize - pn, this.goal.y));
   }
+}
+
+/** Game hotkeys never take keys from chat, rebinding controls or editable text. */
+export function isTextEntry(target: EventTarget | null): boolean {
+  if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
+  return !!target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]');
 }

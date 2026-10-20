@@ -32,6 +32,7 @@ export const CommandType = {
   SwapItems: 14,
   /** buy a Town Hall upgrade (index in upgrades.json) for the hero's faction, at its own Town Hall */
   BuyUpgrade: 15,
+  Follow: 16,
 } as const;
 export type CommandType = (typeof CommandType)[keyof typeof CommandType];
 
@@ -39,6 +40,7 @@ export type GameCommand =
   | { type: typeof CommandType.Move; x: number; y: number; queue: boolean }
   | { type: typeof CommandType.Stop }
   | { type: typeof CommandType.Attack; target: number }
+  | { type: typeof CommandType.Follow; target: number }
   | { type: typeof CommandType.AttackMove; x: number; y: number }
   | { type: typeof CommandType.Hold }
   /** target: 0 = none, 1 = unit (id), 2 = point (x, y) */

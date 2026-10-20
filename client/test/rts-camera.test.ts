@@ -18,12 +18,20 @@ describe('camera input across HUD panels', () => {
     }) as unknown as HTMLCanvasElement;
     vi.spyOn(engine, 'getDeltaTime').mockReturnValue(1000 / 60);
     const camera = new RtsCamera(scene, canvas, () => 0, 256);
+    camera.lookAt(16, 128);
+    expect(camera.target.x).toBe(16); // west-base view must not be clamped 40 units inward
     camera.lookAt(128, 128);
-    const move = (y: number) => host.dispatchEvent(Object.assign(new Event('pointermove'), { clientX: 640, clientY: y }));
+    const move = (y: number, x = 640) => host.dispatchEvent(Object.assign(new Event('pointermove'), { clientX: x, clientY: y }));
     const frames = (n: number) => {
       for (let i = 0; i < n; i++) scene.onBeforeRenderObservable.notifyObservers(scene);
     };
     try {
+      move(360, 20); // before reaching the browser sidebar at the exact left edge
+      frames(60);
+      expect(camera.target.x).toBeLessThan(105);
+      move(360, 1260);
+      frames(120);
+      expect(camera.target.x).toBeGreaterThan(145);
       move(4); // top HUD, not the canvas
       frames(60);
       expect(camera.target.y).toBeGreaterThan(150);
@@ -35,6 +43,23 @@ describe('camera input across HUD panels', () => {
       const stopped = camera.target.y;
       frames(60);
       expect(camera.target.y).toBeCloseTo(stopped, 2);
+      camera.lookAt(128, 128);
+      const down = Object.assign(new Event('pointerdown'), { clientX: 640, clientY: 360, button: 0, altKey: true });
+      canvas.dispatchEvent(down);
+      expect(camera.dragging).toBe(true);
+      move(420, 740);
+      frames(60);
+      expect(camera.target.x).toBeLessThan(125);
+      expect(camera.target.y).toBeGreaterThan(130);
+      host.dispatchEvent(new Event('pointerup'));
+      expect(camera.dragging).toBe(false);
+      host.dispatchEvent(Object.assign(new Event('keydown'), { key: 'ArrowLeft', code: 'ArrowLeft' }));
+      camera.enabled = false;
+      camera.enabled = true;
+      camera.lookAt(128, 128);
+      move(360);
+      frames(60);
+      expect(camera.target.x).toBeCloseTo(128, 2);
     } finally {
       scene.dispose();
       engine.dispose();

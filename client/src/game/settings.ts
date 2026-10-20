@@ -78,7 +78,7 @@ export function defaultSettings(): Settings {
     ...QUALITY_PRESETS.high,
     showFps: true,
     master: 0.8,
-    music: 0.6,
+    music: 0,
     sfx: 0.8,
     voice: 0.8,
     quickCast: false,
@@ -115,7 +115,7 @@ export function parseSettings(raw: unknown): Settings {
     effects: pick(r['effects'], ['low', 'high'], d.effects),
     showFps: bool(r['showFps'], d.showFps),
     master: clamp(r['master'], 0, 1, d.master),
-    music: clamp(r['music'], 0, 1, d.music),
+    music: r['soundVersion'] === 2 ? clamp(r['music'], 0, 1, d.music) : 0,
     sfx: clamp(r['sfx'], 0, 1, d.sfx),
     voice: clamp(r['voice'], 0, 1, d.voice),
     quickCast: bool(r['quickCast'], d.quickCast),
@@ -137,7 +137,7 @@ export function loadSettings(): Settings {
 
 export function saveSettings(s: Settings): void {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(s));
+    localStorage.setItem(STORE_KEY, JSON.stringify({ ...s, soundVersion: 2 }));
   } catch {
     // private window or full storage: the settings still work for this visit
   }

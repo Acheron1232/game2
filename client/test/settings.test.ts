@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { actionOf, bindKey, defaultSettings, keyLabel, parseSettings } from '../src/game/settings';
 
 describe('settings', () => {
+  it('starts silent, migrates old loud music once, and keeps an explicit new choice', () => {
+    expect(defaultSettings().music).toBe(0);
+    expect(parseSettings({ music: 0.6 }).music).toBe(0);
+    expect(parseSettings({ soundVersion: 2, music: 0.15 }).music).toBe(0.15);
+  });
   it('fills missing or broken values with defaults', () => {
     const s = parseSettings({ quality: 'ultra', renderScale: 9, shadows: 'yes', master: 0.3, keys: { ability1: 'KeyZ', nope: 'KeyY' } });
     expect(s.quality).toBe('high');

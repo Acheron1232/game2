@@ -984,7 +984,17 @@ export class FactionBrain {
       : '';
     if (this.doing === 'Defending the base!' || this.doing === 'Retreating' || this.doing.startsWith('Attacking'))
       return saving ? `${this.doing} · ${saving}` : this.doing;
-    return saving || this.doing || 'Gathering gold and wood';
+    const need = this.attacks === 0 ? this.rules.firstAttackArmySupply : this.rules.attackArmySupply;
+    const supply = this.gather ? this.groupSupply(this.gather) : 0;
+    const army =
+      this.armyState === 'gather'
+        ? supply < need
+          ? `Next attack: ${supply}/${need} army supply`
+          : 'Next attack: waiting for the army to gather'
+        : this.armyState === 'creep'
+          ? 'Army clearing a camp before the next attack'
+          : '';
+    return [saving || this.doing || 'Gathering gold and wood', army].filter(Boolean).join(' · ');
   }
 }
 

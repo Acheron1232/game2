@@ -95,6 +95,7 @@ export function unitStateOf(e: SimEntity): number {
     e.targetId ||
     e.order === 'attack' ||
     e.order === 'attackMove' ||
+    e.order === 'follow' ||
     e.order === 'hold' ||
     e.order === 'cast' ||
     e.order === 'item' ||

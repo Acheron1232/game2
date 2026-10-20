@@ -36,6 +36,8 @@ import {
   type PlayerSummary,
   heroAttributes,
   heroStats,
+  statsOf,
+  buildingDefOf,
   itemBonus,
   type HeroDef,
 } from '@game/shared';
@@ -72,6 +74,7 @@ import {
 } from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
+import { isTextEntry } from './render/rts-camera';
 import { abilityBlockReason } from './ui/ability-feedback';
 
 const NAME_KEY = 'tw.playerName';
@@ -396,6 +399,7 @@ async function main(): Promise<void> {
   if (import.meta.env.DEV) Object.assign(window as object, { world: w, net, sound, match: () => match }); // for debugging in the console
   // Compile every material and model now, not when the match starts.
   await w.library.warmUp(TEAMS);
+  await w.warmUpGroundMarks();
   await w.scene.whenReadyAsync();
   sceneReady = true;
   shadersDone();
@@ -619,7 +623,9 @@ async function main(): Promise<void> {
     const id = ENTITY_TYPES[e.type] ?? '';
     const hero = gameData.heroes.find((h) => h.id === id);
     const owner = match?.info.slots.find((s) => s.index === e.owner)?.name;
-    return hero ? `${hero.name}${owner ? ` (${owner})` : ''}` : (gameData.units.find((u) => u.id === id)?.name ?? id);
+    return hero
+      ? `${hero.name}${owner ? ` (${owner})` : ''}`
+      : (gameData.units.find((u) => u.id === id)?.name ?? buildingDefOf(e.type)?.name ?? (isMineType(e.type) ? 'Gold Mine' : id));
   };
   setInterval(() => {
     if (router.screen !== 'game' || !match) return;
@@ -704,9 +710,27 @@ async function main(): Promise<void> {
           noMana: !info.enoughMana,
           passive: a.kind !== 'active',
           canLearn: info.canLearn,
+          stateLabel:
+            info.level === 0
+              ? info.canLearn
+                ? 'Learn +'
+                : slot === 3 && p.level < 6
+                  ? 'Level 6'
+                  : 'Not learned'
+              : a.kind !== 'active'
+                ? 'Passive'
+                : '',
+          blocked: abilityBlockReason(info, own?.state ?? 0, own?.buffs ?? 0),
           tooltip: [
             `${a.name} (${'QWER'[slot]}) — ${S.abilityKinds[a.kind] ?? a.kind} [${info.level}/${a.maxLevel}]`,
             a.text,
+            info.level === 0
+              ? info.canLearn
+                ? 'Use + or Ctrl + key to learn this skill first.'
+                : 'Gain a skill point and meet the level requirement to learn.'
+              : a.kind !== 'active'
+                ? 'Works automatically. No cast needed.'
+                : 'Press the key or click the icon, then choose a target.',
             ...abilityDetails(a, info.level),
             numbers.join(' · '),
           ],
@@ -737,6 +761,22 @@ async function main(): Promise<void> {
         : sel && sel !== own
           ? `${unitName(sel)} · ${S.level} ${sel.level} · ${sel.hp} / ${sel.maxHp}`
           : null,
+      sel && sel !== own
+        ? (() => {
+            const st = isHeroType(sel.type) ? heroStats(gameData.heroes[sel.type]!, sel.level) : statsOf(sel.type);
+            const relation = sel.owner === 255 ? 'Neutral' : match.isEnemy(sel) ? 'Enemy' : 'Ally';
+            const owner = match.info.slots.find((slot) => slot.index === sel.owner);
+            return [
+              `${relation}${owner ? ` · ${owner.name} · ${COLOR_NAMES[owner.color]}` : ''} · ${st.layer === 'ground' ? 'Ground' : 'Flying'}`,
+              `Health ${Math.ceil(sel.hp)}/${sel.maxHp}${sel.maxMana ? ` · Mana ${Math.floor(sel.mana)}/${sel.maxMana}` : ''}`,
+              `Base damage ${st.damageMin}–${st.damageMax} · Base armor ${st.armor.toFixed(1)} · Range ${st.attackRange} · Speed ${st.moveSpeed}`,
+              match.isEnemy(sel)
+                ? 'Right-click the unit or its marker to attack.'
+                : 'Right-click the unit or its marker to follow. S: stop.',
+            ];
+          })()
+        : undefined,
+      sel && assets.has(`portraits/${ENTITY_TYPES[sel.type]}.webp`) ? assets.url(`portraits/${ENTITY_TYPES[sel.type]}.webp`) : undefined,
     );
   }, 125);
 
@@ -879,6 +919,10 @@ async function main(): Promise<void> {
     if (a?.kind === 'attack') {
       setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
+      if (hit && hit !== match.ownHero && !isBuildingType(hit.type)) {
+        match.follow(hit);
+        return game.alert(`Following ${unitName(hit)}. S: stop.`);
+      }
       const p = w.pickGround(x, y);
       if (p) match.attackMove(p.x, p.y);
       return;
@@ -908,11 +952,15 @@ async function main(): Promise<void> {
   });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
-    if (router.screen !== 'game' || !match) return;
+    if (router.screen !== 'game' || !match || w.camera.dragging || e.altKey || e.button === 1) return;
     const hit = match.pick(e.offsetX, e.offsetY);
     if (e.button === 2) {
       if (aim) return setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
+      if (hit && hit !== match.ownHero && !isBuildingType(hit.type)) {
+        match.follow(hit);
+        return game.alert(`Following ${unitName(hit)}. S: stop.`);
+      }
       const item = match.pickGroundItem(e.offsetX, e.offsetY);
       if (item) {
         if (!canStore(myInventory(), item.item, item.charges)) return game.alert(S.inventoryFull);
@@ -939,7 +987,7 @@ async function main(): Promise<void> {
     }
   });
   window.addEventListener('keydown', (e) => {
-    if (router.screen !== 'game' || e.target instanceof HTMLInputElement || !match) return;
+    if (router.screen !== 'game' || isTextEntry(e.target) || !match) return;
     // Held keys must not flood the server with casts or toggle follow repeatedly.
     if (e.repeat) return;
     if (e.key === 'Enter') {
@@ -1008,7 +1056,7 @@ async function main(): Promise<void> {
     );
   };
   window.addEventListener('keydown', (e) => {
-    if (e.code !== 'Tab' || router.screen !== 'game' || e.target instanceof HTMLInputElement) return;
+    if (e.code !== 'Tab' || router.screen !== 'game' || isTextEntry(e.target)) return;
     e.preventDefault();
     if (scoresShown) return;
     scoresShown = true;
@@ -1026,7 +1074,10 @@ async function main(): Promise<void> {
 
   router.onChange((name) => {
     // Settings keep what is behind them (a running match stays a match).
-    if (name === 'settings') return setAim(null);
+    if (name === 'settings') {
+      w.camera.enabled = false;
+      return setAim(null);
+    }
     if (name !== 'game') setAim(null);
     engine.maxFPS = name === 'game' ? gameFps : MENU_FPS;
     w.setMenuMode(name !== 'game');
