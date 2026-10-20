@@ -11,6 +11,7 @@ import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 import { CreateTorus } from '@babylonjs/core/Meshes/Builders/torusBuilder';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
+import '@babylonjs/core/Meshes/instancedMesh';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 import type { Scene } from '@babylonjs/core/scene';
 import { BuffFlag } from '@game/shared';
@@ -222,6 +223,7 @@ export class AbilityFx {
     Object.assign(b, { x, y, h, dx: (ex - x) / d, dy: (ey - y) / d, left: d, speed, active: true });
     b.mesh.material = this.mat(color, 1);
     b.mesh.setEnabled(true);
+    b.mesh.position.set(x, h, -y);
     b.mesh.rotation.y = Math.atan2(b.dx, -b.dy) + Math.PI;
   }
 
@@ -295,5 +297,21 @@ export class AbilityFx {
       }
       b.mesh.position.set(b.x, b.h, -b.y);
     }
+  }
+
+  dispose(): void {
+    for (const id of this.markers.keys()) this.clearMarkers(id);
+    for (const ps of this.bursts) ps.dispose(false);
+    for (const f of this.flashes) f.mesh.dispose();
+    for (const b of this.bolts) b.mesh.dispose();
+    for (const mesh of this.markerTemplates.values()) mesh.dispose();
+    this.ringTemplate.dispose();
+    this.discTemplate.dispose();
+    for (const mat of this.mats.values()) mat.dispose();
+    this.flashes.length = 0;
+    this.bolts.length = 0;
+    this.bursts.length = 0;
+    this.markerTemplates.clear();
+    this.mats.clear();
   }
 }

@@ -96,6 +96,7 @@ export class MatchClient {
   readonly fx: AbilityFx;
   private readonly deadSince = new Map<number, number>();
   private readonly pt = { x: 0, y: 0 };
+  private readonly effectTimers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(
     readonly world: GameWorld,
@@ -395,7 +396,14 @@ export class MatchClient {
     this.world.playOnce(u, 'cast', Math.max(0.4, a.castTime + 0.25));
     const gh = (x: number, y: number) => this.world.terrain.heightAt(x, y);
     const delay = a.castTime * 1000;
-    const later = (fn: () => void) => (delay > 0 ? setTimeout(fn, delay) : fn());
+    const later = (fn: () => void) => {
+      if (delay <= 0) return fn();
+      const timer = setTimeout(() => {
+        this.effectTimers.delete(timer);
+        fn();
+      }, delay);
+      this.effectTimers.add(timer);
+    };
     const radius = lv(a.params['radius'], level) || lv(a.params['tauntRadius'], level);
     switch (a.id) {
       case 'sky_pillar':
@@ -565,10 +573,14 @@ export class MatchClient {
 
   dispose(): void {
     this.unsubscribe();
+    for (const timer of this.effectTimers) clearTimeout(timer);
+    this.effectTimers.clear();
     this.world.beforeFrame = null;
     for (const id of [...this.entities.keys()]) this.remove(id);
     this.world.select(null);
-    this.bars.update([], 0);
-    this.projectiles.update(0);
+    this.bars.dispose();
+    this.projectiles.dispose();
+    this.fx.dispose();
+    this.floating?.clear();
   }
 }

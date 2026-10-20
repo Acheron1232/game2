@@ -131,4 +131,24 @@ describe('client prediction against the server', () => {
     expect(pred.stats.snaps).toBe(0);
     expect(pred.stats.corrections).toBe(0);
   });
+
+  it.each([
+    [0, 0],
+    [50, 30],
+  ])('settles after a long walk with %i ms one-way delay and %i ms jitter', (delay, jitter) => {
+    const [sx, sy] = gameData.map.starts[0]!.heroSpawn;
+    const { pred, server } = run(
+      delay,
+      jitter,
+      [
+        { at: 500, dx: 136 - sx, dy: 126 - sy },
+        { at: 38000, dx: 10, dy: 3 },
+      ],
+      60000,
+    );
+    expect(server.moving).toBe(false);
+    expect(Math.hypot(pred.mover.x - server.x, pred.mover.y - server.y)).toBeLessThan(0.02);
+    expect(pred.stats.snaps).toBe(0);
+    expect(pred.stats.corrections).toBe(0);
+  });
 });

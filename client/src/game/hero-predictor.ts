@@ -8,8 +8,8 @@ import { applyCommand, createMover, stepMover, TICK_DT, type GameCommand, type M
 const HISTORY = 512; // steps (25 s)
 /** Bigger errors than this snap (teleport-like server moves). */
 const SNAP_DISTANCE = 2;
-/** Smaller errors than this are rounding: ignore. */
-const IGNORE_DISTANCE = 0.01;
+/** The wire allows 0.01 units of drift plus position rounding. Do not chase that noise. */
+const IGNORE_DISTANCE = 0.02;
 /** Steps to run at most in one go (10 s). */
 const MAX_CATCH_UP = 200;
 /** How fast the drawn hero catches up after a fix (seconds). */

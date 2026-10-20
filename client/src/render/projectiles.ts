@@ -68,6 +68,7 @@ export class Projectiles {
     const matrices = new Float32Array(16 * MAX);
     mesh.thinInstanceSetBuffer('matrix', matrices, 16, false);
     mesh.thinInstanceCount = 0;
+    mesh.setEnabled(false);
     l = { mesh, matrices, count: 0 };
     this.layers.set(key, l);
     return l;
@@ -101,9 +102,16 @@ export class Projectiles {
       l.count++;
     }
     for (const l of this.layers.values()) {
+      l.mesh.setEnabled(l.count > 0);
       l.mesh.thinInstanceCount = l.count;
       l.mesh.thinInstanceBufferUpdated('matrix');
       l.count = 0;
     }
+  }
+
+  dispose(): void {
+    for (const l of this.layers.values()) l.mesh.dispose(false, true);
+    this.layers.clear();
+    this.shots.length = 0;
   }
 }

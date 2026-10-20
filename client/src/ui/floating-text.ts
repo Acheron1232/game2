@@ -60,4 +60,11 @@ export class FloatingText {
       i.node.style.opacity = String(t < 0.6 ? 1 : 1 - (t - 0.6) / 0.4);
     }
   }
+
+  clear(): void {
+    for (const item of this.items) {
+      item.active = false;
+      item.node.hidden = true;
+    }
+  }
 }

@@ -1,5 +1,7 @@
 # Progress
 
+- **Continuous playtest, cycle 1** (2026-10-20): fixed WebGPU ground darkening at far zoom (missing mip layers), combat resources left after matches, stale cast timers, shared particle-atlas disposal, empty instance layers and a path-planning mismatch caused by network rounding. 77 tests, typecheck, build and lint pass. Native resolution and the 120 FPS match limit are unchanged. See [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md) for evidence and remaining checks.
+
 The AI updates this file at the end of every phase. Newest notes go on top of each section.
 
 ## Current state

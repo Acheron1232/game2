@@ -10,19 +10,16 @@
 //   [player state, if flags & HasPlayer]
 //   u16 spawns, spawns...   u16 updates, updates...   u16 gone, ids...   u16 events, events...
 
-import { gameData } from '../data/index';
 import { CommandType, type GameCommand } from '../sim/commands';
 import { BinaryReader, type BinaryWriter } from './binary';
 import { MsgId } from './messages';
+import { dqPos, qPos } from '../map/coordinates';
+export { dqPos, qPos, quantizePoint } from '../map/coordinates';
 
-const MAP_SIZE = gameData.map.size.width;
-const POS_SCALE = 65535 / MAP_SIZE;
 /** Velocity steps: 1/2000 unit per second, up to about 16 units per second. */
 const VEL_SCALE = 2000;
 const TWO_PI = Math.PI * 2;
 
-export const qPos = (v: number) => Math.round(Math.max(0, Math.min(MAP_SIZE, v)) * POS_SCALE);
-export const dqPos = (q: number) => q / POS_SCALE;
 export const qVel = (v: number) => Math.max(-32767, Math.min(32767, Math.round(v * VEL_SCALE)));
 export const dqVel = (q: number) => q / VEL_SCALE;
 export const qFacing = (f: number) => Math.round((((f % TWO_PI) + TWO_PI) % TWO_PI) * (256 / TWO_PI)) & 255;
@@ -183,9 +180,6 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
 }
 
 /** Rounds a target point the same way the network does, so prediction plans the same path. */
-export function quantizePoint(x: number, y: number): [number, number] {
-  return [dqPos(qPos(x)), dqPos(qPos(y))];
-}
 
 // ---------- snapshots ----------
 

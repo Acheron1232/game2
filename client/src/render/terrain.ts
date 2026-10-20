@@ -20,6 +20,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 import { GROUND_TYPES, TerrainFlag, terrainCellAt, terrainLevel, type MapLayout, type TerrainGrid } from '@game/shared';
 import type { GameAssets } from '../loader/assets';
+import { downsampleArrayMip } from './texture-array-mips';
 
 /** World height of one terrain level (ground 0 -> temple top 1). */
 export const LEVEL_HEIGHT = 2.2;
@@ -275,6 +276,17 @@ export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: Map
     false,
     Texture.TRILINEAR_SAMPLINGMODE,
   );
+  // Babylon 9.29 WebGPU generates array mips for layer 0 only. Other ground types turn
+  // black as the camera zooms out. Upload every layer of each mip, keeping trilinear filtering.
+  // WebGL2 already generates the full array and does not support updateMipLevel here.
+  if (scene.getEngine().isWebGPU) {
+    let mip = tileData;
+    for (let size = tileSize, level = 1; size > 1; level++) {
+      mip = downsampleArrayMip(mip, size, layers);
+      tiles.updateMipLevel(mip, level);
+      size /= 2;
+    }
+  }
   tiles.wrapU = Texture.WRAP_ADDRESSMODE;
   tiles.wrapV = Texture.WRAP_ADDRESSMODE;
   tiles.anisotropicFilteringLevel = 4;

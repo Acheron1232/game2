@@ -52,6 +52,7 @@ class Layer {
     this.mesh.alwaysSelectAsActiveMesh = true;
     this.mesh.thinInstanceSetBuffer('matrix', this.matrices, 16, false);
     this.mesh.thinInstanceCount = 0;
+    this.mesh.setEnabled(false);
   }
 
   reserve(n: number): void {
@@ -69,6 +70,8 @@ class Layer {
   }
 
   flush(): void {
+    // Zero thin instances would draw the source quad at the world origin.
+    this.mesh.setEnabled(this.count > 0);
     this.mesh.thinInstanceCount = this.count;
     this.mesh.thinInstanceBufferUpdated('matrix');
     this.count = 0;
@@ -137,5 +140,10 @@ export class HealthBars {
     this.pos.set(x + dx, y + dy * this.up.y, z + dy * this.up.z);
     Matrix.ComposeToRef(this.scale, this.rot, this.pos, this.m);
     layer.put(this.m);
+  }
+
+  dispose(): void {
+    for (const layer of [this.back, this.mana, ...this.fills.values()]) layer.mesh.dispose(false, true);
+    this.fills.clear();
   }
 }

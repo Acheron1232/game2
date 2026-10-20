@@ -4,6 +4,7 @@
 
 import { findPath, type NavGrid } from '../nav/nav-grid';
 import type { Mover } from './movement';
+import { dqPos, qPos } from '../map/coordinates';
 
 export const CommandType = {
   Move: 1,
@@ -49,7 +50,11 @@ export function applyMove(m: Mover, nav: NavGrid, x: number, y: number, queue: b
     const cx = Math.max(FLY_MARGIN, Math.min(size - FLY_MARGIN, x)),
       cy = Math.max(FLY_MARGIN, Math.min(size - FLY_MARGIN, y));
     path = Math.hypot(cx - sx, cy - sy) > 1e-3 ? [[cx, cy]] : [];
-  } else path = findPath(nav, sx, sy, x, y);
+  } else {
+    // A spawn on a cell edge can round into its neighbor in a snapshot. Plan from the
+    // same wire position on both sides, so A* and string pulling choose the same route.
+    path = findPath(nav, dqPos(qPos(sx)), dqPos(qPos(sy)), x, y);
+  }
   if (queue) m.path.push(...path);
   else m.path = path;
   return path.length > 0;

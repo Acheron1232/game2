@@ -205,7 +205,8 @@ export function attachHeroEffects(scene: Scene, heroId: string, nodes: Transform
   }
   return {
     dispose() {
-      for (const s of systems) s.dispose();
+      // The atlas belongs to the scene and is shared by every hero and ability.
+      for (const s of systems) s.dispose(false);
       for (const e of emitters) e.dispose();
       if (observer) scene.onBeforeRenderObservable.remove(observer);
     },
