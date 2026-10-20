@@ -17,7 +17,8 @@ interface Shot {
   h: number;
   speed: number;
   target: () => { x: number; y: number; h: number } | null;
-  color: string;
+  /** layer key: color and size */
+  key: string;
 }
 
 interface ColorLayer {
@@ -28,20 +29,20 @@ interface ColorLayer {
 
 const MAX = 128;
 const IDENTITY = Quaternion.Identity();
+const ONE = new Vector3(1, 1, 1);
 
 export class Projectiles {
   private readonly shots: Shot[] = [];
   private readonly layers = new Map<string, ColorLayer>();
   private readonly m = new Matrix();
-  private readonly s = new Vector3(0.28, 0.28, 0.28);
   private readonly p = new Vector3();
 
   constructor(private readonly scene: Scene) {
-    for (let i = 0; i < MAX; i++) this.shots.push({ active: false, x: 0, y: 0, h: 0, speed: 0, target: () => null, color: '#ffffff' });
+    for (let i = 0; i < MAX; i++) this.shots.push({ active: false, x: 0, y: 0, h: 0, speed: 0, target: () => null, key: '' });
   }
 
-  /** color: hex like '#ffd84a' */
-  fire(x: number, y: number, h: number, speed: number, target: Shot['target'], color: string): void {
+  /** color: hex like '#ffd84a'; size: ball diameter (spells are bigger than attacks) */
+  fire(x: number, y: number, h: number, speed: number, target: Shot['target'], color: string, size = 0.28): void {
     const s = this.shots.find((x) => !x.active);
     if (!s) return;
     s.active = true;
@@ -50,14 +51,14 @@ export class Projectiles {
     s.h = h;
     s.speed = speed;
     s.target = target;
-    s.color = color;
-    this.layer(color);
+    s.key = `${color}:${size}`;
+    this.layer(color, size, s.key);
   }
 
-  private layer(color: string): ColorLayer {
-    let l = this.layers.get(color);
+  private layer(color: string, size: number, key: string): ColorLayer {
+    let l = this.layers.get(key);
     if (l) return l;
-    const mesh = CreateSphere(`projectile-${color}`, { diameter: 1, segments: 4 }, this.scene);
+    const mesh = CreateSphere(`projectile-${key}`, { diameter: size, segments: 4 }, this.scene);
     const mat = new StandardMaterial(`projectile-${color}`, this.scene);
     mat.disableLighting = true;
     mat.emissiveColor = Color3.FromHexString(color);
@@ -68,7 +69,7 @@ export class Projectiles {
     mesh.thinInstanceSetBuffer('matrix', matrices, 16, false);
     mesh.thinInstanceCount = 0;
     l = { mesh, matrices, count: 0 };
-    this.layers.set(color, l);
+    this.layers.set(key, l);
     return l;
   }
 
@@ -92,10 +93,10 @@ export class Projectiles {
       s.x += (dx / d) * step;
       s.y += (dy / d) * step;
       s.h += (dh / d) * step;
-      const l = this.layers.get(s.color);
+      const l = this.layers.get(s.key);
       if (!l) continue;
       this.p.set(s.x, s.h, -s.y);
-      Matrix.ComposeToRef(this.s, IDENTITY, this.p, this.m);
+      Matrix.ComposeToRef(ONE, IDENTITY, this.p, this.m);
       this.m.copyToArray(l.matrices, l.count * 16);
       l.count++;
     }

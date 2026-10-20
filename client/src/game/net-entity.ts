@@ -38,6 +38,8 @@ export class NetEntity {
   mana: number;
   maxMana: number;
   level: number;
+  /** BuffFlag bits */
+  buffs: number;
   unit: Unit | null = null;
   /** for full snapshots: was it in the last one */
   mark = 0;
@@ -53,6 +55,7 @@ export class NetEntity {
     this.mana = s.mana;
     this.maxMana = s.maxMana;
     this.level = s.level;
+    this.buffs = s.buffs;
     this.keys.push({ tick, x: dqPos(s.x), y: dqPos(s.y), vx: dqVel(s.vx), vy: dqVel(s.vy), facing: dqFacing(s.facing), state: s.state });
   }
 
@@ -89,6 +92,7 @@ export class NetEntity {
       this.maxMana = u.maxMana;
     }
     if (u.mask & Field.Level) this.level = u.level;
+    if (u.mask & Field.Buffs) this.buffs = u.buffs;
     if (prev.tick === tick) this.keys[this.keys.length - 1] = key;
     else this.keys.push(key);
     if (this.keys.length > MAX_KEYS) this.keys.shift();

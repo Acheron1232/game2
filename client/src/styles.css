@@ -689,3 +689,118 @@ td .btn.tiny {
   border-radius: 3px;
   pointer-events: none;
 }
+
+/* ---------- ability buttons ---------- */
+.ability {
+  cursor: pointer;
+  overflow: visible;
+}
+.ability-icon {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.ability.unlearned .ability-icon {
+  filter: grayscale(1) brightness(0.45);
+}
+.ability.no-mana .ability-icon {
+  filter: saturate(0.4) brightness(0.6) sepia(0.3) hue-rotate(190deg);
+}
+.ability.passive {
+  cursor: default;
+}
+.ability .cooldown {
+  position: absolute;
+  inset: 0;
+  /* a dark sweep that shrinks clockwise as the cooldown runs out */
+  background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--cd, 0) * 360deg), transparent 0);
+}
+.ability .cooldown-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+.ability .key {
+  z-index: 1;
+  text-shadow: 0 1px 2px #000;
+}
+.pips {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+.pips i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a2014;
+  border: 1px solid #000;
+}
+.pips i.on {
+  background: #ffd84a;
+}
+.ability .learn {
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #000;
+  background: radial-gradient(circle at 35% 30%, #fff2a0, #d39a1a);
+  color: #3a2000;
+  font-weight: 900;
+  line-height: 18px;
+  padding: 0;
+  cursor: pointer;
+  z-index: 2;
+  box-shadow: 0 0 8px rgba(255, 210, 80, 0.9);
+}
+.tooltip {
+  position: absolute;
+  bottom: 196px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 360px;
+  padding: 8px 12px;
+  background: rgba(12, 8, 4, 0.92);
+  border: 1px solid var(--gold);
+  font-size: 14px;
+  pointer-events: none;
+}
+.tooltip b {
+  display: block;
+  color: var(--gold-light);
+  font-family: var(--title-font);
+  margin-bottom: 4px;
+}
+.tooltip p {
+  margin: 2px 0;
+}
+.tooltip p:last-child {
+  color: var(--muted);
+}
+.hud-alert {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--title-font);
+  font-size: 20px;
+  color: #ffd84a;
+  text-shadow:
+    0 2px 3px #000,
+    0 0 6px #000;
+  pointer-events: none;
+}

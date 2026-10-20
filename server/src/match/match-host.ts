@@ -11,7 +11,8 @@ export type ToWorker =
   | { t: 'online'; slot: number; on: boolean }
   | { t: 'reset'; slot: number }
   | { t: 'go' }
-  | { t: 'stop' };
+  | { t: 'stop' }
+  | { t: 'cheat'; slot: number; xp: number; gold: number };
 
 export type FromWorker = { t: 'ready' } | { t: 'out'; tick: number; packets: MatchPacket[] } | { t: 'stats'; stats: MatchStats };
 
@@ -21,6 +22,8 @@ export interface MatchHost {
   resetView(slot: number): void;
   go(): void;
   stop(): void;
+  /** dev only: XP and gold for a slot's hero */
+  cheat(slot: number, xp: number, gold: number): void;
   onPackets: (tick: number, packets: MatchPacket[]) => void;
   onStats: (stats: MatchStats) => void;
   /** last stats, for the load test and /health */
@@ -64,6 +67,9 @@ class InlineMatchHost implements MatchHost {
   stop(): void {
     this.stopLoop?.();
   }
+  cheat(slot: number, xp: number, gold: number): void {
+    this.runner.cheat(slot, xp, gold);
+  }
 }
 
 class WorkerMatchHost implements MatchHost {
@@ -100,6 +106,9 @@ class WorkerMatchHost implements MatchHost {
   }
   go(): void {
     this.post({ t: 'go' });
+  }
+  cheat(slot: number, xp: number, gold: number): void {
+    this.post({ t: 'cheat', slot, xp, gold });
   }
   stop(): void {
     this.post({ t: 'stop' });

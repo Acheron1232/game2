@@ -112,6 +112,8 @@ export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
     test: z.object({ units: z.number().int().min(0).max(1000), area: z.enum(['bases', 'center']) }).optional(),
   }),
   z.object({ type: z.literal('matchReady') }),
+  /** dev servers only: give the own hero XP or gold (for testing) */
+  z.object({ type: z.literal('cheat'), xp: z.number().min(0).max(100000).optional(), gold: z.number().min(0).max(100000).optional() }),
   z.object({ type: z.literal('endMatch') }),
 ]);
 

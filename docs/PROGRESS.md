@@ -9,12 +9,13 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
 - **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
 - **Client audit and polish** (2026-10-19): current working map is 256 × 256, with 7,451 baked trees, 6,679 decor objects and 58 model entries. These additions follow the original Phase 5 snapshot below. Fixed HUD clipping, minimap sizing, camera bounds, per-frame allocations, shader warm-up error handling and blocked-corner navigation. WebGPU and WebGL2 checked in the browser; build, typecheck, 30 tests and lint passed. See [CLIENT_AUDIT.md](CLIENT_AUDIT.md) for sampled performance numbers, limits and remaining visual work. Earlier Phase 5 numbers below describe the earlier map.
-- **Phase 7a is done** (2026-10-20): combat core, neutral camps, XP and levels. Phase 7 is split into 3 parts (see "Phase 7 plan" below). Next: **Phase 7b — abilities, buffs, all 8 hero kits** (prompt: "Do Phase 7b" or "continue Phase 7").
-- Notes for Phase 7b:
-  - Buffs: add a buff list to `SimEntity` and apply it in `refreshStats` (armor, speed, damage block...) and in `engage` / movement (stun, root, slow). `canSee` is already there for target checks.
-  - Abilities: `HeroState.abilityLevels` and `skillPoints` exist and are sent to the client (`NetPlayerState.abilityLevels`); `canLearn()` in `stats.ts` has the level rule. Add Cast and Learn commands next to Attack in `commands.ts` / `game.ts`.
-  - Spell damage: use `spellDamage()` and `MatchSim.damage(..., DamageKind.Spell)`; heals: `MatchSim.heal`.
-  - Knockback / blink / charge move a hero without a player command: the client then gets small fixes or a snap. Mark those moments as ServerDriven (the state bit) so prediction steps aside.
+- **Phase 7b is done** (2026-10-20): abilities, buffs, all 8 hero kits, monster skills, ability bar, aiming and placeholder looks. Next: **Phase 7c — items, shops, fountains, full 2-player test** (prompt: "Do Phase 7c").
+- Notes for Phase 7c:
+  - Item stats go into `MatchSim.refreshStats` (base = hero level stats + items, then buffs). Life steal / on-hit can reuse `sumBuffs(…, 'lifeStealPct')` by giving items a permanent buff, or a small item-bonus pass in `applyAttack`.
+  - Camp drops: `CampState.lastDeathX/Y` is kept in `onCampMemberDied`; roll `gameData.camps.dropTables` there.
+  - Item actives: a new `UseItem` command next to `Cast` (same target kinds); potions share a cooldown group.
+  - Dev cheat: `{ type: 'cheat', xp?, gold? }` (dev servers only) also refills health and mana and clears cooldowns — handy for the 2-player test.
+- Phase 7a is done (2026-10-20): combat core, neutral camps, XP and levels.
 - Phase 6 is done (2026-10-20).
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
 
@@ -28,7 +29,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
-| 7 | Combat, heroes, camps, items | **In progress** | 7a done: attacks, projectiles, armor/damage types, death + respawn, 24 neutral camps (aggro, leash, respawn), bounty, XP sharing, levels 1–10, HUD + health bars + damage numbers. Next 7b: abilities and buffs; 7c: items, shops, fountains |
+| 7 | Combat, heroes, camps, items | **In progress** | 7a done: combat core, 24 camps, XP and levels, HUD. 7b done: all 32 abilities + buffs + auras + monster skills, Q W E R bar with cooldowns and learn, aiming markers, placeholder effects. Next 7c: items, shops, fountains, 2-player test |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
@@ -38,6 +39,20 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 - **7a — combat core (done):** see below.
 - **7b — abilities:** ability system from `abilities.json` (target types none / unit / point / line / cone, cast range, cast time, mana, cooldown, levels, learn with skill points), buffs and debuffs (stun, slow, root, silence, shields, damage block/reduction, taunt, auras, damage and heal over time, summons, knockback, blink, charge, channel), all 32 abilities of the 8 heroes, ground indicators while aiming, Q W E R buttons with cooldown sweep and "+" to learn (icons exist in `public/assets/icons`), placeholder effects for every ability, monster skills (Howl, Mend, Screech, Web, Ground Slam, Stone Guard), tests that ability numbers match HEROES.md and that the server refuses casts on cooldown / without mana / out of range / while stunned.
 - **7c — items and shops:** inventory (6 slots, stacks), item stats and passives (life steal, on-hit slow, chain lightning, revive), actives on 1–6 (potions with a shared cooldown, scroll of return, ward, smoke bomb, tome), drop tables (one roll when a camp dies), items on the ground (pick up, drop, give, 3-minute timeout), sell for half, shop panel near Trader's Tent / Temple Market, fountains (2.5% HP / 2% mana per second), uphill miss chance, then the full 2-player test: every hero farms to level 10, uses all 4 abilities, buys and uses items, dies and respawns.
+
+## Phase 7b — what was made
+
+- **Buffs** (`shared/src/sim/buffs.ts`): stun, root, silence, slow (strongest counts), move / attack speed, armor, damage block, damage reduction, spell reduction, more spell damage taken, life steal, more damage, HP regen, more max HP, damage over time, "can not die" (min HP), heal at the end, taunt, reveal, draw scale. Same id + same source refreshes. Stats are rebuilt from base + buffs (`applyBuffs`); `BuffFlag` bits go to clients for markers.
+- **Abilities** (`shared/src/sim/abilities.ts`): learn with skill points (level rule), checks (learned, active, not stunned / silenced / thrown, cooldown, mana, Blood Bolt health cost, target filter enemy / ally / self / air, visible, point inside the map) when ordered **and** again when the effect fires; walk into range, cast time, then pay mana, start the cooldown, effect. Channels (Arcane Storm) stop on a new order, stun or silence. All 32 effects: homing spell bolts, line shots (first hit or all), cones, areas around the hero, ground zones that work every 0.5 s, jumps / dives / charges (forced moves), knockback that stops at walls, blink, summons (Tree Guardians follow the Elf and fight her target), auras every 0.5 s (Crimson Pact, Herd Call, Nature's Gift), passives (Flurry double hit, Dragon Scales). Monster skills auto-cast in fights: Howl, Mend, Screech, Web, Ground Slam, Stone Guard (passive).
+- **Simulation**: new `cast` order, buffs every tick (DoT every 0.5 s, end effects), stunned / rooted / thrown units do not move, taunt forces the target, Mana Mark reveals through vision, summons expire, heroes keep passives after respawn. Protocol v4: Cast and Learn commands, cooldown end ticks in the player state, buff bits per entity, events Cast / Impact / LineShot / ChannelEnd, spell projectiles (kind = ability + 1). Units under a server effect are "server-driven" for prediction.
+- **Client**: Q W E R bar with icons (Phase 3 art), level dots, cooldown sweep and seconds, grey when not learned, blue-grey without mana, "+" to learn (also Ctrl + key), tooltip (name, kind, level, text, mana / cooldown / range); alerts ("Not enough mana.", "Ability is not ready.", "Learn this ability first.", "Can't do that now."); aiming with ground markers: cast range ring, circle, cone, line, ring on the unit under the cursor; left click casts, right click / Esc cancels. Placeholder looks per hero color: rings and particle bursts (effects atlas), ground zones for their duration, cone flash, flying bolts, bigger spell balls, jump arcs, Mountain Form growth, buff markers (stun, root, slow, shield, blessed, mark, burn, taunt, channel).
+- **Dev cheat** (dev servers only): `cheat` lobby message gives XP / gold and refills health, mana and cooldowns.
+
+How 7b was checked:
+- `shared/test/abilities.test.ts` (15 tests): learning rule; level 10 learns all; server refusals: cooldown, mana, stun, passive, Blood Bolt can not kill the witch, wrong target (heal on an enemy), unit out of range = walk first then cast; numbers for every hero kit (damage, damage over time, slows, stuns and their end, block / reduction, Mountain Form +50% HP and taunt, heals, Blessing armor and speed, Sanctuary, Dawn Shield keeps 1 HP then heals, Arcane Arrow hits only the first, Blink 12, Mana Mark +24%, Arcane Storm 8 × 40, Spear Throw hits all, Herd Call +12%, Great Charge moves and hits, Vine Snare root + DoT, 2 Tree Guardians with 800 HP / 35 damage, Wrath roots in 10); every ability param in abilities.json appears with the same numbers in HEROES.md.
+- Browser (WebGPU): Stone Golem level 10 — R makes it big (1785 / 1785 HP = 1190 × 1.5), E shows the Tremor ring, cooldown seconds 12 / 116 on the buttons, W without mana says "Not enough mana."; Staff Warrior — R shows the range ring (8) and the circle (4) at the cursor, the leap arcs and lands with a ring, mana 312 → 162, cooldown 90; Arcane Huntress — Q line marker toward the cursor and a purple bolt, R zone on the ground with the channel ring under her. Prediction fixes stayed 0.
+- 71 tests, lint, build, data check pass. Load test: tick avg 0.5 ms, max 3.3 ms, 3.3 KB/s.
+- Not checked yet: every ability by hand in the browser (the sim tests cover the numbers); hero vs hero fights with abilities (7c 2-player test).
 
 ## Phase 7a — what was made
 
@@ -179,6 +194,10 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Casts are checked twice: when ordered (refused at once) and when the effect fires (mana or stun may have changed). Mana and cooldown are paid when the effect fires, not when the cast starts (classic RTS rule).
+- 2026-10-20 — Unit-target and zone spells walk into range; jumps, dives, charges and Blink go as far as their range allows toward the click instead.
+- 2026-10-20 — Damage and heal over time land every 0.5 s (half the per-second value), to keep events and numbers readable.
+- 2026-10-20 — Ability placeholder looks use the hero's color + the Phase 3 effects atlas; final effects in Phase 9.
 - 2026-10-20 — Phase 7 is split into 7a (combat core, camps, XP), 7b (abilities, buffs), 7c (items, shops, fountains, full 2-player test).
 - 2026-10-20 — Idle units and heroes do not start fights with neutral monsters (like classic RTS games); they answer when hit. Attack-move takes anything.
 - 2026-10-20 — Heroes are never pushed by other units, so the own-hero prediction stays exact. Monsters and other units step aside.

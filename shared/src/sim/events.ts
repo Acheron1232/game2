@@ -16,6 +16,14 @@ export const EventType = {
   LevelUp: 6,
   /** a = hero */
   Respawn: 7,
+  /** a = caster; kind = ability index (| 128 for a point: b, value = x, y quantized; else b = target id). 255 = monster skill */
+  Cast: 8,
+  /** a = caster, b/value = point (quantized), kind = ability index: a jump lands, a blink, a dive */
+  Impact: 9,
+  /** a = caster: its channel stopped */
+  ChannelEnd: 10,
+  /** a = caster, b/value = end point (quantized), kind = ability index; speed is in the data */
+  LineShot: 11,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 

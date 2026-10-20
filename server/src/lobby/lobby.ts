@@ -168,6 +168,11 @@ export class Lobby {
       }
       case 'endMatch':
         return this.endMatch(p);
+      case 'cheat': {
+        const slot = p.room?.slotOf(p);
+        if (this.options.allowTestOptions && slot && p.room?.going) p.room.match?.cheat(slot.index, msg.xp ?? 0, msg.gold ?? 0);
+        return;
+      }
     }
   }
 

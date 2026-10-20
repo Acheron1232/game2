@@ -33,7 +33,7 @@ export class HeroPredictor {
   private prevF: number;
   private offX = 0;
   private offY = 0;
-  private readonly pending: { seq: number; cmd: GameCommand }[] = [];
+  private readonly pending: { seq: number; cmd: GameCommand | null }[] = [];
   /** command seq -> local step it ran in */
   private readonly cmdStep = new Map<number, number>();
   private lastSeq = 0;
@@ -83,6 +83,12 @@ export class HeroPredictor {
     this.offY = drawnY - y;
   }
 
+  /** A command that does not move the hero (learn a skill): it still takes a step slot. */
+  skip(seq: number): void {
+    this.pending.push({ seq, cmd: null });
+    this.lastSeq = seq;
+  }
+
   /** The command runs in the next step, like on the server. */
   issue(seq: number, cmd: GameCommand): void {
     this.pending.push({ seq, cmd });
@@ -107,7 +113,7 @@ export class HeroPredictor {
       this.prevF = this.mover.facing;
       this.step++;
       for (const p of this.pending) {
-        applyCommand(this.mover, this.nav, p.cmd, this.flying);
+        if (p.cmd) applyCommand(this.mover, this.nav, p.cmd, this.flying);
         this.cmdStep.set(p.seq, this.step);
       }
       this.pending.length = 0;

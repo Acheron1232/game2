@@ -1,11 +1,26 @@
-// The match simulation: entities, orders, combat and one fixed tick.
+// The match simulation: entities, orders, combat, abilities and one fixed tick.
 // Runs on the server (in the match worker). Plain logic: no network, no timers, no DOM.
 // Phase 7a: attacks, projectiles, death and respawn, neutral camps, bounty, XP and levels.
-// Abilities and buffs come in 7b, items and shops in 7c.
+// Phase 7b: abilities, buffs and debuffs, auras, zones, summons, monster skills.
+// Items and shops come in 7c.
 
 import { gameData, type HeroDef } from '../data/index';
-import { findPath, nearestWalkable, type NavGrid } from '../nav/nav-grid';
-import { createCamps, updateCamps, onCampMemberAttacked, onCampMemberDied, type CampState } from './camps';
+import { findPath, isWalkable, nearestWalkable, type NavGrid } from '../nav/nav-grid';
+import {
+  castProblem,
+  endCast,
+  extraHitChance,
+  learn,
+  monsterCast,
+  monsterPassives,
+  orderCast,
+  refreshPassives,
+  updateAuras,
+  updateCast,
+  type CastTarget,
+} from './abilities';
+import { applyBuffs, buffFlags, hasBuff, maxBuff, sumBuffs, type Buff } from './buffs';
+import { createCamps, onCampMemberAttacked, onCampMemberDied, updateCamps, type CampState } from './camps';
 import { applyMove, CommandType, type GameCommand } from './commands';
 import { entityTypeIndex, ENTITY_TYPES, isHeroType } from './entity-types';
 import { DamageKind, EventList, EventType } from './events';
@@ -21,11 +36,13 @@ import {
   levelForXp,
   neutralXpFactor,
   respawnSeconds,
+  spellDamage,
   unitStats,
   xpForKillingHero,
   xpForKillingUnit,
   type CombatStats,
 } from './stats';
+import { qPos } from '../protocol/game';
 
 export const TICK_RATE = gameData.rules.simulation.tickRate;
 export const TICK_DT = 1 / TICK_RATE;
@@ -42,6 +59,8 @@ const CORPSE_TICKS = secs(3);
 const ACQUIRE_RANGE = 7;
 /** Look for targets only every few ticks (spread over entities by id). */
 const THINK_EVERY = 5;
+/** Damage and heal over time land every half second. */
+const DOT_TICKS = 10;
 
 export interface MatchSlot {
   index: number;
@@ -64,7 +83,7 @@ export interface MatchSetup {
   noCamps?: boolean;
 }
 
-export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold';
+export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold' | 'cast';
 
 export interface HeroState {
   def: HeroDef;
@@ -79,6 +98,30 @@ export interface HeroState {
   abilityLevels: number[];
 }
 
+export interface CastState {
+  slot: number;
+  target: CastTarget;
+  /** tick the effect happens (after the cast time); 0 = still walking into range */
+  castEnd: number;
+  /** channel spells: tick the channel ends, 0 = no channel */
+  channelEnd: number;
+  nextWave: number;
+  wave: number;
+}
+
+/** A move the unit did not choose: knockback, a jump, a dive, a charge. */
+export interface ForcedMove {
+  fromX: number;
+  fromY: number;
+  toX: number;
+  toY: number;
+  start: number;
+  end: number;
+  kind: 'knock' | 'leap' | 'dive' | 'charge';
+  onEnd?: () => void;
+  onTick?: () => void;
+}
+
 export interface SimEntity {
   id: number;
   type: number;
@@ -91,7 +134,11 @@ export interface SimEntity {
   /** velocity of the last tick, game units per second */
   vx: number;
   vy: number;
+  /** stats without buffs (hero: from level; unit: from data or a summon) */
+  base: CombatStats;
+  /** stats with buffs */
   stats: CombatStats;
+  buffs: Buff[];
   hp: number;
   mana: number;
   alive: boolean;
@@ -120,6 +167,17 @@ export interface SimEntity {
   /** load-test units: they only walk */
   passive: boolean;
   thinkAt: number;
+  /** tick each ability (Q W E R) is ready again */
+  cooldowns: number[];
+  cast: CastState | null;
+  forced: ForcedMove | null;
+  /** summons: the hero they follow, and when they go away */
+  leaderId: number;
+  summonUntil: number;
+  /** monster skills: tick each one is ready */
+  skillReady: Record<string, number>;
+  /** a teleport this tick: do not send it as a fast move */
+  jumped: boolean;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -138,6 +196,32 @@ interface Projectile {
   speed: number;
   raw: number;
   attackType: CombatStats['attackType'];
+  /** spells: what happens on hit instead of attack damage */
+  onHit?: (t: SimEntity) => void;
+}
+
+interface LineShot {
+  source: DamageSource;
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  left: number;
+  speed: number;
+  width: number;
+  firstOnly: boolean;
+  hit: Set<number>;
+  onHit: (t: SimEntity) => void;
+}
+
+export interface Zone {
+  x: number;
+  y: number;
+  radius: number;
+  until: number;
+  source: DamageSource;
+  ability: number;
+  tickFn: (z: Zone) => void;
 }
 
 interface QueuedCommand {
@@ -161,11 +245,13 @@ export class MatchSim {
   readonly camps: CampState[];
   readonly grid: SpatialGrid<SimEntity>;
   readonly rng: Rng;
+  readonly zones: Zone[] = [];
   /** Can this team see the entity? Set by the server from its vision; used to check commands. */
   canSee: (team: number, e: SimEntity) => boolean = () => true;
   private readonly byId = new Map<number, SimEntity>();
   private readonly queue: QueuedCommand[] = [];
   private readonly projectiles: Projectile[] = [];
+  private readonly lineShots: LineShot[] = [];
   private nextId = 1;
   private nextProjectile = 1;
   readonly size = gameData.map.size.width;
@@ -224,7 +310,9 @@ export class MatchSim {
       mover,
       vx: 0,
       vy: 0,
+      base: stats,
       stats,
+      buffs: [],
       hp: stats.maxHp,
       mana: stats.maxMana,
       alive: true,
@@ -248,9 +336,17 @@ export class MatchSim {
       homeFacing: mover.facing,
       passive: false,
       thinkAt: 0,
+      cooldowns: [0, 0, 0, 0],
+      cast: null,
+      forced: null,
+      leaderId: 0,
+      summonUntil: 0,
+      skillReady: {},
+      jumped: false,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
+    if (!e.hero) monsterPassives(this, e);
     return e;
   }
 
@@ -260,6 +356,23 @@ export class MatchSim {
 
   isEnemy(a: { team: number }, b: { team: number }): boolean {
     return a.team !== b.team;
+  }
+
+  isStunned(e: SimEntity): boolean {
+    return hasBuff(e.buffs, 'stun');
+  }
+
+  isRooted(e: SimEntity): boolean {
+    return hasBuff(e.buffs, 'root');
+  }
+
+  isSilenced(e: SimEntity): boolean {
+    return hasBuff(e.buffs, 'silence');
+  }
+
+  /** Plans a walk (or a flight) to a point. */
+  moveTo(e: SimEntity, x: number, y: number): void {
+    applyMove(e.mover, this.nav, x, y, false, this.isFlying(e));
   }
 
   // ---------- commands ----------
@@ -276,7 +389,9 @@ export class MatchSim {
 
   private isValid(slot: number, cmd: GameCommand): boolean {
     const hero = this.heroes[slot];
-    if (!hero || !hero.alive) return false;
+    if (!hero) return false;
+    if (cmd.type === CommandType.Learn) return cmd.slot >= 0 && cmd.slot < 4 && (hero.heroState?.skillPoints ?? 0) > 0;
+    if (!hero.alive) return false;
     switch (cmd.type) {
       case CommandType.Move:
       case CommandType.AttackMove:
@@ -292,6 +407,10 @@ export class MatchSim {
           this.canSee(hero.team, t)
         );
       }
+      case CommandType.Cast:
+        return (
+          cmd.slot >= 0 && cmd.slot < 4 && castProblem(this, hero, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y }) === null
+        );
       case CommandType.Stop:
       case CommandType.Hold:
         return true;
@@ -299,7 +418,19 @@ export class MatchSim {
     return false;
   }
 
+  /** Why a cast would be refused right now (for tests and the client's alerts). */
+  castCheck(slot: number, abilitySlot: number, target: CastTarget): string | null {
+    const hero = this.heroes[slot];
+    return hero ? castProblem(this, hero, abilitySlot, target) : 'no hero';
+  }
+
   private runCommand(e: SimEntity, cmd: GameCommand): void {
+    if (cmd.type === CommandType.Learn) {
+      learn(this, e, cmd.slot);
+      return;
+    }
+    // A new order stops a cast or a channel that has not happened yet.
+    if (e.cast) endCast(this, e);
     e.swing = e.swing === 1 && cmd.type !== CommandType.Attack ? 0 : e.swing;
     switch (cmd.type) {
       case CommandType.Move:
@@ -330,6 +461,10 @@ export class MatchSim {
         e.targetId = 0;
         applyMove(e.mover, this.nav, cmd.x, cmd.y, false, this.isFlying(e));
         break;
+      case CommandType.Cast:
+        orderCast(this, e, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y });
+        e.repathAt = 0;
+        break;
     }
   }
 
@@ -348,35 +483,62 @@ export class MatchSim {
     this.events.clear();
     for (const q of this.queue) {
       const hero = this.heroes[q.slot];
-      if (hero && q.cmd && hero.alive) this.runCommand(hero, q.cmd);
+      if (hero && q.cmd && (hero.alive || q.cmd.type === CommandType.Learn)) this.runCommand(hero, q.cmd);
       this.lastSeq[q.slot] = q.seq;
       this.lastSeqTick[q.slot] = this.tick;
     }
     this.queue.length = 0;
 
     this.grid.rebuild(this.entities, (e) => e.alive);
+    this.updateBuffs();
+    updateAuras(this);
     updateCamps(this);
     for (const e of this.entities) {
       if (!e.alive) continue;
+      if (e.forced) {
+        this.stepForced(e);
+        continue;
+      }
+      if (this.isStunned(e)) {
+        e.swing = 0;
+        if (e.cast) endCast(this, e);
+        continue;
+      }
       if (e.passive) {
         if (e.thinkAt <= this.tick) this.wander(e);
-      } else {
-        if (e.camp < 0) this.think(e);
-        if (e.targetId) this.engage(e);
+        continue;
       }
+      const taunt = this.tauntOf(e);
+      if (taunt) {
+        if (e.cast) endCast(this, e);
+        e.targetId = taunt;
+      } else if (e.order === 'cast') {
+        updateCast(this, e);
+        continue;
+      } else if (e.camp < 0) this.think(e);
+      else monsterCast(this, e);
+      if (e.targetId) this.engage(e);
     }
     for (const e of this.entities) {
       const px = e.mover.x,
         py = e.mover.y;
-      if (e.alive && e.swing !== 1) {
+      const frozen = !e.alive || e.forced || e.swing === 1 || this.isStunned(e) || this.isRooted(e) || (e.cast && e.cast.castEnd > 0);
+      if (!frozen) {
         e.mover.speed = e.stats.moveSpeed;
         stepMover(e.mover, TICK_DT);
       }
-      e.vx = (e.mover.x - px) / TICK_DT;
-      e.vy = (e.mover.y - py) / TICK_DT;
+      if (e.jumped) {
+        e.jumped = false;
+        e.vx = e.vy = 0;
+      } else {
+        e.vx = (e.mover.x - px) / TICK_DT;
+        e.vy = (e.mover.y - py) / TICK_DT;
+      }
     }
     this.separate();
     this.stepProjectiles();
+    this.stepLineShots();
+    this.stepZones();
     this.regen();
     this.lifeAndDeath();
   }
@@ -388,6 +550,7 @@ export class MatchSim {
     const target = e.targetId ? this.byId.get(e.targetId) : undefined;
     if (e.targetId && (!target || !target.alive)) e.targetId = 0;
     const due = (this.tick + e.id) % THINK_EVERY === 0;
+    if (e.leaderId) return this.followLeader(e, due);
     switch (e.order) {
       case 'move':
         if (!e.mover.path.length) e.order = 'idle';
@@ -410,9 +573,33 @@ export class MatchSim {
         if (!e.targetId && due) e.targetId = this.acquire(e, e.stats.attackRange + e.stats.radius + 0.6, false);
         break;
       case 'idle':
+      case 'cast':
         if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
         break;
     }
+  }
+
+  /** Summons fight what their hero fights and otherwise stay close to it. */
+  private followLeader(e: SimEntity, due: boolean): void {
+    const leader = this.byId.get(e.leaderId);
+    if (!leader || !leader.alive) {
+      if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
+      return;
+    }
+    const lt = leader.targetId ? this.byId.get(leader.targetId) : undefined;
+    if (lt && lt.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer)) e.targetId = lt.id;
+    else if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
+    if (!e.targetId && due && Math.hypot(leader.mover.x - e.mover.x, leader.mover.y - e.mover.y) > 4)
+      this.moveTo(e, leader.mover.x, leader.mover.y);
+  }
+
+  private tauntOf(e: SimEntity): number {
+    for (const b of e.buffs) {
+      if (!b.tauntId) continue;
+      const t = this.byId.get(b.tauntId);
+      if (t && t.alive) return t.id;
+    }
+    return 0;
   }
 
   /**
@@ -469,8 +656,8 @@ export class MatchSim {
       }
       return;
     }
-    if (e.order === 'hold') {
-      e.targetId = 0;
+    if (e.order === 'hold' || this.isRooted(e)) {
+      if (e.order === 'hold') e.targetId = 0;
       return;
     }
     e.swing = 0;
@@ -485,7 +672,8 @@ export class MatchSim {
 
   private hit(e: SimEntity, t: SimEntity): void {
     e.swing = 2;
-    const raw = this.rng.int(Math.round(e.stats.damageMin), Math.round(e.stats.damageMax));
+    const roll = () => this.rng.int(Math.round(e.stats.damageMin), Math.round(e.stats.damageMax));
+    const raw = roll();
     if (e.stats.projectileSpeed > 0) {
       const p: Projectile = {
         id: this.nextProjectile++ & 0xff,
@@ -498,10 +686,29 @@ export class MatchSim {
         attackType: e.stats.attackType,
       };
       this.projectiles.push(p);
-      this.events.push(EventType.Projectile, e.id, t.id, p.speed, p.id);
+      this.events.push(EventType.Projectile, e.id, t.id, p.speed, 0);
     } else {
       this.applyAttack(e, t, raw, e.stats.attackType);
+      // Flurry: sometimes a second hit right away.
+      const extra = extraHitChance(e);
+      if (extra && t.alive && this.rng.next() < extra) this.applyAttack(e, t, roll(), e.stats.attackType);
     }
+  }
+
+  /** A homing spell projectile (Blood Bolt, Boulder Toss). */
+  spellProjectile(e: SimEntity, t: SimEntity, speed: number, ability: number, onHit: (t: SimEntity) => void): void {
+    this.projectiles.push({
+      id: this.nextProjectile++ & 0xff,
+      source: { id: e.id, owner: e.owner, team: e.team },
+      target: t.id,
+      x: e.mover.x,
+      y: e.mover.y,
+      speed,
+      raw: 0,
+      attackType: 'magic',
+      onHit,
+    });
+    this.events.push(EventType.Projectile, e.id, t.id, speed, ability + 1);
   }
 
   private stepProjectiles(): void {
@@ -514,7 +721,8 @@ export class MatchSim {
       const d = Math.hypot(dx, dy);
       const stepLen = p.speed * TICK_DT;
       if (d <= stepLen + t.stats.radius * 0.5) {
-        this.applyAttack(p.source, t, p.raw, p.attackType);
+        if (p.onHit) p.onHit(t);
+        else this.applyAttack(p.source, t, p.raw, p.attackType);
         continue;
       }
       p.x += (dx / d) * stepLen;
@@ -524,14 +732,166 @@ export class MatchSim {
     this.projectiles.length = w;
   }
 
-  /** Attack damage: damage type and armor count. */
-  applyAttack(source: DamageSource, t: SimEntity, raw: number, type: CombatStats['attackType']): void {
-    this.damage(t, attackDamage(raw, type, t.stats.armorType, t.stats.armor), source, DamageKind.Attack);
+  /** A shot that flies in a straight line and hits enemies on the way (Arcane Arrow, Spear Throw). */
+  lineShot(
+    e: SimEntity,
+    tx: number,
+    ty: number,
+    length: number,
+    width: number,
+    speed: number,
+    firstOnly: boolean,
+    ability: number,
+    onHit: (t: SimEntity) => void,
+  ): void {
+    let dx = tx - e.mover.x,
+      dy = ty - e.mover.y;
+    const d = Math.hypot(dx, dy) || 1;
+    dx /= d;
+    dy /= d;
+    e.mover.facing = Math.atan2(-dx, dy);
+    this.lineShots.push({
+      source: { id: e.id, owner: e.owner, team: e.team },
+      x: e.mover.x,
+      y: e.mover.y,
+      dx,
+      dy,
+      left: length,
+      speed,
+      width,
+      firstOnly,
+      hit: new Set(),
+      onHit,
+    });
+    this.events.push(EventType.LineShot, e.id, qPos(e.mover.x + dx * length), qPos(e.mover.y + dy * length), ability);
   }
 
-  damage(t: SimEntity, amount: number, source: DamageSource, kind: number): void {
-    if (!t.alive || amount <= 0) return;
+  private stepLineShots(): void {
+    let w = 0;
+    for (const s of this.lineShots) {
+      const step = Math.min(s.left, s.speed * TICK_DT);
+      const nx = s.x + s.dx * step,
+        ny = s.y + s.dy * step;
+      let done = false;
+      // Units near the segment walked this tick.
+      this.grid.query((s.x + nx) / 2, (s.y + ny) / 2, step / 2 + s.width + 1, (t) => {
+        if (done || !t.alive || t.team === s.source.team || s.hit.has(t.id)) return;
+        const px = t.mover.x - s.x,
+          py = t.mover.y - s.y;
+        const along = Math.max(0, Math.min(step, px * s.dx + py * s.dy));
+        const off = Math.hypot(px - s.dx * along, py - s.dy * along);
+        if (off > s.width / 2 + t.stats.radius) return;
+        s.hit.add(t.id);
+        s.onHit(t);
+        if (s.firstOnly) done = true;
+      });
+      s.x = nx;
+      s.y = ny;
+      s.left -= step;
+      if (!done && s.left > 1e-3) this.lineShots[w++] = s;
+    }
+    this.lineShots.length = w;
+  }
+
+  /** An area on the ground that works every half second for a while. */
+  addZone(e: SimEntity, x: number, y: number, radius: number, seconds: number, ability: number, tickFn: (z: Zone) => void): void {
+    this.zones.push({
+      x,
+      y,
+      radius,
+      until: this.tick + secs(seconds),
+      source: { id: e.id, owner: e.owner, team: e.team },
+      ability,
+      tickFn,
+    });
+  }
+
+  private stepZones(): void {
+    let w = 0;
+    for (const z of this.zones) {
+      if (this.tick % DOT_TICKS === 0) z.tickFn(z);
+      if (this.tick < z.until) this.zones[w++] = z;
+    }
+    this.zones.length = w;
+  }
+
+  /** Moves a unit to a point over some time, whatever it wants (jumps, dives, charges, knockback). */
+  forceMove(e: SimEntity, x: number, y: number, seconds: number, kind: ForcedMove['kind'], onEnd?: () => void, onTick?: () => void): void {
+    if (e.forced?.kind !== 'knock' && e.forced) return; // a jump is not stopped by a push
+    e.swing = 0;
+    e.mover.path = [];
+    e.forced = {
+      fromX: e.mover.x,
+      fromY: e.mover.y,
+      toX: x,
+      toY: y,
+      start: this.tick,
+      end: this.tick + Math.max(1, secs(seconds)),
+      kind,
+      onEnd,
+      onTick,
+    };
+  }
+
+  private stepForced(e: SimEntity): void {
+    const f = e.forced!;
+    const t = Math.min(1, (this.tick - f.start) / (f.end - f.start));
+    const x = f.fromX + (f.toX - f.fromX) * t,
+      y = f.fromY + (f.toY - f.fromY) * t;
+    // A push stops at trees, cliffs and buildings.
+    if (f.kind === 'knock' && !this.isFlying(e) && !isWalkable(this.nav, x, y)) {
+      e.forced = null;
+      return;
+    }
+    e.mover.x = x;
+    e.mover.y = y;
+    f.onTick?.();
+    if (t >= 1) {
+      e.forced = null;
+      f.onEnd?.();
+    }
+  }
+
+  teleport(e: SimEntity, x: number, y: number): void {
+    e.mover.x = x;
+    e.mover.y = y;
+    e.mover.path = [];
+    e.swing = 0;
+    e.jumped = true;
+  }
+
+  // ---------- damage ----------
+
+  /** Attack damage: damage type and armor count. */
+  applyAttack(source: DamageSource, t: SimEntity, raw: number, type: CombatStats['attackType']): void {
+    const dealt = this.damage(t, attackDamage(raw, type, t.stats.armorType, t.stats.armor), source, DamageKind.Attack);
+    // Life steal (Crimson Pact aura, later items).
+    const s = this.byId.get(source.id);
+    if (s && s.alive && dealt > 0) {
+      const ls = sumBuffs(s.buffs, 'lifeStealPct');
+      if (ls > 0) this.heal(s, (dealt * ls) / 100, source);
+    }
+  }
+
+  /** Spell damage: no armor, 75% to heroes, less with spell reduction, more with Mana Mark. */
+  spellHit(t: SimEntity, raw: number, source: DamageSource): number {
+    return this.damage(t, spellDamage(raw, t.hero), source, DamageKind.Spell);
+  }
+
+  /** Applies damage after shields. Returns what was really taken. */
+  damage(t: SimEntity, amount: number, source: DamageSource, kind: number): number {
+    if (!t.alive || amount <= 0) return 0;
+    if (kind === DamageKind.Spell) {
+      amount *= 1 - Math.min(90, sumBuffs(t.buffs, 'spellReductionPct')) / 100;
+      amount *= 1 + sumBuffs(t.buffs, 'spellDamageTakenPct') / 100;
+    }
+    amount *= 1 - Math.min(95, maxBuff(t.buffs, 'damageBlockPct')) / 100;
+    amount *= 1 - Math.min(90, sumBuffs(t.buffs, 'damageReductionPct')) / 100;
+    const before = t.hp;
     t.hp -= amount;
+    const minHp = maxBuff(t.buffs, 'minHp');
+    if (minHp > 0 && t.hp < minHp) t.hp = minHp;
+    const dealt = before - t.hp;
     t.lastHitBy = source.id;
     this.events.push(EventType.Damage, t.id, source.id, Math.round(amount), kind);
     if (t.camp >= 0) onCampMemberAttacked(this, t, source);
@@ -541,13 +901,72 @@ export class MatchSim {
       if (s && s.alive && canAttackLayer(t.stats.canHitAir, s.stats.layer)) t.targetId = s.id;
     }
     if (t.hp <= 0) this.kill(t, source);
+    return dealt;
   }
 
   heal(t: SimEntity, amount: number, source: DamageSource): void {
     if (!t.alive || amount <= 0) return;
     const before = t.hp;
     t.hp = Math.min(t.stats.maxHp, t.hp + amount);
-    if (t.hp > before) this.events.push(EventType.Damage, t.id, source.id, Math.round(t.hp - before), DamageKind.Heal);
+    if (t.hp - before >= 0.5) this.events.push(EventType.Damage, t.id, source.id, Math.round(t.hp - before), DamageKind.Heal);
+  }
+
+  // ---------- buffs ----------
+
+  /** Adds a buff; the same id from the same source refreshes it. */
+  addBuff(e: SimEntity, b: Buff): void {
+    if (!e.alive) return;
+    const old = e.buffs.findIndex((x) => x.id === b.id && x.sourceId === b.sourceId);
+    if (old >= 0) {
+      const changed = JSON.stringify(e.buffs[old]) !== JSON.stringify({ ...b, until: e.buffs[old]!.until });
+      e.buffs[old] = b;
+      if (changed) this.refreshStats(e);
+      return;
+    }
+    e.buffs.push(b);
+    this.refreshStats(e);
+  }
+
+  removeBuff(e: SimEntity, id: string, sourceId?: number): void {
+    const n = e.buffs.length;
+    e.buffs = e.buffs.filter((b) => !(b.id === id && (sourceId === undefined || b.sourceId === sourceId)));
+    if (e.buffs.length !== n) this.refreshStats(e);
+  }
+
+  private updateBuffs(): void {
+    const dot = this.tick % DOT_TICKS === 0;
+    for (const e of this.entities) {
+      if (!e.alive || !e.buffs.length) continue;
+      let changed = false;
+      for (const b of e.buffs) {
+        if (dot && b.dps) this.spellHit(e, b.dps * (DOT_TICKS / TICK_RATE), { id: b.sourceId, owner: b.sourceOwner, team: b.sourceTeam });
+        if (!e.alive) break;
+        if (this.tick >= b.until) {
+          changed = true;
+          if (b.healAtEnd) this.heal(e, b.healAtEnd, { id: b.sourceId, owner: b.sourceOwner, team: b.sourceTeam });
+        }
+      }
+      if (changed && e.alive) {
+        e.buffs = e.buffs.filter((b) => this.tick < b.until);
+        this.refreshStats(e);
+      }
+    }
+  }
+
+  /** Base stats (level, later items) + buffs. Health and mana keep their share of the max. */
+  refreshStats(e: SimEntity): void {
+    if (e.heroState) e.base = heroStats(e.heroState.def, e.heroState.level);
+    const old = e.stats;
+    const next = applyBuffs(e.base, e.buffs);
+    if (next.maxHp > old.maxHp) e.hp += next.maxHp - old.maxHp;
+    if (next.maxMana > old.maxMana) e.mana += next.maxMana - old.maxMana;
+    e.stats = next;
+    if (e.alive) e.hp = Math.max(1, Math.min(e.hp, next.maxHp));
+    e.mana = Math.min(e.mana, next.maxMana);
+  }
+
+  buffFlagsOf(e: SimEntity): number {
+    return buffFlags(e.buffs);
   }
 
   // ---------- death, rewards, levels ----------
@@ -559,8 +978,11 @@ export class MatchSim {
     e.swing = 0;
     e.targetId = 0;
     e.order = 'idle';
+    e.forced = null;
+    if (e.cast) endCast(this, e);
+    e.buffs = [];
     this.events.push(EventType.Death, e.id, killer.id);
-    this.reward(e, killer);
+    if (!e.summonUntil || killer.id !== e.id) this.reward(e, killer);
     if (e.heroState) {
       const hs = e.heroState;
       hs.respawnAt = this.tick + secs(respawnSeconds(hs.level));
@@ -597,6 +1019,7 @@ export class MatchSim {
   }
 
   private bountyOf(e: SimEntity): number {
+    if (e.summonUntil) return gameData.units.find((u) => u.id === ENTITY_TYPES[e.type])?.bounty[0] ?? 0;
     const def = gameData.units.find((u) => u.id === ENTITY_TYPES[e.type]);
     return def ? this.rng.int(def.bounty[0], def.bounty[1]) : 0;
   }
@@ -620,21 +1043,13 @@ export class MatchSim {
     }
   }
 
-  /** New level or items: recompute stats, keep the same share of health and mana. */
-  refreshStats(e: SimEntity): void {
-    if (!e.heroState) return;
-    const old = e.stats;
-    const next = heroStats(e.heroState.def, e.heroState.level);
-    e.hp += next.maxHp - old.maxHp;
-    e.mana += next.maxMana - old.maxMana;
-    e.stats = next;
-  }
-
   private lifeAndDeath(): void {
     let w = 0;
     for (const e of this.entities) {
       const hs = e.heroState;
       if (!e.alive && hs && hs.respawnAt && this.tick >= hs.respawnAt) this.respawn(e);
+      // Summons go away when their time is up (no reward for anyone).
+      if (e.alive && e.summonUntil && this.tick >= e.summonUntil) this.kill(e, { id: e.id, owner: e.owner, team: e.team });
       if (!e.alive && e.removeAt && this.tick >= e.removeAt) {
         this.byId.delete(e.id);
         continue;
@@ -651,6 +1066,10 @@ export class MatchSim {
     const [x, y] = gameData.map.starts[hs.start]!.heroSpawn;
     hs.respawnAt = 0;
     e.alive = true;
+    e.buffs = [];
+    this.refreshStats(e);
+    // Passives (Dragon Scales) come back with the hero.
+    refreshPassives(this, e);
     e.hp = e.stats.maxHp;
     e.mana = e.stats.maxMana;
     e.mover.x = x;
@@ -658,6 +1077,7 @@ export class MatchSim {
     e.mover.path = [];
     e.order = 'idle';
     e.lastHitBy = 0;
+    e.jumped = true;
     this.events.push(EventType.Respawn, e.id);
   }
 
@@ -672,7 +1092,7 @@ export class MatchSim {
   /** Units do not stand inside each other: push overlapping ground units apart. Heroes are not pushed. */
   private separate(): void {
     for (const e of this.entities) {
-      if (!e.alive || e.hero || e.stats.layer !== 'ground') continue;
+      if (!e.alive || e.hero || e.forced || e.stats.layer !== 'ground') continue;
       const r = e.stats.radius;
       this.grid.query(e.mover.x, e.mover.y, r + 0.8, (o, d2) => {
         if (o === e || !o.alive || o.stats.layer !== 'ground') return;
@@ -682,9 +1102,7 @@ export class MatchSim {
         const push = (min - d) * (o.hero ? 1 : 0.5);
         const nx = e.mover.x + ((e.mover.x - o.mover.x) / d) * push,
           ny = e.mover.y + ((e.mover.y - o.mover.y) / d) * push;
-        const c = Math.floor(nx / this.nav.cellSize),
-          rr = Math.floor(ny / this.nav.cellSize);
-        if (this.nav.walk[rr * this.nav.cols + c]) {
+        if (isWalkable(this.nav, nx, ny)) {
           e.mover.x = nx;
           e.mover.y = ny;
         }

@@ -37,6 +37,7 @@ interface Sent {
   mana: number;
   maxMana: number;
   level: number;
+  buffs: number;
   seenAt: number;
 }
 
@@ -52,7 +53,17 @@ export function unitStateOf(e: SimEntity): number {
   if (e.alive && (e.vx !== 0 || e.vy !== 0 || e.mover.path.length)) s |= UnitState.Moving;
   if (e.swing === 1) s |= UnitState.Attacking;
   if (!e.alive) s |= UnitState.Dead;
-  if (!e.alive || e.targetId || e.order === 'attack' || e.order === 'attackMove' || e.order === 'hold' || e.returning)
+  if (
+    !e.alive ||
+    e.targetId ||
+    e.order === 'attack' ||
+    e.order === 'attackMove' ||
+    e.order === 'hold' ||
+    e.order === 'cast' ||
+    e.returning ||
+    e.forced ||
+    e.buffs.some((b) => b.stun || b.root || b.tauntId)
+  )
     s |= UnitState.ServerDriven;
   return s;
 }
@@ -77,6 +88,7 @@ export class ClientView {
     mana: 0,
     maxMana: 0,
     level: 0,
+    buffs: 0,
     mask: 0,
   };
   private readonly player = blankPlayerState();
@@ -114,7 +126,8 @@ export class ClientView {
         maxHp = Math.round(e.stats.maxHp),
         mana = Math.floor(e.mana),
         maxMana = Math.round(e.stats.maxMana),
-        level = e.heroState?.level ?? e.stats.level;
+        level = e.heroState?.level ?? e.stats.level,
+        buffs = e.alive ? sim.buffFlagsOf(e) : 0;
       const s = this.sent.get(e.id);
       if (!s) {
         sw.spawn({
@@ -133,8 +146,24 @@ export class ClientView {
           mana,
           maxMana,
           level,
+          buffs,
         });
-        this.sent.set(e.id, { x: qx, y: qy, vx: qvx, vy: qvy, tick, facing: qf, state, hp, maxHp, mana, maxMana, level, seenAt: stamp });
+        this.sent.set(e.id, {
+          x: qx,
+          y: qy,
+          vx: qvx,
+          vy: qvy,
+          tick,
+          facing: qf,
+          state,
+          hp,
+          maxHp,
+          mana,
+          maxMana,
+          level,
+          buffs,
+          seenAt: stamp,
+        });
         continue;
       }
       s.seenAt = stamp;
@@ -151,6 +180,7 @@ export class ClientView {
       // Mana only matters for heroes (bars); a whole point of change is enough.
       if (e.hero && (mana !== s.mana || maxMana !== s.maxMana)) mask |= Field.Mana;
       if (level !== s.level) mask |= Field.Level;
+      if (buffs !== s.buffs) mask |= Field.Buffs;
       if (!mask) continue;
       const u = this.upd;
       u.id = e.id;
@@ -166,6 +196,7 @@ export class ClientView {
       u.mana = mana;
       u.maxMana = maxMana;
       u.level = level;
+      u.buffs = buffs;
       sw.update(u);
       if (mask & Field.Motion) {
         s.x = qx;
@@ -181,6 +212,7 @@ export class ClientView {
       s.mana = mana;
       s.maxMana = maxMana;
       s.level = level;
+      s.buffs = buffs;
     }
     for (const [id, s] of this.sent) {
       if (s.seenAt === stamp) continue;
@@ -207,9 +239,12 @@ export class ClientView {
     p.skillPoints = hs.skillPoints;
     p.respawnTicks = hs.respawnAt ? Math.max(0, hs.respawnAt - sim.tick) : 0;
     p.moveSpeed = Math.round(hero.stats.moveSpeed * 100);
-    for (let i = 0; i < 4; i++) p.abilityLevels[i] = hs.abilityLevels[i] ?? 0;
+    for (let i = 0; i < 4; i++) {
+      p.abilityLevels[i] = hs.abilityLevels[i] ?? 0;
+      p.cooldownEnds[i] = (hero.cooldowns[i] ?? 0) > sim.tick ? hero.cooldowns[i]! : 0;
+    }
     // Respawn time counts down every tick: send it in whole seconds only.
-    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.abilityLevels.join(',')}`;
+    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')}`;
     if (key === this.playerKey) return;
     this.playerKey = key;
     sw.playerState(p);

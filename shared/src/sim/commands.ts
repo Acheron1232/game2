@@ -11,6 +11,10 @@ export const CommandType = {
   Attack: 3,
   AttackMove: 4,
   Hold: 5,
+  /** use ability in slot 0..3 (Q W E R) */
+  Cast: 6,
+  /** spend a skill point on slot 0..3 */
+  Learn: 7,
 } as const;
 export type CommandType = (typeof CommandType)[keyof typeof CommandType];
 
@@ -19,7 +23,10 @@ export type GameCommand =
   | { type: typeof CommandType.Stop }
   | { type: typeof CommandType.Attack; target: number }
   | { type: typeof CommandType.AttackMove; x: number; y: number }
-  | { type: typeof CommandType.Hold };
+  | { type: typeof CommandType.Hold }
+  /** target: 0 = none, 1 = unit (id), 2 = point (x, y) */
+  | { type: typeof CommandType.Cast; slot: number; target: 0 | 1 | 2; id: number; x: number; y: number }
+  | { type: typeof CommandType.Learn; slot: number };
 
 /** Commands the client can predict for its own hero. */
 export function isPredicted(cmd: GameCommand): boolean {

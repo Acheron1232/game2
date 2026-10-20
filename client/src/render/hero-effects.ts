@@ -12,9 +12,9 @@ import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import type { Scene } from '@babylonjs/core/scene';
 
 /** Order of the 4-frame effects in client/public/assets/effects/effects.webp (Phase 3 sheet). */
-const FRAMES = ['fire', 'smoke', 'spark', 'arcane', 'heal', 'blood', 'dust', 'nature', 'frost', 'lightning'] as const;
-type Frames = (typeof FRAMES)[number];
-const CELL = 132; // atlas slot size in pixels (128 + 2 * 2 padding)
+export const FRAMES = ['fire', 'smoke', 'spark', 'arcane', 'heal', 'blood', 'dust', 'nature', 'frost', 'lightning'] as const;
+export type Frames = (typeof FRAMES)[number];
+export const CELL = 132; // atlas slot size in pixels (128 + 2 * 2 padding)
 
 export interface EffectSpec {
   socket: string;
@@ -131,7 +131,7 @@ export const HERO_LOOKS: Record<string, HeroLook> = {
 };
 
 const atlasCache = new WeakMap<Scene, Texture>();
-function effectsAtlas(scene: Scene): Texture {
+export function effectsAtlas(scene: Scene): Texture {
   let t = atlasCache.get(scene);
   if (!t) {
     t = new Texture('/assets/effects/effects.webp', scene, { invertY: false, noMipmap: true });
@@ -140,7 +140,7 @@ function effectsAtlas(scene: Scene): Texture {
   return t;
 }
 
-const c4 = (hex: string, a = 1) => {
+export const c4 = (hex: string, a = 1) => {
   const n = parseInt(hex.slice(1), 16);
   return new Color4(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, a);
 };

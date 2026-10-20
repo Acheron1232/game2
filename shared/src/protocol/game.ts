@@ -42,6 +42,7 @@ export const Field = {
   MaxHp: 16, // u16
   Mana: 32, // mana u16, max mana u16
   Level: 64, // u8
+  Buffs: 128, // u16 BuffFlag bits
 } as const;
 
 /** Bits of the entity state byte. */
@@ -78,6 +79,7 @@ export interface NetEntityState {
   mana: number;
   maxMana: number;
   level: number;
+  buffs: number;
 }
 
 export interface NetUpdate extends NetEntityState {
@@ -104,10 +106,22 @@ export interface NetPlayerState {
   /** move speed * 100, for prediction */
   moveSpeed: number;
   abilityLevels: [number, number, number, number];
+  /** server tick each ability is ready again (0 = ready) */
+  cooldownEnds: [number, number, number, number];
 }
 
 export function blankPlayerState(): NetPlayerState {
-  return { heroId: 0, gold: 0, xp: 0, level: 1, skillPoints: 0, respawnTicks: 0, moveSpeed: 0, abilityLevels: [0, 0, 0, 0] };
+  return {
+    heroId: 0,
+    gold: 0,
+    xp: 0,
+    level: 1,
+    skillPoints: 0,
+    respawnTicks: 0,
+    moveSpeed: 0,
+    abilityLevels: [0, 0, 0, 0],
+    cooldownEnds: [0, 0, 0, 0],
+  };
 }
 
 // ---------- commands ----------
@@ -129,6 +143,14 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
     case CommandType.Attack:
       w.u16(cmd.target);
       break;
+    case CommandType.Cast:
+      w.u8(cmd.slot).u8(cmd.target);
+      if (cmd.target === 1) w.u16(cmd.id);
+      if (cmd.target === 2) w.u16(qPos(cmd.x)).u16(qPos(cmd.y));
+      break;
+    case CommandType.Learn:
+      w.u8(cmd.slot);
+      break;
   }
   return w.bytes();
 }
@@ -147,6 +169,15 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
     case CommandType.Stop:
     case CommandType.Hold:
       return { seq, cmd: { type } };
+    case CommandType.Cast: {
+      const slot = r.u8() & 3,
+        target = r.u8();
+      if (target === 1) return { seq, cmd: { type, slot, target, id: r.u16(), x: 0, y: 0 } };
+      if (target === 2) return { seq, cmd: { type, slot, target, id: 0, x: dqPos(r.u16()), y: dqPos(r.u16()) } };
+      return { seq, cmd: { type, slot, target: 0, id: 0, x: 0, y: 0 } };
+    }
+    case CommandType.Learn:
+      return { seq, cmd: { type, slot: r.u8() & 3 } };
   }
   return null;
 }
@@ -175,6 +206,7 @@ function blank(): NetEntityState {
     mana: 0,
     maxMana: 0,
     level: 0,
+    buffs: 0,
   };
 }
 
@@ -245,12 +277,13 @@ export class SnapshotWriter {
     if (p) {
       w.u16(p.heroId).u32(p.gold).u32(p.xp).u8(p.level).u8(p.skillPoints).u16(p.respawnTicks).u16(p.moveSpeed);
       for (const l of p.abilityLevels) w.u8(l);
+      for (const c of p.cooldownEnds) w.u32(c);
     }
     w.u16(this.nSpawn);
     for (let i = 0; i < this.nSpawn; i++) {
       const s = this.spawns[i]!;
       w.u16(s.id).u16(s.type).u8(s.owner).u8(s.color).u16(s.x).u16(s.y).i16(s.vx).i16(s.vy).u8(s.facing).u8(s.state);
-      w.u16(s.hp).u16(s.maxHp).u16(s.mana).u16(s.maxMana).u8(s.level);
+      w.u16(s.hp).u16(s.maxHp).u16(s.mana).u16(s.maxMana).u8(s.level).u16(s.buffs);
     }
     w.u16(this.nUpdate);
     for (let i = 0; i < this.nUpdate; i++) {
@@ -263,6 +296,7 @@ export class SnapshotWriter {
       if (u.mask & Field.MaxHp) w.u16(u.maxHp);
       if (u.mask & Field.Mana) w.u16(u.mana).u16(u.maxMana);
       if (u.mask & Field.Level) w.u8(u.level);
+      if (u.mask & Field.Buffs) w.u16(u.buffs);
     }
     w.u16(this.nGone);
     for (let i = 0; i < this.nGone; i++) w.u16(this.gone[i]!);
@@ -313,6 +347,7 @@ export class SnapshotData {
       p.respawnTicks = r.u16();
       p.moveSpeed = r.u16();
       for (let i = 0; i < 4; i++) p.abilityLevels[i] = r.u8();
+      for (let i = 0; i < 4; i++) p.cooldownEnds[i] = r.u32();
     }
     this.spawnCount = r.u16();
     for (let i = 0; i < this.spawnCount; i++) {
@@ -332,6 +367,7 @@ export class SnapshotData {
       s.mana = r.u16();
       s.maxMana = r.u16();
       s.level = r.u8();
+      s.buffs = r.u16();
     }
     this.updateCount = r.u16();
     for (let i = 0; i < this.updateCount; i++) {
@@ -353,6 +389,7 @@ export class SnapshotData {
         u.maxMana = r.u16();
       }
       if (u.mask & Field.Level) u.level = r.u8();
+      if (u.mask & Field.Buffs) u.buffs = r.u16();
     }
     this.goneCount = r.u16();
     for (let i = 0; i < this.goneCount; i++) this.gone[i] = r.u16();

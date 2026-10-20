@@ -63,6 +63,11 @@ export interface Unit {
   flyHeight: number;
   /** model height, for health bars */
   height: number;
+  /** draw scale (Mountain Form makes the golem bigger) */
+  scale: number;
+  /** a jump on screen: an arc between these times (ms) */
+  arcStart: number;
+  arcEnd: number;
 }
 
 /** Flying units hover this high (Sky Dragon, harpies). */
@@ -251,6 +256,9 @@ export class GameWorld {
       dead: false,
       flyHeight: flying ? FLY_HEIGHT : 0,
       height: this.library.models[modelId]?.height ?? 2,
+      scale: 1,
+      arcStart: 0,
+      arcEnd: 0,
     };
     this.play(unit, 'idle');
     this.units.add(unit);
@@ -408,8 +416,17 @@ export class GameWorld {
     const { x, y, facing } = u;
     const ground = this.terrain.heightAt(x, y);
     // Flyers bob a little so they look alive.
-    const h = u.flyHeight ? ground + u.flyHeight + Math.sin(performance.now() / 600 + x) * 0.12 : ground;
+    const now = performance.now();
+    let h = u.flyHeight ? ground + u.flyHeight + Math.sin(now / 600 + x) * 0.12 : ground;
+    // Jumps (Sky Pillar, Inferno Dive): up and down in an arc.
+    if (now >= u.arcStart && now < u.arcEnd) h += Math.sin((Math.PI * (now - u.arcStart)) / (u.arcEnd - u.arcStart)) * 3.5;
     place(u.model.root, x, y, h, facing);
+    const sc = u.model.root.scaling;
+    if (sc.x !== u.scale) {
+      // Grow and shrink smoothly.
+      const next = sc.x + (u.scale - sc.x) * 0.15;
+      sc.setAll(Math.abs(next - u.scale) < 0.01 ? u.scale : next);
+    }
     if (u === this.selected) this.ring.position.set(x, ground + 0.08, -y);
   }
 

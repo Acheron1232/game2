@@ -36,6 +36,9 @@ port.on('message', (msg: ToWorker) => {
         (stats) => post({ t: 'stats', stats }),
       );
       break;
+    case 'cheat':
+      runner.cheat(msg.slot, msg.xp, msg.gold);
+      break;
     case 'stop':
       stop?.();
       port.close();

@@ -101,6 +101,7 @@ describe('match messages', () => {
       respawnTicks: 60,
       moveSpeed: 310,
       abilityLevels: [1, 0, 2, 0],
+      cooldownEnds: [0, 1300, 0, 0],
     });
     sw.spawn({
       id: 5,
@@ -118,6 +119,7 @@ describe('match messages', () => {
       mana: 50,
       maxMana: 180,
       level: 4,
+      buffs: 3,
     });
     sw.update({
       id: 9,
@@ -135,7 +137,8 @@ describe('match messages', () => {
       mana: 7,
       maxMana: 8,
       level: 3,
-      mask: Field.State | Field.Hp | Field.Mana,
+      buffs: 1024,
+      mask: Field.State | Field.Hp | Field.Mana | Field.Buffs,
     });
     sw.remove(33);
     sw.event(EventType.Damage, 9, 5, 26, DamageKind.Attack);
@@ -150,9 +153,10 @@ describe('match messages', () => {
       respawnTicks: 60,
       moveSpeed: 310,
       abilityLevels: [1, 0, 2, 0],
+      cooldownEnds: [0, 1300, 0, 0],
     });
-    expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4 });
-    expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8 });
+    expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4, buffs: 3 });
+    expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8, buffs: 1024 });
     expect(s.gone.slice(0, s.goneCount)).toEqual([33]);
     expect(s.events[0]).toMatchObject({ type: EventType.Damage, a: 9, b: 5, value: 26, kind: DamageKind.Attack });
   });

@@ -39,6 +39,8 @@ export class TeamVision {
   /** Can this team see the entity? Own team always can. */
   sees(team: number, e: SimEntity): boolean {
     if (e.team === team) return true;
+    // Mana Mark: the marking team sees the unit wherever it is.
+    for (const b of e.buffs) if (b.reveal && b.sourceTeam === team) return true;
     const g = this.grids.get(team);
     if (!g) return false;
     const c = Math.min(this.cols - 1, Math.max(0, Math.floor(e.mover.x / VISION_CELL)));

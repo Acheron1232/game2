@@ -77,6 +77,20 @@ export class MatchRunner {
     else this.sim.sendHome(slot);
   }
 
+  /** Dev servers only (the lobby checks): XP, gold, full health and mana, cooldowns ready. */
+  cheat(slot: number, xp: number, gold: number): void {
+    const hero = this.sim.heroes[slot];
+    if (!hero) return;
+    if (xp) this.sim.addXp(hero, xp);
+    if (gold) this.sim.addGold(hero, gold);
+    // Also full health and mana, and no cooldowns: quick ability tests.
+    if (hero.alive) {
+      hero.hp = hero.stats.maxHp;
+      hero.mana = hero.stats.maxMana;
+      hero.cooldowns.fill(0);
+    }
+  }
+
   resetView(slot: number): void {
     this.views.get(slot)?.reset();
   }

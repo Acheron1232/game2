@@ -153,7 +153,25 @@ export interface HeroView {
   skillPoints: number;
 }
 
+export interface AbilityButtonView {
+  icon: string | null;
+  name: string;
+  level: number;
+  maxLevel: number;
+  /** 0..1 still to wait */
+  cooldownFrac: number;
+  cooldownLeft: number;
+  noMana: boolean;
+  passive: boolean;
+  canLearn: boolean;
+  /** tooltip lines: name line, text, numbers */
+  tooltip: string[];
+}
+
 export interface GameScreen extends Screen {
+  setAbilities(views: (AbilityButtonView | null)[]): void;
+  /** Short message in the middle of the screen ("Not enough mana."). */
+  alert(text: string): void;
   setClock(seconds: number): void;
   setPing(ms: number | null): void;
   setStatus(text: string): void;
@@ -162,7 +180,14 @@ export interface GameScreen extends Screen {
   setSelected(text: string | null): void;
 }
 
-export function createGameScreen(onEnd: () => void): GameScreen {
+export interface GameActions {
+  end(): void;
+  cast(slot: number): void;
+  learn(slot: number): void;
+}
+
+export function createGameScreen(actions: GameActions): GameScreen {
+  const onEnd = actions.end;
   const clock = el('span', { class: 'clock' }, '00:00');
   const ping = el('span', { class: 'hud-ping' }, '');
   const status = el('p', {}, S.aiIdle);
@@ -180,7 +205,32 @@ export function createGameScreen(onEnd: () => void): GameScreen {
   const deathNote = el('div', { class: 'death-note', hidden: true });
   const selInfo = el('div', { class: 'sel-info', hidden: true });
   let portraitUrl: string | null = null;
-  const abilityButtons = ['Q', 'W', 'E', 'R'].map((k) => el('div', { class: 'ability' }, el('span', { class: 'key' }, k)));
+  const tooltip = el('div', { class: 'tooltip', hidden: true });
+  const alertBox = el('div', { class: 'hud-alert', hidden: true });
+  let alertTimer: ReturnType<typeof setTimeout> | null = null;
+  let views: (AbilityButtonView | null)[] = [];
+  const abilityParts = ['Q', 'W', 'E', 'R'].map((k, slot) => {
+    const icon = el('div', { class: 'ability-icon' });
+    const cd = el('div', { class: 'cooldown' });
+    const cdText = el('span', { class: 'cooldown-text' });
+    const pips = el('div', { class: 'pips' });
+    const plus = el('button', { class: 'learn', hidden: true, title: S.learn }, '+');
+    plus.addEventListener('click', (e) => {
+      e.stopPropagation();
+      actions.learn(slot);
+    });
+    const root = el('div', { class: 'ability' }, icon, cd, cdText, el('span', { class: 'key' }, k), pips, plus);
+    root.addEventListener('click', () => actions.cast(slot));
+    root.addEventListener('mouseenter', () => {
+      const v = views[slot];
+      if (!v) return;
+      tooltip.replaceChildren(...v.tooltip.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
+      tooltip.hidden = false;
+    });
+    root.addEventListener('mouseleave', () => (tooltip.hidden = true));
+    return { root, icon, cd, cdText, pips, plus, iconUrl: '' as string | null, pipKey: '' };
+  });
+  const abilityButtons = abilityParts.map((p) => p.root);
   const items = Array.from({ length: 6 }, (_, i) => el('div', { class: 'item-slot' }, el('span', { class: 'key' }, String(i + 1))));
   const root = el(
     'section',
@@ -189,6 +239,8 @@ export function createGameScreen(onEnd: () => void): GameScreen {
     el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), status),
     deathNote,
     selInfo,
+    alertBox,
+    tooltip,
     el(
       'footer',
       { class: 'hud-bottom' },
@@ -241,6 +293,36 @@ export function createGameScreen(onEnd: () => void): GameScreen {
       setText(gold, `${S.gold}: ${v.gold}`);
       deathNote.hidden = v.respawn <= 0;
       if (v.respawn > 0) setText(deathNote, S.youDied(v.respawn));
+    },
+    setAbilities(v) {
+      views = v;
+      abilityParts.forEach((p, i) => {
+        const a = v[i];
+        p.root.classList.toggle('empty', !a);
+        if (!a) return;
+        if (a.icon !== p.iconUrl) {
+          p.iconUrl = a.icon;
+          p.icon.style.backgroundImage = a.icon ? `url(${a.icon})` : '';
+        }
+        p.root.classList.toggle('unlearned', a.level === 0);
+        p.root.classList.toggle('passive', a.passive);
+        p.root.classList.toggle('no-mana', a.noMana && !a.passive && a.level > 0);
+        p.cd.style.setProperty('--cd', String(a.cooldownFrac));
+        p.cd.hidden = a.cooldownFrac <= 0;
+        setText(p.cdText, a.cooldownLeft > 0 ? String(Math.ceil(a.cooldownLeft)) : '');
+        p.plus.hidden = !a.canLearn;
+        const key = `${a.level}/${a.maxLevel}`;
+        if (key !== p.pipKey) {
+          p.pipKey = key;
+          p.pips.replaceChildren(...Array.from({ length: a.maxLevel }, (_, n) => el('i', { class: n < a.level ? 'on' : '' })));
+        }
+      });
+    },
+    alert(text) {
+      setText(alertBox, text);
+      alertBox.hidden = false;
+      if (alertTimer) clearTimeout(alertTimer);
+      alertTimer = setTimeout(() => (alertBox.hidden = true), 1800);
     },
     setSelected(text) {
       selInfo.hidden = !text;

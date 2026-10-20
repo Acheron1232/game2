@@ -4,7 +4,19 @@ import '@fontsource/alegreya-sans/400.css';
 import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
 import './ui-skin.css';
-import { ENTITY_TYPES, gameData, MAX_LEVEL, parseTerrain, xpForLevel, type MatchStartInfo, type RoomState } from '@game/shared';
+import {
+  BuffFlag,
+  ENTITY_TYPES,
+  gameData,
+  lv,
+  MAX_LEVEL,
+  parseTerrain,
+  xpForLevel,
+  type AbilityDef,
+  type MatchStartInfo,
+  type RoomState,
+} from '@game/shared';
+import { AimIndicators, type AimShape } from './render/aim-indicators';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
 import treesUrl from '@game/shared/data/map-trees.json?url';
 import decorUrl from '@game/shared/data/map-decor.json?url';
@@ -80,7 +92,13 @@ async function main(): Promise<void> {
     refreshRooms: () => net.send({ type: 'listRooms' }),
   });
   const lobby = createLobbyScreen((msg) => net.send(msg));
-  const game = createGameScreen(() => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }));
+  // Set up below, once the 3D world exists.
+  let useAbility: (slot: number) => void = () => {};
+  const game = createGameScreen({
+    end: () => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
+    cast: (slot) => useAbility(slot),
+    learn: (slot) => match?.learn(slot),
+  });
   router.add('menu', menu);
   router.add('lobby', lobby);
   router.add('game', game);
@@ -289,38 +307,132 @@ async function main(): Promise<void> {
         skillPoints: p.skillPoints,
       });
     }
+    game.setAbilities(
+      [0, 1, 2, 3].map((slot) => {
+        const info = match!.ability(slot);
+        if (!info) return null;
+        const a = info.def;
+        const level = Math.max(1, info.level);
+        const numbers = [
+          lv(a.manaCost, level) ? `${S.mana} ${lv(a.manaCost, level)}` : '',
+          lv(a.params['healthCost'], level) ? `${S.healthCost} ${lv(a.params['healthCost'], level)}` : '',
+          lv(a.cooldown, level) ? `${S.cooldown} ${lv(a.cooldown, level)} s` : '',
+          lv(a.castRange, level) ? `${S.range} ${lv(a.castRange, level)}` : '',
+        ].filter(Boolean);
+        return {
+          icon: assets.has(`icons/${a.id}.webp`) ? assets.url(`icons/${a.id}.webp`) : null,
+          name: a.name,
+          level: info.level,
+          maxLevel: a.maxLevel,
+          cooldownFrac: info.cooldownFrac,
+          cooldownLeft: info.cooldownLeft,
+          noMana: !info.enoughMana,
+          passive: a.kind !== 'active',
+          canLearn: info.canLearn,
+          tooltip: [
+            `${a.name} (${'QWER'[slot]}) — ${S.abilityKinds[a.kind] ?? a.kind} [${info.level}/${a.maxLevel}]`,
+            a.text,
+            numbers.join(' · '),
+          ],
+        };
+      }),
+    );
     const sel = selected && match.entities.get(selected.id) === selected ? selected : null;
     game.setSelected(sel && sel !== own ? `${unitName(sel)} · ${S.level} ${sel.level} · ${sel.hp} / ${sel.maxHp}` : null);
   }, 125);
 
   // ---- mouse and keys: right click = move or attack, A + left click = attack-move,
+  // Q W E R = abilities (then left click the target), Ctrl + Q W E R = learn,
   // left click = select, S = stop, H = hold, Space = center on the hero.
   let lastSpace = 0;
-  let aiming = false;
-  const setAiming = (on: boolean) => {
-    aiming = on;
-    document.body.classList.toggle('aiming', on);
+  type Aim = { kind: 'attack' } | { kind: 'ability'; slot: number } | null;
+  let aim: Aim = null;
+  const cursor = { x: 0, y: 0 };
+  const indicators = new AimIndicators(w.scene);
+  const setAim = (a: Aim) => {
+    aim = a;
+    document.body.classList.toggle('aiming', !!a);
+    if (!a) indicators.hide();
   };
   const select = (e: NetEntity | null) => {
     selected = e;
     w.select(e?.unit ?? match?.ownHero?.unit ?? null);
   };
+  /** Client-side check first, so the player gets a message at once. */
+  useAbility = (slot) => {
+    if (!match?.ownHero) return;
+    const info = match.ability(slot);
+    if (!info) return;
+    const a = info.def;
+    if (info.level === 0) return game.alert(info.canLearn ? S.learn : S.notLearned);
+    if (a.kind !== 'active') return game.alert(S.passive);
+    if (match.ownHero.buffs & BuffFlag.Stun) return game.alert(S.stunned);
+    if (info.cooldownLeft > 0) return game.alert(S.abilityNotReady);
+    if (!info.enoughMana) return game.alert(lv(a.params['healthCost'], 1) ? S.noHealth : S.noMana);
+    if (a.target === 'none') return match.cast(slot, { kind: 0, id: 0, x: 0, y: 0 });
+    setAim({ kind: 'ability', slot });
+  };
+  const aimShape = (a: AbilityDef, level: number): AimShape => {
+    if (a.target === 'unit') return { kind: 'unit' };
+    if (a.target === 'cone') return { kind: 'cone', length: lv(a.params['length'], level), angleDeg: lv(a.params['angleDeg'], level) };
+    if (a.target === 'line') return { kind: 'line', length: lv(a.params['length'], level), width: lv(a.params['width'], level) };
+    return { kind: 'circle', radius: lv(a.params['radius'], level) || 0.8 };
+  };
+  w.scene.onBeforeRenderObservable.add(() => {
+    if (!aim || aim.kind !== 'ability' || !match?.ownHero?.unit) return;
+    const info = match.ability(aim.slot);
+    const p = w.pickGround(cursor.x, cursor.y);
+    if (!info || !p) return;
+    const h = match.ownHero.unit;
+    const hit = info.def.target === 'unit' ? match.pick(cursor.x, cursor.y) : null;
+    const level = Math.max(1, info.level);
+    const range = info.def.target === 'line' || info.def.target === 'cone' ? 0 : lv(info.def.castRange, level);
+    indicators.show(
+      aimShape(info.def, level),
+      range,
+      h.x,
+      h.y,
+      p.x,
+      p.y,
+      w.terrain.heightAt,
+      hit?.unit ? { x: hit.unit.x, y: hit.unit.y, r: Math.max(0.9, hit.unit.height * 0.45) } : null,
+      !info.enoughMana,
+    );
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    cursor.x = e.offsetX;
+    cursor.y = e.offsetY;
+  });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     if (router.screen !== 'game' || !match) return;
     const hit = match.pick(e.offsetX, e.offsetY);
     if (e.button === 2) {
-      if (aiming) return setAiming(false);
+      if (aim) return setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
       const p = w.pickGround(e.offsetX, e.offsetY);
       if (p) match.moveTo(p.x, p.y, e.shiftKey);
     } else if (e.button === 0) {
-      if (aiming) {
-        setAiming(false);
+      const a = aim;
+      if (a?.kind === 'attack') {
+        setAim(null);
         if (hit && match.isEnemy(hit)) return match.attack(hit);
         const p = w.pickGround(e.offsetX, e.offsetY);
         if (p) match.attackMove(p.x, p.y);
         return;
+      }
+      if (a?.kind === 'ability') {
+        const info = match.ability(a.slot);
+        if (!info) return setAim(null);
+        if (info.def.target === 'unit') {
+          if (!hit) return game.alert(S.pickTarget);
+          setAim(null);
+          return match.cast(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
+        }
+        const p = w.pickGround(e.offsetX, e.offsetY);
+        if (!p) return;
+        setAim(null);
+        return match.cast(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
       }
       select(hit);
     }
@@ -337,8 +449,15 @@ async function main(): Promise<void> {
       lastSpace = now;
       w.camera.lookAt(h.x, h.y, true);
     }
-    if (key === 'a') setAiming(true);
-    if (e.key === 'Escape') setAiming(false);
+    const slot = ['q', 'w', 'e', 'r'].indexOf(key);
+    if (slot >= 0) {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) match.learn(slot);
+      else useAbility(slot);
+      return;
+    }
+    if (key === 'a') setAim({ kind: 'attack' });
+    if (e.key === 'Escape') setAim(null);
     if (key === 's') match.stop();
     if (key === 'h') match.hold();
     if (e.key === 'F4') {
