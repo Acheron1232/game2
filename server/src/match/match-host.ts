@@ -2,7 +2,7 @@
 // The lobby only talks to this small interface.
 
 import { Worker } from 'node:worker_threads';
-import type { MatchSetup, MatchStats, TreeList } from '@game/shared';
+import type { MatchSetup, MatchStats, MatchSummary, TreeList } from '@game/shared';
 import { MatchRunner, type Cheat, type MatchPacket } from './match-runner';
 import { runTickLoop } from './tick-loop';
 
@@ -19,7 +19,7 @@ export type FromWorker =
   | { t: 'ready' }
   | { t: 'out'; tick: number; packets: MatchPacket[] }
   | { t: 'stats'; stats: MatchStats }
-  | { t: 'end'; winnerTeam: number };
+  | { t: 'end'; winnerTeam: number; summary: MatchSummary };
 
 /** What a match is played on. trees = null: heroes only (old tests). */
 export interface MatchMap {
@@ -40,7 +40,7 @@ export interface MatchHost {
   onPackets: (tick: number, packets: MatchPacket[]) => void;
   onStats: (stats: MatchStats) => void;
   /** once, when one team is left */
-  onEnd: (winnerTeam: number) => void;
+  onEnd: (winnerTeam: number, summary: MatchSummary) => void;
   /** last stats, for the load test and /health */
   stats: MatchStats | null;
 }
@@ -81,7 +81,7 @@ class InlineMatchHost implements MatchHost {
         this.onPackets(tick, p);
         if (!this.ended && this.runner.winnerTeam) {
           this.ended = true;
-          this.onEnd(this.runner.winnerTeam);
+          this.onEnd(this.runner.winnerTeam, this.runner.summary());
         }
       },
       (s) => {
@@ -114,7 +114,7 @@ class WorkerMatchHost implements MatchHost {
       else if (msg.t === 'stats') {
         this.stats = msg.stats;
         this.onStats(msg.stats);
-      } else if (msg.t === 'end') this.onEnd(msg.winnerTeam);
+      } else if (msg.t === 'end') this.onEnd(msg.winnerTeam, msg.summary);
     });
     this.worker.on('error', (err) => console.error('Match worker failed:', err));
   }

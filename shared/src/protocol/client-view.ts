@@ -14,7 +14,7 @@ const UPGRADE_IDS = gameData.upgrades.upgrades.map((u) => u.id);
 const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
 import { itemReadyAt } from '../sim/items';
 import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
-import type { TeamVision } from '../sim/vision';
+import type { Vision } from '../sim/vision';
 import type { BinaryWriter } from './binary';
 import {
   blankFactionState,
@@ -150,7 +150,7 @@ export class ClientView {
   }
 
   /** events: this tick's events, or all events since the last snapshot (fast watch mode). */
-  write(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, w: BinaryWriter, events: EventList = sim.events): Uint8Array<ArrayBuffer> {
+  write(sim: MatchSim, vision: Vision, sw: SnapshotWriter, w: BinaryWriter, events: EventList = sim.events): Uint8Array<ArrayBuffer> {
     const stamp = ++this.stamp;
     const tick = sim.tick;
     sw.begin(
@@ -289,7 +289,7 @@ export class ClientView {
   }
 
   /** Items on the ground: new ones in sight, and the ones that went away or out of sight. */
-  private writeGroundItems(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, stamp: number): void {
+  private writeGroundItems(sim: MatchSim, vision: Vision, sw: SnapshotWriter, stamp: number): void {
     for (const g of sim.groundItems) {
       if (!this.seeAll && !vision.seesPoint(this.team, g.x, g.y)) continue;
       if (this.sentItems.has(g.id)) {
@@ -383,7 +383,7 @@ export class ClientView {
     sw.factionState(f);
   }
 
-  private writeEvents(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, full: boolean, list: EventList): void {
+  private writeEvents(sim: MatchSim, vision: Vision, sw: SnapshotWriter, full: boolean, list: EventList): void {
     // A new (or rejoined) client gets every tree that is already gone.
     if (full && sim.factions) for (const t of sim.factions.cutTrees) sw.event(EventType.TreeGone, t, 0, 0, 0);
     for (let i = 0; i < list.count; i++) {

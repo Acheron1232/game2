@@ -24,6 +24,8 @@ export class RtsCamera {
   private drag: { x: number; y: number; tx: number; ty: number } | null = null;
   enabled = true;
   edgeScroll = true;
+  /** settings: camera speed multiplier */
+  speedScale = 1;
   /** Set while following a unit (Space twice). */
   follow: (() => { x: number; y: number }) | null = null;
 
@@ -116,8 +118,8 @@ export class RtsCamera {
     if (mx || my) {
       this.follow = null;
       const length = Math.hypot(mx, my);
-      this.goal.x += (mx / length) * SPEED * this.zoom * dt;
-      this.goal.y += (my / length) * SPEED * this.zoom * dt;
+      this.goal.x += (mx / length) * SPEED * this.speedScale * this.zoom * dt;
+      this.goal.y += (my / length) * SPEED * this.speedScale * this.zoom * dt;
     }
     if (this.follow) {
       const p = this.follow();

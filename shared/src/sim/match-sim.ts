@@ -145,6 +145,18 @@ export interface HeroState {
   itemCooldowns: Map<string, number>;
   /** Phoenix Feather: come back here with this share of health, instead of at the base */
   revive: { x: number; y: number; hpPct: number } | null;
+  /** for the end screen */
+  stats: HeroStats;
+}
+
+export interface HeroStats {
+  /** enemy heroes this hero killed */
+  kills: number;
+  deaths: number;
+  /** all gold the hero got (kills, camps, selling) */
+  goldEarned: number;
+  /** neutral camps this player's side cleared (last hit) */
+  camps: number;
 }
 
 export interface CastState {
@@ -359,6 +371,7 @@ export class MatchSim {
         inventory: emptyInventory(),
         itemCooldowns: new Map(),
         revive: null,
+        stats: { kills: 0, deaths: 0, goldEarned: 0, camps: 0 },
       };
       this.heroes[s.index] = hero;
       this.lastSeq[s.index] = 0;
@@ -1215,6 +1228,9 @@ export class MatchSim {
     if (!e.summonUntil || killer.id !== e.id) this.reward(e, killer);
     if (e.heroState) {
       const hs = e.heroState;
+      hs.stats.deaths++;
+      const killerHero = killer.owner < 4 ? this.heroes[killer.owner] : null;
+      if (killerHero?.heroState && killer.team !== e.team) killerHero.heroState.stats.kills++;
       // Phoenix Feather: back soon, where the hero fell. The death still counts (bounty, gold loss).
       const feather = takeRevive(hs);
       hs.revive = feather ? { x: e.mover.x, y: e.mover.y, hpPct: feather.reviveHpPct } : null;
@@ -1224,7 +1240,7 @@ export class MatchSim {
     } else {
       e.removeAt = this.tick + CORPSE_TICKS;
     }
-    if (e.camp >= 0) onCampMemberDied(this, e);
+    if (e.camp >= 0) onCampMemberDied(this, e, killer);
     if (this.factions) this.factions.onDeath(e);
   }
 
@@ -1265,6 +1281,7 @@ export class MatchSim {
   addGold(hero: SimEntity, amount: number, where?: SimEntity): void {
     if (!hero.heroState || amount <= 0) return;
     hero.heroState.gold += amount;
+    hero.heroState.stats.goldEarned += amount;
     if (where) this.events.push(EventType.Gold, where.id, 0, amount, hero.heroState.slot);
   }
 

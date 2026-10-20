@@ -3,6 +3,7 @@
 // right click sends the hero there.
 
 import { GROUND_TYPES, TerrainFlag, type MapLayout, type TerrainGrid } from '@game/shared';
+import { buildFogOverlayPixels, type FogGrid } from '../render/fog';
 import { GROUND_COLORS } from '../render/terrain-colors';
 
 export interface MinimapDot {
@@ -15,7 +16,11 @@ export interface MinimapDot {
 export class Minimap {
   readonly canvas: HTMLCanvasElement;
   private readonly base: HTMLCanvasElement;
+  private readonly fogOverlay: HTMLCanvasElement;
   private readonly size: number;
+  private fogState: Uint8Array | null = null;
+  private fogPixels: ImageData | null = null;
+  private hasFog = false;
 
   constructor(
     host: HTMLElement,
@@ -28,6 +33,7 @@ export class Minimap {
     const px = 192;
     this.base = document.createElement('canvas');
     this.base.width = this.base.height = px;
+    this.fogOverlay = document.createElement('canvas');
     const ctx = this.base.getContext('2d')!;
     const img = ctx.createImageData(px, px);
     for (let py = 0; py < px; py++) {
@@ -79,10 +85,40 @@ export class Minimap {
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
+  setFog(grid: FogGrid | null): void {
+    if (!grid) {
+      this.hasFog = false;
+      return;
+    }
+    const cells = grid.cols * grid.cols;
+    if (grid.visible.length < cells || grid.explored.length < cells) throw new RangeError('Fog grid data is too small.');
+    let changed = !this.hasFog || this.fogState?.length !== cells;
+    if (!this.fogState || this.fogState.length !== cells) this.fogState = new Uint8Array(cells);
+    for (let i = 0; i < cells; i++) {
+      const state = grid.visible[i] ? 2 : grid.explored[i] ? 1 : 0;
+      if (this.fogState[i] !== state) {
+        this.fogState[i] = state;
+        changed = true;
+      }
+    }
+    this.hasFog = true;
+    if (!changed) return;
+    if (!this.fogPixels || this.fogOverlay.width !== grid.cols) {
+      this.fogOverlay.width = this.fogOverlay.height = grid.cols;
+      this.fogPixels = this.fogOverlay.getContext('2d')!.createImageData(grid.cols, grid.cols);
+    }
+    buildFogOverlayPixels(grid, this.fogPixels.data);
+    this.fogOverlay.getContext('2d')!.putImageData(this.fogPixels, 0, 0);
+  }
+
   draw(dots: MinimapDot[], view: { x: number; y: number; w: number; h: number }): void {
     const ctx = this.canvas.getContext('2d')!;
     const px = this.canvas.width;
     ctx.drawImage(this.base, 0, 0);
+    if (this.hasFog) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(this.fogOverlay, 0, 0, px, px);
+    }
     for (const d of dots) {
       const x = (d.x / this.size) * px,
         y = (1 - d.y / this.size) * px;

@@ -32,7 +32,11 @@ export class FloatingText {
   }
 
   /** kind: CSS class (damage, hurt, heal, gold). */
+  /** settings: damage numbers on/off (gold and level-up texts stay) */
+  damageNumbers = true;
+
   show(text: string, kind: string, x: number, y: number, up: number): void {
+    if (!this.damageNumbers && (kind === 'damage' || kind === 'hurt' || kind === 'spell' || kind === 'heal')) return;
     // Reuse the oldest one when all are busy.
     let item = this.items.find((i) => !i.active);
     if (!item) item = this.items.reduce((a, b) => (a.born < b.born ? a : b));

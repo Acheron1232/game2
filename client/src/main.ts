@@ -45,10 +45,12 @@ import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
-import { GAME_FPS, MENU_FPS } from './render/render-budget';
+import { GAME_FPS, MENU_FPS, renderScale } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
+import { createSettingsScreen } from './ui/settings-screen';
+import { actionOf, loadSettings, saveSettings } from './game/settings';
 import { createLobbyScreen, COLOR_NAMES } from './ui/lobby-screen';
 import { Minimap } from './ui/minimap';
 import { Router } from './ui/router';
@@ -111,6 +113,9 @@ async function main(): Promise<void> {
 
   const router = new Router(uiHost);
   const floating = new FloatingText(uiHost);
+  const settings = loadSettings();
+  /** Set once the engine and the world exist (applies graphics, camera and HUD settings). */
+  let applySettings = () => {};
   let selected: NetEntity | null = null;
   const menu = createMenuScreen({
     getName: () => playerName,
@@ -120,6 +125,7 @@ async function main(): Promise<void> {
     },
     create: () => net.send({ type: 'createRoom' }),
     join: (code) => net.send({ type: 'joinRoom', code }),
+    settings: () => openSettings(),
     refreshRooms: () => net.send({ type: 'listRooms' }),
   });
   const lobby = createLobbyScreen((msg) => net.send(msg));
@@ -132,6 +138,7 @@ async function main(): Promise<void> {
   const game = createGameScreen({
     end: () => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
     cast: (slot) => useAbility(slot),
+    settings: () => openSettings(),
     learn: (slot) => match?.learn(slot),
     useItem: (slot) => useItem(slot),
     buy: (item) => buyItem(item),
@@ -141,7 +148,18 @@ async function main(): Promise<void> {
   router.add('menu', menu);
   router.add('lobby', lobby);
   router.add('game', game);
-  router.add('end', createEndScreen(router));
+  const endScreen = createEndScreen(router);
+  router.add('end', endScreen);
+  const settingsScreen = createSettingsScreen(settings, () => {
+    saveSettings(settings);
+    applySettings();
+  });
+  router.add('settings', settingsScreen);
+  const openSettings = () => {
+    const prev = router.screen ?? 'menu';
+    settingsScreen.backTo = () => router.show(prev === 'settings' ? 'menu' : prev);
+    router.show('settings');
+  };
   router.show('menu');
 
   window.addEventListener('keydown', (ev) => {
@@ -175,6 +193,7 @@ async function main(): Promise<void> {
     match?.dispose();
     const m = new MatchClient(world, net, pendingMatch, floating);
     match = m;
+    m.allBars = settings.healthBars === 'always';
     m.onNotice = (code) => game.alert(code === NoticeCode.AllyFull ? S.allyFull : S.inventoryFull);
     game.setResult(null);
     game.setFaction(null);
@@ -255,10 +274,34 @@ async function main(): Promise<void> {
         matchGoing = true;
         game.setStatus(S.matchRunning);
         break;
-      case 'matchEnd':
+      case 'matchEnd': {
+        const info = match?.info;
+        const myTeam = match?.myTeam ?? 0;
         endMatch();
-        router.show('lobby');
+        // A won match shows the end screen with the stats; "Back to Lobby" leads on.
+        if (msg.summary && msg.winnerTeam && info) {
+          const s = msg.summary;
+          const time = `${Math.floor(s.seconds / 60)}:${String(s.seconds % 60).padStart(2, '0')}`;
+          endScreen.set(
+            msg.winnerTeam === myTeam,
+            S.teamWinsAt(msg.winnerTeam, time),
+            s.players.map((p) => ({
+              name: info.slots.find((x) => x.index === p.slot)?.name ?? '',
+              hero: gameData.heroes.find((h) => h.id === p.hero)?.name ?? p.hero,
+              team: p.team,
+              level: p.level,
+              kills: p.kills,
+              deaths: p.deaths,
+              gold: p.gold,
+              camps: p.camps,
+              upgrades: p.upgrades,
+              own: p.slot === info.yourSlot,
+            })),
+          );
+          router.show('end');
+        } else router.show('lobby');
         break;
+      }
     }
   });
   net.connect();
@@ -303,6 +346,17 @@ async function main(): Promise<void> {
   sendLoad();
   clearInterval(loadTimer);
   maybeAutoStart();
+  applySettings = () => {
+    // Native pixels at render scale 1 (see render-budget), fewer pixels below it.
+    engine.setHardwareScalingLevel(renderScale(window.devicePixelRatio) / settings.renderScale);
+    w.scene.shadowsEnabled = settings.shadows;
+    debugNode.hidden = !settings.showFps;
+    w.camera.edgeScroll = settings.edgeScroll;
+    w.camera.speedScale = settings.cameraSpeed;
+    floating.damageNumbers = settings.damageNumbers;
+    if (match) match.allBars = settings.healthBars === 'always';
+  };
+  applySettings();
   startDebugOverlay(debugNode, engine, kind, net.state, w.scene, () => {
     const lag = net.state.lag.lagMs || net.state.lag.lossPct ? ` · lag +${net.state.lag.lagMs} ms ${net.state.lag.lossPct}%` : '';
     const p = match?.predictor?.stats;
@@ -338,6 +392,7 @@ async function main(): Promise<void> {
       else if (isBuildingType(e.type)) dots.push({ x: u.x, y: u.y, color: TEAM_HEX[e.color]!, size: footprintOf(e.type)[0] >= 5 ? 7 : 5 });
       else dots.push({ x: u.x, y: u.y, color: e === match!.ownHero ? '#ffffff' : TEAM_HEX[e.color]!, size: e === match!.ownHero ? 5 : 3 });
     }
+    minimap.setFog(match?.fogGrid ?? null);
     minimap.draw(dots, { x: w.camera.target.x, y: w.camera.target.y + 4, w: 46, h: 30 });
   }, 120);
 
@@ -618,6 +673,7 @@ async function main(): Promise<void> {
     if (blocked) return game.alert(blocked);
     if (a.target === 'none') return match.cast(slot, { kind: 0, id: 0, x: 0, y: 0 });
     setAim({ kind: 'ability', slot });
+    if (settings.quickCast) fireAim(cursor.x, cursor.y);
   };
   const aimShapes = {
     unit: { kind: 'unit' } as const,
@@ -636,6 +692,7 @@ async function main(): Promise<void> {
     if (info.cooldownLeft > 0) return game.alert(S.itemNotReady);
     if (a.target === 'none') return match.useItem(slot, { kind: 0, id: 0, x: 0, y: 0 });
     setAim({ kind: 'item', slot });
+    if (settings.quickCast) fireAim(cursor.x, cursor.y);
   };
   dragItem = (slot, to) => {
     if (!match) return;
@@ -709,6 +766,48 @@ async function main(): Promise<void> {
       !!abilityBlockReason(info, match.ownHero.state, match.ownHero.buffs) || (!!hit && !match.canTarget(info.def, hit)),
     );
   });
+  /** Fires the aimed order at a screen point (left click, or at once with quick cast). */
+  const fireAim = (x: number, y: number, hit: NetEntity | null = match?.pick(x, y) ?? null): void => {
+    if (!match) return;
+    const a = aim;
+    if (a?.kind === 'item') {
+      const it = match.item(a.slot);
+      setAim(null);
+      if (!it?.def.active) return;
+      if (it.def.active.target === 'unit') {
+        if (!hit) return game.alert(S.pickTarget);
+        return match.useItem(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
+      }
+      const p = w.pickGround(x, y);
+      if (p) match.useItem(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
+      return;
+    }
+    if (a?.kind === 'attack') {
+      setAim(null);
+      if (hit && match.isEnemy(hit)) return match.attack(hit);
+      const p = w.pickGround(x, y);
+      if (p) match.attackMove(p.x, p.y);
+      return;
+    }
+    if (a?.kind === 'ability') {
+      const info = match.ability(a.slot);
+      if (!info) return setAim(null);
+      const own = match.ownHero;
+      if (!own) return setAim(null);
+      const blocked = abilityBlockReason(info, own.state, own.buffs);
+      if (blocked) return game.alert(blocked);
+      if (info.def.target === 'unit') {
+        if (!hit) return game.alert(S.pickTarget);
+        if (!match.canTarget(info.def, hit)) return game.alert(info.def.filter.includes('enemy') ? S.pickEnemy : S.pickAlly);
+        setAim(null);
+        return match.cast(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
+      }
+      const p = w.pickGround(x, y);
+      if (!p) return;
+      setAim(null);
+      return match.cast(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
+    }
+  };
   canvas.addEventListener('pointermove', (e) => {
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
@@ -728,44 +827,7 @@ async function main(): Promise<void> {
       const p = w.pickGround(e.offsetX, e.offsetY);
       if (p) match.moveTo(p.x, p.y, e.shiftKey);
     } else if (e.button === 0) {
-      const a = aim;
-      if (a?.kind === 'item') {
-        const it = match.item(a.slot);
-        setAim(null);
-        if (!it?.def.active) return;
-        if (it.def.active.target === 'unit') {
-          if (!hit) return game.alert(S.pickTarget);
-          return match.useItem(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
-        }
-        const p = w.pickGround(e.offsetX, e.offsetY);
-        if (p) match.useItem(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
-        return;
-      }
-      if (a?.kind === 'attack') {
-        setAim(null);
-        if (hit && match.isEnemy(hit)) return match.attack(hit);
-        const p = w.pickGround(e.offsetX, e.offsetY);
-        if (p) match.attackMove(p.x, p.y);
-        return;
-      }
-      if (a?.kind === 'ability') {
-        const info = match.ability(a.slot);
-        if (!info) return setAim(null);
-        const own = match.ownHero;
-        if (!own) return setAim(null);
-        const blocked = abilityBlockReason(info, own.state, own.buffs);
-        if (blocked) return game.alert(blocked);
-        if (info.def.target === 'unit') {
-          if (!hit) return game.alert(S.pickTarget);
-          if (!match.canTarget(info.def, hit)) return game.alert(info.def.filter.includes('enemy') ? S.pickEnemy : S.pickAlly);
-          setAim(null);
-          return match.cast(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
-        }
-        const p = w.pickGround(e.offsetX, e.offsetY);
-        if (!p) return;
-        setAim(null);
-        return match.cast(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
-      }
+      if (aim) return fireAim(e.offsetX, e.offsetY, hit);
       selectedItem = 0;
       if (!hit) {
         const item = match.pickGroundItem(e.offsetX, e.offsetY);
@@ -786,8 +848,8 @@ async function main(): Promise<void> {
     if (router.screen !== 'game' || e.target instanceof HTMLInputElement || !match) return;
     // Held keys must not flood the server with casts or toggle follow repeatedly.
     if (e.repeat) return;
-    const key = e.key.toLowerCase();
-    if (e.key === ' ' || e.key === 'F1') {
+    const action = actionOf(settings, e.code);
+    if (action === 'hero' || e.key === 'F1') {
       e.preventDefault();
       const h = match.ownHero?.unit;
       if (!h) return;
@@ -796,25 +858,25 @@ async function main(): Promise<void> {
       lastSpace = now;
       w.camera.lookAt(h.x, h.y, true);
     }
-    const slot = ['q', 'w', 'e', 'r'].indexOf(key);
+    const slot = action ? ['ability1', 'ability2', 'ability3', 'ability4'].indexOf(action) : -1;
     if (slot >= 0) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) match.learn(slot);
       else useAbility(slot);
       return;
     }
-    const itemKey = ['1', '2', '3', '4', '5', '6'].indexOf(e.key);
+    const itemKey = action ? ['item1', 'item2', 'item3', 'item4', 'item5', 'item6'].indexOf(action) : -1;
     if (itemKey >= 0) {
       e.preventDefault();
       return useItem(itemKey);
     }
-    if (key === 'a') setAim({ kind: 'attack' });
+    if (action === 'attack') setAim({ kind: 'attack' });
     if (e.key === 'Escape') {
       if (aim) setAim(null);
       else closeShop();
     }
-    if (key === 's') match.stop();
-    if (key === 'h') match.hold();
+    if (action === 'stop') match.stop();
+    if (action === 'hold') match.hold();
     if (e.key === 'F4') {
       e.preventDefault();
       w.toggleStress(300);
@@ -827,6 +889,8 @@ async function main(): Promise<void> {
   });
 
   router.onChange((name) => {
+    // Settings keep what is behind them (a running match stays a match).
+    if (name === 'settings') return setAim(null);
     if (name !== 'game') setAim(null);
     engine.maxFPS = name === 'game' ? gameFps : MENU_FPS;
     w.setMenuMode(name !== 'game');

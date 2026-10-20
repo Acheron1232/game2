@@ -23,6 +23,7 @@ export interface MenuActions {
   create(): void;
   join(code: string): void;
   refreshRooms(): void;
+  settings(): void;
 }
 
 export function createMenuScreen(actions: MenuActions): MenuScreen {
@@ -113,7 +114,7 @@ export function createMenuScreen(actions: MenuActions): MenuScreen {
         },
         S.play,
       ),
-      el('button', { class: 'btn big', disabled: true, title: S.comingSoon }, S.settings),
+      el('button', { class: 'btn big', onclick: () => actions.settings() }, S.settings),
       el('button', { class: 'btn big', disabled: true, title: S.comingSoon }, S.credits),
     ),
     playPanel,
@@ -242,6 +243,7 @@ export interface GameActions {
   buy(item: number): void;
   dragItem(slot: number, to: ItemDrop): void;
   closeShop(): void;
+  settings(): void;
 }
 
 export function createGameScreen(actions: GameActions): GameScreen {
@@ -411,7 +413,15 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const root = el(
     'section',
     { class: 'screen game' },
-    el('header', { class: 'hud-top' }, clock, ping, gold, el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest)),
+    el(
+      'header',
+      { class: 'hud-top' },
+      clock,
+      ping,
+      gold,
+      el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
+      el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest),
+    ),
     el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), facRes, facSupply, status),
     result,
     deathNote,
@@ -588,7 +598,33 @@ export function createGameScreen(actions: GameActions): GameScreen {
   };
 }
 
-export function createEndScreen(router: Router): Screen {
+export interface EndRow {
+  name: string;
+  hero: string;
+  team: number;
+  level: number;
+  kills: number;
+  deaths: number;
+  gold: number;
+  camps: number;
+  upgrades: number;
+  own: boolean;
+}
+
+export interface EndScreen extends Screen {
+  /** won: true / false; line: "Team 1 wins — 31:07" */
+  set(won: boolean, line: string, rows: EndRow[]): void;
+}
+
+export function createEndScreen(router: Router): EndScreen {
+  const title = el('h1', { class: 'title' }, S.victory);
+  const line = el('p', { class: 'end-line' });
+  const head = el(
+    'tr',
+    {},
+    ...[S.player, S.hero, S.levelShort, S.kills, S.deaths, S.gold, S.camps, S.upgradesCol].map((t) => el('th', {}, t)),
+  );
+  const body = el('tbody');
   const root = el(
     'section',
     { class: 'screen end' },
@@ -596,7 +632,9 @@ export function createEndScreen(router: Router): Screen {
       'div',
       { class: 'panel ornate end-panel' },
       el('div', { class: 'crest' }),
-      el('h1', { class: 'title' }, S.victory),
+      title,
+      line,
+      el('table', { class: 'end-table' }, el('thead', {}, head), body),
       el('div', { class: 'divider' }),
       el(
         'div',
@@ -606,7 +644,25 @@ export function createEndScreen(router: Router): Screen {
       ),
     ),
   );
-  return { root };
+  return {
+    root,
+    set(won, text, rows) {
+      setText(title, won ? S.victory : S.defeat);
+      title.classList.toggle('defeat', !won);
+      setText(line, text);
+      body.replaceChildren(
+        ...rows.map((r) =>
+          el(
+            'tr',
+            { class: r.own ? 'own' : '' },
+            ...[r.name, r.hero, r.level, r.kills, r.deaths, r.gold.toLocaleString('en-US'), r.camps, r.upgrades].map((v) =>
+              el('td', {}, String(v)),
+            ),
+          ),
+        ),
+      );
+    },
+  };
 }
 
 export function showFatalError(host: HTMLElement, message: string): void {

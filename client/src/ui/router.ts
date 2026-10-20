@@ -1,6 +1,6 @@
 // Shows one screen at a time. The 3D canvas stays behind all screens.
 
-export type ScreenName = 'menu' | 'lobby' | 'game' | 'end';
+export type ScreenName = 'menu' | 'lobby' | 'game' | 'end' | 'settings';
 
 export interface Screen {
   root: HTMLElement;

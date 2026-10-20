@@ -7,6 +7,12 @@ import type { SimEntity } from './match-sim';
 
 export const VISION_CELL = 4;
 
+/** What a player's view needs to know about vision (TeamVision, or TeamSight with line of sight). */
+export interface Vision {
+  sees(team: number, e: SimEntity): boolean;
+  seesPoint(team: number, x: number, y: number): boolean;
+}
+
 export class TeamVision {
   readonly cols: number;
   private readonly grids = new Map<number, Uint8Array>();

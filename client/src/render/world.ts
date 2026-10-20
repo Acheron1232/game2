@@ -21,7 +21,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
 import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
-import { buildMatchNav, gameData, type NavGrid, type TerrainGrid } from '@game/shared';
+import { buildMatchNav, gameData, SIGHT_CELL, type NavGrid, type TerrainGrid } from '@game/shared';
 import selectionRingUrl from '../assets/ui/selection_ring.webp?url';
 import type { GameAssets } from '../loader/assets';
 import { attachHeroEffects, type HeroEffects } from './hero-effects';
@@ -30,6 +30,7 @@ import { RtsCamera, TILT } from './rts-camera';
 import { TEAM_COLORS } from './team-material';
 import { createDecor, type DecorItem } from './decor';
 import { scatterInstances } from './instancing';
+import { FogOfWar } from './fog';
 import { GroundItemViews } from './ground-items';
 import { createTerrain, type Terrain } from './terrain';
 
@@ -122,6 +123,7 @@ export class GameWorld {
     readonly trees: TreeList,
     private readonly treeSlots: TreeSlot[][],
     private readonly menuBase: ModelInstance[],
+    readonly fog: FogOfWar,
   ) {
     this.scene = scene;
     this.camera = camera;
@@ -140,6 +142,9 @@ export class GameWorld {
     assets: GameAssets,
   ): Promise<GameWorld> {
     const scene = new Scene(engine);
+    // Fog of war is part of every material from the start, so no shader compiles in the match.
+    const fog = new FogOfWar(scene, grid.cols * grid.cellSize, Math.round((grid.cols * grid.cellSize) / SIGHT_CELL));
+    fog.attachAll();
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('noShadows')) scene.shadowsEnabled = false;
     scene.useRightHandedSystem = true; // same as glTF and Blender: models load without mirroring
     scene.clearColor = new Color4(0.55, 0.62, 0.68, 1);
@@ -268,7 +273,7 @@ export class GameWorld {
     ring.setEnabled(false);
 
     const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
-    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase);
+    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase, fog);
     world.setupPostProcess();
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
@@ -383,6 +388,7 @@ export class GameWorld {
   /** Menu: slow circle over the temple. Game: RTS camera over the hero. */
   setMenuMode(on: boolean): void {
     this.menuMode = on;
+    this.fog.setEnabled(!on);
     this.camera.enabled = !on;
     if (!on && this.selected) this.camera.lookAt(this.selected.x, this.selected.y);
   }
@@ -544,6 +550,7 @@ export class GameWorld {
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     this.beforeFrame?.(dt);
+    this.fog.update(dt);
     this.items.update();
     const now = performance.now();
     for (const u of this.units) {

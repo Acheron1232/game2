@@ -9,6 +9,8 @@ import {
   EventList,
   gameData,
   FactionAI,
+  matchSummary,
+  type MatchSummary,
   itemIndex,
   MatchSim,
   newCharges,
@@ -18,7 +20,8 @@ import {
   readCommand,
   SnapshotWriter,
   storeItem,
-  TeamVision,
+  entitySources,
+  TeamSight,
   TICK_RATE,
   type MatchSetup,
   type TreeList,
@@ -49,7 +52,7 @@ function copyEvent(to: EventList, e: { type: number; a: number; b: number; value
 
 export class MatchRunner {
   readonly sim: MatchSim;
-  private readonly vision: TeamVision;
+  private readonly vision: TeamSight;
   private readonly views = new Map<number, ClientView>();
   private readonly sw = new SnapshotWriter();
   private readonly w = new BinaryWriter(4096);
@@ -68,8 +71,9 @@ export class MatchRunner {
     const terrain = parseTerrain(terrainBytes);
     const nav = buildMatchNav(terrain, gameData.map);
     this.sim = new MatchSim(setup, nav, trees ? { terrain, trees } : undefined);
-    this.vision = new TeamVision(gameData.map.size.width);
-    this.vision.update(this.sim.entities);
+    // Fog of war: sight is blocked by living trees and higher ground (flyers see over all).
+    this.vision = new TeamSight(terrain, this.sim.factions?.trees ?? null);
+    this.vision.update(entitySources(this.sim.entities));
     // Players can only order attacks on what their team sees.
     this.sim.canSee = (team, e) => this.vision.sees(team, e);
     // Faction brains for every slot, hero bots for Bot slots.
@@ -134,6 +138,11 @@ export class MatchRunner {
     }
   }
 
+  /** End screen data. */
+  summary(): MatchSummary {
+    return matchSummary(this.sim);
+  }
+
   /** The winning team once the match is over, else 0. */
   get winnerTeam(): number {
     return this.sim.factions?.winnerTeam ?? 0;
@@ -157,7 +166,7 @@ export class MatchRunner {
       if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();
     }
     // Vision every 2 ticks (10 Hz) is enough for "who can I see".
-    if (this.speed > 1 || this.sim.tick % 2 === 1) this.vision.update(this.sim.entities);
+    if (this.speed > 1 || this.sim.tick % 2 === 1) this.vision.update(entitySources(this.sim.entities));
     const out: MatchPacket[] = [];
     for (const view of this.views.values()) {
       if (!view.active) continue;

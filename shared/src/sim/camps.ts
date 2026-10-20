@@ -135,9 +135,12 @@ export function onCampMemberAttacked(sim: MatchSim, m: SimEntity, source: Damage
   if (camp && attacker?.alive) aggro(sim, camp, attacker);
 }
 
-export function onCampMemberDied(sim: MatchSim, m: SimEntity): void {
+export function onCampMemberDied(sim: MatchSim, m: SimEntity, killer?: DamageSource): void {
   const camp = sim.camps[m.camp];
   if (!camp || camp.members.some((o) => o.alive)) return;
+  // The camp counts for the player whose unit (or hero) killed the last monster.
+  const hs = killer && killer.owner < 4 ? sim.heroes[killer.owner]?.heroState : undefined;
+  if (hs) hs.stats.camps++;
   const def = gameData.camps.campTypes.find((t) => t.id === camp.type);
   camp.lastDeathX = m.mover.x;
   camp.lastDeathY = m.mover.y;

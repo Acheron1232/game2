@@ -1,3 +1,4 @@
+import type { MatchSummary } from '../sim/summary';
 // Lobby messages: JSON text frames. Rare and small, so JSON is fine and easy to debug.
 
 import { z } from 'zod';
@@ -155,6 +156,6 @@ export type ServerLobbyMessage =
   | { type: 'chat'; from: string; text: string; system?: boolean }
   | { type: 'matchStart'; match: MatchStartInfo }
   | { type: 'matchGo'; tick: number }
-  /** winnerTeam: 0 when the host ended the match */
-  | { type: 'matchEnd'; winnerTeam: number }
+  /** winnerTeam: 0 when the host ended the match; summary: the end screen (a won match only) */
+  | { type: 'matchEnd'; winnerTeam: number; summary?: MatchSummary }
   | { type: 'stats'; stats: MatchStats };

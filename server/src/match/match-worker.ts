@@ -39,7 +39,7 @@ port.on('message', (msg: ToWorker) => {
           );
           if (!ended && runner.winnerTeam) {
             ended = true;
-            post({ t: 'end', winnerTeam: runner.winnerTeam });
+            post({ t: 'end', winnerTeam: runner.winnerTeam, summary: runner.summary() });
           }
         },
         (stats) => post({ t: 'stats', stats }),

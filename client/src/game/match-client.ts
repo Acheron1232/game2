@@ -29,6 +29,9 @@ import {
   footprintOf,
   isBuildingType,
   labelRegions,
+  statsOf,
+  TeamSight,
+  type SightSource,
   NavBlockers,
   removeTree,
   type NetFactionState,
@@ -56,6 +59,7 @@ import {
 import type { GameSocket } from '../net/socket';
 import { AbilityFx, HERO_FX } from '../render/ability-fx';
 import { HealthBars, type BarInput } from '../render/health-bars';
+import type { FogGrid } from '../render/fog';
 import { Projectiles } from '../render/projectiles';
 import { TILT } from '../render/rts-camera';
 import { TEAM_COLORS } from '../render/team-material';
@@ -116,6 +120,8 @@ const OWN_BAR = '#3fd93a',
 
 /** After this long dead, hide a hero's body (its death clip is over). */
 const HIDE_DEAD_HERO_MS = 2500;
+/** How often the own team's sight (fog of war) is computed. */
+const SIGHT_MS = 160;
 
 export class MatchClient {
   readonly entities = new Map<number, NetEntity>();
@@ -129,6 +135,8 @@ export class MatchClient {
   snapshots = 0;
   /** true while the server drives the own hero (see the top of this file) */
   serverMode = false;
+  /** settings: health bars on every unit, not only on hurt or selected ones */
+  allBars = false;
   /** Called when gold, XP, level or respawn time changed. */
   onPlayer: ((p: NetPlayerState) => void) | null = null;
   /** the player's AI faction (gold, wood, supply, what it does) */
@@ -173,6 +181,12 @@ export class MatchClient {
   private readonly cutTrees: number[] = [];
   /** workers inside a gold mine (not drawn) */
   private readonly inside = new Set<number>();
+  /** Fog of war: the same line-of-sight code as the server, run on our own team's units. */
+  private readonly sight: TeamSight;
+  private readonly sightSources: SightSource[] = [];
+  private sightAt = 0;
+  /** what the fog and the minimap show (null for a spectator: no fog) */
+  fogGrid: FogGrid | null = null;
 
   constructor(
     readonly world: GameWorld,
@@ -190,6 +204,7 @@ export class MatchClient {
     this.walkAtStart = world.nav.walk.slice();
     this.blockers = new NavBlockers(world.nav);
     this.trees = buildTreeIndex(world.trees, world.grid);
+    this.sight = new TeamSight(world.grid, this.trees);
     world.setMenuBase(false);
   }
 
@@ -857,7 +872,7 @@ export class MatchClient {
       }
       // Health bar: heroes always, others when hurt or selected.
       const hero = isHeroType(e.type);
-      if (!hero && e.hp >= e.maxHp && this.world.selected !== u) continue;
+      if (!hero && !this.allBars && e.hp >= e.maxHp && this.world.selected !== u) continue;
       const b = (this.barInput[bars] ??= { x: 0, y: 0, z: 0, hp: 1, mana: -1, hero: false, color: OWN_BAR });
       bars++;
       b.x = u.x;
@@ -878,10 +893,40 @@ export class MatchClient {
               : ENEMY_BAR;
     }
     this.events.drain(rt, this.drawEvent);
+    if (now >= this.sightAt) this.updateSight(now);
     this.bars.update(this.barInput, bars);
     this.projectiles.update(dt);
     this.fx.update(dt);
     this.floating?.update(this.projectText);
+  }
+
+  /** Own team's sight, about 6 times a second (enough for a fog that fades anyway). */
+  private updateSight(now: number): void {
+    this.sightAt = now + SIGHT_MS;
+    if (this.spectator) return;
+    const team = this.myTeam;
+    let n = 0;
+    for (const e of this.entities.values()) {
+      const u = e.unit;
+      if (!u || e.state & (UnitState.Dead | UnitState.Hidden) || this.teamOf(e) !== team) continue;
+      const src = (this.sightSources[n++] ??= { x: 0, y: 0, team: 0, sight: 0, air: false });
+      src.x = u.x;
+      src.y = u.y;
+      src.team = team;
+      src.sight = statsOf(e.type).sight;
+      src.air = isFlyingType(e.type);
+    }
+    this.sightSources.length = n;
+    this.sight.update(this.sightSources);
+    const grid = (this.fogGrid ??= {
+      cols: this.sight.cols,
+      cell: this.sight.cell,
+      visible: this.sight.visible(team),
+      explored: this.sight.explored(team),
+    });
+    grid.visible = this.sight.visible(team);
+    grid.explored = this.sight.explored(team);
+    this.world.fog.setGrid(grid);
   }
 
   /** Match time in seconds, from the server tick. */
@@ -899,6 +944,8 @@ export class MatchClient {
     // Back to the map as it was before the match.
     this.world.nav.walk.set(this.walkAtStart);
     labelRegions(this.world.nav);
+    // Next match starts with a clear view, not this match's fog.
+    this.world.fog.clear();
     this.world.showAllTrees();
     this.world.setMenuBase(true);
     this.bars.dispose();

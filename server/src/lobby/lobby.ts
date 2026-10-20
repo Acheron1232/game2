@@ -9,6 +9,7 @@ import {
   type ClientLobbyMessage,
   type ErrorCode,
   type MatchSetup,
+  type MatchSummary,
   type RoomSummary,
   type ServerLobbyMessage,
   type SlotState,
@@ -410,10 +411,10 @@ export class Lobby {
 
   private createMatch(room: Room, setup: MatchSetup): MatchHost {
     const host = createMatchHost(setup, this.options.map(), this.options.matchMode);
-    host.onEnd = (winnerTeam) => {
+    host.onEnd = (winnerTeam, summary) => {
       if (room.match !== host) return;
       room.endTimer = setTimeout(() => {
-        if (room.match === host) this.finishMatch(room, winnerTeam);
+        if (room.match === host) this.finishMatch(room, winnerTeam, summary);
       }, this.options.matchEndDelayMs);
     };
     host.onPackets = (_tick, packets) => {
@@ -462,7 +463,7 @@ export class Lobby {
     this.finishMatch(room, 0);
   }
 
-  private finishMatch(room: Room, winnerTeam: number): void {
+  private finishMatch(room: Room, winnerTeam: number, summary?: MatchSummary): void {
     if (room.endTimer) clearTimeout(room.endTimer);
     room.endTimer = null;
     room.match?.stop();
@@ -478,7 +479,7 @@ export class Lobby {
     // Players who never came back are gone now.
     for (const m of [...room.members]) if (!m.conn) this.leave(m, 'left');
     if (!this.rooms.has(room.code)) return;
-    this.broadcast(room, { type: 'matchEnd', winnerTeam });
+    this.broadcast(room, { type: 'matchEnd', winnerTeam, ...(summary ? { summary } : {}) });
     this.broadcastRoom(room);
   }
 
