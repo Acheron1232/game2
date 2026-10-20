@@ -120,6 +120,13 @@
     "dropRule": "One roll on the camp's drop table when the last monster of the camp dies. The item falls where that monster died."
   },
 
+  "items": {
+    "groundItemSec": 180,
+    "pickUpRange": 1.5,
+    "giveRange": 3,
+    "notes": "Items on the ground (camp drops and dropped items) vanish after groundItemSec. A hero walks to an item to pick it up, and to an ally to give one."
+  },
+
   "fountain": {
     "hpPctPerSec": 2.5,
     "manaPctPerSec": 2.0,

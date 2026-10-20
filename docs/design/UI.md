@@ -106,7 +106,7 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 
 ## 5. Shop panel
 
-Grid of item icons with price under each. Hover = tooltip. Right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?".
+Grid of item icons with price under each. Hover = tooltip. Left or right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?" (Yes / No). The panel opens by itself when your hero walks next to a shop, or when you click a shop building; ✕ or Esc closes it.
 
 ## 6. Tooltips (parchment box)
 

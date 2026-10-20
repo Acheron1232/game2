@@ -38,6 +38,12 @@ export const EventType = {
   Defeated: 17,
   /** a = winner team */
   MatchOver: 18,
+  /** a = from, b = to: a lightning jump (Storm Hammer) */
+  Chain: 19,
+  /** a = hero, b/value = point (quantized), kind = item index: an item was used (or a ward placed) */
+  ItemUse: 20,
+  /** a = hero, value = NoticeCode: a message only for the hero's player */
+  Notice: 21,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
@@ -48,6 +54,17 @@ export const DamageKind = {
   Attack: 0,
   Spell: 1,
   Heal: 2,
+  /** an attack up a hill that missed (value 0) */
+  Miss: 3,
+  /** mana given back (Mana Potion) */
+  Mana: 4,
+} as const;
+
+/** Why an order did nothing, for the player's alert. */
+export const NoticeCode = {
+  InventoryFull: 1,
+  /** the ally has no room for the item */
+  AllyFull: 2,
 } as const;
 
 export interface SimEvent {

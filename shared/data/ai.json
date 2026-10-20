@@ -79,7 +79,7 @@
       "normal": { "reactionSec": 0.4, "abilityUseQuality": 0.7, "retreatAtHpPct": 30, "lastHitSkill": 0.6, "joinsAttacks": true },
       "hard": { "reactionSec": 0.2, "abilityUseQuality": 0.9, "retreatAtHpPct": 35, "lastHitSkill": 0.9, "joinsAttacks": true }
     },
-    "campChoice": "Pick the closest camp whose total monster level is at most 2 x hero level (3 x when the hero has an ally hero near).",
+    "campChoice": "Pick the closest camp whose total monster level is at most 4 + 2 x hero level (4 + 3 x hero level when the hero has an ally hero near). Each base has only weak camps close by, so a stricter rule makes bots walk across the map.",
     "shopping": "Buy healing potions when below 2. Then follow the hero's item list (heroBuild below) at the nearest shop when gold allows.",
     "upgrades": "Spend 30% of gold above 300 on Town Hall upgrades, in this order: iron_plates, sharper_blades, better_arrows, rich_veins, stone_walls.",
     "heroBuild": {

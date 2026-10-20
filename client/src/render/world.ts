@@ -30,6 +30,7 @@ import { RtsCamera, TILT } from './rts-camera';
 import { TEAM_COLORS } from './team-material';
 import { createDecor, type DecorItem } from './decor';
 import { scatterInstances } from './instancing';
+import { GroundItemViews } from './ground-items';
 import { createTerrain, type Terrain } from './terrain';
 
 export type TreeList = [number, number, number, number][];
@@ -66,6 +67,8 @@ export interface Unit {
   height: number;
   /** draw scale (Mountain Form makes the golem bigger) */
   scale: number;
+  /** normal draw scale of this unit (small wards use a scaled-down model) */
+  baseScale: number;
   /** a jump on screen: an arc between these times (ms) */
   arcStart: number;
   arcEnd: number;
@@ -97,6 +100,8 @@ export class GameWorld {
   selected: Unit | null = null;
   /** Called every frame before units are drawn, with the frame time in seconds. */
   beforeFrame: ((dt: number) => void) | null = null;
+  /** items lying on the ground */
+  readonly items: GroundItemViews;
   private shadows: ShadowGenerator;
   private ring: Mesh;
   private stress: ModelInstance[] = [];
@@ -123,6 +128,7 @@ export class GameWorld {
     this.shadows = shadows;
     this.ring = ring;
     this.nav = nav;
+    this.items = new GroundItemViews(scene, library, terrain.heightAt);
   }
 
   static async create(
@@ -338,6 +344,7 @@ export class GameWorld {
       flyHeight: flying ? FLY_HEIGHT : 0,
       height: this.library.models[modelId]?.height ?? 2,
       scale: 1,
+      baseScale: 1,
       arcStart: 0,
       arcEnd: 0,
       rise: 1,
@@ -537,6 +544,7 @@ export class GameWorld {
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     this.beforeFrame?.(dt);
+    this.items.update();
     const now = performance.now();
     for (const u of this.units) {
       if (!u.dead && now >= u.actionUntil) this.play(u, u.moving ? 'walk' : 'idle');

@@ -43,7 +43,7 @@ port.on('message', (msg: ToWorker) => {
       );
       break;
     case 'cheat':
-      runner.cheat(msg.slot, msg.xp, msg.gold);
+      runner.cheat(msg.slot, msg.cheat);
       break;
     case 'stop':
       stop?.();

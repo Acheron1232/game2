@@ -26,3 +26,4 @@ export * from './sim/faction/faction';
 export * from './sim/faction/placement';
 export * from './sim/faction/upgrades';
 export * from './sim/hero-bot';
+export * from './sim/items';

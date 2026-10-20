@@ -652,6 +652,14 @@ td .btn.tiny {
   color: #ffe58a;
   font-size: 20px;
 }
+.float-text.mana {
+  color: #7fb6ff;
+}
+.float-text.miss {
+  color: #d8d0c0;
+  font-size: 14px;
+  font-style: italic;
+}
 .abilities {
   display: flex;
   gap: 8px;
@@ -682,6 +690,130 @@ td .btn.tiny {
   gap: 8px;
   justify-content: center;
   align-content: center;
+}
+
+/* ---------- items and shops ---------- */
+.item-slot {
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+.item-slot.empty {
+  cursor: default;
+}
+.item-slot.passive {
+  cursor: grab;
+}
+.item-slot .cooldown {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--cd, 0) * 360deg), transparent 0);
+}
+.item-slot .cooldown-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+.item-slot .key {
+  z-index: 1;
+}
+.charges {
+  position: absolute;
+  right: 2px;
+  bottom: 0;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 3px #000;
+  pointer-events: none;
+}
+.item-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 44px;
+  height: 44px;
+  background-size: cover;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 50;
+  border: 1px solid var(--gold);
+}
+.shop-panel {
+  position: absolute;
+  right: 8px;
+  bottom: 196px;
+  width: 300px;
+  padding: 10px 12px;
+}
+.shop-panel.far {
+  opacity: 0.8;
+}
+.shop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.shop-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 48px);
+  gap: 6px;
+  justify-content: center;
+}
+.shop-item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--gold);
+  background: #0a0704;
+  cursor: pointer;
+}
+.shop-item .price {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #ffd84a;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.shop-item.dim .ability-icon {
+  filter: grayscale(0.8) brightness(0.55);
+}
+.shop-item.dim .price {
+  color: #b05a4a;
+}
+.shop-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.shop-ask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+.shop-ask span {
+  flex: 1;
 }
 
 /* ---------- end ---------- */

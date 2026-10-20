@@ -185,6 +185,7 @@ export function updateCast(sim: MatchSim, e: SimEntity): void {
   if (sim.tick < c.castEnd) return;
   // The effect: check once more (mana, stun...), pay, start the cooldown.
   if (castProblem(sim, e, c.slot, c.target)) return endCast(sim, e);
+  sim.breakInvisible(e);
   e.mana -= lv(a.manaCost, level);
   const hc = healthCost(a, level);
   if (hc) e.hp -= hc;

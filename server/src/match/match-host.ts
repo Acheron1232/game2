@@ -3,7 +3,7 @@
 
 import { Worker } from 'node:worker_threads';
 import type { MatchSetup, MatchStats, TreeList } from '@game/shared';
-import { MatchRunner, type MatchPacket } from './match-runner';
+import { MatchRunner, type Cheat, type MatchPacket } from './match-runner';
 import { runTickLoop } from './tick-loop';
 
 export type ToWorker =
@@ -12,7 +12,7 @@ export type ToWorker =
   | { t: 'reset'; slot: number }
   | { t: 'go' }
   | { t: 'stop' }
-  | { t: 'cheat'; slot: number; xp: number; gold: number };
+  | { t: 'cheat'; slot: number; cheat: Cheat };
 
 export type FromWorker =
   | { t: 'ready' }
@@ -33,7 +33,7 @@ export interface MatchHost {
   go(): void;
   stop(): void;
   /** dev only: XP and gold for a slot's hero */
-  cheat(slot: number, xp: number, gold: number): void;
+  cheat(slot: number, cheat: Cheat): void;
   onPackets: (tick: number, packets: MatchPacket[]) => void;
   onStats: (stats: MatchStats) => void;
   /** once, when one team is left */
@@ -87,8 +87,8 @@ class InlineMatchHost implements MatchHost {
   stop(): void {
     this.stopLoop?.();
   }
-  cheat(slot: number, xp: number, gold: number): void {
-    this.runner.cheat(slot, xp, gold);
+  cheat(slot: number, cheat: Cheat): void {
+    this.runner.cheat(slot, cheat);
   }
 }
 
@@ -128,8 +128,8 @@ class WorkerMatchHost implements MatchHost {
   go(): void {
     this.post({ t: 'go' });
   }
-  cheat(slot: number, xp: number, gold: number): void {
-    this.post({ t: 'cheat', slot, xp, gold });
+  cheat(slot: number, cheat: Cheat): void {
+    this.post({ t: 'cheat', slot, cheat });
   }
   stop(): void {
     this.post({ t: 'stop' });

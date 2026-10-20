@@ -4,6 +4,7 @@
 // the events the player can see, and the player's own hero data when it changed.
 
 import { EventType } from '../sim/events';
+import { itemReadyAt } from '../sim/items';
 import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { TeamVision } from '../sim/vision';
 import type { BinaryWriter } from './binary';
@@ -80,6 +81,7 @@ export function unitStateOf(e: SimEntity): number {
     e.order === 'attackMove' ||
     e.order === 'hold' ||
     e.order === 'cast' ||
+    e.order === 'item' ||
     e.returning ||
     e.forced ||
     e.buffs.some((b) => b.stun || b.root || b.tauntId)
@@ -90,6 +92,8 @@ export function unitStateOf(e: SimEntity): number {
 
 export class ClientView {
   private readonly sent = new Map<number, Sent>();
+  /** ground item id -> stamp it was last seen */
+  private readonly sentItems = new Map<number, number>();
   private full = true;
   private stamp = 0;
   private readonly upd: NetUpdate = {
@@ -127,6 +131,7 @@ export class ClientView {
   /** The next snapshot is a full one (after a rejoin). */
   reset(): void {
     this.sent.clear();
+    this.sentItems.clear();
     this.full = true;
     this.playerKey = '';
     this.factionKey = '';
@@ -266,7 +271,26 @@ export class ClientView {
       this.sent.delete(id);
     }
     this.writeEvents(sim, vision, sw, full);
+    this.writeGroundItems(sim, vision, sw, stamp);
     return sw.finish(w);
+  }
+
+  /** Items on the ground: new ones in sight, and the ones that went away or out of sight. */
+  private writeGroundItems(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, stamp: number): void {
+    for (const g of sim.groundItems) {
+      if (!vision.seesPoint(this.team, g.x, g.y)) continue;
+      if (this.sentItems.has(g.id)) {
+        this.sentItems.set(g.id, stamp);
+        continue;
+      }
+      if (!sw.itemSpawn({ id: g.id, item: g.item, charges: g.charges, x: qPos(g.x), y: qPos(g.y) })) break;
+      this.sentItems.set(g.id, stamp);
+    }
+    for (const [id, seen] of this.sentItems) {
+      if (seen === stamp) continue;
+      if (!sw.itemRemove(id)) break;
+      this.sentItems.delete(id);
+    }
   }
 
   get known(): number {
@@ -289,8 +313,14 @@ export class ClientView {
       p.abilityLevels[i] = hs.abilityLevels[i] ?? 0;
       p.cooldownEnds[i] = (hero.cooldowns[i] ?? 0) > sim.tick ? hero.cooldowns[i]! : 0;
     }
+    for (let i = 0; i < hs.inventory.length; i++) {
+      const st = hs.inventory[i];
+      p.items[i] = st ? st.item + 1 : 0;
+      p.charges[i] = st ? st.charges : 0;
+      p.itemCooldownEnds[i] = itemReadyAt(hs, i, sim.tick);
+    }
     // Respawn time counts down every tick: send it in whole seconds only.
-    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')}`;
+    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')},${p.items.join(',')},${p.charges.join(',')},${p.itemCooldownEnds.join(',')}`;
     if (key === this.playerKey) return;
     this.playerKey = key;
     sw.playerState(p);
@@ -329,6 +359,15 @@ export class ClientView {
       // Not about one entity: everyone gets them (a = tree index / slot / team).
       if (e.type === EventType.TreeGone || e.type === EventType.Defeated || e.type === EventType.MatchOver) {
         sw.event(e.type, e.a, e.b, e.value, e.kind);
+        continue;
+      }
+      if (e.type === EventType.Notice) {
+        if (sim.get(e.a)?.owner === this.slot) sw.event(e.type, e.a, e.b, e.value, e.kind);
+        continue;
+      }
+      // Item use shows where a ward went: only for the hero's own team.
+      if (e.type === EventType.ItemUse) {
+        if (sim.get(e.a)?.team === this.team) sw.event(e.type, e.a, e.b, e.value, e.kind);
         continue;
       }
       const a = sim.get(e.a),

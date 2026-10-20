@@ -5,17 +5,27 @@ import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
 import './ui-skin.css';
 import {
+  BuffFlag,
+  canStore,
   ENTITY_TYPES,
   footprintOf,
   isBuildingType,
   isMineType,
   gameData,
+  isHeroType,
+  itemIndex,
+  ITEMS,
   lv,
   MAX_LEVEL,
+  newCharges,
+  NoticeCode,
   parseTerrain,
+  sellValue,
   xpForLevel,
   UnitState,
   type AbilityDef,
+  type ItemDef,
+  type ItemStack,
   type MatchStartInfo,
   type RoomState,
 } from '@game/shared';
@@ -37,7 +47,7 @@ import { startDebugOverlay } from './ui/debug-overlay';
 import { createLobbyScreen } from './ui/lobby-screen';
 import { Minimap } from './ui/minimap';
 import { Router } from './ui/router';
-import { createEndScreen, createGameScreen, createMenuScreen, showFatalError, toggleFullScreen } from './ui/screens';
+import { createEndScreen, createGameScreen, createMenuScreen, showFatalError, toggleFullScreen, type ItemDrop } from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
 import { abilityBlockReason } from './ui/ability-feedback';
@@ -99,10 +109,18 @@ async function main(): Promise<void> {
   const lobby = createLobbyScreen((msg) => net.send(msg));
   // Set up below, once the 3D world exists.
   let useAbility: (slot: number) => void = () => {};
+  let useItem: (slot: number) => void = () => {};
+  let buyItem: (item: number) => void = () => {};
+  let dragItem: (slot: number, to: ItemDrop) => void = () => {};
+  let closeShop: () => void = () => {};
   const game = createGameScreen({
     end: () => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
     cast: (slot) => useAbility(slot),
     learn: (slot) => match?.learn(slot),
+    useItem: (slot) => useItem(slot),
+    buy: (item) => buyItem(item),
+    dragItem: (slot, to) => dragItem(slot, to),
+    closeShop: () => closeShop(),
   });
   router.add('menu', menu);
   router.add('lobby', lobby);
@@ -138,6 +156,7 @@ async function main(): Promise<void> {
     match?.dispose();
     const m = new MatchClient(world, net, pendingMatch, floating);
     match = m;
+    m.onNotice = (code) => game.alert(code === NoticeCode.AllyFull ? S.allyFull : S.inventoryFull);
     game.setResult(null);
     game.setFaction(null);
     const nameOf = (slot: number) => m.info.slots.find((s) => s.index === slot)?.name ?? '';
@@ -303,6 +322,77 @@ async function main(): Promise<void> {
     minimap.draw(dots, { x: w.camera.target.x, y: w.camera.target.y + 4, w: 46, h: 30 });
   }, 120);
 
+  // ---- items and shops
+  const itemIcon = (d: ItemDef) => (assets.has(`icons/${d.id}.webp`) ? assets.url(`icons/${d.id}.webp`) : null);
+  const itemTooltip = (d: ItemDef, st: ItemStack | null, slot = -1): string[] => {
+    const numbers = [
+      st?.charges ? `${S.charges} ${st.charges}` : '',
+      d.active?.cooldown ? `${S.cooldown} ${d.active.cooldown} s` : '',
+      d.active?.castRange ? `${S.range} ${d.active.castRange}` : '',
+      st ? `${S.sellPrice} ${sellValue(st)}` : d.cost === null ? S.dropOnlyItem : `${S.gold} ${d.cost}`,
+    ].filter(Boolean);
+    return [`${d.name}${slot >= 0 ? ` (${slot + 1})` : ''} — ${S.itemTiers[d.tier] ?? d.tier}`, d.text, numbers.join(' · ')];
+  };
+  /** Shop on the map (index in map shops) the panel shows; pinned = opened by a click. */
+  let shop: { index: number; pinned: boolean } | null = null;
+  /** The player closed the panel of this shop while standing near it: do not open it again. */
+  let shopClosedNear = -1;
+  let selectedItem = 0;
+  const shopDefOf = (index: number) => gameData.shops.find((d) => d.id === gameData.map.shops[index]?.type);
+  /** Map shop index the own hero stands near, or -1. */
+  const shopNear = (): number => {
+    const h = match?.ownHero;
+    const u = h?.unit;
+    if (!h || !u || u.dead) return -1;
+    return gameData.map.shops.findIndex((s, i) => {
+      const def = shopDefOf(i);
+      // A little inside the server's range, so a click near the edge is not refused.
+      return !!def && Math.hypot(s.pos[0] - u.x, s.pos[1] - u.y) <= def.useRange - 0.2;
+    });
+  };
+  const updateShop = () => {
+    const near = shopNear();
+    if (near < 0) shopClosedNear = -1;
+    if (near >= 0 && !shop && near !== shopClosedNear) shop = { index: near, pinned: false };
+    if (shop && !shop.pinned && near !== shop.index) shop = null;
+    const def = shop ? shopDefOf(shop.index) : undefined;
+    if (!shop || !def || !match) return game.setShop(null);
+    const gold = match.player.gold;
+    game.setShop({
+      name: def.name,
+      inRange: near === shop.index,
+      items: def.items.map((id) => {
+        const d = ITEMS[itemIndex(id)]!;
+        return {
+          item: itemIndex(id),
+          icon: itemIcon(d),
+          cost: d.cost ?? 0,
+          canAfford: gold >= (d.cost ?? 0),
+          tooltip: itemTooltip(d, null),
+        };
+      }),
+    });
+  };
+  closeShop = () => {
+    if (shop && shopNear() === shop.index) shopClosedNear = shop.index;
+    shop = null;
+    game.setShop(null);
+  };
+  /** The inventory as the client knows it (for "is there room?" before asking the server). */
+  const myInventory = (): (ItemStack | null)[] =>
+    [0, 1, 2, 3, 4, 5].map((i) => {
+      const info = match?.item(i);
+      return info ? { item: info.index, charges: info.charges } : null;
+    });
+  buyItem = (item) => {
+    if (!match?.ownHero || !shop) return;
+    const d = ITEMS[item]!;
+    if (shopNear() !== shop.index) return game.alert(S.goToShop);
+    if (match.player.gold < (d.cost ?? Infinity)) return game.alert(S.noGold);
+    if (!canStore(myInventory(), item, newCharges(item))) return game.alert(S.inventoryFull);
+    match.buy(item);
+  };
+
   // Hero panel and the info line of a selected unit, a few times per second.
   const unitName = (e: NetEntity) => {
     const id = ENTITY_TYPES[e.type] ?? '';
@@ -365,15 +455,38 @@ async function main(): Promise<void> {
         };
       }),
     );
+    game.setItems(
+      [0, 1, 2, 3, 4, 5].map((slot) => {
+        const info = match!.item(slot);
+        if (!info) return null;
+        return {
+          icon: itemIcon(info.def),
+          charges: info.charges,
+          cooldownFrac: info.cooldownFrac,
+          cooldownLeft: info.cooldownLeft,
+          usable: !!info.def.active,
+          tooltip: itemTooltip(info.def, { item: info.index, charges: info.charges }, slot),
+        };
+      }),
+    );
+    updateShop();
     const sel = selected && match.entities.get(selected.id) === selected ? selected : null;
-    game.setSelected(sel && sel !== own ? `${unitName(sel)} · ${S.level} ${sel.level} · ${sel.hp} / ${sel.maxHp}` : null);
+    const groundSel = selectedItem ? match.groundItems.get(selectedItem) : undefined;
+    if (!groundSel) selectedItem = 0;
+    game.setSelected(
+      groundSel
+        ? `${ITEMS[groundSel.item]?.name ?? ''}${groundSel.charges ? ` (${groundSel.charges})` : ''}`
+        : sel && sel !== own
+          ? `${unitName(sel)} · ${S.level} ${sel.level} · ${sel.hp} / ${sel.maxHp}`
+          : null,
+    );
   }, 125);
 
   // ---- mouse and keys: right click = move or attack, A + left click = attack-move,
   // Q W E R = abilities (then left click the target), Ctrl + Q W E R = learn,
   // left click = select, S = stop, H = hold, Space = center on the hero.
   let lastSpace = 0;
-  type Aim = { kind: 'attack' } | { kind: 'ability'; slot: number } | null;
+  type Aim = { kind: 'attack' } | { kind: 'ability'; slot: number } | { kind: 'item'; slot: number } | null;
   let aim: Aim = null;
   const cursor = { x: 0, y: 0 };
   const indicators = new AimIndicators(w.scene);
@@ -404,6 +517,40 @@ async function main(): Promise<void> {
     line: { kind: 'line' as const, length: 0, width: 0 },
   };
   const aimTarget = { x: 0, y: 0, r: 1 };
+  useItem = (slot) => {
+    if (!match?.ownHero) return;
+    const info = match.item(slot);
+    if (!info) return;
+    const a = info.def.active;
+    if (!a) return game.alert(S.itemPassive);
+    if (match.ownHero.buffs & BuffFlag.Stun || match.player.respawnTicks > 0) return game.alert(S.stunned);
+    if (info.cooldownLeft > 0) return game.alert(S.itemNotReady);
+    if (a.target === 'none') return match.useItem(slot, { kind: 0, id: 0, x: 0, y: 0 });
+    setAim({ kind: 'item', slot });
+  };
+  dragItem = (slot, to) => {
+    if (!match) return;
+    const info = match.item(slot);
+    if (!info) return;
+    if (to.kind === 'slot') return match.swapItems(slot, to.slot);
+    if (to.kind === 'shop') {
+      if (!shop || shopNear() !== shop.index) return game.alert(S.goToShop);
+      const gold = sellValue({ item: info.index, charges: info.charges });
+      return game.confirm(S.sellFor(info.def.name, gold), () => match?.sell(slot));
+    }
+    const r = canvas.getBoundingClientRect();
+    const sx = to.clientX - r.left,
+      sy = to.clientY - r.top;
+    const hit = match.pick(sx, sy);
+    if (hit && hit !== match.ownHero && isHeroType(hit.type) && !match.isEnemy(hit)) return match.giveItem(slot, hit);
+    const p = w.pickGround(sx, sy);
+    if (p) match.dropItem(slot, p.x, p.y);
+  };
+  /** A shop building under a screen point (CSS pixels): map shop index, or -1. */
+  const pickShop = (sx: number, sy: number): number => {
+    const pt = { x: 0, y: 0 };
+    return gameData.map.shops.findIndex((s) => w.screenPoint(s.pos[0], s.pos[1], 1.5, pt) && Math.hypot(pt.x - sx, pt.y - sy) < 45);
+  };
   const aimShape = (a: AbilityDef, level: number): AimShape => {
     if (a.target === 'unit') return aimShapes.unit;
     if (a.target === 'cone') {
@@ -420,6 +567,14 @@ async function main(): Promise<void> {
     return aimShapes.circle;
   };
   w.scene.onBeforeRenderObservable.add(() => {
+    if (aim?.kind === 'item' && match?.ownHero?.unit) {
+      const it = match.item(aim.slot);
+      const p = w.pickGround(cursor.x, cursor.y);
+      if (!it?.def.active || !p) return;
+      const h = match.ownHero.unit;
+      indicators.show({ kind: 'circle', radius: 0.8 }, it.def.active.castRange ?? 0, h.x, h.y, p.x, p.y, w.terrain.heightAt, null, false);
+      return;
+    }
     if (!aim || aim.kind !== 'ability' || !match?.ownHero?.unit) return;
     const info = match.ability(aim.slot);
     const p = w.pickGround(cursor.x, cursor.y);
@@ -456,10 +611,27 @@ async function main(): Promise<void> {
     if (e.button === 2) {
       if (aim) return setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
+      const item = match.pickGroundItem(e.offsetX, e.offsetY);
+      if (item) {
+        if (!canStore(myInventory(), item.item, item.charges)) return game.alert(S.inventoryFull);
+        return match.pickUp(item.id);
+      }
       const p = w.pickGround(e.offsetX, e.offsetY);
       if (p) match.moveTo(p.x, p.y, e.shiftKey);
     } else if (e.button === 0) {
       const a = aim;
+      if (a?.kind === 'item') {
+        const it = match.item(a.slot);
+        setAim(null);
+        if (!it?.def.active) return;
+        if (it.def.active.target === 'unit') {
+          if (!hit) return game.alert(S.pickTarget);
+          return match.useItem(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
+        }
+        const p = w.pickGround(e.offsetX, e.offsetY);
+        if (p) match.useItem(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
+        return;
+      }
       if (a?.kind === 'attack') {
         setAim(null);
         if (hit && match.isEnemy(hit)) return match.attack(hit);
@@ -485,6 +657,19 @@ async function main(): Promise<void> {
         setAim(null);
         return match.cast(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
       }
+      selectedItem = 0;
+      if (!hit) {
+        const item = match.pickGroundItem(e.offsetX, e.offsetY);
+        if (item) {
+          selectedItem = item.id;
+          return select(null);
+        }
+        const s = pickShop(e.offsetX, e.offsetY);
+        if (s >= 0) {
+          shop = { index: s, pinned: true };
+          updateShop();
+        }
+      }
       select(hit);
     }
   });
@@ -509,8 +694,16 @@ async function main(): Promise<void> {
       else useAbility(slot);
       return;
     }
+    const itemKey = ['1', '2', '3', '4', '5', '6'].indexOf(e.key);
+    if (itemKey >= 0) {
+      e.preventDefault();
+      return useItem(itemKey);
+    }
     if (key === 'a') setAim({ kind: 'attack' });
-    if (e.key === 'Escape') setAim(null);
+    if (e.key === 'Escape') {
+      if (aim) setAim(null);
+      else closeShop();
+    }
     if (key === 's') match.stop();
     if (key === 'h') match.hold();
     if (e.key === 'F4') {

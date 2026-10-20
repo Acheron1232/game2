@@ -168,8 +168,43 @@ export interface AbilityButtonView {
   tooltip: string[];
 }
 
+export interface ItemSlotView {
+  icon: string | null;
+  /** 0 = no number on the slot */
+  charges: number;
+  cooldownFrac: number;
+  cooldownLeft: number;
+  /** can be used with a click or its key */
+  usable: boolean;
+  tooltip: string[];
+}
+
+export interface ShopItemView {
+  /** index in items.json */
+  item: number;
+  icon: string | null;
+  cost: number;
+  canAfford: boolean;
+  tooltip: string[];
+}
+
+export interface ShopView {
+  name: string;
+  items: ShopItemView[];
+  /** the hero is close enough to buy and sell */
+  inRange: boolean;
+}
+
+/** Where an inventory item was dragged to. */
+export type ItemDrop = { kind: 'slot'; slot: number } | { kind: 'shop' } | { kind: 'world'; clientX: number; clientY: number };
+
 export interface GameScreen extends Screen {
   setAbilities(views: (AbilityButtonView | null)[]): void;
+  setItems(views: (ItemSlotView | null)[]): void;
+  /** The shop panel above the inventory, or null to close it. */
+  setShop(view: ShopView | null): void;
+  /** A yes / no question in the shop panel ("Sell for 125 gold?"). */
+  confirm(text: string, onYes: () => void): void;
   /** Short message in the middle of the screen ("Not enough mana."). */
   alert(text: string): void;
   setClock(seconds: number): void;
@@ -199,6 +234,10 @@ export interface GameActions {
   end(): void;
   cast(slot: number): void;
   learn(slot: number): void;
+  useItem(slot: number): void;
+  buy(item: number): void;
+  dragItem(slot: number, to: ItemDrop): void;
+  closeShop(): void;
 }
 
 export function createGameScreen(actions: GameActions): GameScreen {
@@ -241,6 +280,13 @@ export function createGameScreen(actions: GameActions): GameScreen {
     }
     tooltip.hidden = false;
   };
+  const showTip = (lines: string[]) => {
+    tooltipKey = '';
+    tooltip.replaceChildren(...lines.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
+    tooltip.hidden = false;
+  };
+  const hideTip = () => (tooltip.hidden = true);
+
   const abilityParts = ['Q', 'W', 'E', 'R'].map((k, slot) => {
     const icon = el('div', { class: 'ability-icon' });
     const cd = el('div', { class: 'cooldown' });
@@ -259,12 +305,105 @@ export function createGameScreen(actions: GameActions): GameScreen {
     });
     root.addEventListener('mouseleave', () => {
       hoveredAbility = -1;
-      tooltip.hidden = true;
+      hideTip();
     });
     return { root, icon, cd, cdText, pips, plus, iconUrl: '' as string | null, pipKey: '' };
   });
   const abilityButtons = abilityParts.map((p) => p.root);
-  const items = Array.from({ length: 6 }, (_, i) => el('div', { class: 'item-slot' }, el('span', { class: 'key' }, String(i + 1))));
+  // ---- inventory: click or key = use, drag = move / drop / give / sell
+  let itemViews: (ItemSlotView | null)[] = [];
+  const ghost = el('div', { class: 'item-ghost', hidden: true });
+  const itemParts = Array.from({ length: 6 }, (_, slot) => {
+    const icon = el('div', { class: 'ability-icon' });
+    const cd = el('div', { class: 'cooldown', hidden: true });
+    const cdText = el('span', { class: 'cooldown-text' });
+    const count = el('span', { class: 'charges' });
+    const root = el('div', { class: 'item-slot empty' }, icon, cd, cdText, el('span', { class: 'key' }, String(slot + 1)), count);
+    root.dataset['slot'] = String(slot);
+    let down: { x: number; y: number; id: number } | null = null;
+    let dragging = false;
+    root.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || !itemViews[slot]) return;
+      down = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      dragging = false;
+      root.setPointerCapture(e.pointerId);
+    });
+    root.addEventListener('pointermove', (e) => {
+      if (!down || e.pointerId !== down.id) return;
+      if (!dragging && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) {
+        dragging = true;
+        hideTip();
+        ghost.style.backgroundImage = icon.style.backgroundImage;
+        ghost.hidden = false;
+      }
+      if (dragging) ghost.style.transform = `translate(${e.clientX - 22}px, ${e.clientY - 22}px)`;
+    });
+    const finish = (e: PointerEvent, cancel: boolean) => {
+      if (!down || e.pointerId !== down.id) return;
+      down = null;
+      ghost.hidden = true;
+      if (cancel) return;
+      if (!dragging) return actions.useItem(slot);
+      const under = document.elementFromPoint(e.clientX, e.clientY);
+      const other = under?.closest<HTMLElement>('.item-slot');
+      if (other?.dataset['slot']) {
+        const to = Number(other.dataset['slot']);
+        if (to !== slot) actions.dragItem(slot, { kind: 'slot', slot: to });
+      } else if (under?.closest('.shop-panel')) actions.dragItem(slot, { kind: 'shop' });
+      else if (under instanceof HTMLCanvasElement || under?.closest('.floating-layer'))
+        actions.dragItem(slot, { kind: 'world', clientX: e.clientX, clientY: e.clientY });
+    };
+    root.addEventListener('pointerup', (e) => finish(e, false));
+    root.addEventListener('pointercancel', (e) => finish(e, true));
+    root.addEventListener('contextmenu', (e) => e.preventDefault());
+    root.addEventListener('mouseenter', () => {
+      const v = itemViews[slot];
+      if (v && !down) showTip(v.tooltip);
+    });
+    root.addEventListener('mouseleave', hideTip);
+    return { root, icon, cd, cdText, count, iconUrl: '' as string | null };
+  });
+  const items = itemParts.map((p) => p.root);
+
+  // ---- shop panel above the inventory
+  const shopName = el('h3', {});
+  const shopGrid = el('div', { class: 'shop-grid' });
+  const shopHint = el('p', { class: 'shop-hint' }, S.shopHint);
+  const askText = el('span', {});
+  let askYes: (() => void) | null = null;
+  const ask = el(
+    'div',
+    { class: 'shop-ask', hidden: true },
+    askText,
+    el(
+      'button',
+      {
+        class: 'btn tiny',
+        onclick: () => {
+          ask.hidden = true;
+          askYes?.();
+        },
+      },
+      S.yes,
+    ),
+    el('button', { class: 'btn tiny', onclick: () => (ask.hidden = true) }, S.no),
+  );
+  const shopPanel = el(
+    'div',
+    { class: 'panel shop-panel', hidden: true },
+    el(
+      'div',
+      { class: 'shop-head' },
+      shopName,
+      el('button', { class: 'btn tiny', title: S.close, onclick: () => actions.closeShop() }, '✕'),
+    ),
+    shopGrid,
+    shopHint,
+    ask,
+  );
+  let shopKey = '';
+  let shopViews: ShopItemView[] = [];
+  const shopButtons = new Map<number, HTMLElement>();
   const root = el(
     'section',
     { class: 'screen game' },
@@ -274,7 +413,9 @@ export function createGameScreen(actions: GameActions): GameScreen {
     deathNote,
     selInfo,
     alertBox,
+    shopPanel,
     tooltip,
+    ghost,
     el(
       'footer',
       { class: 'hud-bottom' },
@@ -352,6 +493,65 @@ export function createGameScreen(actions: GameActions): GameScreen {
           p.pips.replaceChildren(...Array.from({ length: a.maxLevel }, (_, n) => el('i', { class: n < a.level ? 'on' : '' })));
         }
       });
+    },
+    setItems(v) {
+      itemViews = v;
+      itemParts.forEach((p, i) => {
+        const it = v[i];
+        p.root.classList.toggle('empty', !it);
+        const url = it?.icon ?? null;
+        if (url !== p.iconUrl) {
+          p.iconUrl = url;
+          p.icon.style.backgroundImage = url ? `url(${url})` : '';
+        }
+        p.root.classList.toggle('passive', !!it && !it.usable);
+        const frac = it?.cooldownFrac ?? 0;
+        p.cd.style.setProperty('--cd', String(frac));
+        p.cd.hidden = frac <= 0;
+        setText(p.cdText, it && it.cooldownLeft > 0 ? String(Math.ceil(it.cooldownLeft)) : '');
+        setText(p.count, it && it.charges > 0 ? String(it.charges) : '');
+      });
+    },
+    setShop(view) {
+      shopPanel.hidden = !view;
+      if (!view) {
+        ask.hidden = true;
+        return;
+      }
+      shopPanel.classList.toggle('far', !view.inRange);
+      const key = `${view.name}|${view.items.map((i) => i.item).join(',')}`;
+      shopViews = view.items;
+      if (key !== shopKey) {
+        shopKey = key;
+        setText(shopName, view.name);
+        shopButtons.clear();
+        shopGrid.replaceChildren(
+          ...view.items.map((it, n) => {
+            const b = el(
+              'button',
+              { class: 'shop-item' },
+              el('div', { class: 'ability-icon', style: it.icon ? `background-image:url(${it.icon})` : '' }),
+              el('span', { class: 'price' }, String(it.cost)),
+            );
+            const buy = (e: Event) => {
+              e.preventDefault();
+              actions.buy(shopViews[n]!.item);
+            };
+            b.addEventListener('click', buy);
+            b.addEventListener('contextmenu', buy);
+            b.addEventListener('mouseenter', () => showTip(shopViews[n]!.tooltip));
+            b.addEventListener('mouseleave', hideTip);
+            shopButtons.set(n, b);
+            return b;
+          }),
+        );
+      }
+      view.items.forEach((it, n) => shopButtons.get(n)?.classList.toggle('dim', !it.canAfford || !view.inRange));
+    },
+    confirm(text, onYes) {
+      setText(askText, text);
+      askYes = onYes;
+      ask.hidden = false;
     },
     alert(text) {
       setText(alertBox, text);

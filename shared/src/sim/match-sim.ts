@@ -2,10 +2,10 @@
 // Runs on the server (in the match worker). Plain logic: no network, no timers, no DOM.
 // Phase 7a: attacks, projectiles, death and respawn, neutral camps, bounty, XP and levels.
 // Phase 7b: abilities, buffs and debuffs, auras, zones, summons, monster skills.
-// Items and shops come in 7c.
+// Phase 7c: items, shops, items on the ground, camp drops, fountains, uphill misses.
 
 import { gameData, type HeroDef } from '../data/index';
-import { findPath, isWalkable, nearestWalkable, type NavGrid } from '../nav/nav-grid';
+import { findPath, groundLevel, isWalkable, nearestWalkable, type NavGrid } from '../nav/nav-grid';
 import {
   castProblem,
   endCast,
@@ -19,7 +19,7 @@ import {
   updateCast,
   type CastTarget,
 } from './abilities';
-import { applyBuffs, buffFlags, hasBuff, maxBuff, sumBuffs, type Buff } from './buffs';
+import { applyBuffs, buffFlags, hasBuff, hiddenFrom, maxBuff, sumBuffs, type Buff } from './buffs';
 import { createCamps, onCampMemberAttacked, onCampMemberDied, updateCamps, type CampState } from './camps';
 import { applyMove, CommandType, isPredicted, type GameCommand } from './commands';
 import { entityTypeIndex, ENTITY_TYPES, isHeroType, statsOf } from './entity-types';
@@ -28,6 +28,24 @@ import { Factions, type BuildingState, type Difficulty, type FactionState, type 
 import type { TerrainGrid } from '../map/terrain';
 import type { TreeList } from '../nav/trees';
 import { DamageKind, EventList, EventType } from './events';
+import {
+  emptyInventory,
+  endItemOrder,
+  GROUND_ITEM_TICKS,
+  isInstantItemCommand,
+  isItemCommand,
+  itemBonus,
+  itemCommandProblem,
+  itemsOnHit,
+  nextGroundId,
+  orderItem,
+  runInstantItemCommand,
+  takeRevive,
+  updateItemOrder,
+  type GroundItem,
+  type ItemOrder,
+  type ItemStack,
+} from './items';
 import { createMover, stepMover, type Mover } from './movement';
 import { Rng } from './rng';
 import { SpatialGrid } from './spatial-grid';
@@ -99,7 +117,7 @@ export interface MatchSetup {
   noCamps?: boolean;
 }
 
-export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold' | 'cast';
+export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold' | 'cast' | 'item';
 
 export interface HeroState {
   def: HeroDef;
@@ -112,6 +130,12 @@ export interface HeroState {
   /** tick to come back to life, 0 while alive */
   respawnAt: number;
   abilityLevels: number[];
+  /** 6 slots; null = empty */
+  inventory: (ItemStack | null)[];
+  /** item cooldown group (or item id) -> tick it is ready again */
+  itemCooldowns: Map<string, number>;
+  /** Phoenix Feather: come back here with this share of health, instead of at the base */
+  revive: { x: number; y: number; hpPct: number } | null;
 }
 
 export interface CastState {
@@ -202,6 +226,10 @@ export interface SimEntity {
   invulnerable: boolean;
   /** inside a gold mine: not drawn, can not be hurt or targeted */
   hidden: boolean;
+  /** an item order that walks first, or a Scroll of Return channel */
+  itemOrder: ItemOrder | null;
+  /** does nothing by itself and is not pushed (wards) */
+  inert: boolean;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -220,6 +248,8 @@ interface Projectile {
   speed: number;
   raw: number;
   attackType: CombatStats['attackType'];
+  /** an attack up a hill that will miss */
+  miss: boolean;
   /** spells: what happens on hit instead of attack damage */
   onHit?: (t: SimEntity) => void;
 }
@@ -274,8 +304,13 @@ export class MatchSim {
   readonly grid: SpatialGrid<SimEntity>;
   readonly rng: Rng;
   readonly zones: Zone[] = [];
+  /** items lying on the ground (camp drops, dropped by heroes) */
+  readonly groundItems: GroundItem[] = [];
   /** Can this team see the entity? Set by the server from its vision; used to check commands. */
   canSee: (team: number, e: SimEntity) => boolean = () => true;
+  /** Can this team see this point? (items on the ground) */
+  canSeePoint: (team: number, x: number, y: number) => boolean = () => true;
+  private lastGroundId = 0;
   private readonly byId = new Map<number, SimEntity>();
   private readonly queue: QueuedCommand[] = [];
   private readonly projectiles: Projectile[] = [];
@@ -308,6 +343,9 @@ export class MatchSim {
         gold: R.gold.startGold,
         respawnAt: 0,
         abilityLevels: [0, 0, 0, 0],
+        inventory: emptyInventory(),
+        itemCooldowns: new Map(),
+        revive: null,
       };
       this.heroes[s.index] = hero;
       this.lastSeq[s.index] = 0;
@@ -377,6 +415,8 @@ export class MatchSim {
       job: null,
       invulnerable: false,
       hidden: false,
+      itemOrder: null,
+      inert: false,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
@@ -404,6 +444,19 @@ export class MatchSim {
     return hasBuff(e.buffs, 'silence');
   }
 
+  /** Invisible to this team (Smoke Bomb, wards), and not revealed? */
+  isHiddenFrom(e: SimEntity, team: number): boolean {
+    return hiddenFrom(e, team);
+  }
+
+  /** Attacking, casting or using an item ends Smoke Bomb. */
+  breakInvisible(e: SimEntity): void {
+    if (e.buffs.some((b) => b.breaksOnAct)) {
+      e.buffs = e.buffs.filter((b) => !b.breaksOnAct);
+      this.refreshStats(e);
+    }
+  }
+
   /** Plans a walk (or a flight) to a point. */
   moveTo(e: SimEntity, x: number, y: number): void {
     applyMove(e.mover, this.nav, x, y, false, this.isFlying(e));
@@ -425,6 +478,7 @@ export class MatchSim {
     const hero = this.heroes[slot];
     if (!hero) return false;
     if (cmd.type === CommandType.Learn) return cmd.slot >= 0 && cmd.slot < 4 && (hero.heroState?.skillPoints ?? 0) > 0;
+    if (isItemCommand(cmd)) return itemCommandProblem(this, hero, cmd) === null;
     if (!hero.alive) return false;
     switch (cmd.type) {
       case CommandType.Move:
@@ -452,6 +506,12 @@ export class MatchSim {
     return false;
   }
 
+  /** Why an item command would be refused right now (for tests). */
+  itemCheck(slot: number, cmd: GameCommand): string | null {
+    const hero = this.heroes[slot];
+    return hero ? itemCommandProblem(this, hero, cmd) : 'no hero';
+  }
+
   /** Why a cast would be refused right now (for tests and the client's alerts). */
   castCheck(slot: number, abilitySlot: number, target: CastTarget): string | null {
     const hero = this.heroes[slot];
@@ -463,8 +523,15 @@ export class MatchSim {
       learn(this, e, cmd.slot);
       return;
     }
-    // A new order stops a cast or a channel that has not happened yet.
+    // Buying, selling, potions... do not stop what the hero is doing. Checked again here:
+    // the hero may have died, moved away or spent the gold since the command came in.
+    if (isInstantItemCommand(e, cmd)) {
+      if (!itemCommandProblem(this, e, cmd)) runInstantItemCommand(this, e, cmd);
+      return;
+    }
+    // A new order stops a cast, a channel or an item order that has not happened yet.
     if (e.cast) endCast(this, e);
+    if (e.itemOrder) endItemOrder(this, e);
     e.swing = e.swing === 1 && cmd.type !== CommandType.Attack ? 0 : e.swing;
     switch (cmd.type) {
       case CommandType.Move:
@@ -499,6 +566,14 @@ export class MatchSim {
         orderCast(this, e, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y });
         e.repathAt = 0;
         break;
+      case CommandType.UseItem:
+      case CommandType.PickUp:
+      case CommandType.GiveItem:
+      case CommandType.DropItem:
+        if (itemCommandProblem(this, e, cmd)) break;
+        orderItem(this, e, cmd);
+        e.repathAt = 0;
+        break;
     }
   }
 
@@ -517,7 +592,8 @@ export class MatchSim {
     this.events.clear();
     for (const q of this.queue) {
       const hero = this.heroes[q.slot];
-      if (hero && q.cmd && (hero.alive || q.cmd.type === CommandType.Learn)) this.runCommand(hero, q.cmd);
+      const deadOk = q.cmd?.type === CommandType.Learn || q.cmd?.type === CommandType.SwapItems;
+      if (hero && q.cmd && (hero.alive || deadOk)) this.runCommand(hero, q.cmd);
       this.lastSeq[q.slot] = q.seq;
       this.lastSeqTick[q.slot] = this.tick;
       if (q.predicted) {
@@ -546,8 +622,10 @@ export class MatchSim {
       if (this.isStunned(e)) {
         e.swing = 0;
         if (e.cast) endCast(this, e);
+        if (e.itemOrder) endItemOrder(this, e);
         continue;
       }
+      if (e.inert) continue;
       if (e.passive) {
         if (e.thinkAt <= this.tick) this.wander(e);
         continue;
@@ -555,9 +633,13 @@ export class MatchSim {
       const taunt = this.tauntOf(e);
       if (taunt) {
         if (e.cast) endCast(this, e);
+        if (e.itemOrder) endItemOrder(this, e);
         e.targetId = taunt;
       } else if (e.order === 'cast') {
         updateCast(this, e);
+        continue;
+      } else if (e.order === 'item') {
+        updateItemOrder(this, e);
         continue;
       } else if (e.camp < 0) {
         // A worker with a job only fights when it was ordered to (the brain decides).
@@ -578,7 +660,8 @@ export class MatchSim {
         e.swing === 1 ||
         this.isStunned(e) ||
         this.isRooted(e) ||
-        (e.cast && e.cast.castEnd > 0);
+        (e.cast && e.cast.castEnd > 0) ||
+        (e.itemOrder && e.itemOrder.channelEnd > 0);
       if (!frozen) {
         e.mover.speed = e.stats.moveSpeed;
         stepMover(e.mover, TICK_DT);
@@ -666,7 +749,8 @@ export class MatchSim {
     let best = 0,
       bestD = Infinity;
     this.grid.query(e.mover.x, e.mover.y, range, (o, d2) => {
-      if (o === e || o.invulnerable || !this.isEnemy(e, o) || !canAttackLayer(e.stats.canHitAir, o.stats.layer)) return;
+      if (o === e || o.invulnerable || !this.isEnemy(e, o) || !canAttackLayer(e.stats.canHitAir, o.stats.layer) || hiddenFrom(o, e.team))
+        return;
       if (o.team === NEUTRAL_TEAM && !takeNeutrals) {
         const ot = o.targetId ? this.byId.get(o.targetId) : undefined;
         if (!ot || ot.team !== e.team) return;
@@ -709,7 +793,8 @@ export class MatchSim {
   /** Attack the current target: chase it, turn to it, swing, hit. */
   engage(e: SimEntity): void {
     const t = this.byId.get(e.targetId);
-    if (!t || !t.alive || t.invulnerable || t.hidden || !canAttackLayer(e.stats.canHitAir, t.stats.layer)) {
+    // An enemy that turned invisible can not be attacked any more.
+    if (!t || !t.alive || t.invulnerable || t.hidden || !canAttackLayer(e.stats.canHitAir, t.stats.layer) || hiddenFrom(t, e.team)) {
       e.targetId = 0;
       e.swing = 0;
       return;
@@ -738,6 +823,7 @@ export class MatchSim {
         e.swing = 1;
         e.swingEnd = this.tick + Math.max(1, Math.round(cd * R.combat.attackPointFraction));
         e.nextAttackAt = this.tick + Math.max(1, cd);
+        this.breakInvisible(e);
         this.events.push(EventType.Attack, e.id, t.id);
       }
       return;
@@ -760,6 +846,7 @@ export class MatchSim {
     e.swing = 2;
     const roll = () => this.rng.int(Math.round(e.stats.damageMin), Math.round(e.stats.damageMax));
     const raw = roll();
+    const miss = this.uphillMiss(e, t);
     if (e.stats.projectileSpeed > 0) {
       const p: Projectile = {
         id: this.nextProjectile++ & 0xff,
@@ -770,15 +857,31 @@ export class MatchSim {
         speed: e.stats.projectileSpeed,
         raw,
         attackType: e.stats.attackType,
+        miss,
       };
       this.projectiles.push(p);
       this.events.push(EventType.Projectile, e.id, t.id, p.speed, 0);
+    } else if (miss) {
+      this.missed(t, e);
     } else {
       this.applyAttack(e, t, raw, e.stats.attackType);
       // Flurry: sometimes a second hit right away.
       const extra = extraHitChance(e);
       if (extra && t.alive && this.rng.next() < extra) this.applyAttack(e, t, roll(), e.stats.attackType);
     }
+  }
+
+  /** Attacks from low ground up to high ground miss sometimes (ground units only). */
+  private uphillMiss(e: SimEntity, t: SimEntity): boolean {
+    if (this.isFlying(e) || this.isFlying(t)) return false;
+    if (groundLevel(this.nav, t.mover.x, t.mover.y) - groundLevel(this.nav, e.mover.x, e.mover.y) < 0.5) return false;
+    return this.rng.next() < R.combat.missChanceUphill;
+  }
+
+  /** A missed attack: no damage, but the target still notices who shot at it. */
+  private missed(t: SimEntity, source: DamageSource): void {
+    this.events.push(EventType.Damage, t.id, source.id, 0, DamageKind.Miss);
+    if (t.camp >= 0) onCampMemberAttacked(this, t, source);
   }
 
   /** A homing spell projectile (Blood Bolt, Boulder Toss). */
@@ -792,6 +895,7 @@ export class MatchSim {
       speed,
       raw: 0,
       attackType: 'magic',
+      miss: false,
       onHit,
     });
     this.events.push(EventType.Projectile, e.id, t.id, speed, ability + 1);
@@ -808,6 +912,7 @@ export class MatchSim {
       const stepLen = p.speed * TICK_DT;
       if (d <= stepLen + t.stats.radius * 0.5) {
         if (p.onHit) p.onHit(t);
+        else if (p.miss) this.missed(t, p.source);
         else this.applyAttack(p.source, t, p.raw, p.attackType);
         continue;
       }
@@ -952,12 +1057,15 @@ export class MatchSim {
   /** Attack damage: damage type and armor count. */
   applyAttack(source: DamageSource, t: SimEntity, raw: number, type: CombatStats['attackType']): void {
     const dealt = this.damage(t, attackDamage(raw, type, t.stats.armorType, t.stats.armor), source, DamageKind.Attack);
-    // Life steal (Crimson Pact aura, later items).
     const s = this.byId.get(source.id);
-    if (s && s.alive && dealt > 0) {
-      const ls = sumBuffs(s.buffs, 'lifeStealPct');
+    if (!s) return;
+    // Life steal: Crimson Pact aura and Vampire Fang.
+    if (s.alive && dealt > 0) {
+      const ls = sumBuffs(s.buffs, 'lifeStealPct') + (s.heroState ? (itemBonus(s.heroState.inventory).lifeStealPct ?? 0) : 0);
       if (ls > 0) this.heal(s, (dealt * ls) / 100, source);
     }
+    // Frost Orb slow, Storm Hammer lightning.
+    if (s.heroState) itemsOnHit(this, s, t);
   }
 
   /** Spell damage: no armor, 75% to heroes, less with spell reduction, more with Mana Mark. */
@@ -1042,9 +1150,9 @@ export class MatchSim {
     }
   }
 
-  /** Base stats (level, later items) + buffs. Health and mana keep their share of the max. */
+  /** Base stats (level + items) + buffs. Health and mana grow when the max grows. */
   refreshStats(e: SimEntity): void {
-    if (e.heroState) e.base = heroStats(e.heroState.def, e.heroState.level);
+    if (e.heroState) e.base = heroStats(e.heroState.def, e.heroState.level, itemBonus(e.heroState.inventory));
     const old = e.stats;
     const next = applyBuffs(e.base, e.buffs);
     if (next.maxHp > old.maxHp) e.hp += next.maxHp - old.maxHp;
@@ -1071,13 +1179,18 @@ export class MatchSim {
     e.order = 'idle';
     e.forced = null;
     if (e.cast) endCast(this, e);
+    if (e.itemOrder) endItemOrder(this, e);
     e.buffs = [];
     this.events.push(EventType.Death, e.id, killer.id);
     if (!e.summonUntil || killer.id !== e.id) this.reward(e, killer);
     if (e.heroState) {
       const hs = e.heroState;
-      hs.respawnAt = this.tick + secs(respawnSeconds(hs.level));
+      // Phoenix Feather: back soon, where the hero fell. The death still counts (bounty, gold loss).
+      const feather = takeRevive(hs);
+      hs.revive = feather ? { x: e.mover.x, y: e.mover.y, hpPct: feather.reviveHpPct } : null;
+      hs.respawnAt = this.tick + secs(feather ? feather.reviveDelaySec : respawnSeconds(hs.level));
       hs.gold = Math.max(0, hs.gold - deathGoldLoss(hs.level));
+      if (feather) this.refreshStats(e);
     } else {
       e.removeAt = this.tick + CORPSE_TICKS;
     }
@@ -1152,21 +1265,25 @@ export class MatchSim {
       this.entities[w++] = e;
     }
     this.entities.length = w;
+    for (let i = this.groundItems.length - 1; i >= 0; i--) if (this.tick >= this.groundItems[i]!.until) this.groundItems.splice(i, 1);
     // Passive income: 1 gold per second for every hero, alive or not.
     if (this.tick % TICK_RATE === 0) for (const h of this.heroes) if (h?.heroState) h.heroState.gold += R.gold.passiveIncomePerSec;
   }
 
   private respawn(e: SimEntity): void {
     const hs = e.heroState!;
-    const [x, y] = gameData.map.starts[hs.start]!.heroSpawn;
+    const rv = hs.revive;
+    const [x, y] = rv ? [rv.x, rv.y] : gameData.map.starts[hs.start]!.heroSpawn;
     hs.respawnAt = 0;
+    hs.revive = null;
     e.alive = true;
     e.buffs = [];
     this.refreshStats(e);
     // Passives (Dragon Scales) come back with the hero.
     refreshPassives(this, e);
-    e.hp = e.stats.maxHp;
-    e.mana = e.stats.maxMana;
+    // A revive keeps the mana the hero had; a normal respawn is fresh.
+    e.hp = rv ? Math.max(1, (e.stats.maxHp * rv.hpPct) / 100) : e.stats.maxHp;
+    if (!rv) e.mana = e.stats.maxMana;
     e.mover.x = x;
     e.mover.y = y;
     e.mover.path = [];
@@ -1182,15 +1299,46 @@ export class MatchSim {
       if (e.hp < e.stats.maxHp) e.hp = Math.min(e.stats.maxHp, e.hp + e.stats.hpRegen * TICK_DT);
       if (e.mana < e.stats.maxMana) e.mana = Math.min(e.stats.maxMana, e.mana + e.stats.manaRegen * TICK_DT);
     }
+    // Fountains of Life heal everyone near them, but not neutral monsters.
+    const F = R.fountain;
+    for (const f of gameData.map.fountains) {
+      this.grid.query(f.pos[0], f.pos[1], f.radius + 1, (o) => {
+        if (!o.alive || o.team === NEUTRAL_TEAM || o.inert) return;
+        if (Math.hypot(o.mover.x - f.pos[0], o.mover.y - f.pos[1]) > f.radius + o.stats.radius) return;
+        o.hp = Math.min(o.stats.maxHp, o.hp + o.stats.maxHp * (F.hpPctPerSec / 100) * TICK_DT);
+        o.mana = Math.min(o.stats.maxMana, o.mana + o.stats.maxMana * (F.manaPctPerSec / 100) * TICK_DT);
+      });
+    }
+  }
+
+  // ---------- items on the ground ----------
+
+  groundItem(id: number): GroundItem | undefined {
+    return this.groundItems.find((g) => g.id === id);
+  }
+
+  removeGroundItem(id: number): void {
+    const i = this.groundItems.findIndex((g) => g.id === id);
+    if (i >= 0) this.groundItems.splice(i, 1);
+  }
+
+  /** Puts an item on the ground (on open ground near the point). It vanishes after 3 minutes. */
+  dropOnGround(item: number, charges: number, x: number, y: number): GroundItem {
+    const [px, py] = nearestWalkable(this.nav, x, y, 6) ?? [x, y];
+    do this.lastGroundId = nextGroundId(this.lastGroundId);
+    while (this.groundItem(this.lastGroundId));
+    const g: GroundItem = { id: this.lastGroundId, item, charges, x: px, y: py, until: this.tick + GROUND_ITEM_TICKS };
+    this.groundItems.push(g);
+    return g;
   }
 
   /** Units do not stand inside each other: push overlapping ground units apart. Heroes are not pushed. */
   private separate(): void {
     for (const e of this.entities) {
-      if (!e.alive || e.hero || e.forced || e.building || e.stats.layer !== 'ground') continue;
+      if (!e.alive || e.hero || e.inert || e.forced || e.building || e.stats.layer !== 'ground') continue;
       const r = e.stats.radius;
       this.grid.query(e.mover.x, e.mover.y, r + 0.8, (o, d2) => {
-        if (o === e || !o.alive || o.building || o.stats.layer !== 'ground') return;
+        if (o === e || !o.alive || o.inert || o.building || o.stats.layer !== 'ground') return;
         const min = r + o.stats.radius;
         if (d2 >= min * min) return;
         const d = Math.sqrt(d2) || 0.01;

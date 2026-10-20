@@ -29,6 +29,10 @@ interface DifficultySettings {
 const DIFFICULTIES = gameData.ai.heroBot.difficulties as unknown as Record<BotDifficulty, DifficultySettings>;
 const FIGHT_ORDER_TICKS = Math.round(1.5 * TICK_RATE);
 const RETREAT_DONE_PCT = 85;
+/** Between camps: heal first when below this (no enemy near). */
+const REST_BELOW_PCT = 55;
+/** A fountain may be this much farther than home and still be the better place to heal. */
+const FOUNTAIN_DETOUR = 70;
 const PLAN_NONE = 0;
 const PLAN_RETREAT = 1;
 const PLAN_FARM = 2;
@@ -71,10 +75,14 @@ function mainAbilitySlot(hero: SimEntity): number {
   return bestSlot;
 }
 
-/** Where a hurt hero goes: the nearest Fountain of Life, or home when that is closer. */
+/**
+ * Where a hurt hero goes: the nearest Fountain of Life, unless home is much closer. The base has
+ * no healing, and a fountain heals about ten times faster than resting, so a longer walk pays.
+ */
 function retreatPoint(hero: SimEntity): readonly [number, number] {
-  let best = gameData.map.starts[hero.heroState!.start]!.heroSpawn as readonly [number, number];
-  let bestD = distance(hero, best[0], best[1]);
+  const home = gameData.map.starts[hero.heroState!.start]!.heroSpawn as readonly [number, number];
+  let best = home;
+  let bestD = distance(hero, home[0], home[1]) + FOUNTAIN_DETOUR;
   for (const f of gameData.map.fountains) {
     const d = distance(hero, f.pos[0], f.pos[1]);
     if (d < bestD) {
@@ -155,7 +163,11 @@ export class HeroBot {
     if (this.retreating && hpPct >= RETREAT_DONE_PCT) {
       this.retreating = false;
       this.plan = PLAN_NONE;
-    } else if (!this.retreating && hpPct < this.settings.retreatAtHpPct && this.enemyNear(sim, hero, 10)) {
+    } else if (
+      !this.retreating &&
+      ((hpPct < this.settings.retreatAtHpPct && this.enemyNear(sim, hero, 10)) ||
+        (hpPct < REST_BELOW_PCT && !hero.targetId && !this.enemyNear(sim, hero, 10)))
+    ) {
       this.retreating = true;
       this.campIndex = -1;
       this.plan = PLAN_NONE;
@@ -274,8 +286,8 @@ export class HeroBot {
   }
 
   private chooseCamp(sim: MatchSim, hero: SimEntity): CampState | null {
-    // Every camp has at least three levels. Let a new solo hero start on the weakest camp.
-    const maxLevel = Math.max(3, hero.heroState!.level * (this.hasAllyHeroNear(sim, hero) ? 3 : 2));
+    // ai.json campChoice: 4 + 2 x level (3 x with an ally hero near), so orange camps open at level 3.
+    const maxLevel = 4 + hero.heroState!.level * (this.hasAllyHeroNear(sim, hero) ? 3 : 2);
     let best: CampState | null = null;
     let bestDistance = Infinity;
     for (const camp of sim.camps) {

@@ -8,16 +8,28 @@ import {
   ClientView,
   gameData,
   HeroBot,
+  itemIndex,
   MatchSim,
+  newCharges,
   MsgId,
+  nearestWalkable,
   parseTerrain,
   readCommand,
   SnapshotWriter,
+  storeItem,
   TeamVision,
   TICK_RATE,
   type MatchSetup,
   type TreeList,
 } from '@game/shared';
+
+/** What the dev cheat can do (lobby message `cheat`). */
+export interface Cheat {
+  xp?: number;
+  gold?: number;
+  item?: string;
+  pos?: [number, number];
+}
 
 /** Commands per second per player. Real play needs far less; the rest is dropped. */
 export const MAX_COMMANDS_PER_SEC = 30;
@@ -49,6 +61,7 @@ export class MatchRunner {
     this.vision.update(this.sim.entities);
     // Players can only order attacks on what their team sees.
     this.sim.canSee = (team, e) => this.vision.sees(team, e);
+    this.sim.canSeePoint = (team, x, y) => this.vision.seesPoint(team, x, y);
     for (const s of setup.slots) {
       this.views.set(s.index, new ClientView(s.index, s.team));
       this.bytes.set(s.index, 0);
@@ -84,17 +97,22 @@ export class MatchRunner {
     else this.sim.sendHome(slot);
   }
 
-  /** Dev servers only (the lobby checks): XP, gold, full health and mana, cooldowns ready. */
-  cheat(slot: number, xp: number, gold: number): void {
+  /** Dev servers only (the lobby checks): XP, gold, an item, a new place, full health and mana, cooldowns ready. */
+  cheat(slot: number, c: Cheat): void {
     const hero = this.sim.heroes[slot];
-    if (!hero) return;
-    if (xp) this.sim.addXp(hero, xp);
-    if (gold) this.sim.addGold(hero, gold);
+    if (!hero?.heroState) return;
+    if (c.xp) this.sim.addXp(hero, c.xp);
+    if (c.gold) this.sim.addGold(hero, c.gold);
+    const it = c.item ? itemIndex(c.item) : -1;
+    if (it >= 0 && storeItem(hero.heroState.inventory, it, newCharges(it))) this.sim.refreshStats(hero);
+    const p = c.pos && hero.alive ? nearestWalkable(this.sim.nav, c.pos[0], c.pos[1], 16) : null;
+    if (p) this.sim.teleport(hero, p[0], p[1]);
     // Also full health and mana, and no cooldowns: quick ability tests.
     if (hero.alive) {
       hero.hp = hero.stats.maxHp;
       hero.mana = hero.stats.maxMana;
       hero.cooldowns.fill(0);
+      hero.heroState.itemCooldowns.clear();
     }
   }
 

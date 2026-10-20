@@ -43,6 +43,7 @@ describe('joining a match already in motion', () => {
       setMenuBase: vi.fn(),
       showAllTrees: vi.fn(),
       hideTrees: vi.fn(),
+      items: { clear: vi.fn(), add: vi.fn(), remove: vi.fn(), pick: () => 0, dispose: vi.fn() },
       camera: { lookAt: vi.fn() },
       addUnit: () => unit,
       removeUnit: vi.fn(),

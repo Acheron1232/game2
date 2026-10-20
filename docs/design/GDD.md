@@ -140,7 +140,7 @@ Spell damage ignores armor and damage types. Heroes take 75% spell damage. Spell
 
 ## 11. Items and shops
 
-- 6 inventory slots. Drag to move. Right click to use or drop. Items can be given to an allied hero next to you.
+- 6 inventory slots. Click (or 1 – 6) to use. Drag to another slot to move, onto the ground to drop, onto an allied hero to give (the hero walks there first), onto the shop panel to sell.
 - 5 shops: 4 Trader's Tents on the sides and the Temple Market in the center. A hero must be within 6 units to buy or sell.
 - Consumables stack in one slot (potions up to 5).
 - Some items are drop-only (rare). They can only come from orange and red camps.

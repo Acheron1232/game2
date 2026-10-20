@@ -69,6 +69,7 @@ export const rulesSchema = z.looseObject({
     supplyCap: num,
   }),
   neutrals: z.looseObject({ aggroRange: num, leashRange: num, returnHealPctPerSec: num, respawnNeedsNoHeroInRange: num }),
+  items: z.looseObject({ groundItemSec: num, pickUpRange: num, giveRange: num }),
   fountain: z.looseObject({ hpPctPerSec: num, manaPctPerSec: num }),
 });
 
@@ -174,6 +175,22 @@ export const buildingsSchema = z.looseObject({
   neutralBuildings: z.array(z.looseObject({ id, name: z.string(), footprint: pair })),
 });
 
+/** Item stat names (items.json `stats`). Attributes count like hero attributes. */
+export const itemStatKeys = [
+  'strength',
+  'agility',
+  'intelligence',
+  'damage',
+  'armor',
+  'maxHp',
+  'hpRegen',
+  'manaRegen',
+  'moveSpeed',
+  'attackSpeedPct',
+  'lifeStealPct',
+] as const;
+export type ItemStatKey = (typeof itemStatKeys)[number];
+
 export const itemSchema = z.looseObject({
   id,
   name: z.string(),
@@ -184,8 +201,34 @@ export const itemSchema = z.looseObject({
   unique: z.boolean().optional(),
   charges: num.optional(),
   stackMax: num.optional(),
-  stats: z.record(z.string(), num).optional(),
-  active: z.looseObject({ target: z.enum(['none', 'unit', 'point']), cooldown: num }).optional(),
+  stats: z.partialRecord(z.enum(itemStatKeys), num).optional(),
+  active: z
+    .looseObject({
+      target: z.enum(['none', 'unit', 'point']),
+      cooldown: num,
+      cooldownGroup: id.optional(),
+      castRange: num.optional(),
+      heal: num.optional(),
+      restoreMana: num.optional(),
+      channelTime: num.optional(),
+      teleportTo: z.literal('own_town_hall').optional(),
+      duration: num.optional(),
+      sight: num.optional(),
+      invisible: z.boolean().optional(),
+      gainXp: num.optional(),
+    })
+    .optional(),
+  onHit: z
+    .looseObject({
+      slowPct: num.optional(),
+      duration: num.optional(),
+      chancePct: num.optional(),
+      chainDamage: num.optional(),
+      chainTargets: num.optional(),
+      chainRange: num.optional(),
+    })
+    .optional(),
+  passive: z.looseObject({ reviveOnDeath: z.boolean(), reviveDelaySec: num, reviveHpPct: num, consumed: z.boolean() }).optional(),
 });
 export const itemsSchema = z.looseObject({ version: num, items: z.array(itemSchema) });
 

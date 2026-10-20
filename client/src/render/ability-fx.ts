@@ -70,6 +70,8 @@ const MARKERS: { flag: number; color: string; head: boolean; size: number }[] = 
   { flag: BuffFlag.Burning, color: '#ff4a2a', head: false, size: 0.75 },
   { flag: BuffFlag.Taunted, color: '#ff2a2a', head: true, size: 0.45 },
   { flag: BuffFlag.Channel, color: '#c08bff', head: false, size: 1.6 },
+  // Only the owner's team gets invisible units, so this shows "you are hidden".
+  { flag: BuffFlag.Invisible, color: '#8f86a8', head: false, size: 1.0 },
 ];
 
 export class AbilityFx {

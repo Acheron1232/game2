@@ -1,7 +1,7 @@
 // Game rules as plain functions: hero stats per level, damage math, XP and gold rules.
 // All numbers come from shared/data (rules.json, heroes.json, units.json).
 
-import { gameData, type BuildingDef, type HeroDef, type UnitDef } from '../data/index';
+import { gameData, type BuildingDef, type HeroDef, type ItemStatKey, type UnitDef } from '../data/index';
 
 const R = gameData.rules;
 
@@ -45,7 +45,8 @@ export function heroAttributes(h: HeroDef, level: number): Attributes {
   return { strength: at('strength'), agility: at('agility'), intelligence: at('intelligence') };
 }
 
-export function heroStats(h: HeroDef, level: number, bonus: Partial<Attributes> = {}): CombatStats {
+/** Hero stats at a level. `bonus` is what items add (attributes count like the hero's own). */
+export function heroStats(h: HeroDef, level: number, bonus: Partial<Record<ItemStatKey, number>> = {}): CombatStats {
   const base = heroAttributes(h, level);
   const a: Attributes = {
     strength: base.strength + (bonus.strength ?? 0),
@@ -56,21 +57,23 @@ export function heroStats(h: HeroDef, level: number, bonus: Partial<Attributes> 
     at = R.attributes;
   const main = a[h.mainStat];
   const melee = h.attackRange <= 2;
+  const damage = main * at.mainStatDamagePerPoint + (bonus.damage ?? 0);
+  const attackSpeedPct = a.agility * at.agility.attackSpeedPctPerPoint + (bonus.attackSpeedPct ?? 0);
   return {
-    maxHp: hb.hp + h.hpBonus + a.strength * at.strength.hpPerPoint,
+    maxHp: hb.hp + h.hpBonus + a.strength * at.strength.hpPerPoint + (bonus.maxHp ?? 0),
     maxMana: hb.mana + a.intelligence * at.intelligence.manaPerPoint,
-    hpRegen: hb.hpRegen + a.strength * at.strength.hpRegenPerPoint,
-    manaRegen: hb.manaRegen + a.intelligence * at.intelligence.manaRegenPerPoint,
-    armor: h.baseArmor + a.agility * at.agility.armorPerPoint,
+    hpRegen: hb.hpRegen + a.strength * at.strength.hpRegenPerPoint + (bonus.hpRegen ?? 0),
+    manaRegen: hb.manaRegen + a.intelligence * at.intelligence.manaRegenPerPoint + (bonus.manaRegen ?? 0),
+    armor: h.baseArmor + a.agility * at.agility.armorPerPoint + (bonus.armor ?? 0),
     armorType: 'hero',
     attackType: 'hero',
-    damageMin: h.baseDamage[0] + main * at.mainStatDamagePerPoint,
-    damageMax: h.baseDamage[1] + main * at.mainStatDamagePerPoint,
-    attackCooldown: h.attackCooldown / (1 + (a.agility * at.agility.attackSpeedPctPerPoint) / 100),
+    damageMin: h.baseDamage[0] + damage,
+    damageMax: h.baseDamage[1] + damage,
+    attackCooldown: h.attackCooldown / (1 + attackSpeedPct / 100),
     attackRange: h.attackRange,
     projectileSpeed: melee ? 0 : h.projectileSpeed,
     canHitAir: !melee,
-    moveSpeed: h.moveSpeed,
+    moveSpeed: h.moveSpeed + (bonus.moveSpeed ?? 0),
     layer: h.movementLayer as Layer,
     radius: hb.collisionRadius,
     sight: hb.sightRange,
