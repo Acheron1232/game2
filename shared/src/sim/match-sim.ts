@@ -23,6 +23,7 @@ import { applyBuffs, buffFlags, hasBuff, maxBuff, sumBuffs, type Buff } from './
 import { createCamps, onCampMemberAttacked, onCampMemberDied, updateCamps, type CampState } from './camps';
 import { applyMove, CommandType, isPredicted, type GameCommand } from './commands';
 import { entityTypeIndex, ENTITY_TYPES, isHeroType, statsOf } from './entity-types';
+import { applyUpgrades, gatherFactor, trainTimeFactor } from './faction/upgrades';
 import { Factions, type BuildingState, type Difficulty, type FactionState, type WorkerJob } from './faction/faction';
 import type { TerrainGrid } from '../map/terrain';
 import type { TreeList } from '../nav/trees';
@@ -32,6 +33,7 @@ import { Rng } from './rng';
 import { SpatialGrid } from './spatial-grid';
 import {
   attackDamage,
+  buildingStats,
   canAttackLayer,
   deathGoldLoss,
   heroKillBounty,
@@ -675,19 +677,25 @@ export class MatchSim {
     if (e.targetId) this.engage(e);
   }
 
-  /** Faction units: upgrades of their faction on top of the data stats (8c fills it in). */
+  /** Faction units and buildings: data stats + the faction's Town Hall upgrades, then buffs. */
   applyFactionStats(e: SimEntity): void {
+    const f = this.factions?.factionOf(e);
+    if (!f || e.hero || e.summonUntil) return this.refreshStats(e);
+    const id = ENTITY_TYPES[e.type]!;
+    const def = e.building?.def;
+    const raw = def ? buildingStats(def) : unitStats(gameData.units.find((u) => u.id === id)!);
+    e.base = applyUpgrades(raw, id, f.upgrades, this.tick < f.warBannerUntil);
     this.refreshStats(e);
   }
 
-  /** Rich Veins (8c). */
-  gatherFactor(_f: FactionState): number {
-    return 1;
+  /** Rich Veins. */
+  gatherFactor(f: FactionState): number {
+    return gatherFactor(f.upgrades);
   }
 
-  /** Training Drills (8c). */
-  trainTimeFactor(_f: FactionState): number {
-    return 1;
+  /** Training Drills. */
+  trainTimeFactor(f: FactionState): number {
+    return trainTimeFactor(f.upgrades);
   }
 
   /** Attack the current target: chase it, turn to it, swing, hit. */

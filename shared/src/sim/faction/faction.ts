@@ -39,6 +39,8 @@ export interface FactionState {
   /** Town Hall upgrade levels bought by the hero (8c) */
   upgrades: Record<string, number>;
   earmarkedGold: number;
+  /** War Banner (bought by the hero) works until this tick */
+  warBannerUntil: number;
   buildings: Set<number>;
   units: Set<number>;
   defeated: boolean;
@@ -156,6 +158,7 @@ export class Factions {
       tier: 1,
       upgrades: {},
       earmarkedGold: 0,
+      warBannerUntil: 0,
       buildings: new Set(),
       units: new Set(),
       defeated: false,
@@ -251,6 +254,7 @@ export class Factions {
     e.building = blankBuilding(def, w, h);
     e.building.rallyX = x + (this.sim.size / 2 - x > 0 ? 1 : -1) * (w / 2 + 2);
     e.building.rallyY = y + (this.sim.size / 2 - y > 0 ? 1 : -1) * (h / 2 + 2);
+    this.sim.applyFactionStats(e);
     e.hp = Math.max(1, e.stats.maxHp * SITE_HP);
     f.buildings.add(e.id);
     this.blockers.addRect(x, y, w, h);
