@@ -24,6 +24,8 @@ The first Linux native-input CI run granted real pointer lock and moved the curs
 
 Frontend release `cursor-7f389a3` is live on the existing HTTPS URL. Its HTML hash matches the local build; `/frontend-release.json` identifies the frontend revision. Static files were replaced atomically, retaining prior hashed assets and rollback copies. Server `controls-769607f` and the tunnel were not restarted. A separate public solo match verified the new HUD and left/right panel clicks, then was explicitly left; the existing human match remained running. Public Mac WebGL2 sampled 120/120 FPS at native 2560 × 1440, CPU 1.6 ms, GPU 3.9–4.2 ms with capture off. Embedded-browser capture denial was handled without console warnings/errors. Actual locked input was tested in full Chromium, not in the embedded preview.
 
+Final [CI run 39514474982](https://github.com/Acheron1232/game2/actions/runs/39514474982) passes: data validation, 237 logic tests, lint/build, a full bot match and both Chromium browser tests, including native fullscreen pointer lock on the Linux runner. This verifies the final game code plus the corrected CI input test.
+
 Windows Chrome/Edge, Firefox and Safari still need native-device checks, especially browser permission UI and OS-level transitions. Do not claim that browser notices are removed or that every browser grants Pointer Lock. The game retains ordinary controls when it does not.
 
 References: [Fullscreen UI requirements](https://fullscreen.spec.whatwg.org/#security-and-privacy-considerations), [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API).
