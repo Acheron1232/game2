@@ -97,7 +97,13 @@ export class UnitGroundMarks {
     this.warming = true;
     try {
       for (const layer of layers) layer.prepare();
-      this.scene.render();
+      const engine = this.scene.getEngine();
+      engine.beginFrame();
+      try {
+        this.scene.render();
+      } finally {
+        engine.endFrame();
+      }
       await this.scene.whenReadyAsync();
     } finally {
       for (const layer of layers) layer.flush();
