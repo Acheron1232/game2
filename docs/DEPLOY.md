@@ -51,4 +51,13 @@ A Cloudflare Quick Tunnel can proxy the same Caddy HTTP origin on the private Do
 
 The deployment report records the actual access mode and URL. Never call the temporary tunnel a finished permanent release.
 
+To use the supported temporary mode:
+
+```sh
+sudo sh RELEASE_DIRECTORY/remote-start.sh RELEASE_DIRECTORY YOUR_DOMAIN quick
+sudo docker logs --tail 40 temple-wars-tunnel
+```
+
+The domain argument is unused by the HTTP origin in this mode. The script creates `temple-wars-tunnel` only if absent, preserving its current hostname on subsequent app deployments. After a host/tunnel restart, read the logs for the current URL and verify `/health` again. The user accepted this mode for the Phase 10 deployment; the actual release and link are recorded in [PHASE10_REPORT.md](PHASE10_REPORT.md).
+
 References: [Caddy HTTPS](https://caddyserver.com/docs/quick-starts/https), [Caddy WebSocket proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy), [Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/).
