@@ -62,7 +62,7 @@
       "onHit": { "chancePct": 20, "chainDamage": 90, "chainTargets": 3, "chainRange": 5 } },
     { "id": "phoenix_feather", "name": "Phoenix Feather", "tier": "rare", "cost": null, "value": 1000,
       "text": "When you die, come back to life where you fell with half health. Used up.",
-      "passive": { "reviveOnDeath": true, "reviveHpPct": 50, "consumed": true } },
+      "passive": { "reviveOnDeath": true, "reviveDelaySec": 2, "reviveHpPct": 50, "consumed": true } },
     { "id": "temple_crown", "name": "Temple Crown", "tier": "rare", "cost": null, "value": 1500, "unique": true,
       "text": "+8 to all stats.", "stats": { "strength": 8, "agility": 8, "intelligence": 8 } }
   ]

@@ -9,12 +9,8 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
 - **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
 - **Client audit and polish** (2026-10-19): current working map is 256 × 256, with 7,451 baked trees, 6,679 decor objects and 58 model entries. These additions follow the original Phase 5 snapshot below. Fixed HUD clipping, minimap sizing, camera bounds, per-frame allocations, shader warm-up error handling and blocked-corner navigation. WebGPU and WebGL2 checked in the browser; build, typecheck, 30 tests and lint passed. See [CLIENT_AUDIT.md](CLIENT_AUDIT.md) for sampled performance numbers, limits and remaining visual work. Earlier Phase 5 numbers below describe the earlier map.
-- **Phase 7b is done** (2026-10-20): abilities, buffs, all 8 hero kits, monster skills, ability bar, aiming and placeholder looks. Next: **Phase 7c — items, shops, fountains, full 2-player test** (prompt: "Do Phase 7c").
-- Notes for Phase 7c:
-  - Item stats go into `MatchSim.refreshStats` (base = hero level stats + items, then buffs). Life steal / on-hit can reuse `sumBuffs(…, 'lifeStealPct')` by giving items a permanent buff, or a small item-bonus pass in `applyAttack`.
-  - Camp drops: `CampState.lastDeathX/Y` is kept in `onCampMemberDied`; roll `gameData.camps.dropTables` there.
-  - Item actives: a new `UseItem` command next to `Cast` (same target kinds); potions share a cooldown group.
-  - Dev cheat: `{ type: 'cheat', xp?, gold? }` (dev servers only) also refills health and mana and clears cooldowns — handy for the 2-player test.
+- **Phase 7 is done** (2026-10-20). 7c added items, shops, items on the ground, camp drops, fountains and the uphill miss chance, plus the 2-player browser test. Next: **Phase 8 — Faction AI and bots** (prompt: "Do Phase 8").
+- **Phase 7b is done** (2026-10-20): abilities, buffs, all 8 hero kits, monster skills, ability bar, aiming and placeholder looks.
 - Phase 7a is done (2026-10-20): combat core, neutral camps, XP and levels.
 - Phase 6 is done (2026-10-20).
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
@@ -29,7 +25,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
-| 7 | Combat, heroes, camps, items | **In progress** | 7a done: combat core, 24 camps, XP and levels, HUD. 7b done: all 32 abilities + buffs + auras + monster skills, Q W E R bar with cooldowns and learn, aiming markers, placeholder effects. Next 7c: items, shops, fountains, 2-player test |
+| 7 | Combat, heroes, camps, items | **Done** | 7a: combat core, 24 camps, XP and levels, HUD. 7b: all 32 abilities + buffs + auras + monster skills, Q W E R bar, aiming, placeholder effects. 7c: 23 items, inventory, shops, ground items, camp drops, fountains, uphill misses, 2-player browser test |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
@@ -38,7 +34,25 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 - **7a — combat core (done):** see below.
 - **7b — abilities:** ability system from `abilities.json` (target types none / unit / point / line / cone, cast range, cast time, mana, cooldown, levels, learn with skill points), buffs and debuffs (stun, slow, root, silence, shields, damage block/reduction, taunt, auras, damage and heal over time, summons, knockback, blink, charge, channel), all 32 abilities of the 8 heroes, ground indicators while aiming, Q W E R buttons with cooldown sweep and "+" to learn (icons exist in `public/assets/icons`), placeholder effects for every ability, monster skills (Howl, Mend, Screech, Web, Ground Slam, Stone Guard), tests that ability numbers match HEROES.md and that the server refuses casts on cooldown / without mana / out of range / while stunned.
-- **7c — items and shops:** inventory (6 slots, stacks), item stats and passives (life steal, on-hit slow, chain lightning, revive), actives on 1–6 (potions with a shared cooldown, scroll of return, ward, smoke bomb, tome), drop tables (one roll when a camp dies), items on the ground (pick up, drop, give, 3-minute timeout), sell for half, shop panel near Trader's Tent / Temple Market, fountains (2.5% HP / 2% mana per second), uphill miss chance, then the full 2-player test: every hero farms to level 10, uses all 4 abilities, buys and uses items, dies and respawns.
+- **7c — items and shops (done):** inventory (6 slots, stacks), item stats and passives (life steal, on-hit slow, chain lightning, revive), actives on 1–6 (potions with a shared cooldown, scroll of return, ward, smoke bomb, tome), drop tables (one roll when a camp dies), items on the ground (pick up, drop, give, 3-minute timeout), sell for half, shop panel near Trader's Tent / Temple Market, fountains (2.5% HP / 2% mana per second), uphill miss chance, then the full 2-player test: every hero farms to level 10, uses all 4 abilities, buys and uses items, dies and respawns.
+
+## Phase 7c — what was made
+
+- **Items in the simulation** (`shared/src/sim/items.ts`): 6-slot inventory with stacks (potions 5, wards 4...). Item stats go into the hero's base stats (`heroStats(def, level, itemBonus)`): attributes count like the hero's own, plus damage, armor, health, regen, move and attack speed; `unique` items count once. Passives: life steal (Vampire Fang, with the Crimson Pact aura), on-hit slow (Frost Orb), chain lightning (Storm Hammer: 20%, 3 enemies, 90 spell damage), revive (Phoenix Feather: 2 s, where you fell, 50% health, used up).
+- **Item actives** (keys 1–6): Healing / Mana Potion (shared 10 s cooldown), Scroll of Return (3 s channel, a new order or a stun stops it, then at the base), Watcher Ward (walk into range 6, invisible eye with sight 10 for 3 minutes; a `watcher_ward` unit in units.json), Smoke Bomb (invisible 8 s; attacking, casting or using an item ends it; monsters and enemy vision do not see it; Mana Mark still reveals), Tome of Wisdom (+150 XP). Potions and the like do not stop the current order.
+- **Shops:** buy (gold, range 6, room in the bag, the shop must sell it), sell for half (charges count). Trader's Tents and the Temple Market sell what shops.json lists.
+- **Items on the ground:** camp drops (one roll on the camp's table when the whole camp is dead, where the last monster fell), drop (walk to a point), pick up (walk to it; "Inventory is full." if no room), give to an allied hero (walk next to it), 3-minute timeout. Swap slots (works while dead).
+- **Fountains of Life:** 2.5% health and 2% mana per second within the fountain radius (map layout), for every team, not for monsters.
+- **Uphill misses:** ground attacks from low ground up to high ground miss 25% of the time ("miss" text).
+- **Protocol v5:** commands UseItem, BuyItem, SellItem, DropItem, PickUp, GiveItem, SwapItems; inventory, charges and item cooldowns in the player state; a small block for items on the ground in snapshots (only items in the team's sight); events Chain, ItemUse (own team only, so enemies never see where a ward went), Notice ("Inventory is full."), damage kinds Miss and Mana.
+- **Client:** inventory with icons, charges, cooldown sweep, tooltips (name, tier, text, charges, cooldown, sell price), click or 1–6 to use, aiming for the ward, drag to another slot / the ground / an ally / the shop panel. Shop panel above the inventory: opens near a shop or by clicking the building; click buys; dimmed when you can not pay or are too far; "Sell X for N gold?" Yes / No. Items on the ground: a small crate with a ring in the tier color; right click picks up, left click shows the name. Lightning bolts, item puffs, "+150" mana and "miss" numbers, an invisible marker under your own hidden hero; wards use a small placeholder pillar.
+- **Dev cheat** now also takes `item` and `pos` (dev servers only).
+
+How 7c was checked:
+- `shared/test/items.test.ts` (25 tests): shop range, gold, drop-only items, Temple Market list; stacking and full bag; selling half with charges; item stats (attributes, unique boots, damage, armor, health, attack speed, regen); potions and the shared cooldown; a potion does not stop an attack; Scroll of Return channel, cancel and arrival; Tome; Smoke Bomb hides the hero from enemy vision, commands and monsters, and attacking ends it; ward placement, sight, invisibility and timeout; no items while stunned; life steal 15%; Frost Orb slow and its end; Storm Hammer at most 3 targets, ~20%; Phoenix Feather once; drop, pick up and give; full bag notice and 3-minute timeout; swap and stack join while dead; client view sends items in sight and the inventory; drop table chances and weights (20,000 rolls); a red camp drops where its last monster died; fountain heals heroes, not monsters; uphill misses ~25% and none on flat ground.
+- `shared/test/hero-flow.test.ts` (8 tests): every hero in the simulation farms the green wolves at level 1, reaches level 10, learns everything, casts all actives (passives and auras are on), buys a potion and boots at the Trader's Tent, drinks the potion, dies to the enemy hero and comes back at the base after 35 s with its items.
+- Browser, 2 players (headless Chromium in the cloud sandbox, software WebGL at 1–2 FPS, so no FPS numbers): see the result list below.
+- 112 tests (shared 79, server 10, client 8, tools 9), lint, build, data check pass.
 
 ## Phase 7b — what was made
 
@@ -194,6 +208,15 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Phoenix Feather: the death still counts (bounty for the killer, death gold loss); the hero comes back with the mana it had.
+- 2026-10-20 — Instant items (potions, Tome, Smoke Bomb) do not stop the hero's order; the client sends them like Learn, so own-hero prediction goes on.
+- 2026-10-20 — Items on the ground are a small list in the simulation and a small block in snapshots, not entities (they do not fight, move or get pushed).
+- 2026-10-20 — ItemUse events go only to the user's team, so a ward's place stays secret. Potion puffs are team-only too.
+- 2026-10-20 — Uphill miss: target ground level at least 0.5 above the attacker's (levels from the terrain file; ramps are in between). Ground units only. The same 25% for melee and ranged.
+- 2026-10-20 — Invisible own hero: a marker ring, not a see-through model (a transparent material could compile a new shader in the match). Final look in Phase 9.
+- 2026-10-20 — Shop panel: left click buys too (UI.md said right click); it opens by itself near a shop.
+- 2026-10-20 — Dev cheat message is one object (`xp`, `gold`, `item`, `pos`) through the lobby, the worker and the runner.
+
 - 2026-10-20 — Casts are checked twice: when ordered (refused at once) and when the effect fires (mana or stun may have changed). Mana and cooldown are paid when the effect fires, not when the cast starts (classic RTS rule).
 - 2026-10-20 — Unit-target and zone spells walk into range; jumps, dives, charges and Blink go as far as their range allows toward the click instead.
 - 2026-10-20 — Damage and heal over time land every 0.5 s (half the per-second value), to keep events and numbers readable.
@@ -274,6 +297,9 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
+
+- Node 22 (cloud sandbox): the dev match worker can not load `.ts` files and matches never start; use `MATCH_INLINE=1 pnpm dev` there. Node 24 (the project's version) does not have this problem. The build (`server/dist`) is plain JS and works on both.
+- Watcher Ward and items on the ground use placeholder models (a small pillar and a small crate).
 
 - Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
 - The minimap camera box is a fixed 46 × 30 rectangle; it does not follow zoom or screen shape.

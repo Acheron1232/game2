@@ -179,6 +179,15 @@
       "bounty": [10, 10], "skills": [],
       "notes": "hp and damage are overwritten by forest_spirit params per level.",
       "look": "Walking young tree with a bark face and leafy head. Team color: glowing sap lines."
+    },
+    {
+      "id": "watcher_ward", "name": "Watcher Ward", "group": "summon", "level": 1,
+      "hp": 60, "mana": 0, "armor": 0, "armorType": "unarmored",
+      "attackType": "normal", "damage": [0, 0], "attackCooldown": 1, "attackRange": 0, "projectileSpeed": 0, "canHit": [],
+      "moveSpeed": 0, "movementLayer": "ground", "sight": 10, "collisionRadius": 0.3,
+      "bounty": [15, 15], "skills": [],
+      "notes": "Placed by the Watcher Ward item. Invisible; sight and duration come from the item.",
+      "look": "Small carved stone post with a glowing eye on top. Team color: eye glow."
     }
   ]
 }

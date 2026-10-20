@@ -9,6 +9,7 @@
 //   u8 id, u32 tick, u16 ackSeq, u16 ticksSinceAck, u8 flags
 //   [player state, if flags & HasPlayer]
 //   u16 spawns, spawns...   u16 updates, updates...   u16 gone, ids...   u16 events, events...
+//   [if flags & HasItems: u8 item spawns, spawns...   u8 items gone, ids...]  (items on the ground)
 
 import { gameData } from '../data/index';
 import { CommandType, type GameCommand } from '../sim/commands';
@@ -60,7 +61,12 @@ export const SnapshotFlag = {
   Full: 1,
   /** A player state block follows the header. */
   HasPlayer: 2,
+  /** Items on the ground came into view or went away (block at the end). */
+  HasItems: 4,
 } as const;
+
+/** Most ground items in one snapshot block (u8 count); the rest come next tick. */
+export const MAX_ITEMS_PER_SNAPSHOT = 255;
 
 /** One entity as it is sent: quantized numbers. */
 export interface NetEntityState {
@@ -108,6 +114,23 @@ export interface NetPlayerState {
   abilityLevels: [number, number, number, number];
   /** server tick each ability is ready again (0 = ready) */
   cooldownEnds: [number, number, number, number];
+  /** per inventory slot: item index + 1 (0 = empty) */
+  items: number[];
+  /** per inventory slot: charges */
+  charges: number[];
+  /** per inventory slot: server tick the item is ready again (0 = ready) */
+  itemCooldownEnds: number[];
+}
+
+/** An item on the ground as it is sent. */
+export interface NetGroundItem {
+  id: number;
+  /** index in items.json */
+  item: number;
+  charges: number;
+  /** quantized like positions */
+  x: number;
+  y: number;
 }
 
 export function blankPlayerState(): NetPlayerState {
@@ -121,8 +144,14 @@ export function blankPlayerState(): NetPlayerState {
     moveSpeed: 0,
     abilityLevels: [0, 0, 0, 0],
     cooldownEnds: [0, 0, 0, 0],
+    items: [0, 0, 0, 0, 0, 0],
+    charges: [0, 0, 0, 0, 0, 0],
+    itemCooldownEnds: [0, 0, 0, 0, 0, 0],
   };
 }
+
+/** Inventory slots on the wire (rules.json heroBase.itemSlots). */
+const SLOTS = gameData.rules.heroBase.itemSlots;
 
 // ---------- commands ----------
 
@@ -151,6 +180,29 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
     case CommandType.Learn:
       w.u8(cmd.slot);
       break;
+    case CommandType.UseItem:
+      w.u8(cmd.slot).u8(cmd.target);
+      if (cmd.target === 1) w.u16(cmd.id);
+      if (cmd.target === 2) w.u16(qPos(cmd.x)).u16(qPos(cmd.y));
+      break;
+    case CommandType.BuyItem:
+      w.u8(cmd.item);
+      break;
+    case CommandType.SellItem:
+      w.u8(cmd.slot);
+      break;
+    case CommandType.DropItem:
+      w.u8(cmd.slot).u16(qPos(cmd.x)).u16(qPos(cmd.y));
+      break;
+    case CommandType.PickUp:
+      w.u16(cmd.id);
+      break;
+    case CommandType.GiveItem:
+      w.u8(cmd.slot).u16(cmd.target);
+      break;
+    case CommandType.SwapItems:
+      w.u8(cmd.from).u8(cmd.to);
+      break;
   }
   return w.bytes();
 }
@@ -178,6 +230,25 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
     }
     case CommandType.Learn:
       return { seq, cmd: { type, slot: r.u8() & 3 } };
+    case CommandType.UseItem: {
+      const slot = r.u8(),
+        target = r.u8();
+      if (target === 1) return { seq, cmd: { type, slot, target, id: r.u16(), x: 0, y: 0 } };
+      if (target === 2) return { seq, cmd: { type, slot, target, id: 0, x: dqPos(r.u16()), y: dqPos(r.u16()) } };
+      return { seq, cmd: { type, slot, target: 0, id: 0, x: 0, y: 0 } };
+    }
+    case CommandType.BuyItem:
+      return { seq, cmd: { type, item: r.u8() } };
+    case CommandType.SellItem:
+      return { seq, cmd: { type, slot: r.u8() } };
+    case CommandType.DropItem:
+      return { seq, cmd: { type, slot: r.u8(), x: dqPos(r.u16()), y: dqPos(r.u16()) } };
+    case CommandType.PickUp:
+      return { seq, cmd: { type, id: r.u16() } };
+    case CommandType.GiveItem:
+      return { seq, cmd: { type, slot: r.u8(), target: r.u16() } };
+    case CommandType.SwapItems:
+      return { seq, cmd: { type, from: r.u8(), to: r.u8() } };
   }
   return null;
 }
@@ -225,6 +296,10 @@ export class SnapshotWriter {
   private nGone = 0;
   private nEvent = 0;
   private player: NetPlayerState | null = null;
+  private itemSpawns: NetGroundItem[] = [];
+  private itemGone: number[] = [];
+  private nItemSpawn = 0;
+  private nItemGone = 0;
   private head = { tick: 0, ack: 0, sinceAck: 0, flags: 0 };
 
   begin(tick: number, ackSeq: number, ticksSinceAck: number, flags = 0): void {
@@ -233,6 +308,7 @@ export class SnapshotWriter {
     this.head.sinceAck = Math.min(65535, ticksSinceAck);
     this.head.flags = flags;
     this.nSpawn = this.nUpdate = this.nGone = this.nEvent = 0;
+    this.nItemSpawn = this.nItemGone = 0;
     this.player = null;
   }
 
@@ -261,12 +337,26 @@ export class SnapshotWriter {
     this.player = p;
   }
 
+  /** False when the item block is full (send the rest next tick). */
+  itemSpawn(g: NetGroundItem): boolean {
+    if (this.nItemSpawn >= MAX_ITEMS_PER_SNAPSHOT) return false;
+    Object.assign((this.itemSpawns[this.nItemSpawn++] ??= { id: 0, item: 0, charges: 0, x: 0, y: 0 }), g);
+    return true;
+  }
+
+  itemRemove(id: number): boolean {
+    if (this.nItemGone >= MAX_ITEMS_PER_SNAPSHOT) return false;
+    this.itemGone[this.nItemGone++] = id;
+    return true;
+  }
+
   get empty(): boolean {
-    return this.nSpawn + this.nUpdate + this.nGone + this.nEvent === 0 && !this.player;
+    return this.nSpawn + this.nUpdate + this.nGone + this.nEvent + this.nItemSpawn + this.nItemGone === 0 && !this.player;
   }
 
   finish(w: BinaryWriter): Uint8Array<ArrayBuffer> {
-    const flags = this.head.flags | (this.player ? SnapshotFlag.HasPlayer : 0);
+    const items = this.nItemSpawn + this.nItemGone > 0;
+    const flags = this.head.flags | (this.player ? SnapshotFlag.HasPlayer : 0) | (items ? SnapshotFlag.HasItems : 0);
     w.reset()
       .u8(MsgId.Snapshot)
       .u32(this.head.tick)
@@ -278,6 +368,10 @@ export class SnapshotWriter {
       w.u16(p.heroId).u32(p.gold).u32(p.xp).u8(p.level).u8(p.skillPoints).u16(p.respawnTicks).u16(p.moveSpeed);
       for (const l of p.abilityLevels) w.u8(l);
       for (const c of p.cooldownEnds) w.u32(c);
+      for (let i = 0; i < SLOTS; i++)
+        w.u8(p.items[i] ?? 0)
+          .u8(p.charges[i] ?? 0)
+          .u32(p.itemCooldownEnds[i] ?? 0);
     }
     w.u16(this.nSpawn);
     for (let i = 0; i < this.nSpawn; i++) {
@@ -309,6 +403,15 @@ export class SnapshotWriter {
         .u16(Math.max(0, Math.min(65535, e.value)))
         .u8(e.kind);
     }
+    if (items) {
+      w.u8(this.nItemSpawn);
+      for (let i = 0; i < this.nItemSpawn; i++) {
+        const g = this.itemSpawns[i]!;
+        w.u16(g.id).u8(g.item).u8(g.charges).u16(g.x).u16(g.y);
+      }
+      w.u8(this.nItemGone);
+      for (let i = 0; i < this.nItemGone; i++) w.u16(this.itemGone[i]!);
+    }
     return w.bytes();
   }
 }
@@ -324,7 +427,11 @@ export class SnapshotData {
   goneCount = 0;
   eventCount = 0;
   hasPlayer = false;
+  itemSpawnCount = 0;
+  itemGoneCount = 0;
   readonly player: NetPlayerState = blankPlayerState();
+  readonly itemSpawns: NetGroundItem[] = [];
+  readonly itemGone: number[] = [];
   readonly spawns: NetEntityState[] = [];
   readonly updates: NetUpdate[] = [];
   readonly gone: number[] = [];
@@ -348,6 +455,11 @@ export class SnapshotData {
       p.moveSpeed = r.u16();
       for (let i = 0; i < 4; i++) p.abilityLevels[i] = r.u8();
       for (let i = 0; i < 4; i++) p.cooldownEnds[i] = r.u32();
+      for (let i = 0; i < SLOTS; i++) {
+        p.items[i] = r.u8();
+        p.charges[i] = r.u8();
+        p.itemCooldownEnds[i] = r.u32();
+      }
     }
     this.spawnCount = r.u16();
     for (let i = 0; i < this.spawnCount; i++) {
@@ -401,6 +513,20 @@ export class SnapshotData {
       e.b = r.u16();
       e.value = r.u16();
       e.kind = r.u8();
+    }
+    this.itemSpawnCount = this.itemGoneCount = 0;
+    if (this.flags & SnapshotFlag.HasItems) {
+      this.itemSpawnCount = r.u8();
+      for (let i = 0; i < this.itemSpawnCount; i++) {
+        const g = (this.itemSpawns[i] ??= { id: 0, item: 0, charges: 0, x: 0, y: 0 });
+        g.id = r.u16();
+        g.item = r.u8();
+        g.charges = r.u8();
+        g.x = r.u16();
+        g.y = r.u16();
+      }
+      this.itemGoneCount = r.u8();
+      for (let i = 0; i < this.itemGoneCount; i++) this.itemGone[i] = r.u16();
     }
     return this;
   }

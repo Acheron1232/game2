@@ -4,7 +4,7 @@
 import { BinaryReader, type BinaryWriter } from './binary';
 
 /** Bump this when a message changes. Old clients are told to reload. */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /** First byte of every binary message. */
 export const MsgId = {

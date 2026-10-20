@@ -15,6 +15,8 @@ export interface NavGrid {
    * search. Must be rebuilt when blocking changes (trees cut, buildings: Phase 7+).
    */
   region?: Int32Array;
+  /** Terrain height byte per cell (level = byte / 100 - 1), for the uphill miss chance. */
+  level?: Uint8Array;
 }
 
 /** Gives every connected walkable area its own id (8 directions, no corner cutting). */
@@ -67,7 +69,15 @@ export function buildNavGrid(t: TerrainGrid): NavGrid {
     const f = t.flags[i] ?? 0;
     walk[i] = f & TerrainFlag.Passable && !(f & blocked) ? 1 : 0;
   }
-  return { cols: t.cols, rows: t.rows, cellSize: t.cellSize, walk };
+  return { cols: t.cols, rows: t.rows, cellSize: t.cellSize, walk, level: t.height };
+}
+
+/** Ground level at a point (0 = low ground, 1 = high ground; ramps are in between). */
+export function groundLevel(g: NavGrid, x: number, y: number): number {
+  if (!g.level) return 0;
+  const c = Math.min(g.cols - 1, Math.max(0, Math.floor(x / g.cellSize)));
+  const r = Math.min(g.rows - 1, Math.max(0, Math.floor(y / g.cellSize)));
+  return (g.level[r * g.cols + c] ?? 100) / 100 - 1;
 }
 
 /** Marks a rectangle (game units) as blocked, for buildings and other static objects. */

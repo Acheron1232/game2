@@ -15,6 +15,20 @@ export const CommandType = {
   Cast: 6,
   /** spend a skill point on slot 0..3 */
   Learn: 7,
+  /** use the item in inventory slot 0..5 (keys 1-6), same target kinds as Cast */
+  UseItem: 8,
+  /** buy an item from a shop in range */
+  BuyItem: 9,
+  /** sell the item in an inventory slot to a shop in range */
+  SellItem: 10,
+  /** walk to a point and put the item there */
+  DropItem: 11,
+  /** walk to an item on the ground and take it */
+  PickUp: 12,
+  /** walk to an allied hero and give it the item */
+  GiveItem: 13,
+  /** move an item to another inventory slot (swap) */
+  SwapItems: 14,
 } as const;
 export type CommandType = (typeof CommandType)[keyof typeof CommandType];
 
@@ -26,7 +40,17 @@ export type GameCommand =
   | { type: typeof CommandType.Hold }
   /** target: 0 = none, 1 = unit (id), 2 = point (x, y) */
   | { type: typeof CommandType.Cast; slot: number; target: 0 | 1 | 2; id: number; x: number; y: number }
-  | { type: typeof CommandType.Learn; slot: number };
+  | { type: typeof CommandType.Learn; slot: number }
+  | { type: typeof CommandType.UseItem; slot: number; target: 0 | 1 | 2; id: number; x: number; y: number }
+  /** item: index in items.json */
+  | { type: typeof CommandType.BuyItem; item: number }
+  | { type: typeof CommandType.SellItem; slot: number }
+  | { type: typeof CommandType.DropItem; slot: number; x: number; y: number }
+  /** id: ground item id */
+  | { type: typeof CommandType.PickUp; id: number }
+  /** target: entity id of the allied hero */
+  | { type: typeof CommandType.GiveItem; slot: number; target: number }
+  | { type: typeof CommandType.SwapItems; from: number; to: number };
 
 /** Commands the client can predict for its own hero. */
 export function isPredicted(cmd: GameCommand): boolean {

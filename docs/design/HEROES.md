@@ -211,6 +211,7 @@ Flying rules: the dragon hovers about 3 units above the ground, has a clear grou
 | Unit | Lvl | HP | Armor | Attack | Damage | Range | Hits | Speed | Cost (g/w) | Supply | Time | From | Needs | Bounty |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Tree Guardian | 2 | 400 | 2 heavy | normal | 15-15 | 1.2 | ground | 2.8 | — | — | — | — | — | 10-10 |
+| Watcher Ward | 1 | 60 | 0 unarmored | normal | 0-0 | 0 |  | 0 | — | — | — | — | — | 15-15 |
 <!-- /table -->
 
 ## Hero bots

@@ -112,8 +112,15 @@ export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
     test: z.object({ units: z.number().int().min(0).max(1000), area: z.enum(['bases', 'center']) }).optional(),
   }),
   z.object({ type: z.literal('matchReady') }),
-  /** dev servers only: give the own hero XP or gold (for testing) */
-  z.object({ type: z.literal('cheat'), xp: z.number().min(0).max(100000).optional(), gold: z.number().min(0).max(100000).optional() }),
+  /** dev servers only: give the own hero XP, gold or an item (for testing) */
+  z.object({
+    type: z.literal('cheat'),
+    xp: z.number().min(0).max(100000).optional(),
+    gold: z.number().min(0).max(100000).optional(),
+    item: z.string().max(32).optional(),
+    /** put the hero here (game units) */
+    pos: z.tuple([z.number().min(0).max(512), z.number().min(0).max(512)]).optional(),
+  }),
   z.object({ type: z.literal('endMatch') }),
 ]);
 

@@ -21,8 +21,10 @@ export const BuffFlag = {
   Taunted: 256,
   /** Mountain Form: draw bigger */
   Big: 512,
-  /** channeling a spell */
+  /** channeling a spell or an item (Scroll of Return) */
   Channel: 1024,
+  /** invisible to enemies (Smoke Bomb, wards) */
+  Invisible: 2048,
 } as const;
 
 export interface Buff {
@@ -67,6 +69,10 @@ export interface Buff {
   reveal?: boolean;
   /** draw scale (Mountain Form) */
   scale?: number;
+  /** enemies can not see this unit, unless they reveal it (Smoke Bomb, wards) */
+  invisible?: boolean;
+  /** the buff ends when the unit attacks, casts or uses an item (Smoke Bomb) */
+  breaksOnAct?: boolean;
 }
 
 export function sumBuffs(buffs: readonly Buff[], key: keyof Buff): number {
@@ -87,9 +93,20 @@ export function maxBuff(buffs: readonly Buff[], key: keyof Buff): number {
   return s;
 }
 
-export function hasBuff(buffs: readonly Buff[], key: 'stun' | 'root' | 'silence' | 'reveal'): boolean {
+export function hasBuff(buffs: readonly Buff[], key: 'stun' | 'root' | 'silence' | 'reveal' | 'invisible'): boolean {
   for (const b of buffs) if (b[key]) return true;
   return false;
+}
+
+/** Revealed to this team (Mana Mark from one of its units)? */
+export function revealedTo(buffs: readonly Buff[], team: number): boolean {
+  for (const b of buffs) if (b.reveal && b.sourceTeam === team) return true;
+  return false;
+}
+
+/** An invisible unit is hidden from other teams, unless they reveal it. */
+export function hiddenFrom(e: { team: number; buffs: readonly Buff[] }, team: number): boolean {
+  return e.team !== team && hasBuff(e.buffs, 'invisible') && !revealedTo(e.buffs, team);
 }
 
 export function buffFlags(buffs: readonly Buff[]): number {

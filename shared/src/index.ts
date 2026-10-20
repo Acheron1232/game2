@@ -19,3 +19,4 @@ export * from './sim/camps';
 export * from './sim/spatial-grid';
 export * from './sim/buffs';
 export * from './sim/abilities';
+export * from './sim/items';

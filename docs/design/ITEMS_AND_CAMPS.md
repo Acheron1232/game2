@@ -39,8 +39,12 @@ Rules:
 - Scroll of Return: 3-second channel; moving or getting stunned stops it.
 - Watcher Ward: invisible; enemies need a ward of their own or a reveal (Mana Mark) to see it. Later: a "detect" item.
 - Smoke Bomb: invisible for 8 s; attacking, casting or using an item ends it. Watchtowers do not see invisible units in the MVP.
-- Phoenix Feather: on death, you come back where you fell after 2 seconds with 50% health. The feather is used up.
+- Phoenix Feather: on death, you come back where you fell after 2 seconds with 50% health (mana stays as it was). The feather is used up. The death still counts: the killer gets the bounty and you lose the death gold.
 - Dropped items stay on the ground for 3 minutes, then vanish.
+- Potions, Tome and Smoke Bomb work at once and do not stop what the hero is doing. Watcher Ward walks into range first (6). Items can be used while silenced, not while stunned.
+- Selling a stack sells all of it: half the value for the charges that are left.
+- Storm Hammer: the hit target is the first of the 3; each jump goes to the nearest enemy within 5 that was not hit yet.
+- Uphill miss: an attack from low ground up to high ground (temple plateau, watch hill) misses 25% of the time. Only ground units, melee and ranged. Ramps are in between and count by their height.
 
 ## Shops
 
@@ -53,7 +57,7 @@ Rules:
 
 - Shops are neutral and can not be attacked.
 - Buy: right click the item in the shop panel, or click and press the hotkey. Sell: drag an item onto the shop panel.
-- Shop panel opens when your hero is within 6 units and you select the shop (or click it).
+- The shop panel opens by itself when your hero is within 6 units, or when you click the shop. Buying and selling need the hero within 6 units.
 
 ## Neutral camps
 

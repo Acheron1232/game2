@@ -85,6 +85,15 @@ export function validateGameData(d: GameData): string[] {
     if (b.upgradesTo && !buildingById.has(b.upgradesTo)) fail(`building ${b.id}: unknown upgradesTo ${b.upgradesTo}`);
   }
 
+  for (const it of d.items) {
+    if (it.tier === 'consumable' && !it.charges) fail(`item ${it.id}: consumables need charges`);
+    if (it.charges && (it.stackMax ?? 1) < it.charges) fail(`item ${it.id}: stackMax is smaller than charges`);
+    if (it.active?.target === 'point' && !it.active.castRange) fail(`item ${it.id}: point items need castRange`);
+    if (it.active?.sight && !unitById.has('watcher_ward')) fail(`item ${it.id}: needs the watcher_ward unit`);
+    if (it.cost !== null && it.cost < it.value * d.rules.gold.sellFactor) fail(`item ${it.id}: sells for more than it costs`);
+  }
+  if (d.items.length > 255) fail('items: more than 255 (the network sends an item index as u8)');
+
   for (const s of d.shops) {
     for (const iid of s.items) {
       const it = itemById.get(iid);

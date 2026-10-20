@@ -5,6 +5,7 @@ import { gameData } from '../data/index';
 import { nearestWalkable } from '../nav/nav-grid';
 import { applyMove } from './commands';
 import { entityTypeIndex } from './entity-types';
+import { rollCampDrop } from './items';
 import { canAttackLayer } from './stats';
 import { NEUTRAL, NEUTRAL_TEAM, TICK_DT, TICK_RATE, type DamageSource, type MatchSim, type SimEntity } from './match-sim';
 
@@ -19,7 +20,7 @@ export interface CampState {
   members: SimEntity[];
   /** tick to try to bring the camp back, 0 = camp is alive */
   respawnAt: number;
-  /** for the drop roll (Phase 7c): where the last monster died */
+  /** where the last monster died: the drop falls here */
   lastDeathX: number;
   lastDeathY: number;
 }
@@ -99,7 +100,8 @@ function nearestIntruder(sim: MatchSim, camp: CampState, m: SimEntity, range: nu
   let best: SimEntity | null = null,
     bestD = Infinity;
   sim.grid.query(m.mover.x, m.mover.y, range, (o, d2) => {
-    if (o.team === NEUTRAL_TEAM || o.passive || !canAttackLayer(m.stats.canHitAir, o.stats.layer)) return;
+    if (o.team === NEUTRAL_TEAM || o.passive || o.inert || !canAttackLayer(m.stats.canHitAir, o.stats.layer)) return;
+    if (sim.isHiddenFrom(o, NEUTRAL_TEAM)) return;
     if (Math.hypot(o.mover.x - camp.x, o.mover.y - camp.y) > N.leashRange) return;
     if (d2 < bestD) {
       bestD = d2;
@@ -140,6 +142,7 @@ export function onCampMemberDied(sim: MatchSim, m: SimEntity): void {
   camp.lastDeathX = m.mover.x;
   camp.lastDeathY = m.mover.y;
   camp.respawnAt = sim.tick + Math.round((def?.respawnSec ?? 180) * TICK_RATE);
+  rollCampDrop(sim, camp);
 }
 
 /** Comes back only when no hero is close, so it never pops up in someone's face. */

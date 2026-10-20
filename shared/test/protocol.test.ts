@@ -89,6 +89,43 @@ describe('match messages', () => {
     }
   });
 
+  it('item commands survive the trip', () => {
+    const w = new BinaryWriter();
+    const cmds = [
+      { type: CommandType.UseItem, slot: 5, target: 0, id: 0, x: 0, y: 0 },
+      { type: CommandType.UseItem, slot: 2, target: 2, id: 0, x: 128, y: 64 },
+      { type: CommandType.UseItem, slot: 1, target: 1, id: 999, x: 0, y: 0 },
+      { type: CommandType.BuyItem, item: 22 },
+      { type: CommandType.SellItem, slot: 3 },
+      { type: CommandType.DropItem, slot: 4, x: 10, y: 250 },
+      { type: CommandType.PickUp, id: 65535 },
+      { type: CommandType.GiveItem, slot: 0, target: 1234 },
+      { type: CommandType.SwapItems, from: 0, to: 5 },
+    ] as const;
+    for (const c of cmds) {
+      const r = new BinaryReader(writeCommand(w, 9, c));
+      expect(r.u8()).toBe(MsgId.Command);
+      const back = readCommand(r)!;
+      expect(r.remaining).toBe(0);
+      for (const [k, v] of Object.entries(c)) expect((back.cmd as Record<string, number>)[k], `${c.type}.${k}`).toBeCloseTo(v, 2);
+    }
+  });
+
+  it('items on the ground come and go in a snapshot', () => {
+    const sw = new SnapshotWriter();
+    sw.begin(10, 0, 1);
+    sw.itemSpawn({ id: 7, item: 3, charges: 2, x: 1000, y: 2000 });
+    sw.itemRemove(5);
+    const s = readSnapshot(sw.finish(new BinaryWriter()), new SnapshotData());
+    expect(s.flags & SnapshotFlag.HasItems).toBeTruthy();
+    expect(s.itemSpawnCount).toBe(1);
+    expect(s.itemSpawns[0]).toEqual({ id: 7, item: 3, charges: 2, x: 1000, y: 2000 });
+    expect(s.itemGone.slice(0, s.itemGoneCount)).toEqual([5]);
+    // No item block when nothing changed.
+    sw.begin(11, 0, 1);
+    expect(readSnapshot(sw.finish(new BinaryWriter()), new SnapshotData()).itemSpawnCount).toBe(0);
+  });
+
   it('a snapshot keeps player state, fields and events', () => {
     const sw = new SnapshotWriter();
     sw.begin(1234, 9, 3, SnapshotFlag.Full);
@@ -102,6 +139,9 @@ describe('match messages', () => {
       moveSpeed: 310,
       abilityLevels: [1, 0, 2, 0],
       cooldownEnds: [0, 1300, 0, 0],
+      items: [1, 0, 0, 0, 0, 23],
+      charges: [3, 0, 0, 0, 0, 0],
+      itemCooldownEnds: [1400, 0, 0, 0, 0, 0],
     });
     sw.spawn({
       id: 5,
@@ -154,6 +194,9 @@ describe('match messages', () => {
       moveSpeed: 310,
       abilityLevels: [1, 0, 2, 0],
       cooldownEnds: [0, 1300, 0, 0],
+      items: [1, 0, 0, 0, 0, 23],
+      charges: [3, 0, 0, 0, 0, 0],
+      itemCooldownEnds: [1400, 0, 0, 0, 0, 0],
     });
     expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4, buffs: 3 });
     expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8, buffs: 1024 });

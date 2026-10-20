@@ -2,6 +2,7 @@
 // the team owns. No line of sight yet (trees and high ground come with the fog in Phase 9).
 // The server only sends a player the enemies that stand in a visible cell.
 
+import { hiddenFrom, revealedTo } from './buffs';
 import type { SimEntity } from './match-sim';
 
 export const VISION_CELL = 4;
@@ -40,11 +41,17 @@ export class TeamVision {
   sees(team: number, e: SimEntity): boolean {
     if (e.team === team) return true;
     // Mana Mark: the marking team sees the unit wherever it is.
-    for (const b of e.buffs) if (b.reveal && b.sourceTeam === team) return true;
+    if (revealedTo(e.buffs, team)) return true;
+    if (hiddenFrom(e, team)) return false;
+    return this.seesPoint(team, e.mover.x, e.mover.y);
+  }
+
+  /** Is this point inside the team's vision (items on the ground)? */
+  seesPoint(team: number, x: number, y: number): boolean {
     const g = this.grids.get(team);
     if (!g) return false;
-    const c = Math.min(this.cols - 1, Math.max(0, Math.floor(e.mover.x / VISION_CELL)));
-    const r = Math.min(this.cols - 1, Math.max(0, Math.floor(e.mover.y / VISION_CELL)));
+    const c = Math.min(this.cols - 1, Math.max(0, Math.floor(x / VISION_CELL)));
+    const r = Math.min(this.cols - 1, Math.max(0, Math.floor(y / VISION_CELL)));
     return g[r * this.cols + c] === 1;
   }
 }

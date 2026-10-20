@@ -16,7 +16,9 @@ import {
   gameData,
   lv,
   TICK_RATE,
+  ITEMS,
   type AbilityDef,
+  type ItemDef,
   type CastTarget,
   blankPlayerState,
   CommandType,
@@ -47,9 +49,43 @@ import { TILT } from '../render/rts-camera';
 import { TEAM_COLORS } from '../render/team-material';
 import { TEAMS, type GameWorld } from '../render/world';
 import type { FloatingText } from '../ui/floating-text';
+import { S } from '../ui/strings';
 import { HeroPredictor } from './hero-predictor';
 import { NetEntity, type Pose } from './net-entity';
 import { TickClock } from './tick-clock';
+
+export interface ItemInfo {
+  def: ItemDef;
+  /** index in items.json */
+  index: number;
+  charges: number;
+  cooldownLeft: number;
+  /** 0..1 of the cooldown still to go */
+  cooldownFrac: number;
+}
+
+export interface GroundItemInfo {
+  id: number;
+  item: number;
+  charges: number;
+  x: number;
+  y: number;
+}
+
+/** Models for units that have none of their own: [model, scale]. */
+const MODEL_ALIAS: Record<string, [string, number]> = {
+  watcher_ward: ['ruin_pillar', 0.3],
+};
+
+/** Item ids with a small look when used (the rest show nothing extra). */
+const ITEM_FX: Record<string, { frames: 'heal' | 'arcane' | 'smoke' | 'spark'; color: string; color2: string }> = {
+  healing_potion: { frames: 'heal', color: '#7dff6a', color2: '#2c7a22' },
+  mana_potion: { frames: 'arcane', color: '#6aa8ff', color2: '#22457a' },
+  scroll_of_return: { frames: 'arcane', color: '#9fd8ff', color2: '#3a5aa0' },
+  smoke_bomb: { frames: 'smoke', color: '#8f86a8', color2: '#2a2438' },
+  ward: { frames: 'spark', color: '#ffe58a', color2: '#a0801a' },
+  tome_of_wisdom: { frames: 'spark', color: '#ffe58a', color2: '#a77bdc' },
+};
 
 export interface AbilityInfo {
   def: AbilityDef;
@@ -82,6 +118,10 @@ export class MatchClient {
   serverMode = false;
   /** Called when gold, XP, level or respawn time changed. */
   onPlayer: ((p: NetPlayerState) => void) | null = null;
+  /** A message from the server for this player (inventory full...). */
+  onNotice: ((code: number) => void) | null = null;
+  /** items lying on the ground that this player sees */
+  readonly groundItems = new Map<number, GroundItemInfo>();
   private seq = 0;
   private markCount = 0;
   private readonly snap = new SnapshotData();
@@ -160,9 +200,75 @@ export class MatchClient {
 
   /** Spend a skill point (works while dead too). */
   learn(slot: number): void {
+    this.sendSide({ type: CommandType.Learn, slot });
+  }
+
+  /** Use the item in inventory slot 0..5. Potions and the like do not stop the hero. */
+  useItem(slot: number, target: CastTarget): void {
+    const a = this.item(slot)?.def.active;
+    if (!a) return;
+    if (target.kind === 2) [target.x, target.y] = quantizePoint(target.x, target.y);
+    const cmd: GameCommand = { type: CommandType.UseItem, slot, target: target.kind, id: target.id, x: target.x, y: target.y };
+    if (a.target === 'none' && !a.channelTime) this.sendSide(cmd);
+    else this.send(cmd);
+  }
+
+  buy(item: number): void {
+    this.sendSide({ type: CommandType.BuyItem, item });
+  }
+
+  sell(slot: number): void {
+    this.sendSide({ type: CommandType.SellItem, slot });
+  }
+
+  swapItems(from: number, to: number): void {
+    this.sendSide({ type: CommandType.SwapItems, from, to });
+  }
+
+  /** Walk to a point and put the item there. */
+  dropItem(slot: number, x: number, y: number): void {
+    const [qx, qy] = quantizePoint(x, y);
+    this.send({ type: CommandType.DropItem, slot, x: qx, y: qy });
+  }
+
+  pickUp(id: number): void {
+    this.send({ type: CommandType.PickUp, id });
+  }
+
+  giveItem(slot: number, hero: NetEntity): void {
+    this.send({ type: CommandType.GiveItem, slot, target: hero.id });
+  }
+
+  /** What the HUD needs about the item in an inventory slot. */
+  item(slot: number): ItemInfo | null {
+    const index = (this.player.items[slot] ?? 0) - 1;
+    const def = ITEMS[index];
+    if (!def) return null;
+    const end = this.player.itemCooldownEnds[slot] ?? 0;
+    const left = end ? Math.max(0, (end - this.clock.serverTick()) / TICK_RATE) : 0;
+    const total = def.active?.cooldown ?? 0;
+    return {
+      def,
+      index,
+      charges: this.player.charges[slot] ?? 0,
+      cooldownLeft: left,
+      cooldownFrac: total > 0 ? Math.min(1, left / total) : 0,
+    };
+  }
+
+  /** The item on the ground under a screen point (CSS pixels), or null. */
+  pickGroundItem(sx: number, sy: number): GroundItemInfo | null {
+    const id = this.world.items.pick(sx, sy, (x, y, up, out) => this.world.screenPoint(x, y, up, out));
+    return this.groundItems.get(id) ?? null;
+  }
+
+  /**
+   * A command that does not move the hero (learn, buy, sell, potions...): prediction goes on as
+   * before. The predictor still gets the number, so acks line up.
+   */
+  private sendSide(cmd: GameCommand): void {
     this.seq = (this.seq % 0xffff) + 1;
-    this.net.sendBinary(writeCommand(this.w, this.seq, { type: CommandType.Learn, slot }));
-    // Not a move: prediction goes on as before. Give the predictor the number, so acks line up.
+    this.net.sendBinary(writeCommand(this.w, this.seq, cmd));
     this.predictor?.skip(this.seq);
   }
 
@@ -236,7 +342,12 @@ export class MatchClient {
     const mark = ++this.markCount;
     const full = (s.flags & SnapshotFlag.Full) !== 0;
     if (s.hasPlayer) {
-      Object.assign(this.player, s.player, { abilityLevels: [...s.player.abilityLevels] });
+      Object.assign(this.player, s.player, {
+        abilityLevels: [...s.player.abilityLevels],
+        items: [...s.player.items],
+        charges: [...s.player.charges],
+        itemCooldownEnds: [...s.player.itemCooldownEnds],
+      });
       if (this.predictor) this.predictor.mover.speed = s.player.moveSpeed / 100;
       this.onPlayer?.(this.player);
     }
@@ -257,6 +368,21 @@ export class MatchClient {
     }
     for (let i = 0; i < s.goneCount; i++) this.remove(s.gone[i]!);
     if (full) for (const e of [...this.entities.values()]) if (e.mark !== mark) this.remove(e.id);
+    // Items on the ground. A full snapshot sends every item in sight again.
+    if (full) {
+      this.groundItems.clear();
+      this.world.items.clear();
+    }
+    for (let i = 0; i < s.itemSpawnCount; i++) {
+      const g = s.itemSpawns[i]!;
+      const info = { id: g.id, item: g.item, charges: g.charges, x: dqPos(g.x), y: dqPos(g.y) };
+      this.groundItems.set(g.id, info);
+      this.world.items.add(g.id, ITEMS[g.item]?.tier ?? 'basic', info.x, info.y);
+    }
+    for (let i = 0; i < s.itemGoneCount; i++) {
+      this.groundItems.delete(s.itemGone[i]!);
+      this.world.items.remove(s.itemGone[i]!);
+    }
     for (let i = 0; i < s.eventCount; i++) {
       const ev = s.events[i]!;
       this.onEvent(ev.type, ev.a, ev.b, ev.value, ev.kind);
@@ -350,7 +476,11 @@ export class MatchClient {
         const mine = (x: NetEntity | undefined) => !!x && x.owner === this.slot;
         const up = u.flyHeight + u.height + 0.3;
         // Only numbers that matter to this player: what we deal and what we take.
-        if (kind === DamageKind.Heal) {
+        if (kind === DamageKind.Miss) {
+          if (mine(ea) || mine(src)) this.floating.show(S.miss, 'miss', u.x, u.y, up);
+        } else if (kind === DamageKind.Mana) {
+          if (mine(ea)) this.floating.show(`+${value}`, 'mana', u.x, u.y, up);
+        } else if (kind === DamageKind.Heal) {
           if (mine(ea)) this.floating.show(`+${value}`, 'heal', u.x, u.y, up);
         } else if (mine(ea)) this.floating.show(String(value), 'hurt', u.x, u.y, up);
         else if (mine(src)) this.floating.show(String(value), kind === DamageKind.Spell ? 'spell' : 'damage', u.x, u.y, up);
@@ -361,6 +491,33 @@ export class MatchClient {
         if (u && this.floating) this.floating.show(`+${value}`, 'gold', u.x, u.y, u.flyHeight + u.height + 0.8);
         break;
       }
+      case EventType.Chain: {
+        // Storm Hammer: a quick white-blue bolt from one unit to the next.
+        const from = ea?.unit,
+          to = this.entities.get(b)?.unit;
+        if (!from || !to) break;
+        const h = this.world.terrain.heightAt(from.x, from.y) + from.flyHeight + from.height * 0.6;
+        this.fx.bolt(from.x, from.y, h, to.x, to.y, 70, '#bfe6ff');
+        const th = this.world.terrain.heightAt(to.x, to.y) + to.flyHeight + to.height * 0.5;
+        this.fx.burst(to.x, th, -to.y, 'spark', '#e6f6ff', '#4a8be0', 18, 0.4, 2);
+        break;
+      }
+      case EventType.ItemUse: {
+        const item = ITEMS[kind];
+        const look = item ? ITEM_FX[item.id] : undefined;
+        if (!item || !look) break;
+        const x = dqPos(b),
+          y = dqPos(value);
+        const h = this.world.terrain.heightAt(x, y);
+        this.fx.burst(x, h + 1, -y, look.frames, look.color, look.color2, 30, 0.7, 2);
+        if (item.id === 'scroll_of_return' || item.id === 'ward') this.fx.ring(x, h, -y, 1.6, look.color, 0.6);
+        if (item.active?.gainXp && ea?.unit && ea.owner === this.slot)
+          this.floating?.show(`+${item.active.gainXp} XP`, 'level', ea.unit.x, ea.unit.y, ea.unit.height + 1);
+        break;
+      }
+      case EventType.Notice:
+        this.onNotice?.(value);
+        break;
       case EventType.LevelUp: {
         const u = ea?.unit;
         if (u && this.floating && ea.owner === this.slot) this.floating.show(`Level ${value}!`, 'level', u.x, u.y, u.height + 1.2);
@@ -448,12 +605,18 @@ export class MatchClient {
   }
 
   private show(e: NetEntity): void {
-    const modelId = ENTITY_TYPES[e.type] ?? 'swordsman';
+    const typeId = ENTITY_TYPES[e.type] ?? 'swordsman';
+    const [modelId, scale] = MODEL_ALIAS[typeId] ?? [typeId, 1];
     const hero = isHeroType(e.type);
     const k = e.last;
     // Neutral monsters have no team color: their masks are black anyway.
     const team = e.owner === NEUTRAL ? 'red' : (TEAMS[e.color] ?? 'red');
     e.unit = this.world.addUnit(modelId, team, k.x, k.y, k.facing, moveSpeedOf(e.type), hero, isFlyingType(e.type));
+    if (scale !== 1) {
+      e.unit.baseScale = e.unit.scale = scale;
+      e.unit.height *= scale;
+      e.unit.model.root.scaling.setAll(scale);
+    }
     if (e.state & UnitState.Dead) this.world.setDead(e.unit, true);
     if (hero && e.owner === this.slot) {
       this.ownHero = e;
@@ -512,7 +675,7 @@ export class MatchClient {
         }
       }
       // Buff markers and Mountain Form size.
-      u.scale = e.buffs & BuffFlag.Big ? 1.4 : 1;
+      u.scale = (e.buffs & BuffFlag.Big ? 1.4 : 1) * u.baseScale;
       if (e.buffs && !dead) {
         const ground = this.world.terrain.heightAt(u.x, u.y);
         this.fx.setMarkers(
@@ -567,6 +730,8 @@ export class MatchClient {
     this.unsubscribe();
     this.world.beforeFrame = null;
     for (const id of [...this.entities.keys()]) this.remove(id);
+    this.groundItems.clear();
+    this.world.items.clear();
     this.world.select(null);
     this.bars.update([], 0);
     this.projectiles.update(0);
