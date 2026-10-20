@@ -11,8 +11,22 @@ Branch: `codex/continuous-playtest-polish`. Scope: fix and polish the current ga
 
 Validation: all 77 tests passed (44 shared, 14 client, 10 server, 9 tools), typecheck, production build and lint passed. Browser testing used two real WebSocket players and native render buffers (1362 × 1544 and 2560 × 1440). The match limit remains 120 FPS; these background browser surfaces reported about 30 rendered FPS, so this run does not establish foreground 120 FPS or a temperature/fan improvement.
 
+## Cycle 2 — combat timing and ability feedback
+
+- **Cast visuals now follow the server.** The old client started local timers on wind-up, even if the player cancelled the cast. Protocol 5 adds a completed-cast event, including the learned level. Ground zones, bursts and jumps now start only for successful casts. Impact radii use the actual ability level too. Server tests cover cancelled wind-ups and packed indices/levels for all 32 abilities.
+- **Animations share the motion timeline.** Combat events wait for the same render tick as interpolated unit poses. Previously a new swing could arrive while the unit still looked like it was walking, so the world cancelled it immediately. The event queue reuses its slots. Casts are no longer cancelled just because the unit is moving during a leap. Growth easing uses elapsed time; own-hero walk speed follows current buffs. Health bars and click targets follow the visible model scale.
+- **Tooltips show actual effects.** Added damage, healing, duration, slow, armor, radius and other useful numbers from the shared data at the learned level. Unlearned abilities say `Level 1 preview`. A hovered tooltip updates when the ability level changes. Held hotkeys no longer flood commands or toggle camera follow repeatedly; aiming clears when leaving the game.
+- **Less combat allocation.** Screen projection reuses its vector and viewport. Homing projectiles write their target into one reusable point instead of allocating one per projectile per frame. Empty layers and native resolution remain unchanged.
+- **Dev testing:** F6 gives level 10 and refills health, mana and cooldowns through the existing dev-only server cheat. Production does not bind it.
+
+Browser checks: a second two-player session used Stone Golem and Sky Dragon at level 10, with `?lag=100&loss=2` on the second client. Both long walks to the temple ended at `fixes 0/0`. Cancelling Fire Breath kept mana at 348 with no fire effect; a successful level-3 cast spent 80 mana, showed fire and dealt 154 damage after hero reduction. Mountain Form gave 1785 max HP; Boulder Toss and ordinary attacks dealt damage. Both browser consoles had no warnings/errors at that check. Screenshot: `screenshots/playtest-fire-breath.jpg`.
+
+Validation: 82 tests pass (46 shared, 17 client, 10 server, 9 tools), lint and production build pass. The build also typechecks client/server/shared.
+
+Load-test finding: four real WebSocket test clients, 300 units all around the temple, 20 seconds: average server tick 0.881 ms, maximum 2.857 ms, snapshots 19.4/s, maximum downstream 23.65 KB/s. The tick is comfortably below 10 ms, but this crowded case exceeds the 20 KB/s target. This is a finding, not a fixed bandwidth claim. The ordinary two-hero duel showed about 0.4–0.5 KB/s per browser.
+
 ## Still checking
 
-- Combat animation timing and cast interruption.
-- Ability feedback and descriptions at each learned level.
-- Repeated multiplayer fights, respawn, reconnect and lag.
+- Repeated multiplayer fights, respawn and reconnect.
+- Channel interruption, blink, leap visuals and hover descriptions in the browser.
+- Crowded-match bandwidth, without lowering snapshot frequency or precision.

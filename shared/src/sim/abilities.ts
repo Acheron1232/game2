@@ -7,7 +7,7 @@ import { isWalkable, nearestWalkable } from '../nav/nav-grid';
 import { qPos } from '../protocol/game';
 import { BuffFlag, type Buff } from './buffs';
 import { entityTypeIndex } from './entity-types';
-import { EventType } from './events';
+import { abilityFxKind, EventType } from './events';
 import { TICK_RATE, type DamageSource, type MatchSim, type SimEntity } from './match-sim';
 import { canAttackLayer, canLearn, unitStats } from './stats';
 
@@ -189,6 +189,14 @@ export function updateCast(sim: MatchSim, e: SimEntity): void {
   const hc = healthCost(a, level);
   if (hc) e.hp -= hc;
   e.cooldowns[c.slot] = sim.tick + secs(lv(a.cooldown, level));
+  const kind = abilityFxKind(abilityIndex(a.id), level, c.target.kind === 2);
+  sim.events.push(
+    EventType.AbilityEffect,
+    e.id,
+    c.target.kind === 2 ? qPos(c.target.x) : c.target.id,
+    c.target.kind === 2 ? qPos(c.target.y) : 0,
+    kind,
+  );
   const stay = EFFECTS[a.id]?.(sim, e, a, level, c.target, t);
   if (stay !== true) endCast(sim, e);
 }
@@ -344,7 +352,7 @@ export const EFFECTS: Record<string, Effect> = {
   sky_pillar: (sim, e, a, level, tg) => {
     const [x, y] = landing(sim, e, ...clampPoint(e, tg.x, tg.y, lv(a.castRange, level)));
     sim.forceMove(e, x, y, param(a, 'leapTime', level), 'leap', () => {
-      sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityIndex(a.id));
+      sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityFxKind(abilityIndex(a.id), level));
       forEnemies(
         sim,
         e,
@@ -390,7 +398,7 @@ export const EFFECTS: Record<string, Effect> = {
     const [x, y] = landing(sim, e, ...clampPoint(e, tg.x, tg.y, lv(a.castRange, level)));
     sim.forceMove(e, x, y, param(a, 'diveTime', level), 'dive', () => {
       const r = param(a, 'radius', level);
-      sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityIndex(a.id));
+      sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityFxKind(abilityIndex(a.id), level));
       forEnemies(sim, e, x, y, r, (t) => sim.spellHit(t, param(a, 'impactDamage', level), e), false);
       sim.addZone(e, x, y, r, param(a, 'burnDuration', level), abilityIndex(a.id), (z) =>
         forEnemies(sim, e, z.x, z.y, z.radius, (t) => sim.spellHit(t, param(a, 'burnDamagePerSec', level) * 0.5, e), false),
@@ -478,7 +486,7 @@ export const EFFECTS: Record<string, Effect> = {
   },
   blink: (sim, e, a, level, tg) => {
     const [x, y] = landing(sim, e, ...clampPoint(e, tg.x, tg.y, lv(a.castRange, level), param(a, 'minRange', level)));
-    sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityIndex(a.id));
+    sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityFxKind(abilityIndex(a.id), level));
     sim.teleport(e, x, y);
   },
   mana_mark: (sim, e, a, level, _tg, t) => {

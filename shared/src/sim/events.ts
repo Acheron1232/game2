@@ -18,14 +18,19 @@ export const EventType = {
   Respawn: 7,
   /** a = caster; kind = ability index (| 128 for a point: b, value = x, y quantized; else b = target id). 255 = monster skill */
   Cast: 8,
-  /** a = caster, b/value = point (quantized), kind = ability index: a jump lands, a blink, a dive */
+  /** a = caster, b/value = point (quantized), kind = packed ability index and level: jump, blink, dive */
   Impact: 9,
   /** a = caster: its channel stopped */
   ChannelEnd: 10,
   /** a = caster, b/value = end point (quantized), kind = ability index; speed is in the data */
   LineShot: 11,
+  /** A paid, completed cast. Same target as Cast; kind packs index (5 bits), level-1 (2), point (1). */
+  AbilityEffect: 12,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
+
+/** All 32 current hero abilities fit in five bits; levels use the next two bits. */
+export const abilityFxKind = (index: number, level: number, point = false) => index | ((level - 1) << 5) | (point ? 128 : 0);
 
 export const DamageKind = {
   Attack: 0,

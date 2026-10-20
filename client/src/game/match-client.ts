@@ -50,6 +50,7 @@ import type { FloatingText } from '../ui/floating-text';
 import { HeroPredictor } from './hero-predictor';
 import { NetEntity, type Pose } from './net-entity';
 import { TickClock } from './tick-clock';
+import { EventTimeline } from './event-timeline';
 
 export interface AbilityInfo {
   def: AbilityDef;
@@ -96,7 +97,9 @@ export class MatchClient {
   readonly fx: AbilityFx;
   private readonly deadSince = new Map<number, number>();
   private readonly pt = { x: 0, y: 0 };
-  private readonly effectTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly events = new EventTimeline();
+  private readonly drawEvent = (ev: { type: number; a: number; b: number; value: number; kind: number }) =>
+    this.onEvent(ev.type, ev.a, ev.b, ev.value, ev.kind);
 
   constructor(
     readonly world: GameWorld,
@@ -216,10 +219,11 @@ export class MatchClient {
     for (const e of this.entities.values()) {
       const u = e.unit;
       if (!u || u.dead) continue;
-      if (!this.world.screenPoint(u.x, u.y, u.flyHeight + u.height * 0.5, this.pt)) continue;
+      const height = u.height * u.model.root.scaling.y;
+      if (!this.world.screenPoint(u.x, u.y, u.flyHeight + height * 0.5, this.pt)) continue;
       const d = Math.hypot(this.pt.x - sx, this.pt.y - sy);
       // Bigger models are easier to click.
-      if (d < 18 + u.height * 10 && d < bestD) {
+      if (d < 18 + height * 10 && d < bestD) {
         bestD = d;
         best = e;
       }
@@ -260,7 +264,7 @@ export class MatchClient {
     if (full) for (const e of [...this.entities.values()]) if (e.mark !== mark) this.remove(e.id);
     for (let i = 0; i < s.eventCount; i++) {
       const ev = s.events[i]!;
-      this.onEvent(ev.type, ev.a, ev.b, ev.value, ev.kind);
+      this.events.add(s.tick, ev);
     }
 
     const hero = this.ownHero;
@@ -307,10 +311,13 @@ export class MatchClient {
           from.y,
           h,
           value,
-          () => {
+          (out) => {
             const tu = to.unit;
-            if (!tu || !this.entities.has(to.id)) return null;
-            return { x: tu.x, y: tu.y, h: this.world.terrain.heightAt(tu.x, tu.y) + tu.flyHeight + tu.height * 0.5 };
+            if (!tu || tu.dead || !this.entities.has(to.id)) return false;
+            out.x = tu.x;
+            out.y = tu.y;
+            out.h = this.world.terrain.heightAt(tu.x, tu.y) + tu.flyHeight + tu.height * tu.model.root.scaling.y * 0.5;
+            return true;
           },
           color,
           spell ? 0.6 : 0.28,
@@ -320,14 +327,18 @@ export class MatchClient {
       case EventType.Cast:
         this.onCast(ea, a, b, value, kind);
         break;
+      case EventType.AbilityEffect:
+        this.onCast(ea, a, b, value, (kind & 31) | (kind & 128), true, ((kind >> 5) & 3) + 1);
+        break;
       case EventType.Impact: {
-        const sp = ABILITIES[kind];
+        const sp = ABILITIES[kind & 31];
         if (!sp) break;
         const x = dqPos(b),
           y = dqPos(value);
         const look = this.heroFx(sp.hero);
         const h = this.world.terrain.heightAt(x, y);
-        const r = lv(sp.params['radius'], 3) || 1.2;
+        const level = ((kind >> 5) & 3) + 1;
+        const r = lv(sp.params['radius'], level) || 1.2;
         this.fx.ring(x, h, -y, r, look.color, 0.6);
         this.fx.burst(x, h + 0.5, -y, look.frames, look.color, look.color2, 45, r * 0.5, 3);
         if (sp.id === 'inferno_dive') this.fx.disc(x, h, -y, r, look.color, lv(sp.params['burnDuration'], 1));
@@ -375,7 +386,7 @@ export class MatchClient {
   }
 
   /** A cast starts: cast clip, and the placeholder look of the ability. */
-  private onCast(ea: NetEntity | undefined, caster: number, b: number, value: number, kind: number): void {
+  private onCast(ea: NetEntity | undefined, caster: number, b: number, value: number, kind: number, complete = false, level = 1): void {
     const u = ea?.unit;
     if (!ea || !u) return;
     if (kind === 255) {
@@ -387,30 +398,24 @@ export class MatchClient {
     }
     const a = ABILITIES[kind & 127];
     if (!a) return;
-    const level = 3;
+    if (!complete) {
+      this.world.playOnce(u, 'cast', Math.max(0.4, a.castTime + 0.25));
+      return;
+    }
     const look = this.heroFx(a.hero);
     const point = (kind & 128) !== 0;
     const px = point ? dqPos(b) : u.x,
       py = point ? dqPos(value) : u.y;
     const target = !point && b ? this.entities.get(b)?.unit : undefined;
-    this.world.playOnce(u, 'cast', Math.max(0.4, a.castTime + 0.25));
     const gh = (x: number, y: number) => this.world.terrain.heightAt(x, y);
-    const delay = a.castTime * 1000;
-    const later = (fn: () => void) => {
-      if (delay <= 0) return fn();
-      const timer = setTimeout(() => {
-        this.effectTimers.delete(timer);
-        fn();
-      }, delay);
-      this.effectTimers.add(timer);
-    };
+    // The server sends this only after the cast succeeds. No wall-clock timers or phantom
+    // effects after a cancelled wind-up; this event already shares the pose's render tick.
     const radius = lv(a.params['radius'], level) || lv(a.params['tauntRadius'], level);
     switch (a.id) {
       case 'sky_pillar':
       case 'inferno_dive': {
-        // The jump itself: an arc over the leap time, after the cast time (+ the 100 ms the
-        // client draws others in the past).
-        const t0 = performance.now() + delay + (ea === this.ownHero && !this.serverMode ? 0 : 100);
+        // Start the leap arc when the completed cast reaches the render timeline.
+        const t0 = performance.now();
         u.arcStart = t0;
         u.arcEnd = t0 + (lv(a.params['leapTime'], 1) || lv(a.params['diveTime'], 1)) * 1000;
         break;
@@ -418,40 +423,37 @@ export class MatchClient {
       case 'blink':
         this.fx.burst(u.x, gh(u.x, u.y) + 1, -u.y, look.frames, look.color, look.color2, 30, 0.5, 2);
         break;
-      case 'fire_breath':
-        later(() => {
-          const dir = Math.atan2(py - u.y, px - u.x);
-          this.fx.cone(u.x, gh(u.x, u.y) + 0.2, -u.y, lv(a.params['length'], 1), lv(a.params['angleDeg'], 1), dir, look.color);
-          for (let i = 1; i <= 3; i++) {
-            const d = (i / 3) * lv(a.params['length'], 1) * 0.8;
-            const x = u.x + Math.cos(dir) * d,
-              y = u.y + Math.sin(dir) * d;
-            this.fx.burst(x, gh(x, y) + 1, -y, 'fire', '#ffd060', '#ff3a00', 20, 0.5 + i * 0.3, 2);
-          }
-        });
+      case 'fire_breath': {
+        const dir = Math.atan2(py - u.y, px - u.x);
+        this.fx.cone(u.x, gh(u.x, u.y) + 0.2, -u.y, lv(a.params['length'], 1), lv(a.params['angleDeg'], 1), dir, look.color);
+        for (let i = 1; i <= 3; i++) {
+          const d = (i / 3) * lv(a.params['length'], 1) * 0.8;
+          const x = u.x + Math.cos(dir) * d,
+            y = u.y + Math.sin(dir) * d;
+          this.fx.burst(x, gh(x, y) + 1, -y, 'fire', '#ffd060', '#ff3a00', 20, 0.5 + i * 0.3, 2);
+        }
         break;
+      }
       case 'blood_moon':
       case 'sanctuary':
-      case 'arcane_storm':
-        later(() => {
-          const life = lv(a.params['duration'], level) || lv(a.params['channelTime'], level);
-          this.fx.disc(px, gh(px, py), -py, radius, look.color, life, caster);
-          this.fx.burst(px, gh(px, py) + 2, -py, look.frames, look.color, look.color2, 40, radius * 0.6, 1.5);
-        });
+      case 'arcane_storm': {
+        const life = lv(a.params['duration'], level) || lv(a.params['channelTime'], level);
+        this.fx.disc(px, gh(px, py), -py, radius, look.color, life, caster);
+        this.fx.burst(px, gh(px, py) + 2, -py, look.frames, look.color, look.color2, 40, radius * 0.6, 1.5);
         break;
+      }
       case 'forest_spirit':
-        later(() => this.fx.burst(px, gh(px, py) + 0.5, -py, 'nature', look.color, look.color2, 50, 1.2, 2.5));
+        this.fx.burst(px, gh(px, py) + 0.5, -py, 'nature', look.color, look.color2, 50, 1.2, 2.5);
         break;
-      default:
-        later(() => {
-          const tu = target ?? u;
-          const h = gh(tu.x, tu.y);
-          if (a.target === 'none' && radius) {
-            // An area around the hero (Sweep, Tremor, Trample, Wrath...).
-            this.fx.ring(tu.x, h, -tu.y, radius, look.color, 0.55);
-            this.fx.burst(tu.x, h + 0.6, -tu.y, look.frames, look.color, look.color2, 50, radius * 0.6, 3);
-          } else this.fx.burst(tu.x, h + tu.flyHeight + tu.height * 0.6, -tu.y, look.frames, look.color, look.color2, 35, 0.6, 2);
-        });
+      default: {
+        const tu = target ?? u;
+        const h = gh(tu.x, tu.y);
+        if (a.target === 'none' && radius) {
+          // An area around the hero (Sweep, Tremor, Trample, Wrath...).
+          this.fx.ring(tu.x, h, -tu.y, radius, look.color, 0.55);
+          this.fx.burst(tu.x, h + 0.6, -tu.y, look.frames, look.color, look.color2, 50, radius * 0.6, 3);
+        } else this.fx.burst(tu.x, h + tu.flyHeight + tu.height * 0.6, -tu.y, look.frames, look.color, look.color2, 35, 0.6, 2);
+      }
     }
   }
 
@@ -510,6 +512,7 @@ export class MatchClient {
         u.facing = this.pose.facing;
         u.moving = (this.pose.state & UnitState.Moving) !== 0;
       }
+      if (e === this.ownHero) u.speed = this.player.moveSpeed / 100;
       const dead = (e.state & UnitState.Dead) !== 0;
       if (dead !== u.dead) {
         this.world.setDead(u, dead);
@@ -544,7 +547,7 @@ export class MatchClient {
       const b = (this.barInput[bars] ??= { x: 0, y: 0, z: 0, hp: 1, mana: -1, hero: false, color: OWN_BAR });
       bars++;
       b.x = u.x;
-      b.y = this.world.terrain.heightAt(u.x, u.y) + u.flyHeight + u.height + 0.35;
+      b.y = this.world.terrain.heightAt(u.x, u.y) + u.flyHeight + u.height * u.model.root.scaling.y + 0.35;
       b.z = -u.y;
       b.hp = e.maxHp ? e.hp / e.maxHp : 0;
       b.mana = hero && e.maxMana > 0 ? e.mana / e.maxMana : -1;
@@ -560,6 +563,7 @@ export class MatchClient {
               ? (TEAM_COLORS[TEAMS[e.color] ?? 'red'] ?? OWN_BAR)
               : ENEMY_BAR;
     }
+    this.events.drain(rt, this.drawEvent);
     this.bars.update(this.barInput, bars);
     this.projectiles.update(dt);
     this.fx.update(dt);
@@ -573,8 +577,6 @@ export class MatchClient {
 
   dispose(): void {
     this.unsubscribe();
-    for (const timer of this.effectTimers) clearTimeout(timer);
-    this.effectTimers.clear();
     this.world.beforeFrame = null;
     for (const id of [...this.entities.keys()]) this.remove(id);
     this.world.select(null);

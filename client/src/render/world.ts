@@ -11,6 +11,7 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Viewport } from '@babylonjs/core/Maths/math.viewport';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
@@ -86,6 +87,8 @@ export class GameWorld {
   private ring: Mesh;
   private stress: ModelInstance[] = [];
   private menuMode = true;
+  private readonly screenPosition = new Vector3();
+  private readonly screenViewport = new Viewport(0, 0, 0, 0);
 
   private constructor(
     readonly engine: AbstractEngine,
@@ -357,7 +360,13 @@ export class GameWorld {
   }
 
   private play(unit: Unit, name: string, loop = true, speed = 1): void {
-    if (unit.anim === name && loop) return;
+    if (unit.anim === name && loop) {
+      if (name === 'walk') {
+        const clip = unit.model.animations.get(name);
+        if (clip) clip.speedRatio = unit.speed / 3;
+      }
+      return;
+    }
     const next = unit.model.animations.get(name);
     if (!next) return;
     unit.model.animations.get(unit.anim)?.stop();
@@ -400,11 +409,12 @@ export class GameWorld {
   /** Screen position (CSS pixels) of a point above a unit, or null when off screen. */
   screenPoint(x: number, y: number, up: number, out: { x: number; y: number }): boolean {
     const cam = this.camera.camera;
-    const p = Vector3.Project(
+    const p = Vector3.ProjectToRef(
       TMP.set(x, this.terrain.heightAt(x, y) + up, -y),
       Matrix.IdentityReadOnly,
       this.scene.getTransformMatrix(),
-      cam.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight()),
+      cam.viewport.toGlobalToRef(this.engine.getRenderWidth(), this.engine.getRenderHeight(), this.screenViewport),
+      this.screenPosition,
     );
     const scale = this.engine.getRenderWidth() / (this.engine.getRenderingCanvas()?.clientWidth || this.engine.getRenderWidth());
     out.x = p.x / scale;
@@ -412,7 +422,7 @@ export class GameWorld {
     return p.z > 0 && p.z < 1;
   }
 
-  private syncUnit(u: Unit): void {
+  private syncUnit(u: Unit, dt = 1 / 60): void {
     const { x, y, facing } = u;
     const ground = this.terrain.heightAt(x, y);
     // Flyers bob a little so they look alive.
@@ -424,7 +434,7 @@ export class GameWorld {
     const sc = u.model.root.scaling;
     if (sc.x !== u.scale) {
       // Grow and shrink smoothly.
-      const next = sc.x + (u.scale - sc.x) * 0.15;
+      const next = sc.x + (u.scale - sc.x) * (1 - Math.exp(-10 * dt));
       sc.setAll(Math.abs(next - u.scale) < 0.01 ? u.scale : next);
     }
     if (u === this.selected) this.ring.position.set(x, ground + 0.08, -y);
@@ -444,11 +454,11 @@ export class GameWorld {
     for (const u of this.units) {
       if (!u.dead && now >= u.actionUntil) this.play(u, u.moving ? 'walk' : 'idle');
       // Walking cancels an attack swing on screen, like it does in the game.
-      else if (!u.dead && u.moving && u.anim !== 'walk' && u.anim !== 'death') {
+      else if (!u.dead && u.moving && (u.anim === 'attack' || u.anim === 'attack2')) {
         u.actionUntil = 0;
         this.play(u, 'walk');
       }
-      this.syncUnit(u);
+      this.syncUnit(u, dt);
     }
     if (this.menuMode) {
       const t = performance.now() / 1000;

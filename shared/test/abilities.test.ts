@@ -11,6 +11,8 @@ import {
   CommandType,
   entityTypeIndex,
   gameData,
+  EventType,
+  abilityFxKind,
   MatchSim,
   NEUTRAL,
   NEUTRAL_TEAM,
@@ -92,6 +94,43 @@ describe('learning', () => {
 });
 
 describe('server refuses casts that should not happen', () => {
+  it('sends visuals only for completed casts, with the learned level and target', () => {
+    const { sim, hero, cast, at } = setup('sky_dragon');
+    hero.heroState!.abilityLevels[0] = 1;
+    const effects: number[] = [];
+    const step = () => {
+      sim.step();
+      for (let i = 0; i < sim.events.count; i++) {
+        const ev = sim.events.items[i]!;
+        if (ev.type === EventType.AbilityEffect) effects.push(ev.kind);
+      }
+    };
+    cast(0, at(3, 0));
+    step();
+    expect(effects).toEqual([]);
+    sim.queueCommand(0, 2000, { type: CommandType.Stop });
+    for (let i = 0; i < 20; i++) step();
+    expect(effects).toEqual([]);
+    expect(hero.cooldowns[0]).toBe(0);
+    cast(0, at(3, 0));
+    for (let i = 0; i < 20; i++) step();
+    expect(effects).toEqual([abilityFxKind(abilityIndex('fire_breath'), 1, true)]);
+  });
+
+  it('packs every current ability and learned level without losing its point flag', () => {
+    expect(ABILITIES.length).toBeLessThanOrEqual(32);
+    for (const [index, ability] of ABILITIES.entries()) {
+      for (let level = 1; level <= ability.maxLevel; level++) {
+        for (const point of [false, true]) {
+          const kind = abilityFxKind(index, level, point);
+          expect(kind & 31).toBe(index);
+          expect(((kind >> 5) & 3) + 1).toBe(level);
+          expect(!!(kind & 128)).toBe(point);
+        }
+      }
+    }
+  });
+
   it('cooldown, mana, health cost, stun, not learned, bad target', () => {
     const { sim, hero, dummy, run, unit, none } = setup('staff_warrior');
     const ogre = dummy(2, 0);

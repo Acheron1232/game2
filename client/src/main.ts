@@ -36,6 +36,7 @@ import { Minimap } from './ui/minimap';
 import { Router } from './ui/router';
 import { createEndScreen, createGameScreen, createMenuScreen, showFatalError, toggleFullScreen } from './ui/screens';
 import { S } from './ui/strings';
+import { abilityDetails } from './ui/ability-details';
 
 const NAME_KEY = 'tw.playerName';
 function readName(): string {
@@ -332,6 +333,7 @@ async function main(): Promise<void> {
           tooltip: [
             `${a.name} (${'QWER'[slot]}) — ${S.abilityKinds[a.kind] ?? a.kind} [${info.level}/${a.maxLevel}]`,
             a.text,
+            ...abilityDetails(a, info.level),
             numbers.join(' · '),
           ],
         };
@@ -439,6 +441,8 @@ async function main(): Promise<void> {
   });
   window.addEventListener('keydown', (e) => {
     if (router.screen !== 'game' || e.target instanceof HTMLInputElement || !match) return;
+    // Held keys must not flood the server with casts or toggle follow repeatedly.
+    if (e.repeat) return;
     const key = e.key.toLowerCase();
     if (e.key === ' ' || e.key === 'F1') {
       e.preventDefault();
@@ -464,9 +468,15 @@ async function main(): Promise<void> {
       e.preventDefault();
       w.toggleStress(300);
     }
+    if (import.meta.env.DEV && e.key === 'F6') {
+      e.preventDefault();
+      net.send({ type: 'cheat', xp: 6000 });
+      game.alert('Test: level 10, health, mana and cooldowns restored.');
+    }
   });
 
   router.onChange((name) => {
+    if (name !== 'game') setAim(null);
     engine.maxFPS = name === 'game' ? GAME_FPS : MENU_FPS;
     w.setMenuMode(name !== 'game');
   });

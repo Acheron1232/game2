@@ -141,6 +141,7 @@ Notes:
 - The server reads `GAME_PORT` / `GAME_HOST` (not `PORT`, which dev tools often set for Vite).
 - `?play` makes a room and starts a match alone as soon as loading is done (Vite reloads repeat it). `?join=<CODE>` joins a room. `/dev/models.html` is the model viewer, F4 in game = 300-unit render stress test (client only).
 - Dev cheat in the browser console (dev servers only): `net.send({ type: 'cheat', xp: 6000 })` gives XP (level 10), and every `cheat` refills health, mana and cooldowns.
+- F6 in a dev match runs that same cheat: level 10, full health/mana and ready cooldowns. Learn skills with Ctrl + Q/W/E/R; F6 does not spend skill points.
 - `?lag=100&loss=2` (dev) adds 100 ms round trip and 2% late messages. `MATCH_INLINE=1` runs matches on the server main thread (debugging). Load-test options in `start` work only when `NODE_ENV` is not `production`.
 - Matches run in a worker thread: `server/src/match/match-worker.ts` (dev, via tsx) / `server/dist/match-worker.js` (build). The server reads `shared/data/map-terrain.bin` from disk (`GAME_DATA_DIR` to override).
 - `?webgl` in the client URL forces the WebGL2 fallback. F3 toggles the debug corner. `/dev/atlas.html` shows all generated 2D art (tiles 4×4, team colors).

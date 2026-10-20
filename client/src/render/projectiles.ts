@@ -16,7 +16,7 @@ interface Shot {
   y: number;
   h: number;
   speed: number;
-  target: () => { x: number; y: number; h: number } | null;
+  target: (out: { x: number; y: number; h: number }) => boolean;
   /** layer key: color and size */
   key: string;
 }
@@ -36,9 +36,10 @@ export class Projectiles {
   private readonly layers = new Map<string, ColorLayer>();
   private readonly m = new Matrix();
   private readonly p = new Vector3();
+  private readonly targetPoint = { x: 0, y: 0, h: 0 };
 
   constructor(private readonly scene: Scene) {
-    for (let i = 0; i < MAX; i++) this.shots.push({ active: false, x: 0, y: 0, h: 0, speed: 0, target: () => null, key: '' });
+    for (let i = 0; i < MAX; i++) this.shots.push({ active: false, x: 0, y: 0, h: 0, speed: 0, target: () => false, key: '' });
   }
 
   /** color: hex like '#ffd84a'; size: ball diameter (spells are bigger than attacks) */
@@ -77,8 +78,8 @@ export class Projectiles {
   update(dt: number): void {
     for (const s of this.shots) {
       if (!s.active) continue;
-      const t = s.target();
-      if (!t) {
+      const t = this.targetPoint;
+      if (!s.target(t)) {
         s.active = false;
         continue;
       }

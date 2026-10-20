@@ -209,6 +209,18 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const alertBox = el('div', { class: 'hud-alert', hidden: true });
   let alertTimer: ReturnType<typeof setTimeout> | null = null;
   let views: (AbilityButtonView | null)[] = [];
+  let hoveredAbility = -1;
+  let tooltipKey = '';
+  const refreshTooltip = () => {
+    const view = views[hoveredAbility];
+    if (!view) return;
+    const key = view.tooltip.join('\n');
+    if (key !== tooltipKey) {
+      tooltipKey = key;
+      tooltip.replaceChildren(...view.tooltip.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
+    }
+    tooltip.hidden = false;
+  };
   const abilityParts = ['Q', 'W', 'E', 'R'].map((k, slot) => {
     const icon = el('div', { class: 'ability-icon' });
     const cd = el('div', { class: 'cooldown' });
@@ -222,12 +234,13 @@ export function createGameScreen(actions: GameActions): GameScreen {
     const root = el('div', { class: 'ability' }, icon, cd, cdText, el('span', { class: 'key' }, k), pips, plus);
     root.addEventListener('click', () => actions.cast(slot));
     root.addEventListener('mouseenter', () => {
-      const v = views[slot];
-      if (!v) return;
-      tooltip.replaceChildren(...v.tooltip.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
-      tooltip.hidden = false;
+      hoveredAbility = slot;
+      refreshTooltip();
     });
-    root.addEventListener('mouseleave', () => (tooltip.hidden = true));
+    root.addEventListener('mouseleave', () => {
+      hoveredAbility = -1;
+      tooltip.hidden = true;
+    });
     return { root, icon, cd, cdText, pips, plus, iconUrl: '' as string | null, pipKey: '' };
   });
   const abilityButtons = abilityParts.map((p) => p.root);
@@ -296,6 +309,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
     },
     setAbilities(v) {
       views = v;
+      if (hoveredAbility >= 0) refreshTooltip();
       abilityParts.forEach((p, i) => {
         const a = v[i];
         p.root.classList.toggle('empty', !a);

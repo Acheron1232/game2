@@ -45,7 +45,17 @@ describe('combat render resources', () => {
         fx.setMarkers(1, BuffFlag.Stun | BuffFlag.Root, 20, 0, 3, -20, 1);
         fx.burst(20, 2, -20, 'fire', '#ff0000', '#ff8800');
         bars.update([{ x: 20, y: 3, z: -20, hp: 0.5, mana: 1, hero: true, color: '#00ff00' }], 1);
-        projectiles.fire(20, 20, 2, 10, () => ({ x: 30, y: 20, h: 2 }), '#ff0000');
+        projectiles.fire(
+          20,
+          20,
+          2,
+          10,
+          (out) => {
+            Object.assign(out, { x: 30, y: 20, h: 2 });
+            return true;
+          },
+          '#ff0000',
+        );
         fx.dispose();
         bars.dispose();
         projectiles.dispose();
@@ -67,7 +77,7 @@ describe('combat render resources', () => {
     try {
       bars.update([], 0);
       expect(scene.meshes.filter((m) => m.name.startsWith('bar-')).every((m) => !m.isEnabled())).toBe(true);
-      projectiles.fire(20, 20, 2, 10, () => null, '#ff0000');
+      projectiles.fire(20, 20, 2, 10, () => false, '#ff0000');
       projectiles.update(0.1);
       expect(scene.meshes.find((m) => m.name.startsWith('projectile-'))?.isEnabled()).toBe(false);
       fx.bolt(20, 20, 2, 30, 20, 20, '#ff0000');
