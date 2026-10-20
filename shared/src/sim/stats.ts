@@ -1,7 +1,7 @@
 // Game rules as plain functions: hero stats per level, damage math, XP and gold rules.
 // All numbers come from shared/data (rules.json, heroes.json, units.json).
 
-import { gameData, type HeroDef, type UnitDef } from '../data/index';
+import { gameData, type BuildingDef, type HeroDef, type UnitDef } from '../data/index';
 
 const R = gameData.rules;
 
@@ -99,6 +99,62 @@ export function unitStats(u: UnitDef): CombatStats {
     sight: u.sight,
     level: u.level,
   };
+}
+
+/** A faction building: does not move; only buildings with `attack` (Watchtower) shoot. */
+export function buildingStats(b: BuildingDef): CombatStats {
+  const a = b.attack;
+  return {
+    maxHp: b.hp,
+    maxMana: 0,
+    hpRegen: 0,
+    manaRegen: 0,
+    armor: b.armor,
+    armorType: b.armorType as ArmorType,
+    attackType: (a?.attackType ?? 'normal') as AttackType,
+    damageMin: a?.damage[0] ?? 0,
+    damageMax: a?.damage[1] ?? 0,
+    attackCooldown: a?.attackCooldown ?? 1,
+    attackRange: a?.attackRange ?? 0,
+    projectileSpeed: a?.projectileSpeed ?? 0,
+    canHitAir: a ? a.canHit.includes('air') : false,
+    moveSpeed: 0,
+    layer: 'ground',
+    radius: Math.min(b.footprint[0], b.footprint[1]) / 2,
+    sight: b.sight,
+    level: b.tier,
+  };
+}
+
+/** The gold mine: a neutral rock that can not be hurt. */
+export function mineStats(footprint: [number, number]): CombatStats {
+  return {
+    maxHp: 1,
+    maxMana: 0,
+    hpRegen: 0,
+    manaRegen: 0,
+    armor: 0,
+    armorType: 'fortified',
+    attackType: 'normal',
+    damageMin: 0,
+    damageMax: 0,
+    attackCooldown: 1,
+    attackRange: 0,
+    projectileSpeed: 0,
+    canHitAir: false,
+    moveSpeed: 0,
+    layer: 'ground',
+    radius: Math.min(footprint[0], footprint[1]) / 2,
+    sight: 0,
+    level: 1,
+  };
+}
+
+/** Distance from a point to the edge of a center-based rectangle (0 inside). */
+export function rectDistance(px: number, py: number, cx: number, cy: number, w: number, h: number): number {
+  const dx = Math.max(0, Math.abs(px - cx) - w / 2),
+    dy = Math.max(0, Math.abs(py - cy) - h / 2);
+  return Math.hypot(dx, dy);
 }
 
 /** Part of attack damage that armor lets through. Negative armor makes damage bigger. */

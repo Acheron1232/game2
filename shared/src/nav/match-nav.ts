@@ -1,4 +1,6 @@
-// The walk grid of a match: terrain + the buildings that stand on the map from the start.
+// The walk grid of a match: terrain + the neutral buildings that never move or fall (gold mines,
+// shops, fountains). Faction buildings (Town Halls too) are entities and block the grid through
+// NavBlockers when they are placed.
 // Server and client build it the same way, so the client's own-hero prediction finds the
 // same paths as the server.
 
@@ -25,7 +27,6 @@ export interface MapBuilding {
 
 export function mapBuildings(layout: MapLayout): MapBuilding[] {
   return [
-    ...layout.starts.map((s, i) => ({ id: 'town_hall', x: s.townHall[0], y: s.townHall[1], start: i })),
     ...layout.goldMines.map((m) => ({ id: 'gold_mine', x: m.pos[0], y: m.pos[1], start: -1 })),
     ...layout.shops.map((s) => ({ id: s.type === 'temple_market' ? 'temple_market' : 'side_shop', x: s.pos[0], y: s.pos[1], start: -1 })),
     ...layout.fountains.map((f) => ({ id: 'fountain_of_life', x: f.pos[0], y: f.pos[1], start: -1 })),

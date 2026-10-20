@@ -63,6 +63,8 @@ export const rulesSchema = z.looseObject({
     factionStartWood: num,
     goldPerTrip: num,
     woodPerTrip: num,
+    mineTimeSec: num,
+    chopTimeSec: num,
     maxWorkersPerMine: num,
     supplyCap: num,
   }),
