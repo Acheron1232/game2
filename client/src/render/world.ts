@@ -34,6 +34,7 @@ import { createTerrain, type Terrain } from './terrain';
 export type TreeList = [number, number, number, number][];
 const TREE_MODELS = ['tree_pine', 'tree_oak', 'tree_dead', 'bush'];
 export const TEAMS = ['red', 'blue', 'teal', 'purple'];
+const TMP = new Vector3();
 
 /** Game position + facing -> world transform. North is -z, models face +z. */
 function place(node: { position: Vector3; rotationQuaternion: Quaternion | null }, x: number, y: number, h: number, facing: number): void {
@@ -55,7 +56,17 @@ export interface Unit {
   team: string;
   effects: HeroEffects | null;
   anim: string;
+  /** a one-time animation (attack, death) runs until this time (ms), then walk / idle again */
+  actionUntil: number;
+  dead: boolean;
+  /** units in the air are drawn this high above the ground */
+  flyHeight: number;
+  /** model height, for health bars */
+  height: number;
 }
+
+/** Flying units hover this high (Sky Dragon, harpies). */
+const FLY_HEIGHT = 2.6;
 
 export class GameWorld {
   readonly scene: Scene;
@@ -221,11 +232,26 @@ export class GameWorld {
   }
 
   /** Adds a unit (hero or unit model) to the scene. Heroes cast shadows and get their effects. */
-  addUnit(modelId: string, team: string, x: number, y: number, facing: number, speed: number, hero: boolean): Unit {
+  addUnit(modelId: string, team: string, x: number, y: number, facing: number, speed: number, hero: boolean, flying = false): Unit {
     const model = this.library.spawn(modelId, team);
     if (hero) for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
     const effects = hero ? attachHeroEffects(this.scene, modelId, model.nodes, model.materials.glow) : null;
-    const unit: Unit = { modelId, model, x, y, facing, moving: false, speed, team, effects, anim: '' };
+    const unit: Unit = {
+      modelId,
+      model,
+      x,
+      y,
+      facing,
+      moving: false,
+      speed,
+      team,
+      effects,
+      anim: '',
+      actionUntil: 0,
+      dead: false,
+      flyHeight: flying ? FLY_HEIGHT : 0,
+      height: this.library.models[modelId]?.height ?? 2,
+    };
     this.play(unit, 'idle');
     this.units.add(unit);
     this.syncUnit(unit);
@@ -322,19 +348,69 @@ export class GameWorld {
     pipe.bloomEnabled = false;
   }
 
-  private play(unit: Unit, name: string): void {
-    if (unit.anim === name) return;
+  private play(unit: Unit, name: string, loop = true, speed = 1): void {
+    if (unit.anim === name && loop) return;
     const next = unit.model.animations.get(name);
     if (!next) return;
     unit.model.animations.get(unit.anim)?.stop();
-    next.start(true, name === 'walk' ? unit.speed / 3 : 1);
+    next.start(loop, loop && name === 'walk' ? unit.speed / 3 : speed);
     unit.anim = name;
+  }
+
+  /** Plays a one-time clip (attack, cast, death). `seconds` = how long it should take. */
+  playOnce(u: Unit, name: string, seconds?: number): void {
+    const g = u.model.animations.get(name);
+    if (!g) return;
+    const fps = g.targetedAnimations[0]?.animation.framePerSecond ?? 30;
+    const length = (g.to - g.from) / fps;
+    const speed = seconds && length > seconds ? length / seconds : 1;
+    this.play(u, name, false, speed);
+    u.actionUntil = performance.now() + (length / speed) * 1000;
+  }
+
+  /** Death: play the clip once and stay down. Heroes are hidden until they come back. */
+  setDead(u: Unit, dead: boolean): void {
+    if (u.dead === dead) return;
+    u.dead = dead;
+    if (dead) {
+      this.playOnce(u, 'death');
+      u.actionUntil = Infinity;
+      if (this.selected === u) this.ring.setEnabled(false);
+    } else {
+      u.actionUntil = 0;
+      u.model.root.setEnabled(true);
+      this.play(u, 'idle');
+      if (this.selected === u) this.ring.setEnabled(true);
+    }
+  }
+
+  /** Hides a dead hero after its death clip (it is still in the game, waiting to respawn). */
+  hideUnit(u: Unit, hidden: boolean): void {
+    u.model.root.setEnabled(!hidden);
+  }
+
+  /** Screen position (CSS pixels) of a point above a unit, or null when off screen. */
+  screenPoint(x: number, y: number, up: number, out: { x: number; y: number }): boolean {
+    const cam = this.camera.camera;
+    const p = Vector3.Project(
+      TMP.set(x, this.terrain.heightAt(x, y) + up, -y),
+      Matrix.IdentityReadOnly,
+      this.scene.getTransformMatrix(),
+      cam.viewport.toGlobal(this.engine.getRenderWidth(), this.engine.getRenderHeight()),
+    );
+    const scale = this.engine.getRenderWidth() / (this.engine.getRenderingCanvas()?.clientWidth || this.engine.getRenderWidth());
+    out.x = p.x / scale;
+    out.y = p.y / scale;
+    return p.z > 0 && p.z < 1;
   }
 
   private syncUnit(u: Unit): void {
     const { x, y, facing } = u;
-    place(u.model.root, x, y, this.terrain.heightAt(x, y), facing);
-    if (u === this.selected) this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.08, -y);
+    const ground = this.terrain.heightAt(x, y);
+    // Flyers bob a little so they look alive.
+    const h = u.flyHeight ? ground + u.flyHeight + Math.sin(performance.now() / 600 + x) * 0.12 : ground;
+    place(u.model.root, x, y, h, facing);
+    if (u === this.selected) this.ring.position.set(x, ground + 0.08, -y);
   }
 
   private tick(dt: number): void {
@@ -347,8 +423,14 @@ export class GameWorld {
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     this.beforeFrame?.(dt);
+    const now = performance.now();
     for (const u of this.units) {
-      this.play(u, u.moving ? 'walk' : 'idle');
+      if (!u.dead && now >= u.actionUntil) this.play(u, u.moving ? 'walk' : 'idle');
+      // Walking cancels an attack swing on screen, like it does in the game.
+      else if (!u.dead && u.moving && u.anim !== 'walk' && u.anim !== 'death') {
+        u.actionUntil = 0;
+        this.play(u, 'walk');
+      }
       this.syncUnit(u);
     }
     if (this.menuMode) {

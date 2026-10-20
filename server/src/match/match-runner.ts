@@ -40,6 +40,9 @@ export class MatchRunner {
     const nav = buildMatchNav(parseTerrain(terrainBytes), gameData.map);
     this.sim = new MatchSim(setup, nav);
     this.vision = new TeamVision(gameData.map.size.width);
+    this.vision.update(this.sim.entities);
+    // Players can only order attacks on what their team sees.
+    this.sim.canSee = (team, e) => this.vision.sees(team, e);
     for (const s of setup.slots) {
       this.views.set(s.index, new ClientView(s.index, s.team));
       this.bytes.set(s.index, 0);

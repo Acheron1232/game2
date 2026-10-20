@@ -13,3 +13,7 @@ export * from './sim/entity-types';
 export * from './sim/match-sim';
 export * from './sim/rng';
 export * from './sim/vision';
+export * from './sim/stats';
+export * from './sim/events';
+export * from './sim/camps';
+export * from './sim/spatial-grid';

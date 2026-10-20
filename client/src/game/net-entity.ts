@@ -35,6 +35,9 @@ export class NetEntity {
   readonly color: number;
   hp: number;
   maxHp: number;
+  mana: number;
+  maxMana: number;
+  level: number;
   unit: Unit | null = null;
   /** for full snapshots: was it in the last one */
   mark = 0;
@@ -47,6 +50,9 @@ export class NetEntity {
     this.color = s.color;
     this.hp = s.hp;
     this.maxHp = s.maxHp;
+    this.mana = s.mana;
+    this.maxMana = s.maxMana;
+    this.level = s.level;
     this.keys.push({ tick, x: dqPos(s.x), y: dqPos(s.y), vx: dqVel(s.vx), vy: dqVel(s.vy), facing: dqFacing(s.facing), state: s.state });
   }
 
@@ -54,8 +60,20 @@ export class NetEntity {
     return this.keys[this.keys.length - 1]!;
   }
 
+  /** The state byte of the newest key (dead, attacking...). */
+  get state(): number {
+    return this.last.state;
+  }
+
   apply(tick: number, u: NetUpdate): void {
-    const prev = this.last;
+    let prev = this.last;
+    // A new motion after a long quiet time: first add where we guessed it was one tick before,
+    // so the blend only covers the last tick (a blink must not slide across the map).
+    if (u.mask & Field.Motion && tick - prev.tick > 1) {
+      const t = (tick - 1 - prev.tick) * TICK_DT;
+      this.keys.push({ ...prev, tick: tick - 1, x: prev.x + prev.vx * t, y: prev.y + prev.vy * t });
+      prev = this.last;
+    }
     const dt = (tick - prev.tick) * TICK_DT;
     // Fields that did not come stay as the client would guess them.
     const key: Key =
@@ -66,6 +84,11 @@ export class NetEntity {
     if (u.mask & Field.State) key.state = u.state;
     if (u.mask & Field.Hp) this.hp = u.hp;
     if (u.mask & Field.MaxHp) this.maxHp = u.maxHp;
+    if (u.mask & Field.Mana) {
+      this.mana = u.mana;
+      this.maxMana = u.maxMana;
+    }
+    if (u.mask & Field.Level) this.level = u.level;
     if (prev.tick === tick) this.keys[this.keys.length - 1] = key;
     else this.keys.push(key);
     if (this.keys.length > MAX_KEYS) this.keys.shift();

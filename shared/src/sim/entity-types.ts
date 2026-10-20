@@ -2,6 +2,7 @@
 // Both sides build the same list from the same data, so a u16 index is enough on the wire.
 
 import { gameData } from '../data/index';
+import { heroStats, unitStats, type CombatStats } from './stats';
 
 export const ENTITY_TYPES: readonly string[] = [...gameData.heroes.map((h) => h.id), ...gameData.units.map((u) => u.id)];
 
@@ -25,19 +26,23 @@ export function moveSpeedOf(index: number): number {
   return gameData.units.find((u) => u.id === id)?.moveSpeed ?? 3;
 }
 
-/** Start health of a hero (level 1) or a unit. Real stats and levels come in Phase 7. */
+/** Start health of a hero (level 1) or a unit. */
 export function maxHpOf(index: number): number {
-  const id = ENTITY_TYPES[index];
-  const hero = gameData.heroes.find((h) => h.id === id);
-  if (hero)
-    return Math.round(
-      gameData.rules.heroBase.hp + hero.hpBonus + hero.attributes.strength[0]! * gameData.rules.attributes.strength.hpPerPoint,
-    );
-  return gameData.units.find((u) => u.id === id)?.hp ?? 100;
+  return statsOf(index).maxHp;
 }
 
 export function sightOf(index: number): number {
+  return statsOf(index).sight;
+}
+
+function statsOf(index: number): CombatStats {
   const id = ENTITY_TYPES[index];
-  if (gameData.heroes.some((h) => h.id === id)) return gameData.rules.heroBase.sightRange;
-  return gameData.units.find((u) => u.id === id)?.sight ?? 12;
+  const hero = gameData.heroes.find((h) => h.id === id);
+  if (hero) return heroStats(hero, 1);
+  return unitStats(gameData.units.find((u) => u.id === id)!);
+}
+
+/** Flying entities (Sky Dragon, harpies, hawk riders) ignore the walk grid. */
+export function isFlyingType(index: number): boolean {
+  return statsOf(index).layer !== 'ground';
 }

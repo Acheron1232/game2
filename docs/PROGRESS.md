@@ -9,13 +9,13 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
 - **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
 - **Client audit and polish** (2026-10-19): current working map is 256 × 256, with 7,451 baked trees, 6,679 decor objects and 58 model entries. These additions follow the original Phase 5 snapshot below. Fixed HUD clipping, minimap sizing, camera bounds, per-frame allocations, shader warm-up error handling and blocked-corner navigation. WebGPU and WebGL2 checked in the browser; build, typecheck, 30 tests and lint passed. See [CLIENT_AUDIT.md](CLIENT_AUDIT.md) for sampled performance numbers, limits and remaining visual work. Earlier Phase 5 numbers below describe the earlier map.
-- **Phase 6 is done** (2026-10-20). Next: **Phase 7 — Combat, heroes, camps, items**.
-- Notes for Phase 7:
-  - The simulation is `shared/src/sim/match-sim.ts` (entities, command queue, tick). Add combat there; the server runs it in `server/src/match/match-runner.ts`.
-  - New commands: add a `CommandType`, encode/decode in `shared/src/protocol/game.ts`, validate in `MatchSim.isValid`, apply in `applyCommand`. Prediction runs only movement; attacks and abilities wait for the server.
-  - New entity fields on the wire: add a `Field` bit, write it in `ClientView`, read it in `SnapshotData` and `NetEntity.apply`.
-  - Units do not push each other yet (no steering), so prediction is exact. Steering in Phase 7 will make the own-hero fixes more frequent: check `fixes` in F3.
-  - The nav grid area ids (`labelRegions`) must be rebuilt when trees are cut or buildings placed.
+- **Phase 7a is done** (2026-10-20): combat core, neutral camps, XP and levels. Phase 7 is split into 3 parts (see "Phase 7 plan" below). Next: **Phase 7b — abilities, buffs, all 8 hero kits** (prompt: "Do Phase 7b" or "continue Phase 7").
+- Notes for Phase 7b:
+  - Buffs: add a buff list to `SimEntity` and apply it in `refreshStats` (armor, speed, damage block...) and in `engage` / movement (stun, root, slow). `canSee` is already there for target checks.
+  - Abilities: `HeroState.abilityLevels` and `skillPoints` exist and are sent to the client (`NetPlayerState.abilityLevels`); `canLearn()` in `stats.ts` has the level rule. Add Cast and Learn commands next to Attack in `commands.ts` / `game.ts`.
+  - Spell damage: use `spellDamage()` and `MatchSim.damage(..., DamageKind.Spell)`; heals: `MatchSim.heal`.
+  - Knockback / blink / charge move a hero without a player command: the client then gets small fixes or a snap. Mark those moments as ServerDriven (the state bit) so prediction steps aside.
+- Phase 6 is done (2026-10-20).
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
 
 ## Phases
@@ -28,10 +28,33 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
-| 7 | Combat, heroes, camps, items | Not started | |
+| 7 | Combat, heroes, camps, items | **In progress** | 7a done: attacks, projectiles, armor/damage types, death + respawn, 24 neutral camps (aggro, leash, respawn), bounty, XP sharing, levels 1–10, HUD + health bars + damage numbers. Next 7b: abilities and buffs; 7c: items, shops, fountains |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
+
+## Phase 7 plan (split, because the phase is big)
+
+- **7a — combat core (done):** see below.
+- **7b — abilities:** ability system from `abilities.json` (target types none / unit / point / line / cone, cast range, cast time, mana, cooldown, levels, learn with skill points), buffs and debuffs (stun, slow, root, silence, shields, damage block/reduction, taunt, auras, damage and heal over time, summons, knockback, blink, charge, channel), all 32 abilities of the 8 heroes, ground indicators while aiming, Q W E R buttons with cooldown sweep and "+" to learn (icons exist in `public/assets/icons`), placeholder effects for every ability, monster skills (Howl, Mend, Screech, Web, Ground Slam, Stone Guard), tests that ability numbers match HEROES.md and that the server refuses casts on cooldown / without mana / out of range / while stunned.
+- **7c — items and shops:** inventory (6 slots, stacks), item stats and passives (life steal, on-hit slow, chain lightning, revive), actives on 1–6 (potions with a shared cooldown, scroll of return, ward, smoke bomb, tome), drop tables (one roll when a camp dies), items on the ground (pick up, drop, give, 3-minute timeout), sell for half, shop panel near Trader's Tent / Temple Market, fountains (2.5% HP / 2% mana per second), uphill miss chance, then the full 2-player test: every hero farms to level 10, uses all 4 abilities, buys and uses items, dies and respawns.
+
+## Phase 7a — what was made
+
+- **Rules as functions** (`shared/src/sim/stats.ts`): hero stats per level from attributes (same formula as the design tables, tested against HEROES.md), unit stats, armor factor, damage type table, spell damage (75% to heroes), layers (melee can not hit `air`), XP table, kill XP, neutral XP factor, hero bounty, death gold loss, respawn time, learn rule.
+- **Simulation** (`shared/src/sim/match-sim.ts`): orders idle / move / attack / attack-move / hold; target picking every 5 ticks (idle units do not start fights with neutrals, only answer them; attack-move takes anything); chase with re-planning; turn to the target; wind-up (35% of the attack time, then the hit) and back-swing; moving cancels the wind-up; homing projectiles; damage and kill; gold for the last hit + 50% shared by allied heroes near; XP split between enemy heroes within 12; levels with skill points and stat refresh; hero death: gold loss, respawn after 5 + 3 × level s at the start spot; corpses removed after 3 s; health and mana regen; +1 gold per second; ground units push each other apart (heroes are not pushed, so prediction stays exact). Sky Dragon, harpies and other flyers fly straight and ignore the walk grid (`FLY_MARGIN` keeps them off the mountain wall).
+- **Neutral camps** (`shared/src/sim/camps.ts`): all 24 camps from the map layout; monsters stand in a ring; the whole camp aggros when an enemy comes within 5 or hits one; chase up to 14 from home, then run home, heal 10%/s and forget; respawn after 180/240/300 s when no hero is within 15. The drop roll is left for 7c (the last death spot is kept).
+- **Spatial grid** (`spatial-grid.ts`): 4-unit buckets rebuilt every tick in typed arrays, used for targets, aggro, XP/gold sharing and pushing apart.
+- **Protocol**: new commands Attack, AttackMove, Hold; new fields mana and level; state bits attacking / dead / server-driven; events section; player state block. Protocol version 3.
+- **Client**: `MatchClient` reads events (attack clips, projectiles, damage numbers, gold pop-ups, level up), player state (HUD) and new fields; own-hero "server mode" while the server drives it (attack, chase, dead), back to prediction on the next move; `NetEntity` adds a key one tick before a jump, so a sudden move does not slide. World units: attack / death clips, dead heroes hidden until respawn, flyers hover 2.6 above the ground and bob. **Health bars** (`render/health-bars.ts`): 3D quads, one draw call per color (own green, neutral yellow, enemy red, ally team color), mana under hero bars, heroes always, others when hurt or selected. **Projectiles** (`render/projectiles.ts`): small glowing balls per team color. **Floating text** (`ui/floating-text.ts`): damage numbers (what you deal: white, what you take: red), gold "+16", "Level 3!". **HUD**: portrait, name, level, XP bar, health and mana with numbers, gold, "+N" skill points, "You died. Back in N s.", info line for a selected unit.
+- **Controls**: right click enemy = attack, right click ground = move (Shift = queue), A + left click = attack-move (attack cursor), left click = select (info line), S = stop, H = hold, Esc / right click cancels A.
+
+How 7a was checked:
+- `shared/test/combat.test.ts`: stats equal the HEROES.md table for all 8 heroes at levels 1 and 10; armor (5 → 23%, 10 → 38%); damage table; spell damage; XP table, hero kill XP, respawn 8–35 s; a level 1 Staff Warrior kills the green wolves (3 kills, 75 XP, bounty gold) and lives; wolves chase, run home past 14 units and heal to full; a hero dies, loses gold, the killer gets 150 + 15 gold and 100 XP, the hero is back at its start after exactly 8 s with full health; 5400 XP = level 10 with 10 skill points; melee attack on a harpy is refused by the server, ranged is allowed.
+- `shared/test/protocol.test.ts`: every command and a full snapshot (player state, fields, events) survive the trip.
+- Browser (WebGPU, solo match): Arcane Huntress walked to a green bandit camp, the camp aggroed, she killed it (+90 XP = 2 × 25 + 40, gold up); attack-move to the wolves: 29 swings, 9 projectiles, 28 hits in 15 s, damage numbers on screen (white dealt, red taken), yellow monster bars, green own bar with mana; she died ("You died. Back in 8 s." counting down) and came back at her base with 450 / 450.
+- Load test with camps: 384 entities, tick avg 1.5 ms, max 7.7 ms; 2.9 KB/s per player.
+- Not checked in the browser yet: two human heroes fighting each other (covered by the sim test), Sky Dragon flying over trees (covered by code, look at it in 7b).
 
 ## Phase 6 — what was made
 
@@ -156,6 +179,13 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Phase 7 is split into 7a (combat core, camps, XP), 7b (abilities, buffs), 7c (items, shops, fountains, full 2-player test).
+- 2026-10-20 — Idle units and heroes do not start fights with neutral monsters (like classic RTS games); they answer when hit. Attack-move takes anything.
+- 2026-10-20 — Heroes are never pushed by other units, so the own-hero prediction stays exact. Monsters and other units step aside.
+- 2026-10-20 — While the server drives the own hero (attack, chase, hold, dead), the client draws it from snapshots like other units (100 ms behind) and does not predict it. The next move click starts prediction again from the server's position, with a short slide.
+- 2026-10-20 — Health bars: one thin-instanced layer per color (own, neutral, enemy, ally team colors) instead of per-instance colors (Babylon's StandardMaterial did not pick up the thin-instance color buffer here). 3–7 draw calls.
+- 2026-10-20 — Damage numbers are a DOM pool of 48 nodes for now (UI.md says instanced quads; that can come with the Phase 9 polish). Only numbers that involve your own units are shown.
+- 2026-10-20 — Neutral regen 0.5 HP/s, faction/summon units 0.25 HP/s (not in the data yet; move to units.json if it needs tuning).
 - 2026-10-20 — Snapshots send motion (position + velocity) and only when the client's guess drifts, instead of every position every tick. Same code decides on the server what the client guesses. Big bandwidth win; keyframes between are blended.
 - 2026-10-20 — Delta against "last sent" (not "last confirmed by the client"): WebSocket is TCP, nothing is lost. The lag tool copies TCP behaviour (late, in order) instead of dropping messages.
 - 2026-10-20 — Entities in the sim are plain objects created at spawn (no per-frame objects). Typed-array storage only if profiling asks for it.
@@ -220,7 +250,7 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | First download | < 100 MB | ~14 MB (2D art 2.7 MB + models and skins 11 MB) |
 | All assets | < 500 MB | — |
 | FPS (laptop, 300 units) | 60 | 120 (capped) on M5; normal view 115–121 draws, ~260k tris (no 300-unit run after the map rework) |
-| Server tick (4 players, full armies) | < 10 ms | avg 0.45 ms, max 2.0 ms (4 players + 300 walking units, no combat yet) |
+| Server tick (4 players, full armies) | < 10 ms | avg 1.5 ms, max 7.7 ms (4 players + 300 walking units + 24 camps, Phase 7a) |
 | Bandwidth per player | < 20 KB/s down | 0.8 KB/s (300 units, each player sees its base), 1.8 KB/s (everyone sees all 300); up ≈ 0.1 KB/s |
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
@@ -229,5 +259,7 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 - Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
 - The minimap camera box is a fixed 46 × 30 rectangle; it does not follow zoom or screen shape.
 - Vite reloads repeat `?play` (a new solo room each time). Use `/` to rejoin instead.
+- Health bars of other players' units use red even in free-for-all (no per-enemy colors).
+- Monsters show the death clip but no corpse fade (they vanish after 3 s).
 - Test units (load test) render as full models on the client; a client watching 300 of them would be slow until baked vertex animation (Phase 10).
 - Two quick orders can reach the server with a different gap than they were clicked; the own hero then gets a small smooth fix (seen: up to 0.36 units at 100 ms ping). Not a snap, but visible if you look for it.

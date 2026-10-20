@@ -66,6 +66,9 @@ export const S = {
   groupNames: { Interface: 'Interface', Map: 'Map', Shaders: 'Shaders' } as Record<string, string>,
 
   gold: 'Gold',
+  level: 'Level',
+  skillPointsTip: 'Skill points to spend (abilities come in the next update)',
+  youDied: (n: number) => `You died. Back in ${n} s.`,
   menu: 'Menu',
   yourKingdom: 'Your Kingdom',
   aiIdle: 'Waiting for the match',

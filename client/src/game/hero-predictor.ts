@@ -48,6 +48,7 @@ export class HeroPredictor {
     facing: number,
     speed: number,
     private readonly nav: NavGrid,
+    private readonly flying = false,
   ) {
     this.mover = createMover(x, y, speed);
     this.mover.facing = facing;
@@ -60,6 +61,26 @@ export class HeroPredictor {
 
   get moving(): boolean {
     return this.mover.path.length > 0;
+  }
+
+  /**
+   * Starts again from the server's state (after the server moved the hero by itself: attack,
+   * chase, death). `drawnX/Y` is where the hero is on screen now, so the switch slides.
+   */
+  rebase(x: number, y: number, facing: number, drawnX = x, drawnY = y): void {
+    this.mover.x = this.prevX = x;
+    this.mover.y = this.prevY = y;
+    this.mover.facing = this.prevF = facing;
+    this.mover.path = [];
+    this.pending.length = 0;
+    this.cmdStep.clear();
+    this.deferred = null;
+    for (let i = 0; i < HISTORY; i++) {
+      this.hx[i] = x;
+      this.hy[i] = y;
+    }
+    this.offX = drawnX - x;
+    this.offY = drawnY - y;
   }
 
   /** The command runs in the next step, like on the server. */
@@ -86,7 +107,7 @@ export class HeroPredictor {
       this.prevF = this.mover.facing;
       this.step++;
       for (const p of this.pending) {
-        applyCommand(this.mover, this.nav, p.cmd);
+        applyCommand(this.mover, this.nav, p.cmd, this.flying);
         this.cmdStep.set(p.seq, this.step);
       }
       this.pending.length = 0;

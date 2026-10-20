@@ -137,30 +137,58 @@ export function createMenuScreen(actions: MenuActions): MenuScreen {
   };
 }
 
+export interface HeroView {
+  name: string;
+  portrait: string | null;
+  level: number;
+  /** 0..1 of the way to the next level */
+  xpFrac: number;
+  hp: number;
+  maxHp: number;
+  mana: number;
+  maxMana: number;
+  gold: number;
+  /** seconds until back, 0 when alive */
+  respawn: number;
+  skillPoints: number;
+}
+
 export interface GameScreen extends Screen {
   setClock(seconds: number): void;
   setPing(ms: number | null): void;
   setStatus(text: string): void;
+  setHero(v: HeroView): void;
+  /** Info line for a selected unit that is not your hero, or null. */
+  setSelected(text: string | null): void;
 }
 
 export function createGameScreen(onEnd: () => void): GameScreen {
   const clock = el('span', { class: 'clock' }, '00:00');
   const ping = el('span', { class: 'hud-ping' }, '');
   const status = el('p', {}, S.aiIdle);
+  const gold = el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`);
+  const portraitImg = el('div', { class: 'portrait-img' });
+  const portrait = el('div', { class: 'portrait' }, portraitImg);
+  const heroName = el('span', { class: 'hero-name' });
+  const heroLevel = el('span', { class: 'hero-level' });
+  const points = el('span', { class: 'skill-points', hidden: true });
+  const xpFill = el('div', { class: 'xp-fill' });
+  const hpFill = el('div', { class: 'fill' });
+  const hpText = el('span', { class: 'bar-label' });
+  const mpFill = el('div', { class: 'fill' });
+  const mpText = el('span', { class: 'bar-label' });
+  const deathNote = el('div', { class: 'death-note', hidden: true });
+  const selInfo = el('div', { class: 'sel-info', hidden: true });
+  let portraitUrl: string | null = null;
   const abilityButtons = ['Q', 'W', 'E', 'R'].map((k) => el('div', { class: 'ability' }, el('span', { class: 'key' }, k)));
   const items = Array.from({ length: 6 }, (_, i) => el('div', { class: 'item-slot' }, el('span', { class: 'key' }, String(i + 1))));
   const root = el(
     'section',
     { class: 'screen game' },
-    el(
-      'header',
-      { class: 'hud-top' },
-      clock,
-      ping,
-      el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`),
-      el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest),
-    ),
+    el('header', { class: 'hud-top' }, clock, ping, gold, el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest)),
     el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), status),
+    deathNote,
+    selInfo,
     el(
       'footer',
       { class: 'hud-bottom' },
@@ -168,8 +196,15 @@ export function createGameScreen(onEnd: () => void): GameScreen {
       el(
         'div',
         { class: 'panel hero-panel' },
-        el('div', { class: 'portrait' }),
-        el('div', { class: 'bars' }, el('div', { class: 'hp' }), el('div', { class: 'mp' })),
+        portrait,
+        el(
+          'div',
+          { class: 'bars' },
+          el('div', { class: 'hero-line' }, heroName, heroLevel, points),
+          el('div', { class: 'xp-track' }, xpFill),
+          el('div', { class: 'bar-track hp' }, hpFill, hpText),
+          el('div', { class: 'bar-track mp' }, mpFill, mpText),
+        ),
         el('div', { class: 'abilities' }, ...abilityButtons),
       ),
       el('div', { class: 'panel inventory' }, ...items),
@@ -187,6 +222,29 @@ export function createGameScreen(onEnd: () => void): GameScreen {
     },
     setStatus(text) {
       setText(status, text);
+    },
+    setHero(v) {
+      if (v.portrait !== portraitUrl) {
+        portraitUrl = v.portrait;
+        portraitImg.style.backgroundImage = v.portrait ? `url(${v.portrait})` : '';
+      }
+      setText(heroName, v.name);
+      setText(heroLevel, `${S.level} ${v.level}`);
+      points.hidden = v.skillPoints <= 0;
+      setText(points, `+${v.skillPoints}`);
+      points.title = S.skillPointsTip;
+      xpFill.style.width = `${Math.round(v.xpFrac * 100)}%`;
+      hpFill.style.width = `${v.maxHp ? (100 * v.hp) / v.maxHp : 0}%`;
+      setText(hpText, `${Math.ceil(v.hp)} / ${v.maxHp}`);
+      mpFill.style.width = `${v.maxMana ? (100 * v.mana) / v.maxMana : 0}%`;
+      setText(mpText, `${Math.floor(v.mana)} / ${v.maxMana}`);
+      setText(gold, `${S.gold}: ${v.gold}`);
+      deathNote.hidden = v.respawn <= 0;
+      if (v.respawn > 0) setText(deathNote, S.youDied(v.respawn));
+    },
+    setSelected(text) {
+      selInfo.hidden = !text;
+      if (text) setText(selInfo, text);
     },
   };
 }

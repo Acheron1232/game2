@@ -18,9 +18,10 @@ export class TeamVision {
     for (const g of this.grids.values()) g.fill(0);
     const n = this.cols;
     for (const e of entities) {
+      if (!e.alive) continue;
       let g = this.grids.get(e.team);
       if (!g) this.grids.set(e.team, (g = new Uint8Array(n * n)));
-      const r = e.sight / VISION_CELL;
+      const r = e.stats.sight / VISION_CELL;
       const cx = e.mover.x / VISION_CELL,
         cy = e.mover.y / VISION_CELL;
       const r0 = Math.max(0, Math.floor(cy - r)),

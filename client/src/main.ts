@@ -4,11 +4,13 @@ import '@fontsource/alegreya-sans/400.css';
 import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
 import './ui-skin.css';
-import { gameData, parseTerrain, type MatchStartInfo, type RoomState } from '@game/shared';
+import { ENTITY_TYPES, gameData, MAX_LEVEL, parseTerrain, xpForLevel, type MatchStartInfo, type RoomState } from '@game/shared';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
 import treesUrl from '@game/shared/data/map-trees.json?url';
 import decorUrl from '@game/shared/data/map-decor.json?url';
 import { MatchClient } from './game/match-client';
+import type { NetEntity } from './game/net-entity';
+import { FloatingText } from './ui/floating-text';
 import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
@@ -65,6 +67,8 @@ async function main(): Promise<void> {
   let roomCheck: ReturnType<typeof setTimeout> | null = null;
 
   const router = new Router(uiHost);
+  const floating = new FloatingText(uiHost);
+  let selected: NetEntity | null = null;
   const menu = createMenuScreen({
     getName: () => playerName,
     setName: (n) => {
@@ -109,7 +113,8 @@ async function main(): Promise<void> {
   const startMatchIfReady = () => {
     if (!world || !pendingMatch) return;
     match?.dispose();
-    match = new MatchClient(world, net, pendingMatch);
+    match = new MatchClient(world, net, pendingMatch, floating);
+    selected = null;
     pendingMatch = null;
     game.setStatus(matchGoing ? S.matchRunning : S.matchWaiting);
     router.show('game');
@@ -255,25 +260,87 @@ async function main(): Promise<void> {
     minimap.draw(dots, { x: w.camera.target.x, y: w.camera.target.y + 4, w: 46, h: 30 });
   }, 120);
 
+  // Hero panel and the info line of a selected unit, a few times per second.
+  const unitName = (e: NetEntity) => {
+    const id = ENTITY_TYPES[e.type] ?? '';
+    const hero = gameData.heroes.find((h) => h.id === id);
+    const owner = match?.info.slots.find((s) => s.index === e.owner)?.name;
+    return hero ? `${hero.name}${owner ? ` (${owner})` : ''}` : (gameData.units.find((u) => u.id === id)?.name ?? id);
+  };
+  setInterval(() => {
+    if (router.screen !== 'game' || !match) return;
+    const own = match.ownHero;
+    const p = match.player;
+    const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
+    if (own && def) {
+      const prev = xpForLevel(p.level),
+        next = p.level >= MAX_LEVEL ? prev : xpForLevel(p.level + 1);
+      game.setHero({
+        name: def.name,
+        portrait: assets.has(`portraits/${def.id}.webp`) ? assets.url(`portraits/${def.id}.webp`) : null,
+        level: p.level,
+        xpFrac: next > prev ? (p.xp - prev) / (next - prev) : 1,
+        hp: own.hp,
+        maxHp: own.maxHp,
+        mana: own.mana,
+        maxMana: own.maxMana,
+        gold: p.gold,
+        respawn: Math.ceil(p.respawnTicks / 20),
+        skillPoints: p.skillPoints,
+      });
+    }
+    const sel = selected && match.entities.get(selected.id) === selected ? selected : null;
+    game.setSelected(sel && sel !== own ? `${unitName(sel)} · ${S.level} ${sel.level} · ${sel.hp} / ${sel.maxHp}` : null);
+  }, 125);
+
+  // ---- mouse and keys: right click = move or attack, A + left click = attack-move,
+  // left click = select, S = stop, H = hold, Space = center on the hero.
   let lastSpace = 0;
+  let aiming = false;
+  const setAiming = (on: boolean) => {
+    aiming = on;
+    document.body.classList.toggle('aiming', on);
+  };
+  const select = (e: NetEntity | null) => {
+    selected = e;
+    w.select(e?.unit ?? match?.ownHero?.unit ?? null);
+  };
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
-    if (router.screen !== 'game' || e.button !== 2) return;
-    const p = w.pickGround(e.offsetX, e.offsetY);
-    if (p) match?.moveTo(p.x, p.y, e.shiftKey);
+    if (router.screen !== 'game' || !match) return;
+    const hit = match.pick(e.offsetX, e.offsetY);
+    if (e.button === 2) {
+      if (aiming) return setAiming(false);
+      if (hit && match.isEnemy(hit)) return match.attack(hit);
+      const p = w.pickGround(e.offsetX, e.offsetY);
+      if (p) match.moveTo(p.x, p.y, e.shiftKey);
+    } else if (e.button === 0) {
+      if (aiming) {
+        setAiming(false);
+        if (hit && match.isEnemy(hit)) return match.attack(hit);
+        const p = w.pickGround(e.offsetX, e.offsetY);
+        if (p) match.attackMove(p.x, p.y);
+        return;
+      }
+      select(hit);
+    }
   });
   window.addEventListener('keydown', (e) => {
-    if (router.screen !== 'game' || e.target instanceof HTMLInputElement) return;
+    if (router.screen !== 'game' || e.target instanceof HTMLInputElement || !match) return;
+    const key = e.key.toLowerCase();
     if (e.key === ' ' || e.key === 'F1') {
       e.preventDefault();
-      const h = w.selected;
+      const h = match.ownHero?.unit;
       if (!h) return;
       const now = performance.now();
-      w.camera.follow = now - lastSpace < 350 ? () => w.selected ?? h : null;
+      w.camera.follow = now - lastSpace < 350 ? () => match?.ownHero?.unit ?? h : null;
       lastSpace = now;
       w.camera.lookAt(h.x, h.y, true);
     }
-    if (e.key === 's' || e.key === 'S') match?.stop();
+    if (key === 'a') setAiming(true);
+    if (e.key === 'Escape') setAiming(false);
+    if (key === 's') match.stop();
+    if (key === 'h') match.hold();
     if (e.key === 'F4') {
       e.preventDefault();
       w.toggleStress(300);

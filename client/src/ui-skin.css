@@ -353,3 +353,11 @@ input {
     border-image-width: 5px;
   }
 }
+
+/* A + click: attack-move cursor over the game */
+body.aiming,
+body.aiming canvas {
+  cursor:
+    url('./assets/ui/cursor_attack.png') 16 16,
+    crosshair;
+}

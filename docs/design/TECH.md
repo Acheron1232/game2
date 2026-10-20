@@ -80,10 +80,12 @@ Commands carry a client sequence number. The server answers with the last proces
 ### Server → client
 
 - `snapshot` every tick (20/s), built in Phase 6 (`shared/src/protocol/game.ts`, `client-view.ts`):
-  - Header: `u8 id, u32 tick, u16 ackSeq` (last command of this player the server ran), `u16 ticksSinceAck`, `u8 flags` (1 = full: drop all entities not in it).
+  - Header: `u8 id, u32 tick, u16 ackSeq` (last command of this player the server ran), `u16 ticksSinceAck`, `u8 flags` (1 = full: drop all entities not in it; 2 = a player state block follows).
+  - Player state (Phase 7a, only when it changed): hero id, gold, XP, level, skill points, respawn ticks, move speed × 100, 4 ability levels.
   - `spawns`: entities that came into view (id, type, owner, color, position, velocity, facing, state, hp, max hp; 22 bytes).
-  - `updates`: id, field mask, then only the fields in the mask (motion = x, y as u16 + vx, vy as i16; facing u8; state u8; hp, max hp u16).
+  - `updates`: id, field mask, then only the fields in the mask (motion = x, y as u16 + vx, vy as i16; facing u8; state u8; hp, max hp u16; mana + max mana u16; level u8). State bits: moving, attacking (wind-up), dead, server-driven (the own hero follows an attack/hold/chase order: the client does not predict it).
   - `gone`: ids that left the view or the game.
+  - `events` (Phase 7a): 8 bytes each: type, entity a, entity b, value, kind. Attack swing, projectile (speed), damage (amount, attack/spell/heal), death, gold (only to the player who got it), level up, respawn. A player gets the events of entities it can see.
   - **Motion, not positions:** the server sends a position with a velocity. The client keeps the unit moving on that line. The server works out the client's guess and sends a new motion only when the guess drifts by more than 0.05 units (0.01 for the player's own hero) or the velocity changes (start, stop, turn). A unit walking straight costs nothing. WebSocket is TCP, so nothing is lost and "changes since the last snapshot sent" is safe.
   - Position u16 over 256 units (≈ 0.004 unit steps). Velocity i16 in 1/2000 units per second.
 - Measured (load test, 4 players, 300 walking units): 0.8 KB/s per player when units walk around their own bases, 1.8 KB/s when all 300 walk in the temple and everyone sees everyone. Up: a ping every 2 s and a 7-byte command per click.

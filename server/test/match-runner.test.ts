@@ -29,7 +29,7 @@ describe('match runner', () => {
     expect(isWalkable(r.sim.nav, ...hero.path[hero.path.length - 1]!)).toBe(true);
     expect(r.sim.lastSeq[0]).toBe(1);
     // A hero that is not alive takes no orders.
-    r.sim.heroes[0]!.hp = 0;
+    r.sim.heroes[0]!.alive = false;
     expect(r.sim.queueCommand(0, 2, { type: CommandType.Move, x: 100, y: 100, queue: false })).toBe(false);
 
     for (let i = 0; i < MAX_COMMANDS_PER_SEC + 15; i++) r.command(1, writeCommand(w, 100 + i, { type: CommandType.Stop }));

@@ -497,17 +497,135 @@ td .btn.tiny {
   border: 2px solid var(--gold);
   background: #0a0704;
 }
-.bars .hp,
-.bars .mp {
-  height: 14px;
-  margin-bottom: 6px;
+.portrait {
+  position: relative;
+}
+/* The frame's middle is painted over the background, so the picture is a child on top. */
+.portrait-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center top;
+}
+.hero-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--title-font);
+  margin-bottom: 3px;
+}
+.hero-name {
+  color: var(--gold-light);
+}
+.hero-level {
+  color: var(--muted);
+  font-size: 13px;
+}
+.skill-points {
+  margin-left: auto;
+  color: #ffe58a;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 210, 80, 0.8);
+}
+.xp-track {
+  height: 5px;
+  margin-bottom: 5px;
+  background: #120c06;
   border: 1px solid #000;
 }
-.bars .hp {
+.xp-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #a77bdc, #6f3fb0);
+}
+.bar-track {
+  position: relative;
+  height: 16px;
+  margin-bottom: 5px;
+  border: 1px solid #000;
+  background: #120c06;
+}
+.bar-track .fill {
+  height: 100%;
+  width: 100%;
+}
+.bar-track.hp .fill {
   background: linear-gradient(180deg, #5fd04a, #2c7a22);
 }
-.bars .mp {
+.bar-track.mp .fill {
   background: linear-gradient(180deg, #4a8be0, #22457a);
+}
+.bar-label {
+  position: absolute;
+  inset: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px #000;
+}
+.death-note {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  font-family: var(--title-font);
+  font-size: 22px;
+  color: #ffb4a0;
+  background: rgba(20, 6, 4, 0.75);
+  border: 1px solid #7a2a1a;
+}
+.sel-info {
+  position: absolute;
+  bottom: 196px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  font-size: 14px;
+  background: rgba(10, 7, 4, 0.75);
+  border: 1px solid var(--gold);
+}
+
+/* damage numbers and gold pop-ups */
+.floating-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.float-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-family: var(--title-font);
+  font-weight: 800;
+  font-size: 16px;
+  text-shadow:
+    0 1px 2px #000,
+    0 0 4px #000;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+.float-text.damage {
+  color: #fff;
+}
+.float-text.spell {
+  color: #b9a4ff;
+}
+.float-text.hurt {
+  color: #ff5a46;
+}
+.float-text.heal {
+  color: #7dff6a;
+}
+.float-text.gold {
+  color: #ffd84a;
+  font-size: 15px;
+}
+.float-text.level {
+  color: #ffe58a;
+  font-size: 20px;
 }
 .abilities {
   display: flex;
