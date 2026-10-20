@@ -31,6 +31,7 @@ import { TEAM_COLORS } from './team-material';
 import { createDecor, type DecorItem } from './decor';
 import { scatterInstances } from './instancing';
 import { FogOfWar } from './fog';
+import { CombatFx } from './combat-fx';
 import { GroundItemViews } from './ground-items';
 import { createTerrain, type Terrain } from './terrain';
 
@@ -124,6 +125,7 @@ export class GameWorld {
     private readonly treeSlots: TreeSlot[][],
     private readonly menuBase: ModelInstance[],
     readonly fog: FogOfWar,
+    readonly combat: CombatFx,
   ) {
     this.scene = scene;
     this.camera = camera;
@@ -145,6 +147,8 @@ export class GameWorld {
     // Fog of war is part of every material from the start, so no shader compiles in the match.
     const fog = new FogOfWar(scene, grid.cols * grid.cellSize, Math.round((grid.cols * grid.cellSize) / SIGHT_CELL));
     fog.attachAll();
+    // Combat effects live as long as the world: their materials compile while loading.
+    const combat = new CombatFx(scene);
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('noShadows')) scene.shadowsEnabled = false;
     scene.useRightHandedSystem = true; // same as glTF and Blender: models load without mirroring
     scene.clearColor = new Color4(0.55, 0.62, 0.68, 1);
@@ -273,7 +277,7 @@ export class GameWorld {
     ring.setEnabled(false);
 
     const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
-    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase, fog);
+    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase, fog, combat);
     world.setupPostProcess();
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
@@ -551,6 +555,7 @@ export class GameWorld {
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     this.beforeFrame?.(dt);
     this.fog.update(dt);
+    this.combat.update(dt);
     this.items.update();
     const now = performance.now();
     for (const u of this.units) {

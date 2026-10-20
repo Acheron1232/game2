@@ -152,6 +152,8 @@ export interface HeroView {
   /** seconds until back, 0 when alive */
   respawn: number;
   skillPoints: number;
+  /** "Str 28 · Agi 21 · Int 40 · Dmg 47-53 · Armor 4" */
+  statsLine: string;
 }
 
 export interface AbilityButtonView {
@@ -339,6 +341,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const hpText = el('span', { class: 'bar-label' });
   const mpFill = el('div', { class: 'fill' });
   const mpText = el('span', { class: 'bar-label' });
+  const statLine = el('div', { class: 'hero-stats' });
   const deathNote = el('div', { class: 'death-note', hidden: true });
   const selInfo = el('div', { class: 'sel-info', hidden: true });
   let portraitUrl: string | null = null;
@@ -528,6 +531,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
           el('div', { class: 'xp-track' }, xpFill),
           el('div', { class: 'bar-track hp' }, hpFill, hpText),
           el('div', { class: 'bar-track mp' }, mpFill, mpText),
+          statLine,
         ),
         el('div', { class: 'abilities' }, ...abilityButtons),
       ),
@@ -563,6 +567,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       mpFill.style.width = `${v.maxMana ? (100 * v.mana) / v.maxMana : 0}%`;
       setText(mpText, `${Math.floor(v.mana)} / ${v.maxMana}`);
       setText(gold, `${S.gold}: ${v.gold}`);
+      setText(statLine, v.statsLine);
       deathNote.hidden = v.respawn <= 0;
       if (v.respawn > 0) setText(deathNote, S.youDied(v.respawn));
     },

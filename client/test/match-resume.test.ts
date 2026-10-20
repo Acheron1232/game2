@@ -48,6 +48,7 @@ describe('joining a match already in motion', () => {
         ground: new Uint8Array(64 * 64),
       },
       fog: { setGrid: vi.fn(), clear: vi.fn() },
+      combat: { hit: vi.fn(), gold: vi.fn(), levelUp: vi.fn(), death: vi.fn(), buildingDown: vi.fn(), buildDust: vi.fn() },
       setMenuBase: vi.fn(),
       showAllTrees: vi.fn(),
       hideTrees: vi.fn(),

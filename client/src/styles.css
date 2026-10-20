@@ -1173,3 +1173,10 @@ td .btn.tiny {
   border: 1px solid rgba(214, 178, 100, 0.6);
   border-radius: 3px;
 }
+
+.hero-stats {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}

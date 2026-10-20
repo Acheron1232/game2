@@ -605,8 +605,20 @@ export class MatchClient {
         break;
       case EventType.Damage: {
         const u = ea?.unit;
-        if (!u || !this.floating) break;
+        if (!u) break;
         const src = this.entities.get(b);
+        if (kind !== DamageKind.Heal) {
+          const hk =
+            kind === DamageKind.Miss
+              ? 'miss'
+              : kind === DamageKind.Spell
+                ? 'spell'
+                : src && ENTITY_TYPES[src.type] === 'catapult'
+                  ? 'siege'
+                  : 'attack';
+          this.world.combat.hit(u.x, this.world.unitHeight(u) + u.height * 0.5, -u.y, hk);
+        }
+        if (!this.floating) break;
         const mine = (x: NetEntity | undefined) => !!x && x.owner === this.slot;
         const up = u.flyHeight + u.height + 0.3;
         // Only numbers that matter to this player: what we deal and what we take.
@@ -622,6 +634,7 @@ export class MatchClient {
       }
       case EventType.Gold: {
         const u = ea?.unit;
+        if (u) this.world.combat.gold(u.x, this.world.unitHeight(u) + u.height, -u.y);
         if (u && this.floating) this.floating.show(`+${value}`, 'gold', u.x, u.y, u.flyHeight + u.height + 0.8);
         break;
       }
@@ -652,11 +665,18 @@ export class MatchClient {
       case EventType.Notice:
         this.onNotice?.(value);
         break;
-      case EventType.Death:
+      case EventType.Death: {
         if (ea && isHeroType(ea.type)) this.onHeroKilled?.(ea, b);
+        const u = ea?.unit;
+        if (!ea || !u) break;
+        const h = this.world.terrain.heightAt(u.x, u.y);
+        if (isBuildingType(ea.type)) this.world.combat.buildingDown(u.x, h, -u.y, footprintOf(ea.type)[0]);
+        else if (!u.flyHeight) this.world.combat.death(u.x, h, -u.y, Math.max(0.6, u.height * 0.5));
         break;
+      }
       case EventType.LevelUp: {
         const u = ea?.unit;
+        if (u) this.world.combat.levelUp(u.x, this.world.unitHeight(u), -u.y, Math.max(1.2, u.height * 0.6));
         if (u && this.floating && ea.owner === this.slot) this.floating.show(`Level ${value}!`, 'level', u.x, u.y, u.height + 1.2);
         break;
       }
@@ -761,6 +781,9 @@ export class MatchClient {
     }
     if (e.state & UnitState.Dead) this.world.setDead(e.unit, true);
     else if (buildingDefOf(e.type)) {
+      // A new site (we were there to see it): a puff of dust.
+      if (e.state & UnitState.Constructing && e.progress < 8)
+        this.world.combat.buildDust(k.x, this.world.terrain.heightAt(k.x, k.y), -k.y, footprintOf(e.type)[0]);
       // Faction buildings close their cells (gold mines are in the map grid already).
       const [w, h] = footprintOf(e.type);
       const r = { x: k.x, y: k.y, w, h };

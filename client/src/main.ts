@@ -34,6 +34,10 @@ import {
   type MatchStartInfo,
   type RoomState,
   type PlayerSummary,
+  heroAttributes,
+  heroStats,
+  itemBonus,
+  type HeroDef,
 } from '@game/shared';
 import { AimIndicators, type AimShape } from './render/aim-indicators';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
@@ -382,6 +386,7 @@ async function main(): Promise<void> {
     w.camera.edgeScroll = settings.edgeScroll;
     w.camera.speedScale = settings.cameraSpeed;
     floating.damageNumbers = settings.damageNumbers;
+    w.combat.setQuality(settings.effects);
     if (match) match.allBars = settings.healthBars === 'always';
   };
   applySettings();
@@ -573,6 +578,16 @@ async function main(): Promise<void> {
     match.buy(item);
   };
 
+  /** The hero's attributes, damage and armor with its items (same math as the server). */
+  const heroStatsLine = (def: HeroDef, level: number): string => {
+    const bonus = itemBonus(myInventory());
+    const base = heroAttributes(def, level);
+    const st = heroStats(def, level, bonus);
+    const str = base.strength + (bonus.strength ?? 0),
+      agi = base.agility + (bonus.agility ?? 0),
+      int = base.intelligence + (bonus.intelligence ?? 0);
+    return `${S.strShort} ${str} · ${S.agiShort} ${agi} · ${S.intShort} ${int} · ${S.damageShort} ${Math.round(st.damageMin)}-${Math.round(st.damageMax)} · ${S.armor} ${Math.round(st.armor)}`;
+  };
   // Hero panel and the info line of a selected unit, a few times per second.
   const unitName = (e: NetEntity) => {
     const id = ENTITY_TYPES[e.type] ?? '';
@@ -638,6 +653,7 @@ async function main(): Promise<void> {
         gold: p.gold,
         respawn: Math.ceil(p.respawnTicks / 20),
         skillPoints: p.skillPoints,
+        statsLine: heroStatsLine(def, p.level),
       });
     }
     game.setAbilities(
