@@ -55,6 +55,8 @@ export interface MatchStartInfo {
   yourSlot: number;
   slots: { index: number; kind: SlotKind; name: string; team: number; color: number; hero: string; start: number }[];
   rejoin: boolean;
+  /** watch mode (dev): every slot is a bot, the players only watch; the game runs this many times faster */
+  watch?: number;
 }
 
 export interface MatchStats {
@@ -110,6 +112,8 @@ export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('start'),
     /** load test only, the server ignores it unless it allows test options */
     test: z.object({ units: z.number().int().min(0).max(1000), area: z.enum(['bases', 'center']) }).optional(),
+    /** dev servers only: bots play every slot, the players watch at this game speed (1-10) */
+    watch: z.object({ speed: z.number().int().min(1).max(10) }).optional(),
   }),
   z.object({ type: z.literal('matchReady') }),
   /** dev servers only: give the own hero XP, gold or an item (for testing) */

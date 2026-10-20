@@ -180,16 +180,20 @@ export interface ItemSlotView {
 }
 
 export interface ShopItemView {
-  /** index in items.json */
+  /** index in items.json (or in upgrades.json for the Town Hall) */
   item: number;
   icon: string | null;
   cost: number;
+  /** shown instead of the price ("Done") */
+  label?: string | undefined;
   canAfford: boolean;
   tooltip: string[];
 }
 
 export interface ShopView {
   name: string;
+  /** line under the grid (default: buy / sell hint) */
+  hint?: string;
   items: ShopItemView[];
   /** the hero is close enough to buy and sell */
   inRange: boolean;
@@ -519,7 +523,9 @@ export function createGameScreen(actions: GameActions): GameScreen {
         return;
       }
       shopPanel.classList.toggle('far', !view.inRange);
-      const key = `${view.name}|${view.items.map((i) => i.item).join(',')}`;
+      setText(shopHint, view.hint ?? S.shopHint);
+      // Prices and labels change with upgrade levels: they are part of the key.
+      const key = `${view.name}|${view.items.map((i) => `${i.item}:${i.label ?? i.cost}`).join(',')}`;
       shopViews = view.items;
       if (key !== shopKey) {
         shopKey = key;
@@ -531,7 +537,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
               'button',
               { class: 'shop-item' },
               el('div', { class: 'ability-icon', style: it.icon ? `background-image:url(${it.icon})` : '' }),
-              el('span', { class: 'price' }, String(it.cost)),
+              el('span', { class: 'price' }, it.label ?? String(it.cost)),
             );
             const buy = (e: Event) => {
               e.preventDefault();

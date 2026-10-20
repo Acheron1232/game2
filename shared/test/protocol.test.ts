@@ -163,6 +163,7 @@ describe('match messages', () => {
       progress: 128,
     });
     sw.factionState({
+      slot: 3,
       gold: 1234,
       wood: 456,
       supplyUsed: 17,
@@ -221,7 +222,9 @@ describe('match messages', () => {
       itemCooldownEnds: [1400, 0, 0, 0, 0, 0],
     });
     expect(s.hasFaction).toBe(true);
-    expect(s.faction).toEqual({
+    expect(s.factionCount).toBe(1);
+    expect(s.factions[0]).toEqual({
+      slot: 3,
       gold: 1234,
       wood: 456,
       supplyUsed: 17,

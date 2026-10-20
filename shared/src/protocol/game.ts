@@ -66,7 +66,7 @@ export const SnapshotFlag = {
   Full: 1,
   /** A player state block follows the header. */
   HasPlayer: 2,
-  /** A faction state block follows (after the player state). */
+  /** Faction state blocks follow (after the player state): the own one, or all for a spectator. */
   HasFaction: 4,
   /** Items on the ground came into view or went away (block at the end). */
   HasItems: 8,
@@ -75,8 +75,9 @@ export const SnapshotFlag = {
 /** Most ground items in one snapshot block (u8 count); the rest come next tick. */
 export const MAX_ITEMS_PER_SNAPSHOT = 255;
 
-/** The player's own AI faction, for the faction panel. */
+/** An AI faction, for the faction panel (the own one; spectators get all). */
 export interface NetFactionState {
+  slot: number;
   gold: number;
   wood: number;
   supplyUsed: number;
@@ -97,6 +98,7 @@ export interface NetFactionState {
 
 export function blankFactionState(): NetFactionState {
   return {
+    slot: 0,
     gold: 0,
     wood: 0,
     supplyUsed: 0,
@@ -344,7 +346,7 @@ export class SnapshotWriter {
   private nGone = 0;
   private nEvent = 0;
   private player: NetPlayerState | null = null;
-  private faction: NetFactionState | null = null;
+  private readonly factionList: NetFactionState[] = [];
   private itemSpawns: NetGroundItem[] = [];
   private itemGone: number[] = [];
   private nItemSpawn = 0;
@@ -360,7 +362,7 @@ export class SnapshotWriter {
     this.nSpawn = this.nUpdate = this.nGone = this.nEvent = 0;
     this.nItemSpawn = this.nItemGone = 0;
     this.player = null;
-    this.faction = null;
+    this.factionList.length = 0;
   }
 
   spawn(s: NetEntityState): void {
@@ -388,8 +390,9 @@ export class SnapshotWriter {
     this.player = p;
   }
 
+  /** Adds a faction block (call once per faction to send). */
   factionState(f: NetFactionState): void {
-    this.faction = f;
+    this.factionList.push(f);
   }
 
   /** False when the item block is full (send the rest next tick). */
@@ -406,7 +409,11 @@ export class SnapshotWriter {
   }
 
   get empty(): boolean {
-    return this.nSpawn + this.nUpdate + this.nGone + this.nEvent + this.nItemSpawn + this.nItemGone === 0 && !this.player && !this.faction;
+    return (
+      this.nSpawn + this.nUpdate + this.nGone + this.nEvent + this.nItemSpawn + this.nItemGone === 0 &&
+      !this.player &&
+      !this.factionList.length
+    );
   }
 
   finish(w: BinaryWriter): Uint8Array<ArrayBuffer> {
@@ -414,7 +421,7 @@ export class SnapshotWriter {
     const flags =
       this.head.flags |
       (this.player ? SnapshotFlag.HasPlayer : 0) |
-      (this.faction ? SnapshotFlag.HasFaction : 0) |
+      (this.factionList.length ? SnapshotFlag.HasFaction : 0) |
       (items ? SnapshotFlag.HasItems : 0);
     w.reset()
       .u8(MsgId.Snapshot)
@@ -433,9 +440,9 @@ export class SnapshotWriter {
           .u8(p.charges[i] ?? 0)
           .u32(p.itemCooldownEnds[i] ?? 0);
     }
-    const f = this.faction;
-    if (f) {
-      w.u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
+    if (this.factionList.length) w.u8(this.factionList.length);
+    for (const f of this.factionList) {
+      w.u8(f.slot).u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
       w.u8(f.upgrades.length);
       for (let i = 0; i < f.upgrades.length; i++) w.u8(f.upgrades[i]!).u32(f.upgradeReady[i] ?? 0);
       w.u8(f.tech.length);
@@ -502,7 +509,9 @@ export class SnapshotData {
   itemGoneCount = 0;
   readonly player: NetPlayerState = blankPlayerState();
   hasFaction = false;
-  readonly faction: NetFactionState = blankFactionState();
+  factionCount = 0;
+  /** faction blocks of this snapshot (0..factionCount-1) */
+  readonly factions: NetFactionState[] = [];
   readonly itemSpawns: NetGroundItem[] = [];
   readonly itemGone: number[] = [];
   readonly spawns: NetEntityState[] = [];
@@ -536,8 +545,10 @@ export class SnapshotData {
       }
     }
     this.hasFaction = (this.flags & SnapshotFlag.HasFaction) !== 0;
-    if (this.hasFaction) {
-      const f = this.faction;
+    this.factionCount = this.hasFaction ? r.u8() : 0;
+    for (let k = 0; k < this.factionCount; k++) {
+      const f = (this.factions[k] ??= blankFactionState());
+      f.slot = r.u8();
       f.gold = r.u32();
       f.wood = r.u32();
       f.supplyUsed = r.u8();

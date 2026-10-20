@@ -80,7 +80,7 @@ describe('match runner', () => {
     const r = new MatchRunner(setup, terrain, trees);
     const s = readSnapshot(r.tick().find((p) => p.slot === 0)!.data, new SnapshotData());
     expect(s.hasFaction).toBe(true);
-    expect(s.faction).toMatchObject({ gold: 500, wood: 150, supplyUsed: 5, supplyCap: 12, tier: 1, workers: 5, army: 0 });
+    expect(s.factions[0]).toMatchObject({ slot: 0, gold: 500, wood: 150, supplyUsed: 5, supplyCap: 12, tier: 1, workers: 5, army: 0 });
     const types = s.spawns.slice(0, s.spawnCount).map((sp) => ENTITY_TYPES[sp.type]);
     expect(types.filter((t) => t === 'worker').length).toBe(5);
     expect(types).toContain('town_hall');

@@ -6,6 +6,7 @@ import {
   BinaryWriter,
   buildMatchNav,
   ClientView,
+  EventList,
   gameData,
   FactionAI,
   itemIndex,
@@ -39,6 +40,13 @@ export interface MatchPacket {
   data: Uint8Array<ArrayBuffer>;
 }
 
+/** Slot number of the shared spectator view (watch mode). */
+export const SPECTATOR = -1;
+
+function copyEvent(to: EventList, e: { type: number; a: number; b: number; value: number; kind: number }): void {
+  to.push(e.type as never, e.a, e.b, e.value, e.kind);
+}
+
 export class MatchRunner {
   readonly sim: MatchSim;
   private readonly vision: TeamVision;
@@ -49,6 +57,11 @@ export class MatchRunner {
   /** bytes written per slot since the last stats read */
   readonly bytes = new Map<number, number>();
   droppedCommands = 0;
+
+  /** sim steps per network tick (watch mode runs the game faster) */
+  readonly speed: number;
+  /** watch mode: all events of the steps since the last snapshot */
+  private readonly events = new EventList();
 
   /** trees: with them the match has factions (bases, workers, the AI); without them only heroes. */
   constructor(setup: MatchSetup, terrainBytes: Uint8Array, trees?: TreeList) {
@@ -62,6 +75,12 @@ export class MatchRunner {
     // Faction brains for every slot, hero bots for Bot slots.
     this.sim.ai = new FactionAI(this.sim);
     this.sim.canSeePoint = (team, x, y) => this.vision.seesPoint(team, x, y);
+    this.speed = Math.max(1, Math.min(10, Math.round(setup.watch ?? 1)));
+    // Spectators of a watch-mode match share one view that sees everything (slot -1).
+    if (setup.watch) {
+      this.views.set(SPECTATOR, new ClientView(SPECTATOR, -1, true));
+      this.bytes.set(SPECTATOR, 0);
+    }
     for (const s of setup.slots) {
       this.views.set(s.index, new ClientView(s.index, s.team));
       this.bytes.set(s.index, 0);
@@ -126,15 +145,19 @@ export class MatchRunner {
 
   /** Runs one tick and returns one snapshot per online player. */
   tick(): MatchPacket[] {
-    this.sim.step();
-    if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();
+    this.events.clear();
+    for (let k = 0; k < this.speed; k++) {
+      this.sim.step();
+      if (this.speed > 1) for (let i = 0; i < this.sim.events.count; i++) copyEvent(this.events, this.sim.events.items[i]!);
+      if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();
+    }
     // Vision every 2 ticks (10 Hz) is enough for "who can I see".
-    if (this.sim.tick % 2 === 1) this.vision.update(this.sim.entities);
+    if (this.speed > 1 || this.sim.tick % 2 === 1) this.vision.update(this.sim.entities);
     const out: MatchPacket[] = [];
     for (const view of this.views.values()) {
       if (!view.active) continue;
       // Copy: the buffer moves to the main thread and the writer is reused.
-      const data = view.write(this.sim, this.vision, this.sw, this.w).slice();
+      const data = view.write(this.sim, this.vision, this.sw, this.w, this.speed > 1 ? this.events : this.sim.events).slice();
       this.bytes.set(view.slot, (this.bytes.get(view.slot) ?? 0) + data.byteLength);
       out.push({ slot: view.slot, data });
     }

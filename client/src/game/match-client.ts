@@ -119,7 +119,7 @@ const HIDE_DEAD_HERO_MS = 2500;
 
 export class MatchClient {
   readonly entities = new Map<number, NetEntity>();
-  readonly clock = new TickClock();
+  readonly clock: TickClock;
   predictor: HeroPredictor | null = null;
   ownHero: NetEntity | null = null;
   /** the player's private hero data (gold, XP, level...) */
@@ -133,6 +133,8 @@ export class MatchClient {
   onPlayer: ((p: NetPlayerState) => void) | null = null;
   /** the player's AI faction (gold, wood, supply, what it does) */
   readonly faction: NetFactionState = blankFactionState();
+  /** every faction we know (spectators get all of them), by slot */
+  readonly factions = new Map<number, NetFactionState>();
   hasFaction = false;
   /** a slot lost (its Town Halls are gone) */
   onDefeated: ((slot: number) => void) | null = null;
@@ -178,6 +180,7 @@ export class MatchClient {
     readonly info: MatchStartInfo,
     private readonly floating: FloatingText | null = null,
   ) {
+    this.clock = new TickClock(info.watch ?? 1);
     for (const slot of info.slots) this.teams[slot.index] = slot.team;
     this.unsubscribe = net.onSnapshot((data) => this.onSnapshot(data));
     world.beforeFrame = (dt) => this.frame(dt);
@@ -192,6 +195,11 @@ export class MatchClient {
 
   get slot(): number {
     return this.info.yourSlot;
+  }
+
+  /** watch mode: no own hero, sees everything */
+  get spectator(): boolean {
+    return this.info.yourSlot < 0;
   }
 
   get myTeam(): number {
@@ -261,6 +269,11 @@ export class MatchClient {
 
   buy(item: number): void {
     this.sendSide({ type: CommandType.BuyItem, item });
+  }
+
+  /** Town Hall upgrade (index in upgrades.json), bought with hero gold at the own Town Hall. */
+  buyUpgrade(upgrade: number): void {
+    this.sendSide({ type: CommandType.BuyUpgrade, upgrade });
   }
 
   sell(slot: number): void {
@@ -400,9 +413,23 @@ export class MatchClient {
       if (this.predictor) this.predictor.mover.speed = s.player.moveSpeed / 100;
       this.onPlayer?.(this.player);
     }
-    if (s.hasFaction) {
-      Object.assign(this.faction, s.faction);
-      this.hasFaction = true;
+    for (let k = 0; k < s.factionCount; k++) {
+      const f = s.factions[k]!;
+      const copy = { ...f, upgrades: [...f.upgrades], upgradeReady: [...f.upgradeReady], tech: [...f.tech] };
+      this.factions.set(f.slot, copy);
+      if (f.slot === this.slot) {
+        Object.assign(this.faction, copy);
+        this.hasFaction = true;
+      }
+    }
+    // A spectator has no hero: start over the temple.
+    if (this.spectator && !this.cameraPlaced) {
+      this.world.camera.lookAt(
+        this.world.grid.cols * this.world.grid.cellSize * 0.5,
+        this.world.grid.rows * this.world.grid.cellSize * 0.5,
+        true,
+      );
+      this.cameraPlaced = true;
     }
     for (let i = 0; i < s.spawnCount; i++) {
       const sp = s.spawns[i]!;

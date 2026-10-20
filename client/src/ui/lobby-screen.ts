@@ -16,7 +16,7 @@ export interface LobbyScreen extends Screen {
   showError(text: string): void;
 }
 
-const COLOR_NAMES = ['Red', 'Blue', 'Teal', 'Purple'];
+export const COLOR_NAMES = ['Red', 'Blue', 'Teal', 'Purple'];
 const COLOR_CLASS = ['red', 'blue', 'teal', 'purple'];
 
 function select(options: [string, string][], value: string, onChange: (v: string) => void): HTMLSelectElement {

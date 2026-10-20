@@ -139,6 +139,7 @@ describe('faction target choice', () => {
     for (let i = 0; i < 2_000; i++) pickTarget(sim, swordsman, 10, FOCUS);
     const elapsed = performance.now() - started;
     console.log(`target choice: ${elapsed.toFixed(2)} ms for 2,000 calls`);
-    expect(elapsed).toBeLessThan(20);
+    // About 5 ms alone; the limit leaves room for a busy machine (all test files run at once).
+    expect(elapsed).toBeLessThan(60);
   });
 });

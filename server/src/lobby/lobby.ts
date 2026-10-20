@@ -14,6 +14,7 @@ import {
   type SlotState,
 } from '@game/shared';
 import { createMatchHost, type MatchHost, type MatchMap } from '../match/match-host';
+import { SPECTATOR } from '../match/match-runner';
 import type { Player, PlayerConn, PlayerRegistry } from './players';
 import { emptySlot, makeRoomCode, Room } from './room';
 
@@ -158,7 +159,7 @@ export class Lobby {
         return;
       }
       case 'start':
-        return this.start(p, msg.test);
+        return this.start(p, msg.test, msg.watch?.speed);
       case 'matchReady': {
         const room = p.room;
         if (!room || room.phase !== 'playing') return;
@@ -332,7 +333,9 @@ export class Lobby {
 
   // ---------- match ----------
 
-  private start(p: Player, test?: { units: number; area: 'bases' | 'center' }): void {
+  private start(p: Player, test?: { units: number; area: 'bases' | 'center' }, watchSpeed?: number): void {
+    // Watch mode is a dev tool (like the load test): bots play, the players only watch.
+    const watch = watchSpeed && this.options.allowTestOptions ? watchSpeed : 0;
     const room = this.hostRoom(p);
     if (!room) return;
     const humans = room.humans;
@@ -360,17 +363,19 @@ export class Lobby {
         team: s.team,
         color: s.color,
         start: starts[i]!,
-        // Every player has a faction run by the AI; a bot slot also has an AI hero.
-        ai: 'normal' as const,
-        bot: s.kind === 'bot',
+        // Every player has a faction run by the AI (Normal for humans); a bot slot also has an AI hero.
+        ai: s.kind === 'bot' ? s.ai : ('normal' as const),
+        bot: s.kind === 'bot' || !!watch,
       })),
     };
+    if (watch) setup.watch = watch;
     if (test && this.options.allowTestOptions) {
       setup.testUnits = test.units;
       setup.testArea = test.area;
     }
     room.matchInfo = {
       matchId: `${room.code}-${++this.matchCount}`,
+      ...(watch ? { watch } : {}),
       slots: playing.map((s, i) => ({
         index: s.index,
         kind: s.kind,
@@ -400,6 +405,11 @@ export class Lobby {
     };
     host.onPackets = (_tick, packets) => {
       for (const { slot, data } of packets) {
+        // Watch mode: the spectator snapshot goes to every player in the room.
+        if (slot === SPECTATOR) {
+          for (const m of room.members) m.conn?.sendBinary(data);
+          continue;
+        }
         const id = room.slots[slot]?.playerId;
         const conn = id ? this.players.get(id)?.conn : null;
         conn?.sendBinary(data);
@@ -415,7 +425,7 @@ export class Lobby {
     room.going = true;
     // Players who are offline right now get no snapshots until they come back.
     for (const s of room.slots) if (s.kind === 'human' && !s.online) room.match.setOnline(s.index, false);
-    for (const s of room.slots) if (s.kind === 'bot') room.match.setOnline(s.index, false);
+    for (const s of room.slots) if (s.kind === 'bot' || room.matchInfo?.watch) room.match.setOnline(s.index, false);
     room.match.go();
     this.broadcast(room, { type: 'matchGo', tick: 0 });
   }
@@ -423,9 +433,11 @@ export class Lobby {
   private sendMatchStart(room: Room, p: Player, rejoin: boolean): void {
     const slot = room.slotOf(p);
     if (!room.matchInfo || !slot) return;
-    this.send(p, { type: 'matchStart', match: { ...room.matchInfo, yourSlot: slot.index, rejoin } });
+    const watch = !!room.matchInfo.watch;
+    this.send(p, { type: 'matchStart', match: { ...room.matchInfo, yourSlot: watch ? SPECTATOR : slot.index, rejoin } });
     if (rejoin) {
-      room.match?.setOnline(slot.index, true);
+      if (watch) room.match?.resetView(SPECTATOR);
+      else room.match?.setOnline(slot.index, true);
       if (room.going) this.send(p, { type: 'matchGo', tick: 0 });
     }
   }

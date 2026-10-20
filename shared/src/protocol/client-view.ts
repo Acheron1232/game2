@@ -3,7 +3,8 @@
 // client can work out by itself (last sent position + velocity), and writes only the changes,
 // the events the player can see, and the player's own hero data when it changed.
 
-import { EventType } from '../sim/events';
+import { EventType, type EventList } from '../sim/events';
+import type { FactionState } from '../sim/faction/faction';
 import { gameData } from '../data/index';
 import { ENTITY_TYPES } from '../sim/entity-types';
 
@@ -27,6 +28,7 @@ import {
   qVel,
   SnapshotFlag,
   UnitState,
+  type NetFactionState,
   type NetPlayerState,
   type NetUpdate,
   type SnapshotWriter,
@@ -125,14 +127,17 @@ export class ClientView {
   };
   private readonly player = blankPlayerState();
   private playerKey = '';
-  private readonly faction = blankFactionState();
-  private factionKey = '';
+  /** faction blocks by slot, and the last key sent for each */
+  private readonly factionState = new Map<number, NetFactionState>();
+  private readonly factionKey = new Map<number, string>();
   /** False while the player is offline: nothing is written. */
   active = true;
 
   constructor(
     readonly slot: number,
     readonly team: number,
+    /** a spectator (watch mode): sees the whole map and every faction */
+    readonly seeAll = false,
   ) {}
 
   /** The next snapshot is a full one (after a rejoin). */
@@ -141,10 +146,11 @@ export class ClientView {
     this.sentItems.clear();
     this.full = true;
     this.playerKey = '';
-    this.factionKey = '';
+    this.factionKey.clear();
   }
 
-  write(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, w: BinaryWriter): Uint8Array<ArrayBuffer> {
+  /** events: this tick's events, or all events since the last snapshot (fast watch mode). */
+  write(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, w: BinaryWriter, events: EventList = sim.events): Uint8Array<ArrayBuffer> {
     const stamp = ++this.stamp;
     const tick = sim.tick;
     sw.begin(
@@ -161,7 +167,7 @@ export class ClientView {
     for (const e of sim.entities) {
       // Buildings and mines stay known in the fog (like a map), so the client can block their
       // cells for movement prediction. Their changes are only sent while the team sees them.
-      const seen = vision.sees(this.team, e);
+      const seen = this.seeAll || vision.sees(this.team, e);
       if (!seen && !(e.building && e.alive && this.sent.has(e.id))) continue;
       if (!seen) {
         this.sent.get(e.id)!.seenAt = stamp;
@@ -277,7 +283,7 @@ export class ClientView {
       sw.remove(id);
       this.sent.delete(id);
     }
-    this.writeEvents(sim, vision, sw, full);
+    this.writeEvents(sim, vision, sw, full, events);
     this.writeGroundItems(sim, vision, sw, stamp);
     return sw.finish(w);
   }
@@ -285,7 +291,7 @@ export class ClientView {
   /** Items on the ground: new ones in sight, and the ones that went away or out of sight. */
   private writeGroundItems(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, stamp: number): void {
     for (const g of sim.groundItems) {
-      if (!vision.seesPoint(this.team, g.x, g.y)) continue;
+      if (!this.seeAll && !vision.seesPoint(this.team, g.x, g.y)) continue;
       if (this.sentItems.has(g.id)) {
         this.sentItems.set(g.id, stamp);
         continue;
@@ -333,10 +339,17 @@ export class ClientView {
     sw.playerState(p);
   }
 
+  /** The own faction, or every faction for a spectator; only blocks that changed. */
   private writeFaction(sim: MatchSim, sw: SnapshotWriter): void {
-    const fs = sim.factions?.get(this.slot);
-    if (!fs) return;
-    const f = this.faction;
+    const list = sim.factions?.list;
+    if (!list) return;
+    for (const fs of list) if (fs && (this.seeAll || fs.slot === this.slot)) this.writeOneFaction(sim, sw, fs);
+  }
+
+  private writeOneFaction(sim: MatchSim, sw: SnapshotWriter, fs: FactionState): void {
+    let f = this.factionState.get(fs.slot);
+    if (!f) this.factionState.set(fs.slot, (f = blankFactionState()));
+    f.slot = fs.slot;
     f.gold = Math.floor(fs.gold);
     f.wood = Math.floor(fs.wood);
     f.supplyUsed = Math.min(255, fs.supplyUsed);
@@ -365,15 +378,14 @@ export class ClientView {
       if (b?.alive && b.building?.done && !f.tech.includes(b.type)) f.tech.push(b.type);
     }
     const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status},${f.upgrades.join('.')},${f.upgradeReady.join('.')},${f.tech.join('.')}`;
-    if (key === this.factionKey) return;
-    this.factionKey = key;
+    if (key === this.factionKey.get(fs.slot)) return;
+    this.factionKey.set(fs.slot, key);
     sw.factionState(f);
   }
 
-  private writeEvents(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, full: boolean): void {
+  private writeEvents(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, full: boolean, list: EventList): void {
     // A new (or rejoined) client gets every tree that is already gone.
     if (full && sim.factions) for (const t of sim.factions.cutTrees) sw.event(EventType.TreeGone, t, 0, 0, 0);
-    const list = sim.events;
     for (let i = 0; i < list.count; i++) {
       const e = list.items[i]!;
       if (e.type === EventType.Gold) {
@@ -396,7 +408,7 @@ export class ClientView {
       }
       const a = sim.get(e.a),
         b = e.b ? sim.get(e.b) : undefined;
-      if ((a && this.sent.has(a.id)) || (b && vision.sees(this.team, b) && this.sent.has(b.id)))
+      if ((a && this.sent.has(a.id)) || (b && (this.seeAll || vision.sees(this.team, b)) && this.sent.has(b.id)))
         sw.event(e.type, e.a, e.b, e.value, e.kind);
     }
   }

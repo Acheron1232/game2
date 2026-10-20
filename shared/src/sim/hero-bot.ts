@@ -6,8 +6,12 @@ import { gameData, type AbilityDef } from '../data/index';
 import { castProblem, heroAbility, lv, param, targetAllowed, type CastTarget } from './abilities';
 import type { CampState } from './camps';
 import { CommandType, type GameCommand } from './commands';
+import { isTownHall } from './faction/faction';
+import { factionTech, hallInRange, UPGRADE_IDS, upgradeProblem } from './faction/hall-shop';
+import { upgradeStatus, type UpgradeId } from './faction/upgrades';
+import { ITEMS, canStore, itemIndex, itemReadyAt, newCharges, shopInRange } from './items';
 import { TICK_RATE, type MatchSim, type SimEntity } from './match-sim';
-import { canLearn } from './stats';
+import { canLearn, rectDistance } from './stats';
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -38,6 +42,19 @@ const PLAN_RETREAT = 1;
 const PLAN_FARM = 2;
 const PLAN_DEFEND = 3;
 const PLAN_ATTACK = 4;
+const PLAN_SHOP = 5;
+const PLAN_UPGRADES = 6;
+const MAX_COMMANDS_PER_THINK = 3;
+const POTION_ITEM = itemIndex('healing_potion');
+const POTION_TARGET = 2;
+const POTION_USE_PCT = 45;
+const SHOP_NEAR = 25;
+const HALL_NEAR = 30;
+const ITEM_GOLD_BUFFER = 100;
+const UPGRADE_GOLD_BUFFER = 300;
+const UPGRADE_SPEND_SHARE = 0.3;
+const UPGRADE_ORDER: readonly UpgradeId[] = ['iron_plates', 'sharper_blades', 'better_arrows', 'rich_veins', 'stone_walls'];
+const HERO_BUILDS = gameData.ai.heroBot.heroBuild as unknown as Record<string, readonly string[]>;
 const HEALS = new Set(['radiant_touch', 'sanctuary', 'dawn_shield']);
 const SELF_BUFFS = new Set(['iron_stance', 'stone_skin']);
 
@@ -107,6 +124,7 @@ function lowestHealthMember(camp: CampState): SimEntity | null {
 
 export class HeroBot {
   private readonly settings: DifficultySettings;
+  private readonly difficulty: BotDifficulty;
   private readonly reactionTicks: number;
   private nextThinkAt = 0;
   private seq = 0;
@@ -118,6 +136,8 @@ export class HeroBot {
   private planX = 0;
   private planY = 0;
   private lastFightOrderAt = -FIGHT_ORDER_TICKS;
+  private upgradeBudget = -1;
+  private upgradeGoldMark = 0;
   private wasAlive = false;
   private randomState: number;
 
@@ -126,6 +146,7 @@ export class HeroBot {
     difficulty: BotDifficulty,
     private readonly hooks: HeroBotHooks = {},
   ) {
+    this.difficulty = difficulty;
     this.settings = DIFFICULTIES[difficulty];
     this.reactionTicks = Math.max(1, Math.round(this.settings.reactionSec * TICK_RATE));
     this.randomState = Math.imul(slot + 1, 0x9e3779b1) ^ (difficulty === 'easy' ? 1 : difficulty === 'normal' ? 2 : 3);
@@ -160,6 +181,8 @@ export class HeroBot {
     if (hero.heroState.skillPoints > 0 && this.learn(sim, hero)) commands++;
 
     const hpPct = (hero.hp / hero.stats.maxHp) * 100;
+    const fighting = this.inFight(sim, hero);
+    const defend = this.hooks.baseUnderAttack?.() ?? null;
     if (this.retreating && hpPct >= RETREAT_DONE_PCT) {
       this.retreating = false;
       this.plan = PLAN_NONE;
@@ -173,12 +196,24 @@ export class HeroBot {
       this.plan = PLAN_NONE;
     }
 
+    if (hpPct < POTION_USE_PCT && (fighting || this.retreating) && commands < MAX_COMMANDS_PER_THINK && this.usePotion(sim, hero)) {
+      commands++;
+    }
+
     if (this.retreating) {
-      this.stateText = 'Retreating';
       if (hero.order === 'cast') return;
-      if (commands < 3 && this.tryAbility(sim, hero, null, true)) return;
       const start = retreatPoint(hero);
-      if (commands < 3 && this.needsPointOrder(hero, PLAN_RETREAT, start[0], start[1])) {
+      if (!fighting && !defend) {
+        const shopping = this.shopForPotions(sim, hero, start[0], start[1], MAX_COMMANDS_PER_THINK - commands);
+        if (shopping >= 0) return;
+        if (this.difficulty !== 'easy') {
+          const upgrading = this.buyUpgrades(sim, hero, start[0], start[1], MAX_COMMANDS_PER_THINK - commands);
+          if (upgrading >= 0) return;
+        }
+      }
+      this.stateText = 'Retreating';
+      if (commands < MAX_COMMANDS_PER_THINK && this.tryAbility(sim, hero, null, true)) return;
+      if (commands < MAX_COMMANDS_PER_THINK && this.needsPointOrder(hero, PLAN_RETREAT, start[0], start[1])) {
         this.send(sim, { type: CommandType.Move, x: start[0], y: start[1], queue: false });
         this.setPointPlan(PLAN_RETREAT, start[0], start[1]);
       }
@@ -187,24 +222,34 @@ export class HeroBot {
 
     const current = hero.targetId ? sim.get(hero.targetId) : undefined;
     if (hero.order === 'cast') return;
-    if (commands < 3 && this.tryAbility(sim, hero, current?.alive ? current : null, false)) return;
+    if (commands < MAX_COMMANDS_PER_THINK && this.tryAbility(sim, hero, current?.alive ? current : null, false)) return;
 
-    const defend = this.hooks.baseUnderAttack?.() ?? null;
     if (defend) {
       this.campIndex = -1;
       this.stateText = 'Defending the base';
-      if (commands < 3 && this.needsPointOrder(hero, PLAN_DEFEND, defend.x, defend.y)) {
+      if (commands < MAX_COMMANDS_PER_THINK && this.needsPointOrder(hero, PLAN_DEFEND, defend.x, defend.y)) {
         this.send(sim, { type: CommandType.AttackMove, x: defend.x, y: defend.y });
         this.setPointPlan(PLAN_DEFEND, defend.x, defend.y);
       }
       return;
     }
 
+    if (!fighting) {
+      const shopping = this.shopForPotions(sim, hero, null, null, MAX_COMMANDS_PER_THINK - commands);
+      if (shopping >= 0) return;
+      if (this.difficulty !== 'easy') {
+        const upgrading = this.buyUpgrades(sim, hero, null, null, MAX_COMMANDS_PER_THINK - commands);
+        if (upgrading >= 0) return;
+        const buildShopping = this.shopForBuild(sim, hero, MAX_COMMANDS_PER_THINK - commands);
+        if (buildShopping >= 0) return;
+      }
+    }
+
     const army = this.settings.joinsAttacks && hero.heroState.level >= 4 ? (this.hooks.armyTarget?.() ?? null) : null;
     if (army) {
       this.campIndex = -1;
       this.stateText = 'Joining the attack';
-      if (commands < 3 && this.needsPointOrder(hero, PLAN_ATTACK, army.x, army.y)) {
+      if (commands < MAX_COMMANDS_PER_THINK && this.needsPointOrder(hero, PLAN_ATTACK, army.x, army.y)) {
         this.send(sim, { type: CommandType.AttackMove, x: army.x, y: army.y });
         this.setPointPlan(PLAN_ATTACK, army.x, army.y);
       }
@@ -230,7 +275,7 @@ export class HeroBot {
     }
     if (distance(hero, target.mover.x, target.mover.y) > 7) {
       if (
-        commands < 3 &&
+        commands < MAX_COMMANDS_PER_THINK &&
         (this.plan !== PLAN_FARM || this.planTarget !== 0 || this.planX !== camp.x || this.planY !== camp.y || hero.order !== 'move')
       ) {
         this.send(sim, { type: CommandType.Move, x: camp.x, y: camp.y, queue: false });
@@ -239,7 +284,10 @@ export class HeroBot {
       return;
     }
     const refresh = hero.targetId !== 0 && sim.tick - this.lastFightOrderAt >= FIGHT_ORDER_TICKS;
-    if (commands < 3 && (this.plan !== PLAN_FARM || this.planTarget !== target.id || hero.order !== 'attack' || refresh)) {
+    if (
+      commands < MAX_COMMANDS_PER_THINK &&
+      (this.plan !== PLAN_FARM || this.planTarget !== target.id || hero.order !== 'attack' || refresh)
+    ) {
       this.send(sim, { type: CommandType.Attack, target: target.id });
       this.plan = PLAN_FARM;
       this.planTarget = target.id;
@@ -275,6 +323,228 @@ export class HeroBot {
       if (!found && e.alive && !e.invulnerable && e.team !== hero.team && d2 <= radius * radius && sim.canSee(hero.team, e)) found = true;
     });
     return found;
+  }
+
+  private inFight(sim: MatchSim, hero: SimEntity): boolean {
+    let found = false;
+    sim.grid.query(hero.mover.x, hero.mover.y, 10, (enemy, d2) => {
+      if (
+        !found &&
+        enemy.alive &&
+        enemy.team !== hero.team &&
+        d2 <= 100 &&
+        (hero.targetId === enemy.id ||
+          (hero.order === 'attack' && hero.orderTarget === enemy.id) ||
+          enemy.targetId === hero.id ||
+          (enemy.order === 'attack' && enemy.orderTarget === hero.id) ||
+          hero.lastHitBy === enemy.id ||
+          enemy.lastHitBy === hero.id)
+      ) {
+        found = true;
+      }
+    });
+    return found;
+  }
+
+  private usePotion(sim: MatchSim, hero: SimEntity): boolean {
+    const hs = hero.heroState!;
+    for (let slot = 0; slot < hs.inventory.length; slot++) {
+      const stack = hs.inventory[slot];
+      if (stack?.item !== POTION_ITEM || itemReadyAt(hs, slot, sim.tick) !== 0) continue;
+      if (this.send(sim, { type: CommandType.UseItem, slot, target: 0, id: 0, x: 0, y: 0 })) return true;
+    }
+    return false;
+  }
+
+  private potionCount(hero: SimEntity): number {
+    let count = 0;
+    for (const stack of hero.heroState!.inventory) if (stack?.item === POTION_ITEM) count += stack.charges;
+    return count;
+  }
+
+  private shopForPotions(sim: MatchSim, hero: SimEntity, routeX: number | null, routeY: number | null, availableCommands: number): number {
+    const count = this.potionCount(hero);
+    const cost = ITEMS[POTION_ITEM]!.cost ?? Infinity;
+    if (
+      count >= POTION_TARGET ||
+      hero.heroState!.gold < cost ||
+      !canStore(hero.heroState!.inventory, POTION_ITEM, newCharges(POTION_ITEM))
+    ) {
+      return -1;
+    }
+    const shop = this.nearestShop(hero, POTION_ITEM, SHOP_NEAR, routeX, routeY);
+    if (!shop) return -1;
+    this.stateText = 'Shopping';
+    this.campIndex = -1;
+    if (!shopInRange(hero, POTION_ITEM)) {
+      if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_SHOP, POTION_ITEM, shop.pos[0], shop.pos[1])) {
+        this.send(sim, { type: CommandType.Move, x: shop.pos[0], y: shop.pos[1], queue: false });
+        this.setItemPlan(PLAN_SHOP, POTION_ITEM, shop.pos[0], shop.pos[1]);
+        return 1;
+      }
+      return 0;
+    }
+    let sent = 0;
+    const buyCount = Math.min(POTION_TARGET - count, Math.floor(hero.heroState!.gold / cost), availableCommands);
+    for (let i = 0; i < buyCount; i++) {
+      if (this.send(sim, { type: CommandType.BuyItem, item: POTION_ITEM })) sent++;
+    }
+    return sent;
+  }
+
+  private shopForBuild(sim: MatchSim, hero: SimEntity, availableCommands: number): number {
+    const build = HERO_BUILDS[hero.heroState!.def.id];
+    if (!build) return -1;
+    for (const id of build) {
+      const item = itemIndex(id);
+      if (item < 0 || this.hasItem(hero, item)) continue;
+      const cost = ITEMS[item]!.cost;
+      if (cost === null || hero.heroState!.gold < cost + ITEM_GOLD_BUFFER) return -1;
+      if (!canStore(hero.heroState!.inventory, item, newCharges(item))) continue;
+      const shop = this.nearestShop(hero, item, Infinity, null, null);
+      if (!shop) return -1;
+      this.stateText = 'Shopping';
+      this.campIndex = -1;
+      if (!shopInRange(hero, item)) {
+        if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_SHOP, item, shop.pos[0], shop.pos[1])) {
+          this.send(sim, { type: CommandType.Move, x: shop.pos[0], y: shop.pos[1], queue: false });
+          this.setItemPlan(PLAN_SHOP, item, shop.pos[0], shop.pos[1]);
+          return 1;
+        }
+        return 0;
+      }
+      if (availableCommands > 0 && this.send(sim, { type: CommandType.BuyItem, item })) return 1;
+      return 0;
+    }
+    return -1;
+  }
+
+  private buyUpgrades(sim: MatchSim, hero: SimEntity, routeX: number | null, routeY: number | null, availableCommands: number): number {
+    const faction = sim.factions?.get(this.slot);
+    if (!faction || faction.defeated || hero.heroState!.gold <= UPGRADE_GOLD_BUFFER) return -1;
+    const hall = this.nearHall(sim, hero, faction.buildings, routeX, routeY);
+    if (!hall) return -1;
+    if (this.upgradeBudget < 0) {
+      this.upgradeBudget = (hero.heroState!.gold - UPGRADE_GOLD_BUFFER) * UPGRADE_SPEND_SHARE;
+      this.upgradeGoldMark = hero.heroState!.gold;
+    } else if (hero.heroState!.gold > this.upgradeGoldMark) {
+      this.upgradeBudget += (hero.heroState!.gold - this.upgradeGoldMark) * UPGRADE_SPEND_SHARE;
+      this.upgradeGoldMark = hero.heroState!.gold;
+    } else if (hero.heroState!.gold < this.upgradeGoldMark) {
+      this.upgradeBudget = Math.min(this.upgradeBudget, Math.max(0, (hero.heroState!.gold - UPGRADE_GOLD_BUFFER) * UPGRADE_SPEND_SHARE));
+      this.upgradeGoldMark = hero.heroState!.gold;
+    }
+    const tech = factionTech(sim, faction);
+    let upgrade = -1;
+    let cost = 0;
+    for (const id of UPGRADE_ORDER) {
+      const status = upgradeStatus(id, tech, hero.heroState!.gold, sim.tick);
+      if (!status.ok || status.cost === null || status.cost > this.upgradeBudget) continue;
+      upgrade = UPGRADE_IDS.indexOf(id);
+      cost = status.cost;
+      break;
+    }
+    if (upgrade < 0) {
+      if (this.plan === PLAN_UPGRADES) this.plan = PLAN_NONE;
+      return -1;
+    }
+    this.stateText = 'Buying upgrades';
+    this.campIndex = -1;
+    if (!hallInRange(sim, hero, faction)) {
+      this.setHallApproach(hero, hall);
+      if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_UPGRADES, hall.id, this.planX, this.planY)) {
+        this.send(sim, { type: CommandType.Move, x: this.planX, y: this.planY, queue: false });
+        this.setItemPlan(PLAN_UPGRADES, hall.id, this.planX, this.planY);
+        return 1;
+      }
+      return 0;
+    }
+    if (availableCommands > 0 && upgradeProblem(sim, hero, upgrade) === null && this.send(sim, { type: CommandType.BuyUpgrade, upgrade })) {
+      this.upgradeBudget -= cost;
+      this.upgradeGoldMark -= cost;
+      this.plan = PLAN_UPGRADES;
+      this.planTarget = hall.id;
+      return 1;
+    }
+    return 0;
+  }
+
+  private nearestShop(
+    hero: SimEntity,
+    item: number,
+    maxDistance: number,
+    routeX: number | null,
+    routeY: number | null,
+  ): (typeof gameData.map.shops)[number] | null {
+    let best: (typeof gameData.map.shops)[number] | null = null;
+    let bestDistance = Infinity;
+    for (const mapShop of gameData.map.shops) {
+      const shop = gameData.shops.find((entry) => entry.id === mapShop.type);
+      if (!shop || !shop.items.includes(ITEMS[item]!.id)) continue;
+      const d = distance(hero, mapShop.pos[0], mapShop.pos[1]);
+      const onRoute =
+        routeX !== null &&
+        routeY !== null &&
+        this.pointSegmentDistance(mapShop.pos[0], mapShop.pos[1], hero, routeX, routeY) <= shop.useRange;
+      if ((d > maxDistance && !onRoute) || d >= bestDistance) continue;
+      bestDistance = d;
+      best = mapShop;
+    }
+    return best;
+  }
+
+  private nearHall(
+    sim: MatchSim,
+    hero: SimEntity,
+    buildings: ReadonlySet<number>,
+    routeX: number | null,
+    routeY: number | null,
+  ): SimEntity | null {
+    let best: SimEntity | null = null;
+    let bestDistance = Infinity;
+    for (const id of buildings) {
+      const hall = sim.get(id);
+      if (!hall?.alive || !hall.building?.done || !isTownHall(hall)) continue;
+      const d = Math.max(
+        0,
+        rectDistance(hero.mover.x, hero.mover.y, hall.mover.x, hall.mover.y, hall.building.w, hall.building.h) - hero.stats.radius,
+      );
+      const onRoute =
+        routeX !== null &&
+        routeY !== null &&
+        this.pointSegmentDistance(hall.mover.x, hall.mover.y, hero, routeX, routeY) <=
+          HALL_NEAR + Math.hypot(hall.building.w, hall.building.h) * 0.5 + hero.stats.radius;
+      if ((d > HALL_NEAR && !onRoute) || d >= bestDistance) continue;
+      bestDistance = d;
+      best = hall;
+    }
+    return best;
+  }
+
+  private pointSegmentDistance(x: number, y: number, hero: SimEntity, endX: number, endY: number): number {
+    const dx = endX - hero.mover.x;
+    const dy = endY - hero.mover.y;
+    const length2 = dx * dx + dy * dy;
+    const t = length2 > 0 ? Math.max(0, Math.min(1, ((x - hero.mover.x) * dx + (y - hero.mover.y) * dy) / length2)) : 0;
+    return Math.hypot(x - (hero.mover.x + dx * t), y - (hero.mover.y + dy * t));
+  }
+
+  private setHallApproach(hero: SimEntity, hall: SimEntity): void {
+    const building = hall.building!;
+    const dx = hero.mover.x - hall.mover.x;
+    const dy = hero.mover.y - hall.mover.y;
+    if (Math.abs(dx) / building.w >= Math.abs(dy) / building.h) {
+      this.planX = hall.mover.x + Math.sign(dx || 1) * (building.w * 0.5 + hero.stats.radius + 5);
+      this.planY = hall.mover.y;
+    } else {
+      this.planX = hall.mover.x;
+      this.planY = hall.mover.y + Math.sign(dy || 1) * (building.h * 0.5 + hero.stats.radius + 5);
+    }
+  }
+
+  private hasItem(hero: SimEntity, item: number): boolean {
+    for (const stack of hero.heroState!.inventory) if (stack?.item === item) return true;
+    return false;
   }
 
   private hasAllyHeroNear(sim: MatchSim, hero: SimEntity): boolean {
@@ -433,9 +703,20 @@ export class HeroBot {
     return this.plan !== plan || this.planX !== x || this.planY !== y || hero.order !== order;
   }
 
+  private needsMoveOrder(hero: SimEntity, plan: number, target: number, x: number, y: number): boolean {
+    return this.plan !== plan || this.planTarget !== target || this.planX !== x || this.planY !== y || hero.order !== 'move';
+  }
+
   private setPointPlan(plan: number, x: number, y: number): void {
     this.plan = plan;
     this.planTarget = 0;
+    this.planX = x;
+    this.planY = y;
+  }
+
+  private setItemPlan(plan: number, target: number, x: number, y: number): void {
+    this.plan = plan;
+    this.planTarget = target;
     this.planX = x;
     this.planY = y;
   }

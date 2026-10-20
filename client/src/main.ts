@@ -9,6 +9,11 @@ import {
   canStore,
   ENTITY_TYPES,
   footprintOf,
+  rectDistance,
+  upgradeStatus,
+  UPGRADE_IDS,
+  UPGRADES,
+  type FactionTech,
   isBuildingType,
   isMineType,
   gameData,
@@ -44,10 +49,18 @@ import { GAME_FPS, MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
-import { createLobbyScreen } from './ui/lobby-screen';
+import { createLobbyScreen, COLOR_NAMES } from './ui/lobby-screen';
 import { Minimap } from './ui/minimap';
 import { Router } from './ui/router';
-import { createEndScreen, createGameScreen, createMenuScreen, showFatalError, toggleFullScreen, type ItemDrop } from './ui/screens';
+import {
+  createEndScreen,
+  createGameScreen,
+  createMenuScreen,
+  showFatalError,
+  toggleFullScreen,
+  type ItemDrop,
+  type ShopView,
+} from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
 import { abilityBlockReason } from './ui/ability-feedback';
@@ -90,7 +103,10 @@ async function main(): Promise<void> {
   let sentLoad = -1;
   let joinCode = params.get('join')?.trim().toUpperCase() || null;
   // Dev shortcut: ?play makes a room and starts a match alone as soon as loading is done.
-  let autoPlay = params.has('play');
+  // ?watch=5 (dev): bots play all four slots, we watch at 5x speed. ?fps=30 caps the frame rate.
+  const watchSpeed = Math.max(0, Math.min(10, Number(params.get('watch')) || 0));
+  const gameFps = Math.max(10, Number(params.get('fps')) || GAME_FPS);
+  let autoPlay = params.has('play') || watchSpeed > 0;
   let roomCheck: ReturnType<typeof setTimeout> | null = null;
 
   const router = new Router(uiHost);
@@ -144,7 +160,10 @@ async function main(): Promise<void> {
     if (!autoPlay || !room || room.phase !== 'lobby' || room.hostId !== myId) return;
     if (room.slots.find((s) => s.playerId === myId)?.load !== 100) return;
     autoPlay = false;
-    net.send({ type: 'start' });
+    if (watchSpeed) {
+      for (const s of room.slots) if (s.kind === 'open') net.send({ type: 'setSlotKind', slot: s.index, kind: 'bot' });
+      net.send({ type: 'start', watch: { speed: watchSpeed } });
+    } else net.send({ type: 'start' });
   };
   const endMatch = () => {
     match?.dispose();
@@ -350,8 +369,74 @@ async function main(): Promise<void> {
       return !!def && Math.hypot(s.pos[0] - u.x, s.pos[1] - u.y) <= def.useRange - 0.2;
     });
   };
+  // ---- Town Hall upgrades: the same panel, when the hero stands at its own finished Town Hall.
+  /** the panel shows the Town Hall upgrades (not a shop) */
+  let hallShown = false;
+  /** closed by the player while standing there: do not open again until the hero leaves */
+  let hallClosed = false;
+  const HALL_TYPES = new Set(['town_hall', 'stronghold', 'citadel'].map((id) => ENTITY_TYPES.indexOf(id)));
+  const hallNear = (): boolean => {
+    const u = match?.ownHero?.unit;
+    if (!match || !u || u.dead) return false;
+    for (const e of match.entities.values()) {
+      if (e.owner !== match.slot || !HALL_TYPES.has(e.type) || e.state & (UnitState.Constructing | UnitState.Dead) || !e.unit) continue;
+      const [w, h] = footprintOf(e.type);
+      if (rectDistance(u.x, u.y, e.unit.x, e.unit.y, w, h) <= gameData.upgrades.useRange - 0.2) return true;
+    }
+    return false;
+  };
+  const buildingName = (id: string) => gameData.buildings.buildings.find((b) => b.id === id)?.name ?? id;
+  const hallView = (): ShopView => {
+    const f = match!.faction;
+    const tech: FactionTech = {
+      tier: Math.max(1, Math.min(3, f.tier)) as 1 | 2 | 3,
+      buildings: new Set(f.tech.map((t) => ENTITY_TYPES[t]!)),
+      levels: Object.fromEntries(UPGRADE_IDS.map((id, i) => [id, f.upgrades[i] ?? 0])),
+      readyAt: Object.fromEntries(UPGRADE_IDS.map((id, i) => [id, f.upgradeReady[i] ?? 0])),
+    };
+    const now = match!.clock.serverTick();
+    return {
+      name: S.hallUpgrades,
+      hint: S.hallHint,
+      inRange: true,
+      items: UPGRADES.map((d, i) => {
+        const st = upgradeStatus(UPGRADE_IDS[i]!, tech, match!.player.gold, now);
+        const lines = [d.name, d.text, d.repeatable ? '' : S.upgradeLevel(st.level, st.maxLevel)];
+        if (st.cost !== null && st.problem !== 'max') lines.push(`${S.gold}: ${st.cost}`);
+        // The reason it can not be bought comes last: the alert shows it.
+        const why =
+          st.problem === 'needs'
+            ? S.upgradeNeeds(st.needs.map(buildingName).join(', '))
+            : st.problem === 'cooldown'
+              ? S.upgradeReady(Math.ceil(((f.upgradeReady[i] ?? 0) - now) / 20))
+              : st.problem === 'citadel'
+                ? S.upgradeCitadel
+                : st.problem === 'gold'
+                  ? S.noGold
+                  : st.problem === 'max'
+                    ? S.upgradeMax
+                    : '';
+        if (why) lines.push(why);
+        return {
+          item: i,
+          icon: assets.has(`icons/up_${d.id}.webp`) ? assets.url(`icons/up_${d.id}.webp`) : null,
+          cost: st.cost ?? 0,
+          label: st.problem === 'max' ? S.upgradeMax : undefined,
+          canAfford: st.ok,
+          tooltip: lines.filter(Boolean),
+        };
+      }),
+    };
+  };
   const updateShop = () => {
     const near = shopNear();
+    // No map shop open: the Town Hall panel when the hero is at its own hall.
+    if (!shop && near < 0 && match?.hasFaction) {
+      const atHall = hallNear();
+      if (!atHall) hallClosed = false;
+      hallShown = atHall && !hallClosed;
+      if (hallShown) return game.setShop(hallView());
+    } else hallShown = false;
     if (near < 0) shopClosedNear = -1;
     if (near >= 0 && !shop && near !== shopClosedNear) shop = { index: near, pinned: false };
     if (shop && !shop.pinned && near !== shop.index) shop = null;
@@ -374,6 +459,11 @@ async function main(): Promise<void> {
     });
   };
   closeShop = () => {
+    if (hallShown) {
+      hallClosed = true;
+      hallShown = false;
+      return game.setShop(null);
+    }
     if (shop && shopNear() === shop.index) shopClosedNear = shop.index;
     shop = null;
     game.setShop(null);
@@ -385,6 +475,13 @@ async function main(): Promise<void> {
       return info ? { item: info.index, charges: info.charges } : null;
     });
   buyItem = (item) => {
+    if (hallShown && match) {
+      if (!hallNear()) return game.alert(S.goToHall);
+      const view = hallView().items[item];
+      if (view && !view.canAfford) return game.alert(view.tooltip[view.tooltip.length - 1] ?? S.noGold);
+      // (the last tooltip line is the reason: needs, cooldown, gold, done)
+      return match.buyUpgrade(item);
+    }
     if (!match?.ownHero || !shop) return;
     const d = ITEMS[item]!;
     if (shopNear() !== shop.index) return game.alert(S.goToShop);
@@ -403,7 +500,19 @@ async function main(): Promise<void> {
   setInterval(() => {
     if (router.screen !== 'game' || !match) return;
     const own = match.ownHero;
-    game.setFaction(match.hasFaction ? match.faction : null);
+    if (match.spectator) {
+      // Watch mode: one line per faction.
+      game.setFaction(null);
+      const lines: string[] = [`${S.watching} ×${match.info.watch ?? 1}`];
+      for (const s of match.info.slots) {
+        const f = match.factions.get(s.index);
+        if (f)
+          lines.push(
+            `${COLOR_NAMES[s.color] ?? s.index}: ${f.gold}g ${f.wood}w · ${f.supplyUsed}/${f.supplyCap} · T${f.tier} · ${f.workers}w ${f.army}a · ${f.status}`,
+          );
+      }
+      game.setStatus(lines.join('\n'));
+    } else game.setFaction(match.hasFaction ? match.faction : null);
     if (aim && own && own.state & UnitState.Dead) setAim(null);
     const p = match.player;
     const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
@@ -719,11 +828,11 @@ async function main(): Promise<void> {
 
   router.onChange((name) => {
     if (name !== 'game') setAim(null);
-    engine.maxFPS = name === 'game' ? GAME_FPS : MENU_FPS;
+    engine.maxFPS = name === 'game' ? gameFps : MENU_FPS;
     w.setMenuMode(name !== 'game');
   });
   w.setMenuMode(router.screen !== 'game');
-  engine.maxFPS = router.screen === 'game' ? GAME_FPS : MENU_FPS;
+  engine.maxFPS = router.screen === 'game' ? gameFps : MENU_FPS;
   engine.runRenderLoop(() => {
     if (!document.hidden) w.scene.render();
   });

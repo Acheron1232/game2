@@ -122,6 +122,8 @@ export interface MatchSetup {
   testArea?: 'bases' | 'center';
   /** Tests: no neutral camps. */
   noCamps?: boolean;
+  /** Watch mode (dev): bots in every slot, spectators see all, this many steps per network tick. */
+  watch?: number;
 }
 
 export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'hold' | 'cast' | 'item';
