@@ -57,7 +57,18 @@ Browser proof: Huntress level 1 cast Mana Mark on herself: `Pick an enemy.`, red
 
 Validation: **100 tests pass** (47 shared, 34 client, 10 server, 9 tools), production build/typechecks and lint pass. All changes remain in the isolated branch.
 
-## Still checking
+## Cycle 6 — Blink departure and late ability checks
 
-- Blink and longer fights; feedback if a caster becomes stunned/silenced after aiming starts.
-- Crowded-match bandwidth, without lowering snapshot frequency or precision.
+- **Blink departure effect (fixed).** Local prediction could already draw the hero toward the destination when the cast event reached the render timeline. The departure burst now uses the caster position captured at the server cast tick. Before/after: `screenshots/playtest-blink-before.jpg` and `screenshots/playtest-blink-fixed.jpg`. The level-3 browser cast spent 50 mana (396 to 346), started its eight-second cooldown and kept `fixes 0/0` at 120 FPS.
+- **Availability can change while aiming (fixed).** Hotkeys, aim coloring and the final target click share the same readiness checks. A caster who becomes stunned, silenced, dead, short of resources or on cooldown gets feedback before a command is sent. Two tests cover those transitions. In a real two-player duel, Golem stunned an already-aiming Huntress: the next click showed `Can't do that now.`, kept the red aim rings and spent no mana or cooldown. Screenshot: `screenshots/playtest-stunned-aim.jpg`.
+
+Final validation: **102 tests pass** (47 shared, 36 client, 10 server, 9 tools), lint and production build/typechecks pass. The final sampled two-player view showed native 1362 × 1544, 120/120 FPS, 3.7 ms CPU, 0.4 KB/s and `fixes 0/0`. The own test match was ended and the extra player tab closed. The audit stopped at the user's request; no new phase features or textures were added, and the branch has not been pushed or merged.
+
+## Remaining findings and limits
+
+- The crowded 300-unit **server-only** load case exceeds the downstream target: 23.65 KB/s versus 20 KB/s. It does not measure browser rendering of 300 fighting units.
+- No sustained temperature, fan or power measurement, weak-laptop run, or long soak test was completed. Short 120 FPS samples do not establish a thermal improvement.
+- Actual GPU device loss/recovery was not forced; only the terrain rebuild metadata was corrected.
+- Final code inspection found that predictor command-history pruning depends on reaching the correction path. A long session with near-perfect prediction may retain old entries; memory bounds and sequence-wrap behavior deserve a focused regression test. This is an inspection finding, not a reproduced or fixed gameplay bug.
+- The existing ability visuals are still provisional. This pass fixes timing, alignment and readability; a complete art, sound and effects pass remains future work.
+- The snapshot protocol is now version 6. Client and server must be updated together when these changes are deployed.

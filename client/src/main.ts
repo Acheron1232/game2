@@ -5,7 +5,6 @@ import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
 import './ui-skin.css';
 import {
-  BuffFlag,
   ENTITY_TYPES,
   gameData,
   lv,
@@ -38,6 +37,7 @@ import { Router } from './ui/router';
 import { createEndScreen, createGameScreen, createMenuScreen, showFatalError, toggleFullScreen } from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
+import { abilityBlockReason } from './ui/ability-feedback';
 
 const NAME_KEY = 'tw.playerName';
 function readName(): string {
@@ -371,16 +371,11 @@ async function main(): Promise<void> {
   /** Client-side check first, so the player gets a message at once. */
   useAbility = (slot) => {
     if (!match?.ownHero) return;
-    if (match.ownHero.state & UnitState.Dead) return game.alert(S.deadAbility);
     const info = match.ability(slot);
     if (!info) return;
     const a = info.def;
-    if (info.level === 0) return game.alert(info.canLearn ? S.learn : S.notLearned);
-    if (a.kind !== 'active') return game.alert(S.passive);
-    if (match.ownHero.buffs & BuffFlag.Stun) return game.alert(S.stunned);
-    if (match.ownHero.buffs & BuffFlag.Silence) return game.alert(S.silenced);
-    if (info.cooldownLeft > 0) return game.alert(S.abilityNotReady);
-    if (!info.enoughMana) return game.alert(lv(a.params['healthCost'], 1) ? S.noHealth : S.noMana);
+    const blocked = abilityBlockReason(info, match.ownHero.state, match.ownHero.buffs);
+    if (blocked) return game.alert(blocked);
     if (a.target === 'none') return match.cast(slot, { kind: 0, id: 0, x: 0, y: 0 });
     setAim({ kind: 'ability', slot });
   };
@@ -429,7 +424,7 @@ async function main(): Promise<void> {
       p.y,
       w.terrain.heightAt,
       hit?.unit ? aimTarget : null,
-      !info.enoughMana || (!!hit && !match.canTarget(info.def, hit)),
+      !!abilityBlockReason(info, match.ownHero.state, match.ownHero.buffs) || (!!hit && !match.canTarget(info.def, hit)),
     );
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -457,6 +452,10 @@ async function main(): Promise<void> {
       if (a?.kind === 'ability') {
         const info = match.ability(a.slot);
         if (!info) return setAim(null);
+        const own = match.ownHero;
+        if (!own) return setAim(null);
+        const blocked = abilityBlockReason(info, own.state, own.buffs);
+        if (blocked) return game.alert(blocked);
         if (info.def.target === 'unit') {
           if (!hit) return game.alert(S.pickTarget);
           if (!match.canTarget(info.def, hit)) return game.alert(info.def.filter.includes('enemy') ? S.pickEnemy : S.pickAlly);

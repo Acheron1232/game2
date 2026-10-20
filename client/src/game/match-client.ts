@@ -98,6 +98,7 @@ export class MatchClient {
   private readonly projectiles: Projectiles;
   readonly fx: AbilityFx;
   private readonly deadSince = new Map<number, number>();
+  private readonly blinkOrigins = new Map<number, { x: number; y: number; valid: boolean }>();
   private readonly pt = { x: 0, y: 0 };
   private readonly teams: number[] = [];
   private readonly projectText = (x: number, y: number, up: number, out: { x: number; y: number }) => this.world.screenPoint(x, y, up, out);
@@ -276,6 +277,19 @@ export class MatchClient {
     if (full) for (const e of [...this.entities.values()]) if (e.mark !== mark) this.remove(e.id);
     for (let i = 0; i < s.eventCount; i++) {
       const ev = s.events[i]!;
+      if (ev.type === EventType.Cast && ev.kind !== 255 && ABILITIES[ev.kind & 127]?.id === 'blink') {
+        const caster = this.entities.get(ev.a);
+        if (caster) {
+          // Keep the server's departure point. Prediction may already have moved the drawn
+          // hero toward the landing point when the effect reaches the render timeline.
+          caster.sample(s.tick, this.pose, s.tick);
+          const origin = this.blinkOrigins.get(ev.a) ?? { x: 0, y: 0, valid: false };
+          origin.x = this.pose.x;
+          origin.y = this.pose.y;
+          origin.valid = true;
+          this.blinkOrigins.set(ev.a, origin);
+        }
+      }
       this.events.add(s.tick, ev);
     }
 
@@ -432,9 +446,14 @@ export class MatchClient {
         u.arcEnd = t0 + (lv(a.params['leapTime'], 1) || lv(a.params['diveTime'], 1)) * 1000;
         break;
       }
-      case 'blink':
-        this.fx.burst(u.x, gh(u.x, u.y) + 1, -u.y, look.frames, look.color, look.color2, 30, 0.5, 2);
+      case 'blink': {
+        const origin = this.blinkOrigins.get(caster);
+        const x = origin?.valid ? origin.x : u.x;
+        const y = origin?.valid ? origin.y : u.y;
+        if (origin) origin.valid = false;
+        this.fx.burst(x, gh(x, y) + 1, -y, look.frames, look.color, look.color2, 30, 0.5, 2);
         break;
+      }
       case 'fire_breath': {
         const dir = Math.atan2(py - u.y, px - u.x);
         this.fx.cone(u.x, gh(u.x, u.y) + 0.2, -u.y, lv(a.params['length'], 1), lv(a.params['angleDeg'], 1), dir, look.color);
@@ -496,6 +515,7 @@ export class MatchClient {
     this.fx.clearMarkers(id);
     this.entities.delete(id);
     this.deadSince.delete(id);
+    this.blinkOrigins.delete(id);
     if (e === this.ownHero) {
       this.ownHero = null;
       this.predictor = null;
