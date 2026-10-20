@@ -12,8 +12,13 @@ export class NavBlockers {
   private readonly base: Uint8Array;
   /** how many building footprints cover each cell */
   private readonly cover: Uint8Array;
-  /** bumped on every change (flow fields and cached paths use it) */
+  /** bumped on every change (cached paths use it) */
   version = 0;
+  /**
+   * bumped only when cells close (a building is placed). Flow fields only need a rebuild then:
+   * cells that open (a chopped tree, a fallen building) never trap a unit on an old field.
+   */
+  closeVersion = 0;
   private dirty = false;
 
   constructor(private readonly nav: NavGrid) {
@@ -40,6 +45,7 @@ export class NavBlockers {
       this.cover[i]!++;
       this.nav.walk[i] = 0;
     });
+    this.closeVersion++;
     this.changed();
   }
 

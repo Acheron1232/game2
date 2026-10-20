@@ -16,6 +16,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Phase 8b is done, with open tuning** (2026-10-20): the faction brain plays every faction. 10 headless 4-AI matches (`sim:matches`, seeds 1–10, Normal): 9 have a winner, at 31, 37, 39, 40, 40, 45, 47, 49 and 50 minutes; one has none after 60 minutes; 1 stuck report in all 10. So the Done-when target (all 10 with a winner in 20–45 min, no stuck) is **not fully met yet**: 3 games run a little long and 1 stalls. Tick time: average 0.11–0.22 ms, p99 ~3.7 ms; rare single ticks of 15–190 ms that come from garbage collection, not from AI work (checked by timing every part). The rest of the tuning is planned in 8d (watching bot games). Browser (WebGPU): the player's own faction builds its base by itself, status line in the "Your Kingdom" panel, 120 FPS, 141 draws, 1.8 KB/s down. 135 shared + 14 server + 36 client + 9 tools tests, lint, typecheck, data check, build pass.
 - **Phase 7c checked and merged into Phase 8** (2026-10-20): the 7c branch passed lint, typecheck and its 106 tests alone, and the load test (300 units: tick avg 1.4 ms, max 7.7 ms, under 3 KB/s per player). Merged with the polish commits and Phase 8a: protocol 8 (items + factions), event numbers 19–21 for Chain / ItemUse / Notice, worker jobs and item orders both in the tick loop. On this Mac (WebGPU, 2 players in two tabs, both human, factions on): shop panel, buying, inventory, potion while being hit (301 → 418 health), heroes see and fight each other; 120 FPS, CPU 2.5–2.7 ms, 116–122 draws, ~0.7 KB/s down. 179 tests, lint, typecheck, data check and build pass. Hero bots now heal at the nearest Fountain of Life (not at home, where nothing heals) and rest between camps below 55% health; camp rule is now "camp level ≤ 4 + 2 × hero level" (ai.json). A solo bot gets 460–560 XP in 8 minutes (level 2–3).
 - **Phase 8a is done** (2026-10-20): factions in the simulation and on screen. Every player slot has a faction run by the AI: Town Hall + 5 workers at the start, 12 gold mines, gold and wood gathering, chopped trees open the walk grid, building sites, training, Town Hall tiers, upgrade effects, supply, defeat and victory. Bot slots get a hero bot. The client draws buildings and workers from the server, hides chopped trees, mirrors building footprints in its own walk grid (prediction), and shows a faction panel and a Victory / Defeat banner. The faction does not plan anything yet (no brain): that is **Phase 8b**. Checked: 84 shared + 14 server + 36 client + 9 tools tests, lint, typecheck, build, data check; browser (WebGPU) match with a bot slot: 120 FPS, 104–166 draws, `fixes 0/0`, ~1 KB/s down. 7c came from another agent (branch `claude/amazing-rubin-vm77ll`) and is merged now, see the next note.
 - **Phase 5 map rework finished** (2026-10-20), user feedback "map is small, flat, empty": map 256 × 256 with hills, a watch hill, a lake dip and a mountain wall at the edge (plus 64 units of mountains with pines outside the map). 7,451 trees and 6,735 decor items (plants, rocks, stumps, ruins, fences, crates), all drawn as thin instances in 48-unit chunks. New temple plaza ruins: pillar gates at the ramp tops, a pillar ring around the market, statues on the diagonals, blocks around the pools. Fight zones and tactics written in [design/MAP.md](design/MAP.md#fight-zones-and-tactics), with measured walk times. Checked in the browser: WebGPU 120 FPS, 115–121 draws, 203–263k tris; WebGL2 120 FPS, GPU 4.0 ms, 118 draws. Build, lint, data check and 36 tests pass.
@@ -40,7 +41,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
 | 7 | Combat, heroes, camps, items | **Done** | 7a: combat core, 24 camps, XP and levels, HUD. 7b: all 32 abilities + buffs + auras + monster skills, Q W E R bar, aiming, placeholder effects. 7c: 23 items, inventory, shops, ground items, camp drops, fountains, uphill misses, 2-player browser test |
-| 8 | Faction AI and bots | **In progress** | 8a done: factions, economy, buildings, trees, upgrades, hero bot, headless runner, protocol 7. Next 8b: faction brain + army movement + 10 bot matches |
+| 8 | Faction AI and bots | **In progress** | 8a done: factions, economy, buildings, trees, upgrades, hero bot, headless runner. 7c merged (protocol 8). 8b done: faction brain, army flow fields, target choice; 9/10 bot matches have a winner. Next 8c: hero upgrades shop, lobby difficulty, spectator + game speed; then 8d: watch bot games |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
 
@@ -49,8 +50,26 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 Full design: [design/AI_ARCHITECTURE.md](design/AI_ARCHITECTURE.md).
 
 - **8a — faction core (done):** see below.
+- **8b — faction brain (done, tuning goes on in 8d):** see below.
 - **8b — faction brain:** economy / build / production / army / target / defense / expansion / retreat managers from `ai.json` and FACTION.md, army movement with flow fields, target priority (catapults hit buildings first, focus fire), AI status line, `pnpm --filter @game/server sim:matches` with 10 bot matches: a winner in 20–45 min, no stuck report.
+- **8d — watch bot games (asked by the user, 2026-10-20):** when Phase 8 is fully done, run several test games with only bots in the browser, with the game at ×5 or ×10 speed and an FPS limit, and just watch them: find and fix bugs, then write a full analysis of these games (economy, build order, army moves, fights, hero bots, stuck cases, performance). Needs a spectator view (see all, follow armies) and a dev game-speed setting on the server (more ticks per second, same tick length).
 - **8c — hero side and polish:** Town Hall upgrade shop for the hero (command + panel), bot difficulty in the lobby, hero bot hooks (join attacks, defend), hero bot tuning after 7c fountains, building death look, end screen with stats, budgets with full armies.
+
+## Phase 8b — what was made
+
+- `shared/src/sim/faction/brain.ts`: `FactionBrain` per faction (thinks every `thinkDelaySec`) and `FactionAI` (all brains + the shared `ArmyMover` + hero bots; `sim.ai`, updated inside `MatchSim.step` before units move). The match runner and the headless runner attach it.
+  - Economy: workers up to `workerTarget`, gold / wood share that adapts (more wood when gold piles up, less when wood does), two-way rebalancing, militia when the Town Hall is under 30% and enemies are in the base.
+  - Houses when free supply < 6. Build order from `ai.json` (a step counts as done when started; lost buildings are rebuilt because steps count what exists), Easy waits 20 s between steps, free play after (tiers, towers, more production when gold > 500).
+  - Placement with `findBuildSpot` in the start's build area, mine and exit corridors, hero spawn kept free, towers toward the map center.
+  - Production with the unit mix of the tier (+ reactions to the hero's upgrades), only units it can pay without touching money a build step waits for (each resource checked on its own).
+  - Army: home group at the rally point, attack army when `firstAttackArmySupply` / `attackArmySupply` is reached (waits for stragglers), 4 supply stay home after the first attack, reinforcement waves, retarget every 5 s, retreat under `retreatAtArmyPct`, Hard pulls hurt units home, camps near home are cleared when idle.
+  - Defense: enemies (not workers passing by) within 24 of a Town Hall; the home group fights there, the attack army comes back when it is closer to home than to its goal, the attack still thinks meanwhile.
+  - Expansion: the first one at `expandAtMinute`, then whenever the gold in our mines drops below 5,000 (main mines run dry after ~20–25 min). Nearest free mine with a Town Hall spot, or the main base of a defeated player. The army clears the camp on the spot first (it is called back from an attack when the gold is nearly gone). The Town Hall money is kept from then on.
+  - Status line: "Building Barracks", "Saving for Stronghold (240 / 300 gold)", "Army gathering (18 / 24 supply)", "Attacking Blue · Saving for Town Hall (…)", "Defending the base!", "Clearing the expansion", "Retreating".
+- Codex modules: target choice (`targeting.ts`: units that hit us first, catapults on buildings and towers first, focus fire on Normal / Hard; used by `MatchSim.acquire` for faction units and towers) and army movement (`army.ts`: shared flow fields, one field build per tick at most, stuck fallback to A*).
+- Sim fixes found by the bot matches: a unit whose target died kept its attack wind-up and never walked again; an attack-move with no way to its point searched A* every tick (8 ms each); camps came back on top of a new Town Hall (now a faction building nearby keeps a camp away, like a hero does); workers re-planned their walk every second.
+- Hero bots get the brain's hooks (army target, base under attack).
+- `sim:matches`: stuck reports include the status line; "saving for something it can not pay yet" and "no worker and no money for one" are not counted as stuck; `noAi` option for the stuck-check test.
 
 ## Phase 8a — what was made
 
@@ -239,6 +258,9 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Flow fields are rebuilt only when walk cells close (a building is placed), not when they open (trees, ruins): an old field never leads into a wall then, and chopping no longer forces rebuilds.
+- 2026-10-20 — A neutral camp does not come back while a faction building is within 15 units (same rule as heroes), so a cleared expansion stays free.
+- 2026-10-20 — Every human player's faction is played by the same brain as a bot's; difficulty Normal for now (lobby picker in 8c).
 - 2026-10-20 — Phase 8: every player (human or bot) has an AI faction; a Bot slot also has an AI hero. Lobby slots use Normal until 8c adds a difficulty picker.
 - 2026-10-20 — Buildings and mines stay known to a player once seen (like a map under fog); their changes are only sent while the team sees them. This lets the client close building cells for prediction.
 - 2026-10-20 — Building footprints snap to cell lines with 0.02-cell slack, so the quantized position on the client closes the same cells as the server.
@@ -333,6 +355,9 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
+
+- Bot matches: 3 of 10 last 47–50 minutes and 1 of 10 has no winner after 60 (target 20–45); tuning in 8d.
+- Rare tick spikes of 15–190 ms from garbage collection in long matches (paths and short step arrays are created per order). Pool them in Phase 10.
 
 - Hero bots do not buy items yet (potions, their item list in ai.json) and do not spend gold on Town Hall upgrades: 8c.
 - On a tall, narrow window the camera can not center on a base at the map edge (camera clamp); fine at 16:9.

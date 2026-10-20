@@ -4,6 +4,11 @@
 // the events the player can see, and the player's own hero data when it changed.
 
 import { EventType } from '../sim/events';
+import { gameData } from '../data/index';
+import { ENTITY_TYPES } from '../sim/entity-types';
+
+/** supply per entity type (0 for heroes and buildings) */
+const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
 import { itemReadyAt } from '../sim/items';
 import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { TeamVision } from '../sim/vision';
@@ -335,10 +340,16 @@ export class ClientView {
     f.supplyUsed = Math.min(255, fs.supplyUsed);
     f.supplyCap = Math.min(255, fs.supplyCap);
     f.tier = fs.tier;
-    let workers = 0;
-    for (const id of fs.units) if (sim.get(id)?.job) workers++;
+    let workers = 0,
+      army = 0;
+    for (const id of fs.units) {
+      const u = sim.get(id);
+      if (!u?.alive) continue;
+      if (u.job) workers++;
+      else army += SUPPLY[u.type] ?? 0;
+    }
     f.workers = Math.min(255, workers);
-    f.army = Math.max(0, Math.min(255, fs.supplyUsed - workers));
+    f.army = Math.min(255, army);
     f.status = fs.status;
     const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status}`;
     if (key === this.factionKey) return;

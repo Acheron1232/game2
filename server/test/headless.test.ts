@@ -37,6 +37,7 @@ describe('headless match', () => {
       seed: 3,
       slots: 2,
       maxMinutes: 62 / 60,
+      noAi: true,
       attach: (sim) => {
         const faction = sim.factions!.get(0)!;
         faction.gold = 10_000;
@@ -50,8 +51,8 @@ describe('headless match', () => {
 
     expect(result.stuck).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ slot: 0, seconds: 61, reason: 'idle with resources' }),
-        expect.objectContaining({ slot: 0, seconds: 61, reason: 'no worker has a job' }),
+        expect.objectContaining({ slot: 0, seconds: 61, reason: expect.stringContaining('idle with resources') }),
+        expect.objectContaining({ slot: 0, seconds: 61, reason: expect.stringContaining('no worker has a job') }),
       ]),
     );
   });

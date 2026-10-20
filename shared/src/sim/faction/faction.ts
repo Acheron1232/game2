@@ -22,6 +22,7 @@ const SITE_HP = 0.1;
 const MAX_QUEUE = 5;
 /** Workers look for trees this far from their Town Hall. */
 const WOOD_RANGE = 26;
+const FAR_WOOD_RANGE = 70;
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
 
@@ -353,6 +354,7 @@ export class Factions {
     j.repathAt = 0;
     w.order = 'idle';
     w.targetId = 0;
+    w.swing = 0;
     if (kind === 'wood' && target >= 0) this.treeTaken.set(target, w.id);
   }
 
@@ -404,8 +406,9 @@ export class Factions {
 
   private walkTo(w: SimEntity, x: number, y: number): void {
     const j = w.job!;
+    // Targets do not move: a new plan only when the walk is over (or now and then, if pushed off).
     if (this.sim.tick < j.repathAt && w.mover.path.length) return;
-    j.repathAt = this.sim.tick + 20;
+    j.repathAt = this.sim.tick + 5 * TICK_RATE;
     this.sim.moveTo(w, x, y);
   }
 
@@ -532,6 +535,8 @@ export class Factions {
     let t = this.findTree(x, y, 14);
     if (t && hall && Math.hypot(this.trees.x[t.tree]! - hall.mover.x, this.trees.y[t.tree]! - hall.mover.y) > WOOD_RANGE + 6) t = null;
     t ??= hall ? this.findTree(hall.mover.x, hall.mover.y) : null;
+    // The forest near the base is gone (late game): walk farther for wood.
+    t ??= hall ? this.findTree(hall.mover.x, hall.mover.y, FAR_WOOD_RANGE) : null;
     if (!t) {
       j.kind = 'idle';
       return;

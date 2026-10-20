@@ -145,11 +145,14 @@ export function onCampMemberDied(sim: MatchSim, m: SimEntity): void {
   rollCampDrop(sim, camp);
 }
 
-/** Comes back only when no hero is close, so it never pops up in someone's face. */
+/**
+ * Comes back only when no hero is close, so it never pops up in someone's face. A faction
+ * building there (a Town Hall on a cleared expansion) keeps the camp away for good.
+ */
 function tryRespawn(sim: MatchSim, camp: CampState): void {
   let heroNear = false;
   sim.grid.query(camp.x, camp.y, N.respawnNeedsNoHeroInRange, (o) => {
-    if (o.hero) return (heroNear = true);
+    if (o.hero || (o.alive && o.building?.def)) return (heroNear = true);
   });
   if (heroNear) {
     camp.respawnAt = sim.tick + TICK_RATE; // try again in a second

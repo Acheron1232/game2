@@ -67,6 +67,12 @@ import {
   type CombatStats,
 } from './stats';
 import { qPos } from '../protocol/game';
+import { pickTarget } from './faction/targeting';
+
+/** Focus fire per AI difficulty (ai.json). */
+const FOCUS_FIRE = Object.fromEntries(
+  Object.entries(gameData.ai.faction.difficulties).map(([d, r]) => [d, (r as unknown as { focusFire: boolean }).focusFire]),
+) as Record<Difficulty, boolean>;
 
 export const TICK_RATE = gameData.rules.simulation.tickRate;
 export const TICK_DT = 1 / TICK_RATE;
@@ -321,6 +327,8 @@ export class MatchSim {
 
   /** AI factions (Town Halls, workers, buildings), when the match has map data for them */
   readonly factions: Factions | null;
+  /** the faction AI and hero bots (server only; set by the match runner) */
+  ai: { update(): void } | null = null;
 
   constructor(
     readonly setup: MatchSetup,
@@ -649,6 +657,7 @@ export class MatchSim {
       if (e.targetId) this.engage(e);
     }
     this.factions?.update();
+    this.ai?.update();
     for (const e of this.entities) {
       const px = e.mover.x,
         py = e.mover.y;
@@ -657,7 +666,7 @@ export class MatchSim {
         e.hidden ||
         e.building ||
         e.forced ||
-        e.swing === 1 ||
+        (e.swing === 1 && e.targetId !== 0) ||
         this.isStunned(e) ||
         this.isRooted(e) ||
         (e.cast && e.cast.castEnd > 0) ||
@@ -687,7 +696,11 @@ export class MatchSim {
   /** Player-owned units: follow the order and pick targets. */
   private think(e: SimEntity): void {
     const target = e.targetId ? this.byId.get(e.targetId) : undefined;
-    if (e.targetId && (!target || !target.alive)) e.targetId = 0;
+    if (e.targetId && (!target || !target.alive)) {
+      e.targetId = 0;
+      // A wind-up on a dead target is over; a unit in a swing does not walk.
+      e.swing = 0;
+    }
     const due = (this.tick + e.id) % THINK_EVERY === 0;
     if (e.leaderId) return this.followLeader(e, due);
     switch (e.order) {
@@ -703,9 +716,11 @@ export class MatchSim {
       case 'attackMove':
         if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, true);
         if (!e.targetId && !e.mover.path.length) {
-          if (Math.hypot(e.orderX - e.mover.x, e.orderY - e.mover.y) > 1)
+          if (Math.hypot(e.orderX - e.mover.x, e.orderY - e.mover.y) > 1) {
             applyMove(e.mover, this.nav, e.orderX, e.orderY, false, this.isFlying(e));
-          else e.order = 'idle';
+            // No way there (a full search costs several ms): stop, do not search again every tick.
+            if (!e.mover.path.length) e.order = 'idle';
+          } else e.order = 'idle';
         }
         break;
       case 'hold':
@@ -746,6 +761,9 @@ export class MatchSim {
    * monsters, only with monsters that already fight their team (attack-move takes anything).
    */
   acquire(e: SimEntity, range: number, takeNeutrals: boolean): number {
+    // Faction units and towers: smarter choice (units that hit us, catapults on buildings, focus fire).
+    const f = !e.hero && this.factions ? this.factions.factionOf(e) : null;
+    if (f) return pickTarget(this, e, range, { focusFire: FOCUS_FIRE[f.difficulty], takeNeutrals });
     let best = 0,
       bestD = Infinity;
     this.grid.query(e.mover.x, e.mover.y, range, (o, d2) => {

@@ -7,7 +7,7 @@ import {
   buildMatchNav,
   ClientView,
   gameData,
-  HeroBot,
+  FactionAI,
   itemIndex,
   MatchSim,
   newCharges,
@@ -49,8 +49,6 @@ export class MatchRunner {
   /** bytes written per slot since the last stats read */
   readonly bytes = new Map<number, number>();
   droppedCommands = 0;
-  /** AI heroes of Bot slots */
-  private readonly bots: HeroBot[] = [];
 
   /** trees: with them the match has factions (bases, workers, the AI); without them only heroes. */
   constructor(setup: MatchSetup, terrainBytes: Uint8Array, trees?: TreeList) {
@@ -61,11 +59,12 @@ export class MatchRunner {
     this.vision.update(this.sim.entities);
     // Players can only order attacks on what their team sees.
     this.sim.canSee = (team, e) => this.vision.sees(team, e);
+    // Faction brains for every slot, hero bots for Bot slots.
+    this.sim.ai = new FactionAI(this.sim);
     this.sim.canSeePoint = (team, x, y) => this.vision.seesPoint(team, x, y);
     for (const s of setup.slots) {
       this.views.set(s.index, new ClientView(s.index, s.team));
       this.bytes.set(s.index, 0);
-      if (s.bot) this.bots.push(new HeroBot(s.index, s.ai ?? 'normal'));
     }
   }
 
@@ -128,7 +127,6 @@ export class MatchRunner {
   /** Runs one tick and returns one snapshot per online player. */
   tick(): MatchPacket[] {
     this.sim.step();
-    for (const bot of this.bots) bot.update(this.sim);
     if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();
     // Vision every 2 ticks (10 Hz) is enough for "who can I see".
     if (this.sim.tick % 2 === 1) this.vision.update(this.sim.entities);

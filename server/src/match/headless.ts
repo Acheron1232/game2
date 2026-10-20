@@ -1,6 +1,7 @@
 import {
   buildMatchNav,
   entityTypeIndex,
+  FactionAI,
   ENTITY_TYPES,
   gameData,
   MatchSim,
@@ -22,6 +23,8 @@ export interface HeadlessOptions {
   maxMinutes?: number;
   /** called every simulated game minute with the snapshot */
   onMinute?: (m: MinuteLog) => void;
+  /** tests of the stuck check: no faction brains and hero bots */
+  noAi?: boolean;
   /** extra setup after the sim is built (8b uses it to attach brains / hero bots) */
   attach?: (sim: MatchSim) => { update(): void } | void;
 }
@@ -124,8 +127,15 @@ function buildingBusy(sim: MatchSim, f: FactionState): boolean {
 
 function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
   const factions = sim.factions!;
+  // Only buildings the faction does not have yet (more Houses only while supply can grow).
   for (const def of gameData.buildings.buildings) {
     if (TIER_BUILDINGS.has(def.id) || factions.missing(f, def.requires).length > 0) continue;
+    if (
+      def.id === 'house'
+        ? f.supplyCap >= gameData.rules.economy.supplyCap || f.supplyCap - f.supplyUsed >= 6
+        : factions.has(f, def.id) || hasSite(sim, f, def.id)
+    )
+      continue;
     if (factions.canPay(f, def.cost)) return true;
   }
   for (const id of f.buildings) {
@@ -137,6 +147,19 @@ function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
       if (!unit || factions.missing(f, unit.requires).length > 0 || !factions.canPay(f, unit.cost)) continue;
       if (f.supplyUsed + (unit.supply ?? 0) <= f.supplyCap) return true;
     }
+  }
+  return false;
+}
+
+function hasAnyWorker(sim: MatchSim, f: FactionState): boolean {
+  for (const id of f.units) if (sim.get(id)?.alive && sim.get(id)?.job) return true;
+  return false;
+}
+
+function hasSite(sim: MatchSim, f: FactionState, id: string): boolean {
+  for (const bid of f.buildings) {
+    const b = sim.get(bid);
+    if (b?.alive && b.building?.def?.id === id) return true;
   }
   return false;
 }
@@ -195,7 +218,7 @@ function minuteLog(sim: MatchSim, minute: number): MinuteLog {
 }
 
 function addStuck(stuck: StuckReport[], f: FactionState, ticks: number, seconds: number, reason: string): void {
-  stuck.push({ slot: f.slot, minute: ticks / TICKS_PER_MINUTE, seconds, gold: f.gold, wood: f.wood, reason });
+  stuck.push({ slot: f.slot, minute: ticks / TICKS_PER_MINUTE, seconds, gold: f.gold, wood: f.wood, reason: `${reason} (${f.status})` });
 }
 
 export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
@@ -218,6 +241,8 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
     buildMatchNav(map.terrain, gameData.map),
     map,
   );
+  // The full AI: faction brains and hero bots (o.attach can add more).
+  if (!o.noAi) sim.ai = new FactionAI(sim);
   const attached = o.attach?.(sim);
   const controller = attached || undefined;
   const maxTicks = Math.ceil(maxMinutes * TICKS_PER_MINUTE);
@@ -242,7 +267,9 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
     if (sim.tick % TICK_RATE === 0) {
       for (const f of sim.factions!.list) {
         if (!f || f.defeated) continue;
-        if (!buildingBusy(sim, f) && canBuildOrTrain(sim, f)) {
+        // Saving for something it can not pay yet is a plan, not being stuck.
+        const saving = f.status.includes('Saving for');
+        if (!buildingBusy(sim, f) && !saving && canBuildOrTrain(sim, f)) {
           const seconds = ++idleSeconds[f.slot]!;
           if (seconds > STUCK_SECONDS) {
             addStuck(stuck, f, sim.tick, seconds, 'idle with resources');
@@ -250,7 +277,9 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
           }
         } else idleSeconds[f.slot] = 0;
 
-        if (!hasWorkingWorker(sim, f)) {
+        // No worker and no money for one: the economy is lost, the AI is not stuck.
+        const workerCost = gameData.units.find((u) => u.id === 'worker')?.cost?.gold ?? 75;
+        if (!hasWorkingWorker(sim, f) && (f.gold >= workerCost || hasAnyWorker(sim, f))) {
           const seconds = ++noWorkerJobSeconds[f.slot]!;
           if (seconds > STUCK_SECONDS) {
             addStuck(stuck, f, sim.tick, seconds, 'no worker has a job');

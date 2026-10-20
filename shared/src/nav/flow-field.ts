@@ -225,6 +225,13 @@ export class FlowFieldCache {
     this.maxFields = Math.max(1, Math.floor(maxFields));
   }
 
+  /** The cached field for this target cell when it is still valid, else null (builds nothing). */
+  peek(tx: number, ty: number): FlowField | null {
+    const key = Math.floor(ty / FLOW_CELL) * Math.floor(this.nav.cols / 2) + Math.floor(tx / FLOW_CELL);
+    const found = this.fields.get(key);
+    return found?.version === this.version ? found : null;
+  }
+
   get(tx: number, ty: number): FlowField {
     const c = Math.floor(tx / FLOW_CELL);
     const r = Math.floor(ty / FLOW_CELL);
