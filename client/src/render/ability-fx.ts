@@ -101,11 +101,12 @@ export class AbilityFx {
       ps.emitRate = 0;
       ps.minLifeTime = 0.4;
       ps.maxLifeTime = 0.9;
+      // Emit once, then let the tail finish and stop updating this idle pool slot.
+      ps.targetStopDuration = 0.05;
       ps.minAngularSpeed = -2;
       ps.maxAngularSpeed = 2;
       ps.emitter = new Vector3();
       ps.updateSpeed = 1 / 60;
-      ps.start();
       this.bursts.push(ps);
     }
     for (const m of MARKERS) {
@@ -208,6 +209,7 @@ export class AbilityFx {
     ps.color2 = c4(color2);
     ps.colorDead = c4(color2, 0);
     ps.manualEmitCount = count;
+    ps.start();
   }
 
   /** A glowing bolt flying in a straight line (Arcane Arrow, Spear Throw). */

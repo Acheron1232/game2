@@ -111,7 +111,13 @@ export class ClientView {
   write(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, w: BinaryWriter): Uint8Array<ArrayBuffer> {
     const stamp = ++this.stamp;
     const tick = sim.tick;
-    sw.begin(tick, sim.lastSeq[this.slot] ?? 0, tick - (sim.lastSeqTick[this.slot] ?? 0) + 1, this.full ? SnapshotFlag.Full : 0);
+    sw.begin(
+      tick,
+      sim.lastSeq[this.slot] ?? 0,
+      tick - (sim.predictionTick[this.slot] ?? 0) + 1,
+      this.full ? SnapshotFlag.Full : 0,
+      sim.predictionSeq[this.slot] ?? 0,
+    );
     this.full = false;
     this.writePlayer(sim, sw);
     for (const e of sim.entities) {

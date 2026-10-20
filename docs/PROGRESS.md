@@ -1,5 +1,7 @@
 # Progress
 
+- **Continuous playtest, cycle 3** (2026-10-20): fixed the movement clock being reset by learning while walking. Protocol 6 adds a separate move acknowledgement; sequence gaps/wrap and deferred acknowledgements are covered. All four bases pass long-route tests with latency. Empty burst systems now sleep until used. 91 tests, build and lint pass; browser retest of the new acknowledgement case is pending. See [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md).
+
 - **Continuous playtest, cycle 2** (2026-10-20): server-confirmed ability effects and correct effect levels (protocol 5), events aligned with interpolated motion, smoother growth and buff-aware walking, scaled health bars/click targets, numeric ability tooltips, fewer combat allocations, hotkey repeat guard and dev F6 training shortcut. Two-player level-10 duel checked with 100 ms lag; long walks stayed at `fixes 0/0`. 82 tests, build and lint pass. A 300-unit center stress test found downstream above budget (23.65 KB/s); details and limits in [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md).
 
 - **Continuous playtest, cycle 1** (2026-10-20): fixed WebGPU ground darkening at far zoom (missing mip layers), combat resources left after matches, stale cast timers, shared particle-atlas disposal, empty instance layers and a path-planning mismatch caused by network rounding. 77 tests, typecheck, build and lint pass. Native resolution and the 120 FPS match limit are unchanged. See [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md) for evidence and remaining checks.

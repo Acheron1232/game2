@@ -25,6 +25,16 @@ Validation: 82 tests pass (46 shared, 17 client, 10 server, 9 tools), lint and p
 
 Load-test finding: four real WebSocket test clients, 300 units all around the temple, 20 seconds: average server tick 0.881 ms, maximum 2.857 ms, snapshots 19.4/s, maximum downstream 23.65 KB/s. The tick is comfortably below 10 ms, but this crowded case exceeds the 20 KB/s target. This is a finding, not a fixed bandwidth claim. The ordinary two-hero duel showed about 0.4–0.5 KB/s per browser.
 
+## Cycle 3 — learning while moving
+
+The next two-player session found another movement case: Staff Warrior showed 21 small corrections after learning during the walk, while Huntress stayed at zero. A regression test reproduced a correction without combat. `Learn` was replacing the move command's acknowledgement clock even though the hero kept walking. Protocol 6 now sends a separate movement acknowledgement (two extra bytes per snapshot); learning and server-driven orders cannot reset it. The predictor also finds the next movement command across skipped learning sequence numbers and the 65535 wrap. Delayed acknowledgements cannot overwrite a newer path.
+
+Checks: 60-second walks from all four bases, with and without 100 ms round trip/jitter; learning during the walk; immediate/deferred older acknowledgements across a Learn and sequence wrap. All have zero corrections/snaps in the deterministic tests. The network test harness now preserves TCP command order under jitter. Total: 91 tests, lint and production build pass. Browser retest of this new movement-ack case is still pending.
+
+Ability burst pools now start only when used and stop themselves after their particles fade. They no longer keep ten empty systems updating throughout a match. Native resolution and the 120 FPS limit are unchanged.
+
+The numeric Arcane Arrow tooltip was checked in the browser at level 3: damage 210, length 12, width 1, mana 75, cooldown 9 s. The new HUD text is visible and readable in the narrow viewport too.
+
 ## Still checking
 
 - Repeated multiplayer fights, respawn and reconnect.

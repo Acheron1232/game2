@@ -32,9 +32,11 @@ import { NetEntity } from '../src/game/net-entity';
 const terrain = parseTerrain(readFileSync(join(__dirname, '..', '..', 'shared', 'data', 'map-terrain.bin')));
 const nav = buildMatchNav(terrain, gameData.map);
 
-function run(oneWayMs: number, jitterMs: number, clicks: { at: number; dx: number; dy: number; queue?: boolean }[], endMs: number) {
+type Input = { at: number; dx: number; dy: number; queue?: boolean } | { at: number; learn: number };
+
+function run(oneWayMs: number, jitterMs: number, clicks: Input[], endMs: number, start = 0) {
   const sim = new MatchSim(
-    { seed: 3, slots: [{ index: 0, heroType: entityTypeIndex('staff_warrior'), team: 1, color: 0, start: 0 }] },
+    { seed: 3, noCamps: true, slots: [{ index: 0, heroType: entityTypeIndex('staff_warrior'), team: 1, color: 0, start }] },
     buildMatchNav(terrain, gameData.map),
   );
   const vision = new TeamVision(256);
@@ -57,17 +59,16 @@ function run(oneWayMs: number, jitterMs: number, clicks: { at: number; dx: numbe
     return (rnd / 2147483647) * jitterMs;
   };
   let lastArrival = 0;
+  let lastCommandArrival = 0;
   const pending = [...clicks];
   // Client frames at ~120 fps, starting at a random phase vs the server ticks.
   for (let t = 0, frame = 3.7; t <= endMs; t++) {
     if (t > 0 && t % 50 === 0) {
-      for (let i = toServer.length - 1; i >= 0; i--) {
-        if (toServer[i]![0] > t) continue;
-        const r = new BinaryReader(toServer[i]![1]);
+      while (toServer.length && toServer[0]![0] <= t) {
+        const r = new BinaryReader(toServer.shift()![1]);
         r.u8();
         const c = readCommand(r)!;
         sim.queueCommand(0, c.seq, c.cmd);
-        toServer.splice(i, 1);
       }
       sim.step();
       if (sim.tick % 2 === 1) vision.update(sim.entities);
@@ -88,18 +89,24 @@ function run(oneWayMs: number, jitterMs: number, clicks: { at: number; dx: numbe
       for (let i = 0; i < s.updateCount; i++) ents.get(s.updates[i]!.id)?.apply(s.tick, s.updates[i]!);
       if (own && pred) {
         own.sample(s.tick, pose);
-        pred.reconcile(s.ackSeq, s.ticksSinceAck, pose.x, pose.y);
+        pred.reconcile(s.predictionSeq, s.ticksSinceAck, pose.x, pose.y);
       }
     }
     if (t >= frame) {
       frame += 1000 / 120;
       if (pred && pending.length && pending[0]!.at <= t) {
         const c = pending.shift()!;
-        const [x, y] = quantizePoint(pred.mover.x + c.dx, pred.mover.y + c.dy);
-        const cmd: GameCommand = { type: CommandType.Move, x, y, queue: !!c.queue };
+        let cmd: GameCommand;
+        if ('learn' in c) cmd = { type: CommandType.Learn, slot: c.learn };
+        else {
+          const [x, y] = quantizePoint(pred.mover.x + c.dx, pred.mover.y + c.dy);
+          cmd = { type: CommandType.Move, x, y, queue: !!c.queue };
+        }
         seq++;
-        toServer.push([t + oneWayMs + jitter(), writeCommand(cw, seq, cmd).slice()]);
-        pred.issue(seq, cmd);
+        lastCommandArrival = Math.max(lastCommandArrival, t + oneWayMs + jitter());
+        toServer.push([lastCommandArrival, writeCommand(cw, seq, cmd).slice()]);
+        if (cmd.type === CommandType.Learn) pred.skip(seq);
+        else pred.issue(seq, cmd);
       }
       pred?.advance(t);
     }
@@ -109,6 +116,35 @@ function run(oneWayMs: number, jitterMs: number, clicks: { at: number; dx: numbe
 }
 
 describe('client prediction against the server', () => {
+  it.each([false, true])('ignores an older movement ack across learning and sequence wrap (deferred: %s)', (deferred) => {
+    const [x, y] = gameData.map.starts[0]!.heroSpawn;
+    const p = new HeroPredictor(x, y, 0, 3.2, nav);
+    p.advance(0);
+    p.issue(65535, { type: CommandType.Move, x: x + 8, y, queue: false });
+    p.advance(60);
+    if (deferred) p.reconcile(65535, 3, x - 5, y - 5);
+    p.skip(1); // a Learn command between the two moves
+    p.issue(2, { type: CommandType.Move, x, y: y - 8, queue: false });
+    p.advance(160);
+    if (!deferred) p.reconcile(65535, 3, x - 5, y - 5);
+    expect(p.stats.corrections).toBe(0);
+    expect(p.stats.snaps).toBe(0);
+  });
+
+  it('keeps the movement clock when learning during a long walk', () => {
+    const [sx, sy] = gameData.map.starts[1]!.heroSpawn;
+    const { pred, server } = run(
+      50,
+      30,
+      [{ at: 500, dx: 136 - sx, dy: 128 - sy }, ...Array.from({ length: 10 }, (_, i) => ({ at: 510 + i * 17, learn: i % 4 }))],
+      60000,
+      1,
+    );
+    expect(server.moving).toBe(false);
+    expect(Math.hypot(pred.mover.x - server.x, pred.mover.y - server.y)).toBeLessThan(0.02);
+    expect(pred.stats.snaps).toBe(0);
+    expect(pred.stats.corrections).toBe(0);
+  });
   const clicks = [
     { at: 500, dx: 12, dy: -8 },
     { at: 2600, dx: -9, dy: 6 },
@@ -133,10 +169,16 @@ describe('client prediction against the server', () => {
   });
 
   it.each([
-    [0, 0],
-    [50, 30],
-  ])('settles after a long walk with %i ms one-way delay and %i ms jitter', (delay, jitter) => {
-    const [sx, sy] = gameData.map.starts[0]!.heroSpawn;
+    [0, 0, 0],
+    [0, 50, 30],
+    [1, 0, 0],
+    [1, 50, 30],
+    [2, 0, 0],
+    [2, 50, 30],
+    [3, 0, 0],
+    [3, 50, 30],
+  ])('settles after a long walk from base %i with %i ms one-way delay and %i ms jitter', (start, delay, jitter) => {
+    const [sx, sy] = gameData.map.starts[start]!.heroSpawn;
     const { pred, server } = run(
       delay,
       jitter,
@@ -145,6 +187,7 @@ describe('client prediction against the server', () => {
         { at: 38000, dx: 10, dy: 3 },
       ],
       60000,
+      start,
     );
     expect(server.moving).toBe(false);
     expect(Math.hypot(pred.mover.x - server.x, pred.mover.y - server.y)).toBeLessThan(0.02);

@@ -166,7 +166,7 @@ export class MatchClient {
   learn(slot: number): void {
     this.seq = (this.seq % 0xffff) + 1;
     this.net.sendBinary(writeCommand(this.w, this.seq, { type: CommandType.Learn, slot }));
-    // Not a move: prediction goes on as before. Give the predictor the number, so acks line up.
+    // Learning is acknowledged separately from the movement reconciliation clock.
     this.predictor?.skip(this.seq);
   }
 
@@ -282,7 +282,7 @@ export class MatchClient {
         this.serverMode = false;
       }
       if (this.serverMode) p.rebase(this.pose.x, this.pose.y, this.pose.facing);
-      else p.reconcile(s.ackSeq, s.ticksSinceAck, this.pose.x, this.pose.y);
+      else p.reconcile(s.predictionSeq, s.ticksSinceAck, this.pose.x, this.pose.y);
     }
   }
 

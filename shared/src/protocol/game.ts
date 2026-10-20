@@ -6,7 +6,7 @@
 // A unit that walks straight costs almost nothing.
 //
 // Snapshot layout:
-//   u8 id, u32 tick, u16 ackSeq, u16 ticksSinceAck, u8 flags
+//   u8 id, u32 tick, u16 ackSeq, u16 predictionSeq, u16 ticksSinceAck, u8 flags
 //   [player state, if flags & HasPlayer]
 //   u16 spawns, spawns...   u16 updates, updates...   u16 gone, ids...   u16 events, events...
 
@@ -219,11 +219,12 @@ export class SnapshotWriter {
   private nGone = 0;
   private nEvent = 0;
   private player: NetPlayerState | null = null;
-  private head = { tick: 0, ack: 0, sinceAck: 0, flags: 0 };
+  private head = { tick: 0, ack: 0, prediction: 0, sinceAck: 0, flags: 0 };
 
-  begin(tick: number, ackSeq: number, ticksSinceAck: number, flags = 0): void {
+  begin(tick: number, ackSeq: number, ticksSinceAck: number, flags = 0, predictionSeq = ackSeq): void {
     this.head.tick = tick;
     this.head.ack = ackSeq;
+    this.head.prediction = predictionSeq;
     this.head.sinceAck = Math.min(65535, ticksSinceAck);
     this.head.flags = flags;
     this.nSpawn = this.nUpdate = this.nGone = this.nEvent = 0;
@@ -265,6 +266,7 @@ export class SnapshotWriter {
       .u8(MsgId.Snapshot)
       .u32(this.head.tick)
       .u16(this.head.ack & 0xffff)
+      .u16(this.head.prediction & 0xffff)
       .u16(this.head.sinceAck)
       .u8(flags);
     const p = this.player;
@@ -311,6 +313,8 @@ export class SnapshotWriter {
 export class SnapshotData {
   tick = 0;
   ackSeq = 0;
+  /** Most recent Move/Stop; ticksSinceAck is relative to this command, not a Learn. */
+  predictionSeq = 0;
   ticksSinceAck = 0;
   flags = 0;
   spawnCount = 0;
@@ -328,6 +332,7 @@ export class SnapshotData {
   read(r: BinaryReader): this {
     this.tick = r.u32();
     this.ackSeq = r.u16();
+    this.predictionSeq = r.u16();
     this.ticksSinceAck = r.u16();
     this.flags = r.u8();
     this.hasPlayer = (this.flags & SnapshotFlag.HasPlayer) !== 0;

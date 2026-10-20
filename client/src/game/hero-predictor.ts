@@ -33,7 +33,7 @@ export class HeroPredictor {
   private prevF: number;
   private offX = 0;
   private offY = 0;
-  private readonly pending: { seq: number; cmd: GameCommand | null }[] = [];
+  private readonly pending: { seq: number; cmd: GameCommand }[] = [];
   /** command seq -> local step it ran in */
   private readonly cmdStep = new Map<number, number>();
   private lastSeq = 0;
@@ -83,9 +83,8 @@ export class HeroPredictor {
     this.offY = drawnY - y;
   }
 
-  /** A command that does not move the hero (learn a skill): it still takes a step slot. */
+  /** Learning has its own acknowledgement; it must not change the movement clock. */
   skip(seq: number): void {
-    this.pending.push({ seq, cmd: null });
     this.lastSeq = seq;
   }
 
@@ -113,7 +112,7 @@ export class HeroPredictor {
       this.prevF = this.mover.facing;
       this.step++;
       for (const p of this.pending) {
-        if (p.cmd) applyCommand(this.mover, this.nav, p.cmd, this.flying);
+        applyCommand(this.mover, this.nav, p.cmd, this.flying);
         this.cmdStep.set(p.seq, this.step);
       }
       this.pending.length = 0;
@@ -124,7 +123,7 @@ export class HeroPredictor {
       if (d && d.at <= this.step) {
         this.deferred = null;
         // Still valid only if no newer command ran before that step.
-        const next = this.cmdStep.get((d.ack + 1) & 0xffff);
+        const next = this.nextCommandStep(d.ack);
         if (next === undefined || d.at < next) this.correct(d.at, d.x, d.y);
       }
     }
@@ -143,8 +142,8 @@ export class HeroPredictor {
   }
 
   /**
-   * The server's hero stood at (sx, sy) after it had run `ticksSinceAck` ticks since command
-   * `ackSeq`. Compare with our state after the same number of steps since we ran that command.
+   * The server's hero stood at (sx, sy) after `ticksSinceAck` ticks since the Move/Stop
+   * `ackSeq`. Compare with our state after the same number of steps since that move command.
    */
   reconcile(ackSeq: number, ticksSinceAck: number, sx: number, sy: number): void {
     let at: number;
@@ -155,7 +154,7 @@ export class HeroPredictor {
     } else {
       at = this.cmdStep.get(ackSeq)! + ticksSinceAck - 1;
       // A newer command already ran here but not yet on the server: wait for its ack.
-      const next = this.cmdStep.get((ackSeq + 1) & 0xffff);
+      const next = this.nextCommandStep(ackSeq);
       if (next !== undefined && at >= next) return;
       if (at <= this.step - HISTORY) return;
       // The server got there first (its snapshot came before our step ran): check it later.
@@ -165,6 +164,17 @@ export class HeroPredictor {
       }
     }
     this.correct(at, sx, sy);
+  }
+
+  private nextCommandStep(ackSeq: number): number | undefined {
+    let found = false;
+    // Sequence numbers may have gaps from Learn commands and may wrap at 65535.
+    // Map insertion order is the local issue order in both cases.
+    for (const [seq, step] of this.cmdStep) {
+      if (found) return step;
+      if (seq === ackSeq) found = true;
+    }
+    return undefined;
   }
 
   private correct(at: number, sx: number, sy: number): void {

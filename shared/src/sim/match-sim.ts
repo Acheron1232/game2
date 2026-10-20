@@ -21,7 +21,7 @@ import {
 } from './abilities';
 import { applyBuffs, buffFlags, hasBuff, maxBuff, sumBuffs, type Buff } from './buffs';
 import { createCamps, onCampMemberAttacked, onCampMemberDied, updateCamps, type CampState } from './camps';
-import { applyMove, CommandType, type GameCommand } from './commands';
+import { applyMove, CommandType, isPredicted, type GameCommand } from './commands';
 import { entityTypeIndex, ENTITY_TYPES, isHeroType } from './entity-types';
 import { DamageKind, EventList, EventType } from './events';
 import { createMover, stepMover, type Mover } from './movement';
@@ -225,6 +225,7 @@ export interface Zone {
 }
 
 interface QueuedCommand {
+  predicted: boolean;
   slot: number;
   seq: number;
   /** null = not valid, only the sequence number counts */
@@ -241,6 +242,9 @@ export class MatchSim {
   /** last processed command per slot and the tick it ran */
   readonly lastSeq: number[] = [];
   readonly lastSeqTick: number[] = [];
+  /** Learning and server-driven orders must not reset the movement reconciliation clock. */
+  readonly predictionSeq: number[] = [];
+  readonly predictionTick: number[] = [];
   readonly events = new EventList();
   readonly camps: CampState[];
   readonly grid: SpatialGrid<SimEntity>;
@@ -280,6 +284,8 @@ export class MatchSim {
       this.heroes[s.index] = hero;
       this.lastSeq[s.index] = 0;
       this.lastSeqTick[s.index] = 0;
+      this.predictionSeq[s.index] = 0;
+      this.predictionTick[s.index] = 0;
     }
     this.camps = setup.noCamps ? [] : createCamps(this);
     if (setup.testUnits) this.spawnTestUnits(setup.testUnits, setup.testArea ?? 'bases');
@@ -383,7 +389,7 @@ export class MatchSim {
    */
   queueCommand(slot: number, seq: number, cmd: GameCommand): boolean {
     const ok = this.isValid(slot, cmd);
-    this.queue.push({ slot, seq, cmd: ok ? cmd : null });
+    this.queue.push({ slot, seq, cmd: ok ? cmd : null, predicted: isPredicted(cmd) });
     return ok;
   }
 
@@ -486,6 +492,10 @@ export class MatchSim {
       if (hero && q.cmd && (hero.alive || q.cmd.type === CommandType.Learn)) this.runCommand(hero, q.cmd);
       this.lastSeq[q.slot] = q.seq;
       this.lastSeqTick[q.slot] = this.tick;
+      if (q.predicted) {
+        this.predictionSeq[q.slot] = q.seq;
+        this.predictionTick[q.slot] = this.tick;
+      }
     }
     this.queue.length = 0;
 

@@ -91,7 +91,7 @@ describe('match messages', () => {
 
   it('a snapshot keeps player state, fields and events', () => {
     const sw = new SnapshotWriter();
-    sw.begin(1234, 9, 3, SnapshotFlag.Full);
+    sw.begin(1234, 9, 3, SnapshotFlag.Full, 5);
     sw.playerState({
       heroId: 5,
       gold: 777,
@@ -143,7 +143,14 @@ describe('match messages', () => {
     sw.remove(33);
     sw.event(EventType.Damage, 9, 5, 26, DamageKind.Attack);
     const s = readSnapshot(sw.finish(new BinaryWriter()), new SnapshotData());
-    expect([s.tick, s.ackSeq, s.ticksSinceAck, s.hasPlayer, s.flags & SnapshotFlag.Full]).toEqual([1234, 9, 3, true, 1]);
+    expect([s.tick, s.ackSeq, s.predictionSeq, s.ticksSinceAck, s.hasPlayer, s.flags & SnapshotFlag.Full]).toEqual([
+      1234,
+      9,
+      5,
+      3,
+      true,
+      1,
+    ]);
     expect(s.player).toMatchObject({
       heroId: 5,
       gold: 777,
