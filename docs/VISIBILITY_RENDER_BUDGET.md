@@ -44,3 +44,11 @@ The main-draw scissor initially clipped the wrong edge on WebGPU RTTs. Corrected
 ## Limits
 
 No claim that Mac heating is eliminated: no power or temperature measurement was made. Full-screen HDR/FXAA inputs change every match frame, so their output is not cached or disabled. Static shadow caching is deliberately conservative and has little benefit while a visible hero casts an animated shadow. Ordinary off-camera logical position sampling still runs because simulation-facing consumers need it. Native Windows/RTX and a long crowded live battle remain useful follow-up measurements.
+
+## Publication
+
+Frontend `visibility-4ce621f` is published at the accepted temporary HTTPS address. New dependencies were copied before atomic entry-point replacement; previous hashed assets remain available for already-open clients. Rollback copies are retained in the release directory. Server `controls-769607f`, web container and tunnel were not restarted. Public index SHA-256 matches the local build: `bb2e44def29949797d78fa9ce741b8f3a94f481825bd61e0f0a768c723181645`.
+
+Public WebGL2 and WebGPU matches both started and reached displayed 120/120 at 2560×1440. WebGL camera culling, return, Settings 30/30 and return to 120 were checked; WebGPU has no blank scissor strip and its captured warning/error log is empty. Test clients explicitly left their rooms. Health returned to the prior 0 players / 1 room / 1 match with continuous server uptime. [Public WebGL check](screenshots/visibility-render-budget-live.png).
+
+CI [39517594041](https://github.com/Acheron1232/game2/actions/runs/39517594041) **passes** on source commit `4ce621f`, including data checks, all logic tests, lint/build, the full bot match and all four browser regressions.
