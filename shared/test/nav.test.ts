@@ -1,12 +1,40 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildNavGrid, createMover, findPath, gameData, isWalkable, lineWalkable, parseTerrain, stepMover } from '../src/index';
+import {
+  buildNavGrid,
+  createMover,
+  findPath,
+  gameData,
+  isWalkable,
+  labelRegions,
+  lineWalkable,
+  parseTerrain,
+  stepMover,
+  type NavGrid,
+} from '../src/index';
 
 const terrain = parseTerrain(readFileSync(join(import.meta.dirname, '..', 'data', 'map-terrain.bin')));
 const nav = buildNavGrid(terrain);
 
 describe('nav grid and paths', () => {
+  it('reuses region storage across blocker changes without sharing labels between maps', () => {
+    const a: NavGrid = { cols: 3, rows: 1, cellSize: 1, walk: new Uint8Array([1, 1, 1]) };
+    labelRegions(a);
+    const region = a.region!;
+    a.walk[1] = 0;
+    labelRegions(a);
+    expect(a.region).toBe(region);
+    expect([...region]).toEqual([1, 0, 2]);
+    const b: NavGrid = { cols: 3, rows: 1, cellSize: 1, walk: new Uint8Array([1, 1, 1]) };
+    labelRegions(b);
+    expect(b.region).not.toBe(region);
+    expect([...region]).toEqual([1, 0, 2]);
+    a.walk[1] = 1;
+    labelRegions(a);
+    expect([...region]).toEqual([1, 1, 1]);
+  });
+
   it('does not cross blocked corners or skip a briefly crossed obstacle', () => {
     const corner = { cols: 2, rows: 2, cellSize: 1, walk: new Uint8Array([1, 0, 0, 1]) };
     expect(lineWalkable(corner, 0.5, 0.5, 1.5, 1.5)).toBe(false);

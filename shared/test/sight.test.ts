@@ -122,6 +122,23 @@ function cliffLine(): { low: [number, number]; high: [number, number] } {
 }
 
 describe('team sight', () => {
+  it('merges duplicate cell sources without changing teams, layers, radii or the next update', () => {
+    const sight = new TeamSight(terrain, buildTreeIndex(treeList, terrain));
+    const reference = new TeamSight(terrain, buildTreeIndex(treeList, terrain));
+    const sources: SightSource[] = [];
+    for (let i = 0; i < 100; i++) {
+      const source = { x: 121 + (i % 2) * 0.1, y: 121, team: (i % 3) + 1, sight: 4 + (i % 8) * 2, air: i % 4 === 0 };
+      sources.push(source);
+      // Explored after separate updates is the union of all independent source casts.
+      reference.update([source]);
+    }
+    sight.update(sources);
+    for (let team = 1; team <= 3; team++) expect(sight.visible(team)).toEqual(reference.explored(team));
+    sight.update([{ x: 121, y: 121, team: 1, sight: 4, air: false }]);
+    reference.update([{ x: 121, y: 121, team: 1, sight: 4, air: false }]);
+    for (let team = 1; team <= 3; team++) expect(sight.visible(team)).toEqual(reference.visible(team));
+  });
+
   it('trees block ground sight, air sees over them, and cut trees stop blocking', () => {
     const trees = buildTreeIndex(treeList, terrain);
     const line = forestLine(trees);

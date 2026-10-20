@@ -17,6 +17,8 @@ export interface SightSource {
 interface TeamGrid {
   visible: Uint8Array;
   explored: Uint8Array;
+  groundCoverage: Uint16Array;
+  airCoverage: Uint16Array;
 }
 
 interface RayTable {
@@ -111,7 +113,11 @@ export class TeamSight {
 
   update(sources: Iterable<SightSource>): void {
     this.refreshForest();
-    for (const grid of this.grids.values()) grid.visible.fill(0);
+    for (const grid of this.grids.values()) {
+      grid.visible.fill(0);
+      grid.groundCoverage.fill(0);
+      grid.airCoverage.fill(0);
+    }
 
     for (const source of sources) {
       if (source.sight <= 0) continue;
@@ -119,8 +125,13 @@ export class TeamSight {
       const col = this.clampCol(Math.floor(source.x / SIGHT_CELL));
       const row = this.clampRow(Math.floor(source.y / SIGHT_CELL));
       const center = row * this.cols + col;
-      grid.visible[center] = 1;
       const radius = Math.floor(source.sight / SIGHT_CELL);
+      // Units in the same sight cell cast identical rays. A larger same-layer source
+      // already includes all rays of a smaller one, even with forest/cliff blockers.
+      const coverage = source.air ? grid.airCoverage : grid.groundCoverage;
+      if (coverage[center]! >= radius + 1) continue;
+      coverage[center] = radius + 1;
+      grid.visible[center] = 1;
       if (radius <= COMMON_RADIUS) this.addCachedSight(grid.visible, col, row, radius, source.air);
       else this.addLargeSight(grid.visible, col, row, radius, source.air);
     }
@@ -170,7 +181,13 @@ export class TeamSight {
   private teamGrid(team: number): TeamGrid {
     let grid = this.grids.get(team);
     if (!grid) {
-      grid = { visible: new Uint8Array(this.cols * this.rows), explored: new Uint8Array(this.cols * this.rows) };
+      const cells = this.cols * this.rows;
+      grid = {
+        visible: new Uint8Array(cells),
+        explored: new Uint8Array(cells),
+        groundCoverage: new Uint16Array(cells),
+        airCoverage: new Uint16Array(cells),
+      };
       this.grids.set(team, grid);
     }
     return grid;

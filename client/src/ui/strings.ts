@@ -178,6 +178,7 @@ export const S = {
   upgradesCol: 'Upgrades',
   teamWinsAt: (team: number, time: string) => `Team ${team} wins — ${time}`,
   watching: 'Watching the bots',
+  matchFinished: 'Match finished',
   defeat: 'Defeat',
   wood: 'Wood',
   supply: 'Supply',

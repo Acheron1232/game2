@@ -22,17 +22,22 @@ export function startDebugOverlay(
   const inst = scene ? new SceneInstrumentation(scene) : null;
   const gpu = new EngineInstrumentation(engine);
   const gpuTiming = !!engine.getCaps().timerQuery;
-  gpu.captureGPUFrameTime = gpuTiming;
-  if (inst) inst.captureFrameTime = true;
-  node.hidden = false;
+  const syncVisibility = () => {
+    gpu.captureGPUFrameTime = gpuTiming && !node.hidden;
+    if (inst) inst.captureFrameTime = !node.hidden;
+  };
+  // Settings also change visibility. Hidden diagnostics must not keep issuing GPU queries.
+  new MutationObserver(syncVisibility).observe(node, { attributes: true, attributeFilter: ['hidden'] });
+  syncVisibility();
   window.addEventListener('keydown', (ev) => {
     if (ev.key === 'F3') {
       ev.preventDefault();
       node.hidden = !node.hidden;
-      gpu.captureGPUFrameTime = gpuTiming && !node.hidden;
+      syncVisibility();
     }
   });
   const update = () => {
+    if (node.hidden) return;
     const ping = net.pingMs === null ? '—' : `${Math.round(net.pingMs)} ms`;
     const extra =
       inst && scene

@@ -150,7 +150,7 @@ export type ErrorCode =
   'bad_protocol' | 'bad_message' | 'no_room' | 'room_full' | 'not_host' | 'not_allowed' | 'color_taken' | 'not_ready' | 'in_match';
 
 export type ServerLobbyMessage =
-  | { type: 'welcome'; playerId: string; session: string; serverVersion: string; name: string }
+  | { type: 'welcome'; playerId: string; session: string; serverVersion: string; name: string; inRoom?: boolean }
   | { type: 'error'; code: ErrorCode; text: string }
   | { type: 'room'; room: RoomState }
   | { type: 'roomLeft'; reason: 'left' | 'kicked' | 'closed' }

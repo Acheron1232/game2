@@ -2,6 +2,7 @@ import {
   buildMatchNav,
   entityTypeIndex,
   FactionAI,
+  difficultyRules,
   ENTITY_TYPES,
   gameData,
   MatchSim,
@@ -127,6 +128,9 @@ function buildingBusy(sim: MatchSim, f: FactionState): boolean {
 
 function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
   const factions = sim.factions!;
+  let workers = 0;
+  for (const id of f.units) if (sim.get(id)?.alive && sim.get(id)?.job) workers++;
+  const enoughWorkers = workers >= difficultyRules(f.difficulty).workerTarget;
   // Only buildings the faction does not have yet (more Houses only while supply can grow).
   for (const def of gameData.buildings.buildings) {
     if (TIER_BUILDINGS.has(def.id) || factions.missing(f, def.requires).length > 0) continue;
@@ -143,6 +147,9 @@ function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
     const state = building?.alive ? building.building : null;
     if (!state?.done || !state.def || state.queue.length >= MAX_QUEUE) continue;
     for (const unitId of state.def.trains) {
+      // Spare supply for one worker is not an opportunity when the economy has its workers.
+      // Combat units need more supply: this used to flag a winning 99/100 army as stuck.
+      if (unitId === 'worker' && enoughWorkers) continue;
       const unit = gameData.units.find((candidate) => candidate.id === unitId);
       if (!unit || factions.missing(f, unit.requires).length > 0 || !factions.canPay(f, unit.cost)) continue;
       if (f.supplyUsed + (unit.supply ?? 0) <= f.supplyCap) return true;

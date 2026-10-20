@@ -53,6 +53,7 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
         JSON.stringify({
           ok: true,
           version: SERVER_VERSION,
+          release: process.env['GAME_RELEASE'] ?? 'development',
           uptimeSec: Math.round((Date.now() - startedAt) / 1000),
           players: players.online,
           ...lobby.summary(),

@@ -20,10 +20,14 @@ export interface NavGrid {
 }
 
 /** Gives every connected walkable area its own id (8 directions, no corner cutting). */
+let regionStack = new Int32Array(0);
+
 export function labelRegions(g: NavGrid): void {
   const n = g.cols * g.rows;
-  const region = new Int32Array(n);
-  const stack = new Int32Array(n);
+  const region = g.region?.length === n ? g.region : new Int32Array(n);
+  region.fill(0);
+  if (regionStack.length < n) regionStack = new Int32Array(n);
+  const stack = regionStack;
   let next = 0;
   for (let i = 0; i < n; i++) {
     if (!g.walk[i] || region[i]) continue;

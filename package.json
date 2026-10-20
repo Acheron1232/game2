@@ -10,6 +10,9 @@
     "dev": "pnpm --parallel --filter @game/server --filter @game/client dev",
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "test:e2e": "playwright test",
+    "release:pack": "node deploy/package-release.mjs",
+    "test:soak": "pnpm --filter @game/server exec node --expose-gc --import tsx scripts/soak.ts",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/node": "24.19.2",
     "eslint": "10.13.0",
     "prettier": "3.9.10",

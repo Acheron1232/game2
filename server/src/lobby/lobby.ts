@@ -72,7 +72,14 @@ export class Lobby {
     } else {
       p = this.players.create(name, conn);
     }
-    this.send(p, { type: 'welcome', playerId: p.id, session: p.session, serverVersion: this.options.serverVersion, name: p.name });
+    this.send(p, {
+      type: 'welcome',
+      playerId: p.id,
+      session: p.session,
+      serverVersion: this.options.serverVersion,
+      name: p.name,
+      inRoom: !!p.room,
+    });
     const room = p.room;
     const slot = room?.slotOf(p);
     if (room && slot) {
@@ -185,7 +192,8 @@ export class Lobby {
         return;
       }
       case 'endMatch':
-        return this.endMatch(p);
+        if (this.options.allowTestOptions) this.endMatch(p);
+        return;
       case 'cheat': {
         const slot = p.room?.slotOf(p);
         if (this.options.allowTestOptions && slot && p.room?.going) p.room.match?.cheat(slot.index, msg);

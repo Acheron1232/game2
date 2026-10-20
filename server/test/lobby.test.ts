@@ -8,7 +8,13 @@ let server: GameServer;
 let base: string;
 
 beforeAll(async () => {
-  server = createGameServer({ matchMode: 'inline', lobbyGraceMs: 200, reconnectMs: 2000, matchReadyTimeoutMs: 3000 });
+  server = createGameServer({
+    matchMode: 'inline',
+    allowTestOptions: true,
+    lobbyGraceMs: 200,
+    reconnectMs: 2000,
+    matchReadyTimeoutMs: 3000,
+  });
   await new Promise<void>((resolve) => server.http.listen(0, '127.0.0.1', resolve));
   base = `127.0.0.1:${(server.http.address() as AddressInfo).port}`;
 });
@@ -80,6 +86,7 @@ describe('lobby and match', () => {
     await host.waitUntil(() => host.lastRoom()?.slots[1]?.online === false);
     const back = await TestClient.connect(base, 'Guest', session);
     expect(back.playerId).toBe(guest.playerId);
+    expect(back.json[0]).toMatchObject({ type: 'welcome', inRoom: true });
     const rejoin = (await back.waitFor<Msg<'matchStart'>>((m) => m.type === 'matchStart')).match;
     expect(rejoin.rejoin).toBe(true);
     await back.waitUntil(() => back.snapshots.length > 0);

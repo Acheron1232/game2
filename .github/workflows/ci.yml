@@ -1,0 +1,28 @@
+name: Verify game
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: corepack prepare pnpm@10.33.2 --activate
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data:check
+      - run: pnpm test
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm --filter @game/server sim:matches -- --matches 1 --seed 1 --minutes 60 --slots 4
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-results
+          path: |
+            server/logs/
+            test-results/

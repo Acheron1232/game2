@@ -2,6 +2,7 @@
 // The real HUD comes in Phase 9.
 
 import { gameData, type RoomSummary } from '@game/shared';
+import type { NetStatus } from '../net/socket';
 import { el, setText } from './dom';
 import type { Router, Screen } from './router';
 import { S } from './strings';
@@ -215,7 +216,7 @@ export interface GameScreen extends Screen {
   /** Short message in the middle of the screen ("Not enough mana."). */
   alert(text: string): void;
   setClock(seconds: number): void;
-  setPing(ms: number | null): void;
+  setPing(ms: number | null, status?: NetStatus): void;
   setStatus(text: string): void;
   setHero(v: HeroView): void;
   /** Info line for a selected unit that is not your hero, or null. */
@@ -496,7 +497,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       team,
       gold,
       el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
-      el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest),
+      el('button', { class: 'btn small', onclick: onEnd }, import.meta.env.DEV ? S.endMatchTest : S.leave),
     ),
     el(
       'aside',
@@ -545,8 +546,9 @@ export function createGameScreen(actions: GameActions): GameScreen {
         sec = Math.floor(seconds % 60);
       setText(clock, `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`);
     },
-    setPing(ms) {
-      setText(ping, ms === null ? '' : `${S.ping} ${Math.round(ms)} ms`);
+    setPing(ms, connection = 'online') {
+      const offline = connection === 'outdated' ? S.netOutdated : S.netConnecting;
+      setText(ping, connection !== 'online' ? offline : ms === null ? '' : `${S.ping} ${Math.round(ms)} ms`);
     },
     setStatus(text) {
       setText(status, text);
@@ -752,8 +754,8 @@ export interface EndRow {
 }
 
 export interface EndScreen extends Screen {
-  /** won: true / false; line: "Team 1 wins — 31:07" */
-  set(won: boolean, line: string, rows: EndRow[]): void;
+  /** won: true / false, null for a spectator; line: "Team 1 wins — 31:07" */
+  set(won: boolean | null, line: string, rows: EndRow[]): void;
 }
 
 export function createEndScreen(router: Router): EndScreen {
@@ -787,8 +789,8 @@ export function createEndScreen(router: Router): EndScreen {
   return {
     root,
     set(won, text, rows) {
-      setText(title, won ? S.victory : S.defeat);
-      title.classList.toggle('defeat', !won);
+      setText(title, won === null ? S.matchFinished : won ? S.victory : S.defeat);
+      title.classList.toggle('defeat', won === false);
       setText(line, text);
       body.replaceChildren(
         ...rows.map((r) =>

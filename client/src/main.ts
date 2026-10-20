@@ -149,7 +149,7 @@ async function main(): Promise<void> {
   let dragItem: (slot: number, to: ItemDrop) => void = () => {};
   let closeShop: () => void = () => {};
   const game = createGameScreen({
-    end: () => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
+    end: () => net.send(import.meta.env.DEV && room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
     cast: (slot) => useAbility(slot),
     settings: () => openSettings(),
     chat: (text) => net.send({ type: 'chat', text }),
@@ -246,9 +246,9 @@ async function main(): Promise<void> {
     };
     m.onMatchOver = (team) => {
       const won = team === m.myTeam;
-      game.setResult(won ? S.victory : S.defeat, `${won ? S.youWin : S.teamWins(team)} ${S.backSoon}`);
+      game.setResult(m.spectator ? S.teamWins(team) : won ? S.victory : S.defeat, `${won ? S.youWin : S.teamWins(team)} ${S.backSoon}`);
       sound.stopMusic();
-      sound.play(won ? 'victory' : 'defeat', 'voice');
+      sound.play(won || m.spectator ? 'victory' : 'defeat', 'voice');
     };
     selected = null;
     pendingMatch = null;
@@ -260,7 +260,7 @@ async function main(): Promise<void> {
   net.onChange((s) => {
     lobby.setNet(s);
     menu.setOnline(s.status === 'online');
-    game.setPing(s.pingMs);
+    game.setPing(s.pingMs, s.status);
   });
   net.onLobby((msg) => {
     switch (msg.type) {
@@ -271,7 +271,9 @@ async function main(): Promise<void> {
         if (room) {
           if (roomCheck) clearTimeout(roomCheck);
           roomCheck = setTimeout(() => {
-            if (!room) return;
+            // A restored room cancels this timer in the room handler below.
+            // `room` was cleared while waiting; that is precisely the lost-session case.
+            roomCheck = null;
             room = null;
             endMatch();
             router.show('menu');
@@ -280,6 +282,9 @@ async function main(): Promise<void> {
         }
         if (joinCode) net.send({ type: 'joinRoom', code: joinCode });
         joinCode = null;
+        // A rejoin already has a room/match on its way. Creating another room here gets
+        // rejected and its error screen used to hide the restored match (?play/?watch).
+        if (msg.inRoom) autoPlay = false;
         if (autoPlay) net.send({ type: 'createRoom' });
         net.send({ type: 'listRooms' });
         break;
@@ -287,7 +292,7 @@ async function main(): Promise<void> {
         if (roomCheck) clearTimeout(roomCheck);
         room = msg.room;
         lobby.setRoom(room, myId);
-        if (room.phase === 'lobby' && !match && router.screen !== 'lobby') router.show('lobby');
+        if (room.phase === 'lobby' && !match && router.screen !== 'lobby' && router.screen !== 'end') router.show('lobby');
         sendLoad();
         maybeAutoStart();
         break;
@@ -326,13 +331,14 @@ async function main(): Promise<void> {
       case 'matchEnd': {
         const info = match?.info;
         const myTeam = match?.myTeam ?? 0;
+        const spectator = match?.spectator ?? false;
         endMatch();
         // A won match shows the end screen with the stats; "Back to Lobby" leads on.
         if (msg.summary && msg.winnerTeam && info) {
           const s = msg.summary;
           const time = `${Math.floor(s.seconds / 60)}:${String(s.seconds % 60).padStart(2, '0')}`;
           endScreen.set(
-            msg.winnerTeam === myTeam,
+            spectator ? null : msg.winnerTeam === myTeam,
             S.teamWinsAt(msg.winnerTeam, time),
             s.players.map((p) => ({
               name: info.slots.find((x) => x.index === p.slot)?.name ?? '',
