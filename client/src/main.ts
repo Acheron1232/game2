@@ -52,7 +52,7 @@ import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
-import { GAME_FPS, MENU_FPS, renderScale } from './render/render-budget';
+import { GAME_FPS, MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
@@ -364,7 +364,7 @@ async function main(): Promise<void> {
   });
   net.connect();
 
-  const { engine, kind } = await createEngine(canvas);
+  const { engine, kind, adapter, setRenderScale } = await createEngine(canvas);
   registerAssetCache();
 
   // Loading starts at once, so it is done (or nearly) when the player reaches the lobby.
@@ -409,7 +409,7 @@ async function main(): Promise<void> {
   maybeAutoStart();
   applySettings = () => {
     // Native pixels at render scale 1 (see render-budget), fewer pixels below it.
-    engine.setHardwareScalingLevel(renderScale(window.devicePixelRatio) / settings.renderScale);
+    setRenderScale(settings.renderScale);
     w.scene.shadowsEnabled = settings.shadows;
     debugNode.hidden = !settings.showFps;
     w.camera.edgeScroll = settings.edgeScroll;
@@ -420,12 +420,20 @@ async function main(): Promise<void> {
     if (match) match.allBars = settings.healthBars === 'always';
   };
   applySettings();
-  startDebugOverlay(debugNode, engine, kind, net.state, w.scene, () => {
-    const lag = net.state.lag.lagMs || net.state.lag.lossPct ? ` · lag +${net.state.lag.lagMs} ms ${net.state.lag.lossPct}%` : '';
-    const p = match?.predictor?.stats;
-    const fix = p ? ` · fixes ${p.corrections}/${p.snaps}` : '';
-    return ` · down ${(net.state.downBps / 1024).toFixed(1)} KB/s${lag}${fix}`;
-  });
+  startDebugOverlay(
+    debugNode,
+    engine,
+    kind,
+    net.state,
+    w.scene,
+    () => {
+      const lag = net.state.lag.lagMs || net.state.lag.lossPct ? ` · lag +${net.state.lag.lagMs} ms ${net.state.lag.lossPct}%` : '';
+      const p = match?.predictor?.stats;
+      const fix = p ? ` · fixes ${p.corrections}/${p.snaps}` : '';
+      return ` · down ${(net.state.downBps / 1024).toFixed(1)} KB/s${lag}${fix}`;
+    },
+    adapter,
+  );
   startMatchIfReady();
 
   // ---- game screen input
