@@ -11,7 +11,14 @@ import type { NetState } from '../net/socket';
 import { setText } from './dom';
 import { S } from './strings';
 
-export function startDebugOverlay(node: HTMLElement, engine: AbstractEngine, renderer: string, net: NetState, scene?: Scene): void {
+export function startDebugOverlay(
+  node: HTMLElement,
+  engine: AbstractEngine,
+  renderer: string,
+  net: NetState,
+  scene?: Scene,
+  more?: () => string,
+): void {
   const inst = scene ? new SceneInstrumentation(scene) : null;
   const gpu = new EngineInstrumentation(engine);
   const gpuTiming = !!engine.getCaps().timerQuery;
@@ -33,7 +40,7 @@ export function startDebugOverlay(node: HTMLElement, engine: AbstractEngine, ren
         : '';
     setText(
       node,
-      `${renderer} · ${S.fps} ${Math.round(engine.getFps())}/${engine.maxFPS ?? '∞'} · ${engine.getRenderWidth()}×${engine.getRenderHeight()}${extra} · ${S.ping} ${ping}`,
+      `${renderer} · ${S.fps} ${Math.round(engine.getFps())}/${engine.maxFPS ?? '∞'} · ${engine.getRenderWidth()}×${engine.getRenderHeight()}${extra} · ${S.ping} ${ping}${more?.() ?? ''}`,
     );
   };
   update();

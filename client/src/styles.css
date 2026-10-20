@@ -194,8 +194,11 @@ h3 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* "safe": on a short window the top stays reachable and the page scrolls */
+  justify-content: safe center;
   gap: 18px;
+  overflow-y: auto;
+  padding: 24px 0 76px;
   background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.65) 100%);
 }
 .menu-buttons {
@@ -205,9 +208,76 @@ h3 {
 }
 .play-panel {
   min-width: 420px;
+  max-width: min(560px, 94vw);
+}
+
+/* game list in the play panel */
+.games {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.games-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.games-head h3 {
+  margin: 0;
+  flex: 1;
+}
+.room-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid rgba(201, 162, 74, 0.35);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.3);
+}
+.room-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(201, 162, 74, 0.15);
+}
+.room-list li.full {
+  color: var(--muted);
+}
+.room-list li.empty {
+  display: block;
+  text-align: center;
+}
+.room-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.room-code {
+  font-family: monospace;
+  color: var(--gold-light);
+}
+.btn.tiny {
+  font-size: 12px;
+  padding: 3px 9px;
+}
+td .btn.tiny {
+  margin-left: 6px;
+}
+.field.small {
+  font-size: 14px;
+  padding: 3px 6px;
+}
+.lobby-error {
+  color: var(--bad);
+  margin: 6px 0 0;
 }
 .corner {
-  position: absolute;
+  position: fixed;
   right: 18px;
   bottom: 18px;
 }
@@ -216,8 +286,10 @@ h3 {
 
 .lobby {
   display: flex;
-  align-items: center;
+  align-items: safe center;
   justify-content: center;
+  overflow-y: auto;
+  padding: 12px 0;
   background: rgba(0, 0, 0, 0.45);
 }
 .lobby-panel {
@@ -296,6 +368,30 @@ h3 {
 }
 .chat .field {
   margin-top: auto;
+}
+.chat-log {
+  flex: 1;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 15px;
+}
+.chat-log p {
+  margin: 2px 0;
+}
+.chat-log p.system {
+  color: var(--muted);
+  font-style: italic;
+}
+.slots tr.own td {
+  background: rgba(201, 162, 74, 0.08);
+}
+.slots .ok {
+  color: var(--ok);
+}
+.hud-ping {
+  font-size: 13px;
+  color: var(--muted);
+  margin-left: 10px;
 }
 .load-groups {
   list-style: none;

@@ -12,7 +12,12 @@ if (problems.length) {
   process.exit(1);
 }
 
-const server = createGameServer();
+const server = createGameServer({
+  // MATCH_INLINE=1 runs matches on the main thread (easier to debug).
+  matchMode: process.env['MATCH_INLINE'] === '1' ? 'inline' : 'worker',
+  // Load-test options (hundreds of test units) only on a dev server.
+  allowTestOptions: process.env['NODE_ENV'] !== 'production',
+});
 server.http.listen(PORT, HOST, () => {
   console.log(`Temple Wars server ${SERVER_VERSION} on http://${HOST}:${PORT} (WebSocket at /ws)`);
 });

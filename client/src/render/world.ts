@@ -20,18 +20,7 @@ import { Scene } from '@babylonjs/core/scene';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
 import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
-import {
-  blockRect,
-  buildNavGrid,
-  createMover,
-  findPath,
-  gameData,
-  isMoving,
-  stepMover,
-  type Mover,
-  type NavGrid,
-  type TerrainGrid,
-} from '@game/shared';
+import { buildMatchNav, gameData, type NavGrid, type TerrainGrid } from '@game/shared';
 import selectionRingUrl from '../assets/ui/selection_ring.webp?url';
 import type { GameAssets } from '../loader/assets';
 import { attachHeroEffects, type HeroEffects } from './hero-effects';
@@ -46,15 +35,6 @@ export type TreeList = [number, number, number, number][];
 const TREE_MODELS = ['tree_pine', 'tree_oak', 'tree_dead', 'bush'];
 export const TEAMS = ['red', 'blue', 'teal', 'purple'];
 
-/** Building sizes on the nav grid (game units). */
-const FOOTPRINT: Record<string, [number, number]> = {
-  town_hall: [5, 5],
-  gold_mine: [3.4, 3.4],
-  side_shop: [3, 3],
-  temple_market: [3.4, 3.4],
-  fountain_of_life: [3, 3],
-};
-
 /** Game position + facing -> world transform. North is -z, models face +z. */
 function place(node: { position: Vector3; rotationQuaternion: Quaternion | null }, x: number, y: number, h: number, facing: number): void {
   node.position.set(x, h, -y);
@@ -62,9 +42,16 @@ function place(node: { position: Vector3; rotationQuaternion: Quaternion | null 
   Quaternion.RotationAxisToRef(Vector3.UpReadOnly, facing + Math.PI, node.rotationQuaternion);
 }
 
+/** A unit on screen. Its pose comes from the network layer (game/match-client.ts). */
 export interface Unit {
+  modelId: string;
   model: ModelInstance;
-  mover: Mover;
+  x: number;
+  y: number;
+  facing: number;
+  moving: boolean;
+  /** move speed, to play the walk animation at the right pace */
+  speed: number;
   team: string;
   effects: HeroEffects | null;
   anim: string;
@@ -74,8 +61,11 @@ export class GameWorld {
   readonly scene: Scene;
   readonly camera: RtsCamera;
   readonly nav: NavGrid;
-  hero: Unit | null = null;
-  readonly units: Unit[] = [];
+  readonly units = new Set<Unit>();
+  /** the selected unit: the ring is drawn under it */
+  selected: Unit | null = null;
+  /** Called every frame before units are drawn, with the frame time in seconds. */
+  beforeFrame: ((dt: number) => void) | null = null;
   private shadows: ShadowGenerator;
   private ring: Mesh;
   private stress: ModelInstance[] = [];
@@ -148,7 +138,7 @@ export class GameWorld {
     const terrain = await createTerrain(scene, grid, layout, assets);
     const library = new ModelLibrary(scene, assets);
     await library.loadAll();
-    const nav = buildNavGrid(grid);
+    const nav = buildMatchNav(grid, layout);
 
     // ---- trees: one thin-instanced mesh set per tree type. Pines also grow on the lower
     // mountain slopes outside the map, so the world does not end at a hard line.
@@ -200,8 +190,6 @@ export class GameWorld {
       inst.animations.get('idle')?.start(true);
       if (shadow) for (const mesh of inst.meshes) shadows.addShadowCaster(mesh, false);
       for (const mesh of inst.meshes) mesh.freezeWorldMatrix();
-      const fp = FOOTPRINT[id];
-      if (fp) blockRect(nav, x, y, fp[0], fp[1]);
       return inst;
     };
     layout.starts.forEach((s, i) => put('town_hall', s.townHall[0], s.townHall[1], TEAMS[i % TEAMS.length]!));
@@ -232,31 +220,34 @@ export class GameWorld {
     return world;
   }
 
-  /** Spawns the player's hero at a start spot. */
-  spawnHero(heroId: string, x: number, y: number, team: string): Unit {
-    const def = gameData.heroes.find((h) => h.id === heroId);
-    const model = this.library.spawn(heroId, team);
-    const mover = createMover(x, y, def?.moveSpeed ?? 3);
-    const c = (this.grid.cols * this.grid.cellSize) / 2;
-    mover.facing = Math.atan2(-(c - x), c - y);
-    for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
-    const unit: Unit = { model, mover, team, effects: attachHeroEffects(this.scene, heroId, model.nodes, model.materials.glow), anim: '' };
+  /** Adds a unit (hero or unit model) to the scene. Heroes cast shadows and get their effects. */
+  addUnit(modelId: string, team: string, x: number, y: number, facing: number, speed: number, hero: boolean): Unit {
+    const model = this.library.spawn(modelId, team);
+    if (hero) for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
+    const effects = hero ? attachHeroEffects(this.scene, modelId, model.nodes, model.materials.glow) : null;
+    const unit: Unit = { modelId, model, x, y, facing, moving: false, speed, team, effects, anim: '' };
     this.play(unit, 'idle');
-    this.units.push(unit);
-    this.hero = unit;
-    const radius = Math.max(1.1, (this.library.models[heroId]?.height ?? 2) * 0.42);
-    this.ring.scaling.set(radius * 2.2, 1, radius * 2.2);
-    (this.ring.material as StandardMaterial).emissiveColor = Color3.FromHexString(TEAM_COLORS[team] ?? '#ffffff');
-    this.ring.setEnabled(true);
+    this.units.add(unit);
     this.syncUnit(unit);
     return unit;
   }
 
-  /** Orders the hero to walk to a game position (path on the nav grid). */
-  moveHero(x: number, y: number): void {
-    if (!this.hero) return;
-    const m = this.hero.mover;
-    m.path = findPath(this.nav, m.x, m.y, x, y);
+  removeUnit(u: Unit): void {
+    if (!this.units.delete(u)) return;
+    if (this.selected === u) this.select(null);
+    for (const mesh of u.model.meshes) this.shadows.removeShadowCaster(mesh, false);
+    u.effects?.dispose();
+    u.model.dispose();
+  }
+
+  /** Shows the selection ring under a unit (in its team color), or hides it. */
+  select(u: Unit | null): void {
+    this.selected = u;
+    this.ring.setEnabled(!!u);
+    if (!u) return;
+    const radius = Math.max(1.1, (this.library.models[u.modelId]?.height ?? 2) * 0.42);
+    this.ring.scaling.set(radius * 2.2, 1, radius * 2.2);
+    (this.ring.material as StandardMaterial).emissiveColor = Color3.FromHexString(TEAM_COLORS[u.team] ?? '#ffffff');
   }
 
   /** Ground point under the mouse in game coordinates, or null. */
@@ -270,7 +261,7 @@ export class GameWorld {
   setMenuMode(on: boolean): void {
     this.menuMode = on;
     this.camera.enabled = !on;
-    if (!on && this.hero) this.camera.lookAt(this.hero.mover.x, this.hero.mover.y);
+    if (!on && this.selected) this.camera.lookAt(this.selected.x, this.selected.y);
   }
 
   /** Debug: N copies of a unit around the hero (shared animation), to measure speed. */
@@ -280,8 +271,8 @@ export class GameWorld {
       this.stress = [];
       return 0;
     }
-    const cx = this.hero?.mover.x ?? (this.grid.cols * this.grid.cellSize) / 2,
-      cy = this.hero?.mover.y ?? (this.grid.cols * this.grid.cellSize) / 2;
+    const cx = this.selected?.x ?? (this.grid.cols * this.grid.cellSize) / 2,
+      cy = this.selected?.y ?? (this.grid.cols * this.grid.cellSize) / 2;
     const base = this.library.spawn(id, 'blue');
     base.animations.get('walk')?.start(true);
     this.stress.push(base);
@@ -336,14 +327,14 @@ export class GameWorld {
     const next = unit.model.animations.get(name);
     if (!next) return;
     unit.model.animations.get(unit.anim)?.stop();
-    next.start(true, name === 'walk' ? unit.mover.speed / 3 : 1);
+    next.start(true, name === 'walk' ? unit.speed / 3 : 1);
     unit.anim = name;
   }
 
   private syncUnit(u: Unit): void {
-    const { x, y, facing } = u.mover;
+    const { x, y, facing } = u;
     place(u.model.root, x, y, this.terrain.heightAt(x, y), facing);
-    if (u === this.hero) this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.08, -y);
+    if (u === this.selected) this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.08, -y);
   }
 
   private tick(dt: number): void {
@@ -355,9 +346,9 @@ export class GameWorld {
     sun.shadowFrustumSize = this.menuMode
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
+    this.beforeFrame?.(dt);
     for (const u of this.units) {
-      stepMover(u.mover, dt);
-      this.play(u, isMoving(u.mover) ? 'walk' : 'idle');
+      this.play(u, u.moving ? 'walk' : 'idle');
       this.syncUnit(u);
     }
     if (this.menuMode) {

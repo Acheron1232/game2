@@ -44,6 +44,26 @@ export class BinaryWriter {
     return this;
   }
 
+  i8(v: number): this {
+    this.ensure(1);
+    this.view.setInt8(this.offset, v);
+    this.offset += 1;
+    return this;
+  }
+
+  i16(v: number): this {
+    this.ensure(2);
+    this.view.setInt16(this.offset, v, true);
+    this.offset += 2;
+    return this;
+  }
+
+  /** Writes a u16 at an earlier offset, for counts that are known only at the end. */
+  setU16At(offset: number, v: number): this {
+    this.view.setUint16(offset, v, true);
+    return this;
+  }
+
   u32(v: number): this {
     this.ensure(4);
     this.view.setUint32(this.offset, v, true);
@@ -120,6 +140,20 @@ export class BinaryReader {
   u16(): number {
     this.need(2);
     const v = this.view.getUint16(this.offset, true);
+    this.offset += 2;
+    return v;
+  }
+
+  i8(): number {
+    this.need(1);
+    const v = this.view.getInt8(this.offset);
+    this.offset += 1;
+    return v;
+  }
+
+  i16(): number {
+    this.need(2);
+    const v = this.view.getInt16(this.offset, true);
     this.offset += 2;
     return v;
   }

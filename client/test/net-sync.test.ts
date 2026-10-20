@@ -1,0 +1,134 @@
+// Runs the whole network path without a network: server sim -> ClientView snapshots -> client
+// NetEntity + HeroPredictor, with fake one-way delay. The own hero must not need fixes when
+// nothing unexpected happens, and must end where the server's hero ends.
+
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  BinaryWriter,
+  buildMatchNav,
+  ClientView,
+  CommandType,
+  entityTypeIndex,
+  gameData,
+  isHeroType,
+  MatchSim,
+  moveSpeedOf,
+  parseTerrain,
+  quantizePoint,
+  readCommand,
+  readSnapshot,
+  SnapshotData,
+  SnapshotWriter,
+  TeamVision,
+  writeCommand,
+  BinaryReader,
+  type GameCommand,
+} from '@game/shared';
+import { describe, expect, it } from 'vitest';
+import { HeroPredictor } from '../src/game/hero-predictor';
+import { NetEntity } from '../src/game/net-entity';
+
+const terrain = parseTerrain(readFileSync(join(__dirname, '..', '..', 'shared', 'data', 'map-terrain.bin')));
+const nav = buildMatchNav(terrain, gameData.map);
+
+function run(oneWayMs: number, jitterMs: number, clicks: { at: number; dx: number; dy: number; queue?: boolean }[], endMs: number) {
+  const sim = new MatchSim(
+    { seed: 3, slots: [{ index: 0, heroType: entityTypeIndex('staff_warrior'), team: 1, color: 0, start: 0 }] },
+    buildMatchNav(terrain, gameData.map),
+  );
+  const vision = new TeamVision(256);
+  const view = new ClientView(0, 1);
+  const sw = new SnapshotWriter();
+  const w = new BinaryWriter(1024);
+  const cw = new BinaryWriter(64);
+  const snap = new SnapshotData();
+  const ents = new Map<number, NetEntity>();
+  let own: NetEntity | null = null;
+  let pred: HeroPredictor | null = null;
+  let seq = 0;
+  // [arrival time, payload]
+  const toServer: [number, Uint8Array][] = [];
+  const toClient: [number, Uint8Array][] = [];
+  const pose = { x: 0, y: 0, facing: 0, state: 0 };
+  let rnd = 1;
+  const jitter = () => {
+    rnd = (rnd * 16807) % 2147483647;
+    return (rnd / 2147483647) * jitterMs;
+  };
+  let lastArrival = 0;
+  const pending = [...clicks];
+  // Client frames at ~120 fps, starting at a random phase vs the server ticks.
+  for (let t = 0, frame = 3.7; t <= endMs; t++) {
+    if (t > 0 && t % 50 === 0) {
+      for (let i = toServer.length - 1; i >= 0; i--) {
+        if (toServer[i]![0] > t) continue;
+        const r = new BinaryReader(toServer[i]![1]);
+        r.u8();
+        const c = readCommand(r)!;
+        sim.queueCommand(0, c.seq, c.cmd);
+        toServer.splice(i, 1);
+      }
+      sim.step();
+      if (sim.tick % 2 === 1) vision.update(sim.entities);
+      // TCP keeps order: a message never arrives before the one sent before it.
+      lastArrival = Math.max(lastArrival, t + oneWayMs + jitter());
+      toClient.push([lastArrival, view.write(sim, vision, sw, w).slice()]);
+    }
+    while (toClient.length && toClient[0]![0] <= t) {
+      const s = readSnapshot(toClient.shift()![1], snap);
+      for (let i = 0; i < s.spawnCount; i++) {
+        const e = new NetEntity(s.tick, s.spawns[i]!);
+        ents.set(e.id, e);
+        if (isHeroType(e.type) && e.owner === 0) {
+          own = e;
+          pred = new HeroPredictor(e.last.x, e.last.y, e.last.facing, moveSpeedOf(e.type), nav);
+        }
+      }
+      for (let i = 0; i < s.updateCount; i++) ents.get(s.updates[i]!.id)?.apply(s.tick, s.updates[i]!);
+      if (own && pred) {
+        own.sample(s.tick, pose);
+        pred.reconcile(s.ackSeq, s.ticksSinceAck, pose.x, pose.y);
+      }
+    }
+    if (t >= frame) {
+      frame += 1000 / 120;
+      if (pred && pending.length && pending[0]!.at <= t) {
+        const c = pending.shift()!;
+        const [x, y] = quantizePoint(pred.mover.x + c.dx, pred.mover.y + c.dy);
+        const cmd: GameCommand = { type: CommandType.Move, x, y, queue: !!c.queue };
+        seq++;
+        toServer.push([t + oneWayMs + jitter(), writeCommand(cw, seq, cmd).slice()]);
+        pred.issue(seq, cmd);
+      }
+      pred?.advance(t);
+    }
+  }
+  const hero = sim.heroes[0]!.mover;
+  return { pred: pred!, server: { x: hero.x, y: hero.y, moving: hero.path.length > 0 } };
+}
+
+describe('client prediction against the server', () => {
+  const clicks = [
+    { at: 500, dx: 12, dy: -8 },
+    { at: 2600, dx: -9, dy: 6 },
+    { at: 2900, dx: 4, dy: 10, queue: true },
+    { at: 4000, dx: 15, dy: 3 },
+  ];
+
+  it('needs no fixes on a perfect network', () => {
+    const { pred, server } = run(0, 0, clicks, 12000);
+    expect(server.moving).toBe(false);
+    expect(Math.hypot(pred.mover.x - server.x, pred.mover.y - server.y)).toBeLessThan(0.02);
+    expect(pred.stats.snaps).toBe(0);
+    expect(pred.stats.corrections).toBe(0);
+  });
+
+  it('stays in step with 100 ms ping and jitter', () => {
+    const { pred, server } = run(50, 30, clicks, 12000);
+    expect(server.moving).toBe(false);
+    expect(Math.hypot(pred.mover.x - server.x, pred.mover.y - server.y)).toBeLessThan(0.02);
+    expect(pred.stats.snaps).toBe(0);
+    expect(pred.stats.corrections).toBe(0);
+  });
+});

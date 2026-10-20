@@ -1,9 +1,7 @@
-// Placeholder screens: Main Menu, Lobby (with the real loading panel), Game HUD frame, End.
-// Real lobby logic comes in Phase 6, the real HUD in Phase 9.
+// Main Menu, Game HUD frame and End screen. The lobby is in lobby-screen.ts.
+// The real HUD comes in Phase 9.
 
-import { gameData } from '@game/shared';
-import type { LoadState } from '../loader/loader';
-import type { NetState } from '../net/socket';
+import { gameData, type RoomSummary } from '@game/shared';
 import { el, setText } from './dom';
 import type { Router, Screen } from './router';
 import { S } from './strings';
@@ -13,20 +11,85 @@ export function toggleFullScreen(): void {
   else void document.documentElement.requestFullscreen().catch(() => undefined);
 }
 
-export function createMenuScreen(router: Router, getName: () => string, setName: (n: string) => void): Screen {
-  const nameInput = el('input', { class: 'field', maxlength: '24', value: getName(), 'aria-label': S.yourName });
-  nameInput.addEventListener('change', () => setName(nameInput.value.trim() || 'Player'));
+export interface MenuScreen extends Screen {
+  showError(text: string): void;
+  setOnline(online: boolean): void;
+  setRooms(rooms: RoomSummary[]): void;
+}
+
+export interface MenuActions {
+  getName(): string;
+  setName(n: string): void;
+  create(): void;
+  join(code: string): void;
+  refreshRooms(): void;
+}
+
+export function createMenuScreen(actions: MenuActions): MenuScreen {
+  const nameInput = el('input', { class: 'field', maxlength: '24', value: actions.getName(), 'aria-label': S.yourName });
+  nameInput.addEventListener('change', () => actions.setName(nameInput.value.trim() || 'Player'));
+  const codeInput = el('input', { class: 'field code', placeholder: S.code, maxlength: '5' });
+  const createBtn = el('button', { class: 'btn', onclick: () => actions.create() }, S.createGame);
+  const joinBtn = el('button', { class: 'btn', onclick: () => codeInput.value.trim() && actions.join(codeInput.value.trim()) }, S.joinGame);
+  codeInput.addEventListener('keydown', (e) => e.key === 'Enter' && joinBtn.click());
+  codeInput.addEventListener('input', () => (codeInput.value = codeInput.value.toUpperCase()));
+  const errorLine = el('p', { class: 'lobby-error', hidden: true });
+
+  // ---- game list: every game on this server, with a search by host name or code
+  let rooms: RoomSummary[] = [];
+  const countLine = el('span', { class: 'muted' }, '');
+  const search = el('input', { class: 'field', placeholder: S.searchGames, maxlength: '24' });
+  const list = el('ul', { class: 'room-list' });
+  const renderRooms = () => {
+    const q = search.value.trim().toLowerCase();
+    const shown = rooms.filter((r) => !q || r.host.toLowerCase().includes(q) || r.code.toLowerCase().includes(q));
+    const open = rooms.filter((r) => r.phase === 'lobby').length;
+    setText(countLine, S.gamesCount(open, rooms.length - open));
+    list.replaceChildren(
+      ...(shown.length
+        ? shown.map((r) => {
+            const players = `${r.humans + r.bots} / ${r.humans + r.bots + r.open}`;
+            const canJoin = r.phase === 'lobby' && r.open > 0;
+            return el(
+              'li',
+              { class: canJoin ? '' : 'full' },
+              el('span', { class: 'room-name' }, S.gameOf(r.host)),
+              el('span', { class: 'room-code' }, r.code),
+              el('span', { class: 'room-players' }, players),
+              canJoin
+                ? el('button', { class: 'btn tiny', onclick: () => actions.join(r.code) }, S.join)
+                : el('span', { class: 'muted' }, r.phase === 'playing' ? S.inGame : S.full),
+            );
+          })
+        : [el('li', { class: 'muted empty' }, rooms.length ? S.noGamesFound : S.noGames)]),
+    );
+  };
+  search.addEventListener('input', renderRooms);
+  const gamesPanel = el(
+    'div',
+    { class: 'games' },
+    el(
+      'div',
+      { class: 'games-head' },
+      el('h3', {}, S.games),
+      countLine,
+      el('button', { class: 'btn tiny', onclick: () => actions.refreshRooms() }, S.refresh),
+    ),
+    search,
+    list,
+  );
+  renderRooms();
+  // Keep the list fresh while the menu is open.
+  setInterval(() => {
+    if (!root.hidden && !playPanel.hidden) actions.refreshRooms();
+  }, 3000);
   const playPanel = el(
     'div',
     { class: 'panel ornate play-panel', hidden: true },
     el('label', { class: 'field-label' }, S.yourName, nameInput),
-    el(
-      'div',
-      { class: 'row' },
-      el('button', { class: 'btn', onclick: () => router.show('lobby') }, S.createGame),
-      el('button', { class: 'btn', disabled: true, title: S.comingSoon }, S.joinGame),
-      el('input', { class: 'field code', placeholder: S.code, maxlength: '6', disabled: true }),
-    ),
+    el('div', { class: 'row' }, createBtn, joinBtn, codeInput),
+    errorLine,
+    gamesPanel,
   );
   const root = el(
     'section',
@@ -39,132 +102,51 @@ export function createMenuScreen(router: Router, getName: () => string, setName:
     el(
       'nav',
       { class: 'menu-buttons' },
-      el('button', { class: 'btn big', onclick: () => (playPanel.hidden = !playPanel.hidden) }, S.play),
+      el(
+        'button',
+        {
+          class: 'btn big',
+          onclick: () => {
+            playPanel.hidden = !playPanel.hidden;
+            if (!playPanel.hidden) actions.refreshRooms();
+          },
+        },
+        S.play,
+      ),
       el('button', { class: 'btn big', disabled: true, title: S.comingSoon }, S.settings),
       el('button', { class: 'btn big', disabled: true, title: S.comingSoon }, S.credits),
     ),
     playPanel,
     el('button', { class: 'btn small corner', onclick: toggleFullScreen }, `⛶ ${S.fullScreen}`),
   );
-  return { root };
-}
-
-export interface LobbyScreen extends Screen {
-  setLoad(state: LoadState): void;
-  setNet(state: NetState): void;
-}
-
-export function createLobbyScreen(router: Router, getName: () => string): LobbyScreen {
-  const heroNames = gameData.heroes.map((h) => h.name);
-  const youName = el('span');
-  const youLoad = el('span', { class: 'load-cell' }, '0%');
-  const slotRow = (n: number, who: Node | string, type: string, team: string, color: string, hero: string, load: Node | string) =>
-    el(
-      'tr',
-      {},
-      ...[String(n), who, type, team, el('span', { class: `swatch ${color.toLowerCase()}` }, color), hero, S.normal, load].map((c) =>
-        el('td', {}, c),
-      ),
-    );
-
-  const groupList = el('ul', { class: 'load-groups' });
-  const barFill = el('div', { class: 'bar-fill' });
-  const barText = el('div', { class: 'bar-text' }, '0%');
-  const startBtn = el('button', { class: 'btn', disabled: true, onclick: () => router.show('game') }, S.startGame);
-  const readyBtn = el('button', { class: 'btn' }, S.ready);
-  let ready = false;
-  let loaded = false;
-  const refreshStart = () => {
-    startBtn.disabled = !(ready && loaded);
-    startBtn.title = !loaded ? S.waitingForLoad(Math.round(Number(barText.textContent?.replace('%', '') ?? 0))) : !ready ? S.ready : '';
-  };
-  readyBtn.addEventListener('click', () => {
-    ready = !ready;
-    setText(readyBtn, ready ? S.notReady : S.ready);
-    readyBtn.classList.toggle('on', ready);
-    refreshStart();
-  });
-  const net = el('span', { class: 'net' });
-
-  const root = el(
-    'section',
-    { class: 'screen lobby' },
-    el(
-      'div',
-      { class: 'panel ornate lobby-panel' },
-      el(
-        'header',
-        { class: 'lobby-head' },
-        el('h2', {}, `${S.lobbyTitle} — TEST`),
-        net,
-        el('button', { class: 'btn small', disabled: true, title: S.comingSoon }, S.copyLink),
-      ),
-      el('div', { class: 'divider' }),
-      el(
-        'table',
-        { class: 'slots' },
-        el('thead', {}, el('tr', {}, ...[S.slot, S.player, S.type, S.team, S.color, S.hero, S.ai, S.load].map((h) => el('th', {}, h)))),
-        el(
-          'tbody',
-          {},
-          slotRow(1, el('span', {}, youName, ` (${S.host})`), S.human, '1', 'Red', heroNames[0] ?? S.random, youLoad),
-          slotRow(2, '—', S.open, '2', 'Blue', S.random, '—'),
-          slotRow(3, '—', S.open, '3', 'Teal', S.random, '—'),
-          slotRow(4, '—', S.open, '4', 'Purple', S.random, '—'),
-        ),
-      ),
-      el(
-        'div',
-        { class: 'lobby-body' },
-        el(
-          'div',
-          { class: 'panel inset chat' },
-          el('h3', {}, S.chat),
-          el('p', { class: 'muted' }, S.chatSoon),
-          el('input', { class: 'field', placeholder: S.typeHere, disabled: true }),
-        ),
-        el('div', { class: 'panel inset loading' }, el('h3', {}, S.loading), groupList, el('div', { class: 'bar' }, barFill, barText)),
-      ),
-      el(
-        'footer',
-        { class: 'lobby-foot' },
-        el('button', { class: 'btn', onclick: () => router.show('menu') }, S.leave),
-        readyBtn,
-        startBtn,
-      ),
-    ),
-  );
-
   return {
     root,
-    onShow: () => setText(youName, getName()),
-    setLoad(state) {
-      groupList.replaceChildren(
-        ...state.groups.map((g) =>
-          el(
-            'li',
-            { class: g.done >= g.total && !g.waiting ? 'done' : '' },
-            el('span', {}, S.groupNames[g.group] ?? g.group),
-            el('span', {}, g.waiting ? S.loadWaiting : `${g.done} / ${g.total}${g.done >= g.total ? ' ✔' : ''}`),
-          ),
-        ),
-      );
-      const pct = Math.floor(state.fraction * 100);
-      barFill.style.width = `${pct}%`;
-      setText(barText, pct >= 100 ? S.loadReady : `${pct}%`);
-      setText(youLoad, `${pct}%`);
-      loaded = pct >= 100;
-      refreshStart();
+    showError(text) {
+      playPanel.hidden = false;
+      errorLine.hidden = false;
+      setText(errorLine, text);
     },
-    setNet(state) {
-      const text = { online: S.netOnline, connecting: S.netConnecting, offline: S.netOffline, outdated: S.netOutdated }[state.status];
-      setText(net, state.pingMs !== null ? `${text} · ${S.ping} ${Math.round(state.pingMs)} ms` : text);
-      net.className = `net ${state.status}`;
+    setOnline(online) {
+      createBtn.disabled = joinBtn.disabled = !online;
+      createBtn.title = joinBtn.title = online ? '' : S.netOffline;
+    },
+    setRooms(r) {
+      rooms = r;
+      renderRooms();
     },
   };
 }
 
-export function createGameScreen(router: Router): Screen {
+export interface GameScreen extends Screen {
+  setClock(seconds: number): void;
+  setPing(ms: number | null): void;
+  setStatus(text: string): void;
+}
+
+export function createGameScreen(onEnd: () => void): GameScreen {
+  const clock = el('span', { class: 'clock' }, '00:00');
+  const ping = el('span', { class: 'hud-ping' }, '');
+  const status = el('p', {}, S.aiIdle);
   const abilityButtons = ['Q', 'W', 'E', 'R'].map((k) => el('div', { class: 'ability' }, el('span', { class: 'key' }, k)));
   const items = Array.from({ length: 6 }, (_, i) => el('div', { class: 'item-slot' }, el('span', { class: 'key' }, String(i + 1))));
   const root = el(
@@ -173,11 +155,12 @@ export function createGameScreen(router: Router): Screen {
     el(
       'header',
       { class: 'hud-top' },
-      el('span', { class: 'clock' }, '00:00'),
+      clock,
+      ping,
       el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`),
-      el('button', { class: 'btn small', onclick: () => router.show('end') }, S.endMatchTest),
+      el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest),
     ),
-    el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), el('p', {}, S.aiIdle)),
+    el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), status),
     el(
       'footer',
       { class: 'hud-bottom' },
@@ -192,7 +175,20 @@ export function createGameScreen(router: Router): Screen {
       el('div', { class: 'panel inventory' }, ...items),
     ),
   );
-  return { root };
+  return {
+    root,
+    setClock(seconds) {
+      const m = Math.floor(seconds / 60),
+        sec = Math.floor(seconds % 60);
+      setText(clock, `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`);
+    },
+    setPing(ms) {
+      setText(ping, ms === null ? '' : `${S.ping} ${Math.round(ms)} ms`);
+    },
+    setStatus(text) {
+      setText(status, text);
+    },
+  };
 }
 
 export function createEndScreen(router: Router): Screen {

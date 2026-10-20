@@ -201,7 +201,7 @@ Each phase has:
 **Goal:** real online matches. The server runs the game; 4 players see the same world, smooth, at normal ping.
 
 **Tasks**
-1. **Lobby server:** create game (gets a short code + link), join, leave, kick, slots (Open / Human / Bot / Closed), team, color, hero pick, AI difficulty, ready, chat. Each player sends their load %; everyone sees it. Host can start only when all are 100% and ready.
+1. **Lobby server:** create game (gets a short code + link), join, leave, kick, slots (Open / Human / Bot / Closed), team, color, hero pick, AI difficulty, ready, chat. Each player sends their load %; everyone sees it. Host can start only when all are 100% and ready. A game list in the main menu shows the open and running games with a search (added by the user in Phase 6).
 2. **Match server:** each match in its own worker thread. Fixed 20 Hz tick. Commands from clients go into a queue and run at the next tick.
 3. Shared movement code in `shared/` used by server and client.
 4. **Snapshots:** each tick send changed entity data only (delta), positions quantized (for example 16-bit), sent only for entities the player can see (simple vision for now, full fog in Phase 9).

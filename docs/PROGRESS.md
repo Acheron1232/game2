@@ -9,11 +9,13 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
 - **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
 - **Client audit and polish** (2026-10-19): current working map is 256 × 256, with 7,451 baked trees, 6,679 decor objects and 58 model entries. These additions follow the original Phase 5 snapshot below. Fixed HUD clipping, minimap sizing, camera bounds, per-frame allocations, shader warm-up error handling and blocked-corner navigation. WebGPU and WebGL2 checked in the browser; build, typecheck, 30 tests and lint passed. See [CLIENT_AUDIT.md](CLIENT_AUDIT.md) for sampled performance numbers, limits and remaining visual work. Earlier Phase 5 numbers below describe the earlier map.
-- **Phase 5 is done** (2026-10-19). Next: **Phase 6 — Server and multiplayer**.
-- Notes for Phase 6:
-  - The hero moves on the client with `shared/src/nav/nav-grid.ts` (A*) and `shared/src/sim/movement.ts`. Phase 6 runs the same code on the server; the client keeps it for prediction.
-  - `GameWorld` (`client/src/render/world.ts`) is the scene: `spawnHero`, `moveHero`, `pickGround`, units list. Game coordinates: x east, y north; world: x, height, -y (right-handed scene).
-  - The lobby is still the Phase 2 placeholder; `?play` opens the game screen right after loading, `?hero=<id>` picks the hero.
+- **Phase 6 is done** (2026-10-20). Next: **Phase 7 — Combat, heroes, camps, items**.
+- Notes for Phase 7:
+  - The simulation is `shared/src/sim/match-sim.ts` (entities, command queue, tick). Add combat there; the server runs it in `server/src/match/match-runner.ts`.
+  - New commands: add a `CommandType`, encode/decode in `shared/src/protocol/game.ts`, validate in `MatchSim.isValid`, apply in `applyCommand`. Prediction runs only movement; attacks and abilities wait for the server.
+  - New entity fields on the wire: add a `Field` bit, write it in `ClientView`, read it in `SnapshotData` and `NetEntity.apply`.
+  - Units do not push each other yet (no steering), so prediction is exact. Steering in Phase 7 will make the own-hero fixes more frequent: check `fixes` in F3.
+  - The nav grid area ids (`labelRegions`) must be rebuilt when trees are cut or buildings placed.
 - The user gave a server for deploys (details kept outside the repo). Use it in Phase 10, or earlier for online tests after Phase 6. Ask before changing anything on it.
 
 ## Phases
@@ -25,11 +27,33 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 3 | 2D art with Codex | **Done** | 7 Codex images → 340 assets, 2.7 MB WebP; UI skin in menu / lobby |
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
-| 6 | Server and multiplayer | Not started | |
+| 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
 | 7 | Combat, heroes, camps, items | Not started | |
 | 8 | Faction AI and bots | Not started | |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
+
+## Phase 6 — what was made
+
+- **Lobby server** (`server/src/lobby/`): rooms with 5-letter codes and a `?join=CODE` link; 4 slots (Open / Human / Bot / Closed), team 1–4, unique color, hero or Random, AI level for bots, ready, load %, chat, kick, host moves to the next human when the host leaves. Host can start only when every human is at 100% and ready. Random heroes are picked without repeats; start spots are random (seeded).
+- **Game list** (user wish): the main menu's play panel shows "N open · M playing", a search by host name or code, and a Join button per game. Refreshes every 3 s.
+- **Match server** (`server/src/match/`): one worker thread per match (`match-worker.ts`), fixed 20 Hz loop with drift correction, commands queued and run at the start of the next tick, per-second tick stats. `MATCH_INLINE=1` runs it on the main thread.
+- **Shared simulation** (`shared/src/sim/`): `MatchSim` (heroes, test units, command queue, seeded random), `applyCommand`, `TeamVision` (4-unit cells, circle by sight, every 2 ticks), entity type ids from the data files, `buildMatchNav` (terrain + building footprints, same on both sides).
+- **Snapshots** (`shared/src/protocol/game.ts`, `client-view.ts`): per player, only what its team sees; spawns, field-masked updates, gone ids; full snapshot after a rejoin. Motion is sent as position + velocity and only re-sent when the client's guess would drift (see TECH.md §5).
+- **Client** (`client/src/game/`): `MatchClient` (snapshots → `NetEntity` keys → units drawn 100 ms in the past), `HeroPredictor` (own hero moves at once, same code and steps as the server, smooth fixes, snap over 2 units, runs on the real clock so hidden tabs stay in step), `TickClock`. World units are now network-driven (`addUnit` / `removeUnit` / `select`).
+- **Lobby UI** (`client/src/ui/lobby-screen.ts`): real slots with drop-downs, Kick, chat, error line, Copy Link; menu Create / Join by code; menu and lobby scroll on short windows.
+- **Ping and lag:** ping in the HUD and F3; F3 also shows KB/s down and prediction fixes. Dev lag tool `?lag=100&loss=2`.
+- **Rejoin:** session token per tab (sessionStorage) + recent tokens per browser (localStorage). Reload or close + reopen the tab → back in the same slot; while away the hero walks home; after 2 minutes a bot takes the slot.
+- **Safety:** commands checked (own hero alive, finite point inside the map; the wire format also clamps points to the map), 30 commands/s per player in the match, 60 messages/s per socket, zod check of every lobby message, load-test options only on non-production servers.
+- **Pathfinding speed-up** (found by the load test): search stamps instead of clearing 262k cells, no array swaps in the heap, linear string pulling, ring search only on the ring's edge, area ids so clicks into unreachable places are cheap. A* across the map ≈ 1.5 ms (was up to 13 ms spikes).
+- **Tests:** 44 in total. New: lobby flow over real sockets (create, join, color taken, not allowed, not ready, chat, start, snapshots, move ack, rejoin with full snapshot, bot takes over, kick, full room), match runner (bad and extra commands, vision, offline/full snapshot), offline prediction test with 0 / 100 ms ping and jitter (0 fixes).
+
+How each "Done when" item was checked:
+- **4 tabs make a lobby, pick heroes, load and play; all see the same:** in the in-app browser, tab 1 made room JXUM6, tab 2 found it in the game list and joined, tabs 3 and 4 joined by `?join=` link. Names, heroes and ready were set, the host started. All four heroes walked to the temple; each of the 4 tabs showed all 4 heroes at the same positions (122,128 / 128,134 / 134,128 / 128,122), 0 prediction fixes.
+- **100 ms ping: hero moves at once, no snapping:** `?lag=100&loss=2` (ping shown 104 ms): the hero moved in the first frame after the click; over 3 orders 4 small smooth fixes (max 0.36 units, from two quick orders reaching the server with a different gap), 0 snaps. Offline test with 100 ms + jitter: 0 fixes.
+- **Server tick < 10 ms with 4 players and 300 units:** load test, 20 s each: units around bases avg 0.45 ms, max 2.0 ms; all 300 in the temple avg 0.46 ms, max 1.6 ms.
+- **Bandwidth under budget:** see Budgets: 0.8 KB/s (bases), 1.8 KB/s (everyone sees all 300) per player down; up ≈ 0.1 KB/s.
+- **Closing and reopening a tab rejoins the match:** closed Dana's tab (chat: "Dana left. The hero waits at the base."), opened a new tab at `/`: it came back as Dana in slot 3 with `rejoin: true`, hero at the base. Page reloads (Vite reloaded all 4 tabs during the test) also put every tab back in its slot.
 
 ## Phase 5 — what was made
 
@@ -132,6 +156,14 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Snapshots send motion (position + velocity) and only when the client's guess drifts, instead of every position every tick. Same code decides on the server what the client guesses. Big bandwidth win; keyframes between are blended.
+- 2026-10-20 — Delta against "last sent" (not "last confirmed by the client"): WebSocket is TCP, nothing is lost. The lag tool copies TCP behaviour (late, in order) instead of dropping messages.
+- 2026-10-20 — Entities in the sim are plain objects created at spawn (no per-frame objects). Typed-array storage only if profiling asks for it.
+- 2026-10-20 — Vision in Phase 6 is a coarse 4-unit grid without line of sight; the real fog with trees and high ground is Phase 9.
+- 2026-10-20 — Session tokens: own tab token in sessionStorage (always taken back), other tokens of the browser only taken when that player is offline. So several tabs are several players, and a reopened tab finds its match.
+- 2026-10-20 — A dropped player's hero walks back to its start spot; after 2 minutes the slot becomes a bot (hero bot AI comes in Phase 8).
+- 2026-10-20 — Game list shows every room on the server (no private rooms yet). Add a "private" switch later if needed.
+- 2026-10-20 — `ClientView` lives in `shared/` (server-only, but plain logic) so client tests can run the whole server → client path.
 - 2026-10-20 — Map size 256 × 256 (was 192). The layout is still written on the 192 grid and scaled by 4/3, so all old positions keep their shape. Walk times in MAP.md; keep their order when changing the layout.
 - 2026-10-20 — Map edge = mountain wall (8 units, blocked) + mountains drawn outside the map. No black edge, the camera stays inside.
 - 2026-10-20 — Decor never blocks movement and is not part of the nav grid; it is looks only. Hand-placed decor (base props, temple ruins) lives in `bake-terrain.mjs`.
@@ -188,11 +220,14 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | First download | < 100 MB | ~14 MB (2D art 2.7 MB + models and skins 11 MB) |
 | All assets | < 500 MB | — |
 | FPS (laptop, 300 units) | 60 | 120 (capped) on M5; normal view 115–121 draws, ~260k tris (no 300-unit run after the map rework) |
-| Server tick (4 players, full armies) | < 10 ms | — |
-| Bandwidth per player | < 20 KB/s down | — |
+| Server tick (4 players, full armies) | < 10 ms | avg 0.45 ms, max 2.0 ms (4 players + 300 walking units, no combat yet) |
+| Bandwidth per player | < 20 KB/s down | 0.8 KB/s (300 units, each player sees its base), 1.8 KB/s (everyone sees all 300); up ≈ 0.1 KB/s |
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
 
 - Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
 - The minimap camera box is a fixed 46 × 30 rectangle; it does not follow zoom or screen shape.
+- Vite reloads repeat `?play` (a new solo room each time). Use `/` to rejoin instead.
+- Test units (load test) render as full models on the client; a client watching 300 of them would be slow until baked vertex animation (Phase 10).
+- Two quick orders can reach the server with a different gap than they were clicked; the own hero then gets a small smooth fix (seen: up to 0.36 units at 100 ms ping). Not a snap, but visible if you look for it.

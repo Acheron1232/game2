@@ -3,19 +3,23 @@
 //   /ws          -> WebSocket for lobby (JSON) and game (binary) messages
 
 import { createServer, type Server } from 'node:http';
+import { gameData } from '@game/shared';
 import { WebSocketServer } from 'ws';
-import { ClientConnection } from './net/connection';
+import { readSharedDataFile } from './data-files';
+import { Lobby, type LobbyOptions } from './lobby/lobby';
 import { PlayerRegistry } from './lobby/players';
+import { ClientConnection } from './net/connection';
 
-export const SERVER_VERSION = '0.1.0';
+export const SERVER_VERSION = '0.2.0';
 
 export interface GameServer {
   http: Server;
   players: PlayerRegistry;
+  lobby: Lobby;
   close(): Promise<void>;
 }
 
-export interface GameServerOptions {
+export interface GameServerOptions extends Partial<Omit<LobbyOptions, 'serverVersion'>> {
   /** Ping clients this often to find dead connections. */
   heartbeatMs?: number;
 }
@@ -23,6 +27,16 @@ export interface GameServerOptions {
 export function createGameServer(options: GameServerOptions = {}): GameServer {
   const startedAt = Date.now();
   const players = new PlayerRegistry();
+  let terrain: Uint8Array | null = null;
+  const lobby = new Lobby(players, {
+    serverVersion: SERVER_VERSION,
+    matchMode: options.matchMode ?? 'worker',
+    allowTestOptions: options.allowTestOptions ?? false,
+    lobbyGraceMs: options.lobbyGraceMs ?? 20_000,
+    reconnectMs: options.reconnectMs ?? gameData.rules.match.reconnectWindowSec * 1000,
+    matchReadyTimeoutMs: options.matchReadyTimeoutMs ?? 10_000,
+    terrain: options.terrain ?? (() => (terrain ??= readSharedDataFile('map-terrain.bin'))),
+  });
 
   const http = createServer((req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
@@ -32,7 +46,8 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
           ok: true,
           version: SERVER_VERSION,
           uptimeSec: Math.round((Date.now() - startedAt) / 1000),
-          players: players.count,
+          players: players.online,
+          ...lobby.summary(),
         }),
       );
       return;
@@ -46,7 +61,9 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
   const connections = new Set<ClientConnection>();
 
   wss.on('connection', (socket) => {
-    const conn = new ClientConnection(socket, players, SERVER_VERSION);
+    // Small messages 20 times a second: send at once, do not wait to fill a packet.
+    (socket as unknown as { _socket?: { setNoDelay?(on: boolean): void } })._socket?.setNoDelay?.(true);
+    const conn = new ClientConnection(socket, lobby);
     connections.add(conn);
     socket.on('close', () => connections.delete(conn));
   });
@@ -58,9 +75,11 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
   return {
     http,
     players,
+    lobby,
     close: () =>
       new Promise((resolve) => {
         clearInterval(heartbeat);
+        lobby.close();
         for (const conn of connections) conn.close(1001, 'Server is shutting down');
         wss.close(() => http.close(() => resolve()));
       }),
