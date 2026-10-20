@@ -404,6 +404,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       plus,
     );
     root.addEventListener('keydown', (e) => {
+      if (e.target !== root) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();

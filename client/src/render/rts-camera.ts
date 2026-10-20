@@ -33,6 +33,7 @@ export class RtsCamera {
       this.keys.clear();
       this.mouse.inside = false;
       this.drag = null;
+      globalThis.document?.body?.classList.remove('camera-dragging');
     }
   }
   get dragging(): boolean {
