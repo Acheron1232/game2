@@ -56,6 +56,7 @@ import { GAME_FPS, MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
+import { GameCursor } from './ui/game-cursor';
 import { createSettingsScreen } from './ui/settings-screen';
 import { GameSound } from './audio/sound';
 import { actionOf, loadSettings, saveSettings } from './game/settings';
@@ -156,6 +157,7 @@ async function main(): Promise<void> {
     cast: (slot) => useAbility(slot),
     settings: () => openSettings(),
     chat: (text) => net.send({ type: 'chat', text }),
+    captureMouse: () => capturedCursor.toggle(),
     showBase: () => {
       const hall = match && [...match.entities.values()].find((e) => e.owner === match!.slot && HALL_TYPES.has(e.type) && e.unit);
       if (hall?.unit) {
@@ -169,6 +171,8 @@ async function main(): Promise<void> {
     dragItem: (slot, to) => dragItem(slot, to),
     closeShop: () => closeShop(),
   });
+  const capturedCursor = new GameCursor(canvas, (text) => game.alert(text));
+  router.onChange((screen) => capturedCursor.setActive(screen === 'game'));
   router.add('menu', menu);
   router.add('lobby', lobby);
   router.add('game', game);

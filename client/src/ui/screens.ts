@@ -286,6 +286,7 @@ export interface GameActions {
   /** click on the "Your Kingdom" panel: the camera goes to the base */
   showBase(): void;
   chat(text: string): void;
+  captureMouse(): void;
 }
 
 export function createGameScreen(actions: GameActions): GameScreen {
@@ -439,7 +440,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (e.button !== 0 || !itemViews[slot]) return;
       down = { x: e.clientX, y: e.clientY, id: e.pointerId };
       dragging = false;
-      root.setPointerCapture(e.pointerId);
+      if (!document.pointerLockElement) root.setPointerCapture(e.pointerId);
     });
     root.addEventListener('pointermove', (e) => {
       if (!down || e.pointerId !== down.id) return;
@@ -527,6 +528,16 @@ export function createGameScreen(actions: GameActions): GameScreen {
       ping,
       team,
       gold,
+      el(
+        'button',
+        {
+          class: 'btn small capture-mouse',
+          'aria-pressed': 'false',
+          title: 'Keep the mouse inside the game. Esc: release.',
+          onclick: () => actions.captureMouse(),
+        },
+        'Capture mouse',
+      ),
       el('button', { class: 'btn small', title: 'Toggle full screen', onclick: toggleFullScreen }, '⛶'),
       el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
       el('button', { class: 'btn small', onclick: onEnd }, import.meta.env.DEV ? S.endMatchTest : S.leave),

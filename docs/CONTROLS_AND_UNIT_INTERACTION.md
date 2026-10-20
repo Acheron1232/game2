@@ -1,5 +1,7 @@
 # Browser controls and unit interaction
 
+Later client updates: [captured game cursor and HUD context-menu handling](CAPTURED_GAME_CURSOR.md), [GPU adapter diagnostics](WINDOWS_RENDER_PERFORMANCE.md).
+
 Branch: `codex/camera-unit-interaction`. Game commit: `769607f`. Protocol: **10**; deploy client and server together.
 
 ## Changes

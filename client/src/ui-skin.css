@@ -80,7 +80,7 @@ input {
   min-height: 46px;
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.75));
 }
-.btn:hover:not(:disabled) {
+.btn:is(:hover, .game-cursor-hover):not(:disabled) {
   filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 205, 110, 0.65));
 }
 .btn:active:not(:disabled) {
@@ -360,6 +360,28 @@ body.aiming canvas {
   cursor:
     url('./assets/ui/cursor_attack.png') 16 16,
     crosshair;
+}
+
+/* Virtual cursor stays in CSS pixels: native render resolution does not scale input. */
+body.mouse-captured,
+body.mouse-captured * {
+  cursor: none !important;
+}
+.game-cursor {
+  position: fixed;
+  left: -8px;
+  top: -3px;
+  width: 32px;
+  height: 32px;
+  background: url('./assets/ui/cursor.png') center / contain no-repeat;
+  pointer-events: none;
+  z-index: 10000;
+  will-change: transform;
+}
+body.aiming .game-cursor {
+  left: -16px;
+  top: -16px;
+  background-image: url('./assets/ui/cursor_attack.png');
 }
 
 /* Keep all four skills inside the panel, including long hero names and stat lines. */

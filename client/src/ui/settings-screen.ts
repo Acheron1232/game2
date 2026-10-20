@@ -256,7 +256,7 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
             el(
               'p',
               { class: 'control-help' },
-              'Camera: arrow keys, screen edges, middle-mouse drag or Alt + left drag. Space: center hero; twice: follow. Drag works inside a browser window.',
+              'Camera: arrow keys, screen edges, middle-mouse drag or Alt + left drag. Space: center hero; twice: follow. Capture mouse in the game HUD keeps the cursor inside the game, away from browser controls. Esc releases it. Opening Settings or chat also releases it.',
             ),
             createInstallControls(),
             row(

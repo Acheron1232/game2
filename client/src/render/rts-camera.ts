@@ -77,8 +77,13 @@ export class RtsCamera {
       this.mouse.inside = this.mouse.x >= 0 && this.mouse.y >= 0 && this.mouse.x < canvas.clientWidth && this.mouse.y < canvas.clientHeight;
       if (this.drag && this.enabled) {
         const k = (this.camera.radius / canvas.clientHeight) * 1.6;
-        this.goal.x = this.drag.tx - (e.clientX - this.drag.x) * k;
-        this.goal.y = this.drag.ty + (e.clientY - this.drag.y) * k;
+        if (globalThis.document?.pointerLockElement === canvas) {
+          this.goal.x -= e.movementX * k;
+          this.goal.y += e.movementY * k;
+        } else {
+          this.goal.x = this.drag.tx - (e.clientX - this.drag.x) * k;
+          this.goal.y = this.drag.ty + (e.clientY - this.drag.y) * k;
+        }
       }
     });
     window.addEventListener('pointerout', (e) => {
@@ -87,7 +92,7 @@ export class RtsCamera {
     canvas.addEventListener('pointerdown', (e) => {
       if (this.enabled && (e.button === 1 || (e.button === 0 && e.altKey))) {
         e.preventDefault();
-        canvas.setPointerCapture?.(e.pointerId);
+        if (!globalThis.document?.pointerLockElement) canvas.setPointerCapture?.(e.pointerId);
         globalThis.document?.body?.classList.add('camera-dragging');
         this.drag = { x: e.clientX, y: e.clientY, tx: this.goal.x, ty: this.goal.y };
         this.follow = null;

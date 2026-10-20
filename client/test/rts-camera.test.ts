@@ -60,6 +60,25 @@ describe('camera input across HUD panels', () => {
       move(360);
       frames(60);
       expect(camera.target.x).toBeCloseTo(128, 2);
+      vi.stubGlobal('document', Object.assign(new EventTarget(), { pointerLockElement: canvas }));
+      canvas.dispatchEvent(Object.assign(new Event('pointerdown'), { clientX: 0, clientY: 360, button: 1 }));
+      const lockedMove = () =>
+        host.dispatchEvent(
+          Object.assign(new Event('pointermove'), {
+            clientX: 0,
+            clientY: 360,
+            movementX: -100,
+            movementY: 0,
+          }),
+        );
+      lockedMove();
+      frames(60);
+      const firstPan = camera.target.x;
+      lockedMove(); // The virtual cursor is at its edge, but relative movement still pans.
+      frames(60);
+      expect(camera.target.x).toBeGreaterThan(firstPan + 4);
+      host.dispatchEvent(new Event('pointercancel'));
+      expect(camera.dragging).toBe(false);
     } finally {
       scene.dispose();
       engine.dispose();

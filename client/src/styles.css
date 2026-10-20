@@ -137,7 +137,7 @@ h3 {
     filter 0.12s,
     transform 0.05s;
 }
-.btn:hover:not(:disabled) {
+.btn:is(:hover, .game-cursor-hover):not(:disabled) {
   filter: brightness(1.25) drop-shadow(0 0 6px rgba(240, 213, 138, 0.45));
 }
 .btn:active:not(:disabled) {

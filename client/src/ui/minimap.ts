@@ -82,6 +82,7 @@ export class Minimap {
     });
     this.canvas.addEventListener('pointermove', (e) => dragging && this.onLook(...toGame(e)));
     window.addEventListener('pointerup', () => (dragging = false));
+    window.addEventListener('pointercancel', () => (dragging = false));
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
