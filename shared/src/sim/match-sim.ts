@@ -68,6 +68,7 @@ import {
 } from './stats';
 import { qPos } from '../protocol/game';
 import { pickTarget } from './faction/targeting';
+import { buyUpgrade, upgradeProblem } from './faction/hall-shop';
 
 /** Focus fire per AI difficulty (ai.json). */
 const FOCUS_FIRE = Object.fromEntries(
@@ -487,6 +488,7 @@ export class MatchSim {
     if (!hero) return false;
     if (cmd.type === CommandType.Learn) return cmd.slot >= 0 && cmd.slot < 4 && (hero.heroState?.skillPoints ?? 0) > 0;
     if (isItemCommand(cmd)) return itemCommandProblem(this, hero, cmd) === null;
+    if (cmd.type === CommandType.BuyUpgrade) return upgradeProblem(this, hero, cmd.upgrade) === null;
     if (!hero.alive) return false;
     switch (cmd.type) {
       case CommandType.Move:
@@ -535,6 +537,11 @@ export class MatchSim {
     // the hero may have died, moved away or spent the gold since the command came in.
     if (isInstantItemCommand(e, cmd)) {
       if (!itemCommandProblem(this, e, cmd)) runInstantItemCommand(this, e, cmd);
+      return;
+    }
+    // Town Hall upgrades are instant too (checked again: gold or range may have changed).
+    if (cmd.type === CommandType.BuyUpgrade) {
+      if (!upgradeProblem(this, e, cmd.upgrade)) buyUpgrade(this, e, cmd.upgrade);
       return;
     }
     // A new order stops a cast, a channel or an item order that has not happened yet.

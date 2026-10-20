@@ -162,7 +162,19 @@ describe('match messages', () => {
       buffs: 3,
       progress: 128,
     });
-    sw.factionState({ gold: 1234, wood: 456, supplyUsed: 17, supplyCap: 28, tier: 2, workers: 9, army: 8, status: 'Building a House' });
+    sw.factionState({
+      gold: 1234,
+      wood: 456,
+      supplyUsed: 17,
+      supplyCap: 28,
+      tier: 2,
+      workers: 9,
+      army: 8,
+      status: 'Building a House',
+      upgrades: [1, 0, 2],
+      upgradeReady: [0, 9000, 0],
+      tech: [30, 33],
+    });
     sw.update({
       id: 9,
       type: 0,
@@ -218,6 +230,9 @@ describe('match messages', () => {
       workers: 9,
       army: 8,
       status: 'Building a House',
+      upgrades: [1, 0, 2],
+      upgradeReady: [0, 9000, 0],
+      tech: [30, 33],
     });
     expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4, buffs: 3, progress: 128 });
     expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8, buffs: 1024, progress: 200 });

@@ -7,6 +7,8 @@ import { EventType } from '../sim/events';
 import { gameData } from '../data/index';
 import { ENTITY_TYPES } from '../sim/entity-types';
 
+/** Town Hall upgrades in upgrades.json order (same order as the faction block). */
+const UPGRADE_IDS = gameData.upgrades.upgrades.map((u) => u.id);
 /** supply per entity type (0 for heroes and buildings) */
 const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
 import { itemReadyAt } from '../sim/items';
@@ -351,7 +353,18 @@ export class ClientView {
     f.workers = Math.min(255, workers);
     f.army = Math.min(255, army);
     f.status = fs.status;
-    const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status}`;
+    for (let i = 0; i < UPGRADE_IDS.length; i++) {
+      const id = UPGRADE_IDS[i]!;
+      f.upgrades[i] = fs.upgrades[id] ?? 0;
+      const ready = fs.upgradeReadyAt[id] ?? 0;
+      f.upgradeReady[i] = ready > sim.tick ? ready : 0;
+    }
+    f.tech.length = 0;
+    for (const id of fs.buildings) {
+      const b = sim.get(id);
+      if (b?.alive && b.building?.done && !f.tech.includes(b.type)) f.tech.push(b.type);
+    }
+    const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status},${f.upgrades.join('.')},${f.upgradeReady.join('.')},${f.tech.join('.')}`;
     if (key === this.factionKey) return;
     this.factionKey = key;
     sw.factionState(f);

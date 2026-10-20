@@ -87,10 +87,28 @@ export interface NetFactionState {
   army: number;
   /** one short line: what the AI does now */
   status: string;
+  /** Town Hall upgrade levels, in upgrades.json order */
+  upgrades: number[];
+  /** tick when each upgrade can be bought again (repeatable ones), 0 = now */
+  upgradeReady: number[];
+  /** finished building ids the faction has (for upgrade needs), as type indices */
+  tech: number[];
 }
 
 export function blankFactionState(): NetFactionState {
-  return { gold: 0, wood: 0, supplyUsed: 0, supplyCap: 0, tier: 1, workers: 0, army: 0, status: '' };
+  return {
+    gold: 0,
+    wood: 0,
+    supplyUsed: 0,
+    supplyCap: 0,
+    tier: 1,
+    workers: 0,
+    army: 0,
+    status: '',
+    upgrades: [],
+    upgradeReady: [],
+    tech: [],
+  };
 }
 
 /** One entity as it is sent: quantized numbers. */
@@ -230,6 +248,9 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
     case CommandType.SwapItems:
       w.u8(cmd.from).u8(cmd.to);
       break;
+    case CommandType.BuyUpgrade:
+      w.u8(cmd.upgrade);
+      break;
   }
   return w.bytes();
 }
@@ -276,6 +297,8 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
       return { seq, cmd: { type, slot: r.u8(), target: r.u16() } };
     case CommandType.SwapItems:
       return { seq, cmd: { type, from: r.u8(), to: r.u8() } };
+    case CommandType.BuyUpgrade:
+      return { seq, cmd: { type, upgrade: r.u8() } };
   }
   return null;
 }
@@ -411,7 +434,13 @@ export class SnapshotWriter {
           .u32(p.itemCooldownEnds[i] ?? 0);
     }
     const f = this.faction;
-    if (f) w.u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
+    if (f) {
+      w.u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
+      w.u8(f.upgrades.length);
+      for (let i = 0; i < f.upgrades.length; i++) w.u8(f.upgrades[i]!).u32(f.upgradeReady[i] ?? 0);
+      w.u8(f.tech.length);
+      for (const t of f.tech) w.u16(t);
+    }
     w.u16(this.nSpawn);
     for (let i = 0; i < this.nSpawn; i++) {
       const s = this.spawns[i]!;
@@ -517,6 +546,15 @@ export class SnapshotData {
       f.workers = r.u8();
       f.army = r.u8();
       f.status = r.str();
+      const n = r.u8();
+      f.upgrades.length = f.upgradeReady.length = n;
+      for (let i = 0; i < n; i++) {
+        f.upgrades[i] = r.u8();
+        f.upgradeReady[i] = r.u32();
+      }
+      const t = r.u8();
+      f.tech.length = t;
+      for (let i = 0; i < t; i++) f.tech[i] = r.u16();
     }
     this.spawnCount = r.u16();
     for (let i = 0; i < this.spawnCount; i++) {

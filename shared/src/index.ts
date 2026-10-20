@@ -28,5 +28,6 @@ export * from './sim/faction/upgrades';
 export * from './sim/faction/targeting';
 export * from './sim/faction/army';
 export * from './sim/faction/brain';
+export * from './sim/faction/hall-shop';
 export * from './sim/hero-bot';
 export * from './sim/items';

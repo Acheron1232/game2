@@ -39,6 +39,8 @@ export interface FactionState {
   tier: 1 | 2 | 3;
   /** Town Hall upgrade levels bought by the hero (8c) */
   upgrades: Record<string, number>;
+  /** repeatable upgrades (War Banner, Tier Up Fund) can be bought again at this tick */
+  upgradeReadyAt: Record<string, number>;
   earmarkedGold: number;
   /** War Banner (bought by the hero) works until this tick */
   warBannerUntil: number;
@@ -158,6 +160,7 @@ export class Factions {
       supplyCap: 0,
       tier: 1,
       upgrades: {},
+      upgradeReadyAt: {},
       earmarkedGold: 0,
       warBannerUntil: 0,
       buildings: new Set(),
@@ -573,6 +576,12 @@ export class Factions {
         if (u?.alive && u.job) this.updateWorker(u, f);
       }
       if (sim.tick % 10 === f.slot) this.updateSupply(f);
+      // War Banner is over: back to normal stats.
+      if (f.warBannerUntil && sim.tick === f.warBannerUntil)
+        for (const id of [...f.units, ...f.buildings]) {
+          const u = sim.get(id);
+          if (u?.alive) sim.applyFactionStats(u);
+        }
     }
     if (sim.tick % TICK_RATE === 0) this.checkDefeat();
   }
