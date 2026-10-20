@@ -32,6 +32,7 @@ import {
   isItemCommand,
   itemBonus,
   itemCommandProblem,
+  itemEffects,
   itemsOnHit,
   nextGroundId,
   orderItem,
@@ -39,6 +40,7 @@ import {
   takeRevive,
   updateItemOrder,
   type GroundItem,
+  type ItemEffects,
   type ItemOrder,
   type ItemStack,
 } from './items';
@@ -118,6 +120,8 @@ export interface HeroState {
   inventory: (ItemStack | null)[];
   /** item cooldown group (or item id) -> tick it is ready again */
   itemCooldowns: Map<string, number>;
+  /** life steal and on-hit items, kept up to date by refreshStats */
+  itemFx: ItemEffects;
   /** Phoenix Feather: come back here with this share of health, instead of at the base */
   revive: { x: number; y: number; hpPct: number } | null;
 }
@@ -313,6 +317,7 @@ export class MatchSim {
         abilityLevels: [0, 0, 0, 0],
         inventory: emptyInventory(),
         itemCooldowns: new Map(),
+        itemFx: { lifeStealPct: 0, onHit: [] },
         revive: null,
       };
       this.heroes[s.index] = hero;
@@ -979,7 +984,7 @@ export class MatchSim {
     if (!s) return;
     // Life steal: Crimson Pact aura and Vampire Fang.
     if (s.alive && dealt > 0) {
-      const ls = sumBuffs(s.buffs, 'lifeStealPct') + (s.heroState ? (itemBonus(s.heroState.inventory).lifeStealPct ?? 0) : 0);
+      const ls = sumBuffs(s.buffs, 'lifeStealPct') + (s.heroState?.itemFx.lifeStealPct ?? 0);
       if (ls > 0) this.heal(s, (dealt * ls) / 100, source);
     }
     // Frost Orb slow, Storm Hammer lightning.
@@ -1068,7 +1073,12 @@ export class MatchSim {
 
   /** Base stats (level + items) + buffs. Health and mana grow when the max grows. */
   refreshStats(e: SimEntity): void {
-    if (e.heroState) e.base = heroStats(e.heroState.def, e.heroState.level, itemBonus(e.heroState.inventory));
+    const hs = e.heroState;
+    if (hs) {
+      const bonus = itemBonus(hs.inventory);
+      hs.itemFx = itemEffects(hs.inventory, bonus);
+      e.base = heroStats(hs.def, hs.level, bonus);
+    }
     const old = e.stats;
     const next = applyBuffs(e.base, e.buffs);
     if (next.maxHp > old.maxHp) e.hp += next.maxHp - old.maxHp;

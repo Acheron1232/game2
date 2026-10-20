@@ -79,21 +79,27 @@ export function itemBonus(inv: readonly (ItemStack | null)[]): Partial<Record<It
   return out;
 }
 
-/** Items with an on-hit effect (Frost Orb, Storm Hammer). Unique: one of each counts. */
-function onHitItems(inv: readonly (ItemStack | null)[]): ItemDef[] {
-  const out: ItemDef[] = [];
-  for (const st of inv) {
-    const def = st ? ITEMS[st.item]! : undefined;
-    if (def?.onHit && !out.includes(def)) out.push(def);
-  }
-  return out;
+/** What the carried items do in an attack. Rebuilt when the inventory changes, not per hit. */
+export interface ItemEffects {
+  lifeStealPct: number;
+  /** items with an on-hit effect (Frost Orb, Storm Hammer); one of each counts */
+  onHit: ItemDef[];
 }
 
-/** After an attack landed: slows and lightning from items. `dealt` > 0 means it hit. */
+export function itemEffects(inv: readonly (ItemStack | null)[], bonus = itemBonus(inv)): ItemEffects {
+  const onHit: ItemDef[] = [];
+  for (const st of inv) {
+    const def = st ? ITEMS[st.item]! : undefined;
+    if (def?.onHit && !onHit.includes(def)) onHit.push(def);
+  }
+  return { lifeStealPct: bonus.lifeStealPct ?? 0, onHit };
+}
+
+/** After an attack landed: slows and lightning from items. */
 export function itemsOnHit(sim: MatchSim, s: SimEntity, t: SimEntity): void {
-  const inv = s.heroState?.inventory;
-  if (!inv) return;
-  for (const def of onHitItems(inv)) {
+  const fx = s.heroState?.itemFx;
+  if (!fx) return;
+  for (const def of fx.onHit) {
     const h = def.onHit!;
     if (h.slowPct && t.alive && t.team !== s.team) {
       sim.addBuff(t, {

@@ -51,8 +51,10 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 How 7c was checked:
 - `shared/test/items.test.ts` (25 tests): shop range, gold, drop-only items, Temple Market list; stacking and full bag; selling half with charges; item stats (attributes, unique boots, damage, armor, health, attack speed, regen); potions and the shared cooldown; a potion does not stop an attack; Scroll of Return channel, cancel and arrival; Tome; Smoke Bomb hides the hero from enemy vision, commands and monsters, and attacking ends it; ward placement, sight, invisibility and timeout; no items while stunned; life steal 15%; Frost Orb slow and its end; Storm Hammer at most 3 targets, ~20%; Phoenix Feather once; drop, pick up and give; full bag notice and 3-minute timeout; swap and stack join while dead; client view sends items in sight and the inventory; drop table chances and weights (20,000 rolls); a red camp drops where its last monster died; fountain heals heroes, not monsters; uphill misses ~25% and none on flat ground.
 - `shared/test/hero-flow.test.ts` (8 tests): every hero in the simulation farms the green wolves at level 1, reaches level 10, learns everything, casts all actives (passives and auras are on), buys a potion and boots at the Trader's Tent, drinks the potion, dies to the enemy hero and comes back at the base after 35 s with its items.
-- Browser, 2 players (headless Chromium in the cloud sandbox, software WebGL at 1–2 FPS, so no FPS numbers): see the result list below.
-- 112 tests (shared 79, server 10, client 8, tools 9), lint, build, data check pass.
+- Browser, 2 players, all 8 heroes in 4 pairs (Staff Warrior + Arcane Huntress, Blood Witch + Sky Dragon, Stone Golem + Light Healer, Centaur Raider + Forest Elf). Headless Chromium in the cloud sandbox, two tabs, software WebGL at 1–2 FPS, so **no FPS numbers** (check FPS on a real GPU). Script: Playwright with real keys, clicks and drags. Every hero: farmed its green wolves at level 1 (first attack by right click), went to level 10 (cheat XP), learned all with Ctrl + Q W E R, cast every active ability on the enemy hero (unit targets clicked on the model, the flying dragon too), bought 6 items in the shop panel (it opened by itself), used a potion with key 1 and got "Item is not ready." for the second, died to the other hero (death note "You died. Back in 35 s."), came back at its base with full health and its items. Pair 1 also: ward with key 2 + click, drag to another slot, drag to the ground, right click to pick up, drag to the shop panel → "Sell Scroll of Return for 60 gold?" → Yes (+60 gold). Smoke Bomb hid the hero from the other tab. No console errors in any tab. First runs failed only on test mistakes (camera not following the hero, slow tab), all fixed and re-run green: 31/32 + 20/21 + 21/21 + 21/21, and the two misses re-run 12/12 (Blood Bolt / Bleed on the flying dragon, Smoke Bomb).
+- The browser test found one real bug: the HUD used the tooltip helper before it was made, so the game page did not start. Fixed.
+- Load test (inline match, 300 units): bases — tick avg 1.3 ms, max 10.0 ms, 3.3 KB/s; center — tick avg 1.5 ms, max 4.1 ms, 24 KB/s (over the 20 KB/s budget, but the same on the 7b commit, see Known bugs).
+- 106 tests (shared 79, server 10, client 8, tools 9), lint, build, data check pass.
 
 ## Phase 7b — what was made
 
@@ -298,7 +300,8 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 
 ## Known bugs
 
-- Node 22 (cloud sandbox): the dev match worker can not load `.ts` files and matches never start; use `MATCH_INLINE=1 pnpm dev` there. Node 24 (the project's version) does not have this problem. The build (`server/dist`) is plain JS and works on both.
+- Node 22 (cloud sandbox): the dev match worker can not load `.ts` files and matches never start; use `MATCH_INLINE=1 pnpm dev` (and `load-test -- --inline`) there. Node 24 (the project's version) does not have this problem. The built server was not tried on Node 22.
+- Bandwidth, worst case (all 300 test units on the temple, everyone sees everything): 24 KB/s per player, over the 20 KB/s budget. Already so on the 7b commit (measured again in 7c). Normal case (units at the bases) is 3.3 KB/s. Look at it in Phase 10 (or when faction armies come in Phase 8).
 - Watcher Ward and items on the ground use placeholder models (a small pillar and a small crate).
 
 - Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
