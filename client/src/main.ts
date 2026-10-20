@@ -1,3 +1,4 @@
+import { HudOcclusion } from './render/hud-occlusion';
 import '@fontsource/cinzel/600.css';
 import '@fontsource/cinzel/800.css';
 import '@fontsource/alegreya-sans/400.css';
@@ -400,6 +401,7 @@ async function main(): Promise<void> {
   await sound.load(assets).catch((err: unknown) => console.warn('Sounds not loaded:', err));
   const w = await GameWorld.create(engine, canvas, terrain, trees, decor, assets);
   world = w;
+  const hudOcclusion = new HudOcclusion(w.scene, uiHost.querySelector<HTMLElement>('.hud-top')!);
   if (import.meta.env.DEV) Object.assign(window as object, { world: w, net, sound, match: () => match }); // for debugging in the console
   // Compile every material and model now, not when the match starts.
   await w.library.warmUp(TEAMS);
@@ -434,7 +436,7 @@ async function main(): Promise<void> {
       const lag = net.state.lag.lagMs || net.state.lag.lossPct ? ` · lag +${net.state.lag.lagMs} ms ${net.state.lag.lossPct}%` : '';
       const p = match?.predictor?.stats;
       const fix = p ? ` · fixes ${p.corrections}/${p.snaps}` : '';
-      return ` · down ${(net.state.downBps / 1024).toFixed(1)} KB/s${lag}${fix}`;
+      return ` · visible ${w.renderStats.visible}/${w.renderStats.total} · down ${(net.state.downBps / 1024).toFixed(1)} KB/s${lag}${fix}`;
     },
     adapter,
   );
@@ -1085,8 +1087,10 @@ async function main(): Promise<void> {
   });
 
   router.onChange((name) => {
+    hudOcclusion.enabled = name === 'game';
     // Settings keep what is behind them (a running match stays a match).
     if (name === 'settings') {
+      engine.maxFPS = MENU_FPS;
       w.camera.enabled = false;
       return setAim(null);
     }
@@ -1095,6 +1099,7 @@ async function main(): Promise<void> {
     w.setMenuMode(name !== 'game');
   });
   w.setMenuMode(router.screen !== 'game');
+  hudOcclusion.enabled = router.screen === 'game';
   engine.maxFPS = router.screen === 'game' ? gameFps : MENU_FPS;
   engine.runRenderLoop(() => {
     if (!document.hidden) w.scene.render();

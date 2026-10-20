@@ -146,6 +146,7 @@ export const c4 = (hex: string, a = 1) => {
 };
 
 export interface HeroEffects {
+  setVisible(visible: boolean): void;
   dispose(): void;
 }
 
@@ -154,7 +155,7 @@ export function attachHeroEffects(scene: Scene, heroId: string, nodes: Transform
   const look = HERO_LOOKS[heroId];
   const systems: ParticleSystem[] = [];
   const emitters: Mesh[] = [];
-  if (!look) return { dispose() {} };
+  if (!look) return { setVisible() {}, dispose() {} };
   for (const e of look.effects) {
     const socket = nodes.find((n) => n.name === `fx_${e.socket}`);
     if (!socket) continue;
@@ -192,18 +193,30 @@ export function attachHeroEffects(scene: Scene, heroId: string, nodes: Transform
     ps.start();
     systems.push(ps);
   }
+  let visible = true;
   let observer: ReturnType<typeof scene.onBeforeRenderObservable.add> | null = null;
   if (look.glowPulse && glow) {
     const [speed, lo, hi] = look.glowPulse;
     const base = glow.diffuseColor.clone();
     let t = 0;
     observer = scene.onBeforeRenderObservable.add(() => {
+      if (!visible) return;
       t += scene.getEngine().getDeltaTime() / 1000;
       const k = lo + (hi - lo) * (0.5 + 0.5 * Math.sin(t * speed));
       glow.diffuseColor.copyFrom(base).scaleInPlace(k);
     });
   }
   return {
+    setVisible(on) {
+      visible = on;
+      for (const system of systems) {
+        if (on) system.start();
+        else {
+          system.stop();
+          system.reset();
+        }
+      }
+    },
     dispose() {
       // The atlas belongs to the scene and is shared by every hero and ability.
       for (const s of systems) s.dispose(false);

@@ -11,6 +11,7 @@ class GroundLayer {
   private readonly mesh;
   private matrices = new Float32Array(16 * 128);
   private count = 0;
+  private dirty = false;
   constructor(scene: Scene, name: string, texture: DynamicTexture, color: string, alpha: number) {
     this.mesh = CreateGround(name, { width: 2, height: 2 }, scene);
     const material = new StandardMaterial(name, scene);
@@ -32,11 +33,18 @@ class GroundLayer {
       const next = new Float32Array(this.matrices.length * 2);
       next.set(this.matrices);
       this.matrices = next;
+      this.dirty = true;
       this.mesh.thinInstanceSetBuffer('matrix', this.matrices, 16, false);
     }
     const at = this.count++ * 16;
     // Scale + translation only; reuse the instance buffer instead of allocating matrices.
     const b = this.matrices;
+    const different =
+      b[at] !== Math.fround(radius) ||
+      b[at + 12] !== Math.fround(x) ||
+      b[at + 13] !== Math.fround(height) ||
+      b[at + 14] !== Math.fround(-y);
+    this.dirty ||= different;
     b[at] = b[at + 10] = radius;
     b[at + 5] = b[at + 15] = 1;
     b[at + 12] = x;
@@ -50,7 +58,8 @@ class GroundLayer {
   flush(): void {
     this.mesh.setEnabled(this.count > 0);
     this.mesh.thinInstanceCount = this.count;
-    if (this.count) this.mesh.thinInstanceBufferUpdated('matrix');
+    if (this.count && this.dirty) this.mesh.thinInstanceBufferUpdated('matrix');
+    this.dirty = false;
     this.count = 0;
   }
 }
@@ -113,7 +122,7 @@ export class UnitGroundMarks {
   update(units: Iterable<Unit>, heightAt: (x: number, y: number) => number, shadows: boolean): void {
     if (this.warming) return;
     for (const u of units) {
-      if (u.dead || u.building || !u.model.root.isEnabled()) continue;
+      if (!u.visualVisible || u.dead || u.building || !u.model.root.isEnabled()) continue;
       const radius = groundMarkRadius(u);
       const height = heightAt(u.x, u.y);
       // Flyers keep a wider ground shadow to show their position below the model.

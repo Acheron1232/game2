@@ -213,9 +213,11 @@ input {
 /* ---------- HUD frame ---------- */
 
 .hud-top {
+  /* Opaque base allows the renderer to skip covered fragments. */
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5)),
     var(--tex-iron) 0 0 / 128px repeat;
+  background-color: var(--wood-dark);
   border-bottom: 3px solid var(--gold);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 }

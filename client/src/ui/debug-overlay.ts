@@ -3,6 +3,7 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { WebGPUEngine } from '@babylonjs/core/Engines/webgpuEngine';
 import type { WebGPURenderTargetWrapper } from '@babylonjs/core/Engines/WebGPU/webgpuRenderTargetWrapper';
+import type { PostProcess } from '@babylonjs/core/PostProcesses/postProcess';
 import type { RenderTargetWrapper } from '@babylonjs/core/Engines/renderTargetWrapper';
 import type { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import '@babylonjs/core/Engines/AbstractEngine/abstractEngine.timeQuery';
@@ -30,12 +31,57 @@ export function startDebugOverlay(
   const gpu = new EngineInstrumentation(engine);
   const gpuTiming = !!engine.getCaps().timerQuery;
   const webgpu = engine instanceof WebGPUEngine ? engine : null;
+  const posts = new Set<PostProcess>();
+  const collectPosts = () => {
+    posts.clear();
+    for (const post of scene?.postProcesses ?? []) posts.add(post);
+    // Pipeline-owned passes are attached to cameras, not necessarily scene.postProcesses.
+    for (const camera of scene?.cameras ?? []) for (const post of camera._postProcesses) if (post) posts.add(post);
+  };
+  const passCpu = new Map<object, { name: string; started: number; sum: number; count: number }>();
+  const attachPassTimers = () => {
+    const attach = (
+      pass: {
+        onBeforeRenderObservable: { add(callback: () => void): unknown };
+        onAfterRenderObservable: { add(callback: () => void): unknown };
+        onDisposeObservable: { addOnce(callback: () => void): unknown };
+      },
+      name: string,
+    ) => {
+      if (passCpu.has(pass)) return;
+      const entry = { name, started: 0, sum: 0, count: 0 };
+      passCpu.set(pass, entry);
+      pass.onDisposeObservable.addOnce(() => passCpu.delete(pass));
+      pass.onBeforeRenderObservable.add(() => {
+        entry.started = node.hidden ? 0 : performance.now();
+      });
+      pass.onAfterRenderObservable.add(() => {
+        if (!entry.started || node.hidden) return;
+        entry.sum += performance.now() - entry.started;
+        entry.count++;
+        entry.started = 0;
+      });
+    };
+    for (const texture of scene?.textures ?? []) {
+      if (texture.isRenderTarget) attach(texture as RenderTargetTexture, texture.name);
+    }
+    collectPosts();
+    for (const post of posts) attach(post, post.name);
+  };
   const syncVisibility = () => {
     // WebGPU's legacy whole-frame counter uses writeTimestamp, which Chrome no longer
     // exposes. Use supported render-pass timestamps instead of displaying a false zero.
     if (webgpu) webgpu.enableGPUTimingMeasurements = gpuTiming && !node.hidden;
     else gpu.captureGPUFrameTime = gpuTiming && !node.hidden;
-    if (inst) inst.captureFrameTime = !node.hidden;
+    if (inst) {
+      inst.captureFrameTime = !node.hidden;
+      inst.captureRenderTargetsRenderTime = !node.hidden;
+      inst.captureAnimationsTime = !node.hidden;
+    }
+    for (const entry of passCpu.values()) {
+      entry.sum = entry.count = entry.started = 0;
+    }
+    if (!node.hidden) attachPassTimers();
   };
   // Settings also change visibility. Hidden diagnostics must not keep issuing GPU queries.
   new MutationObserver(syncVisibility).observe(node, { attributes: true, attributeFilter: ['hidden'] });
@@ -63,16 +109,23 @@ export function startDebugOverlay(
     for (const texture of scene?.textures ?? []) {
       if (texture.isRenderTarget && scene?.shadowsEnabled) add((texture as RenderTargetTexture).renderTarget);
     }
-    for (const post of scene?.postProcesses ?? []) add(post.inputTexture);
+    for (const post of posts) add(post.inputTexture);
     return ns / 1e6;
   };
   const update = () => {
     if (node.hidden) return;
     const ping = net.pingMs === null ? '—' : `${Math.round(net.pingMs)} ms`;
+    attachPassTimers();
+    const passText: string[] = [];
+    for (const entry of passCpu.values()) {
+      if (entry.count) passText.push(`${entry.name}: ${(entry.sum / entry.count).toFixed(2)} ms CPU/submit`);
+      entry.sum = entry.count = 0;
+    }
+    node.title = `Graphics adapter: ${adapter}. CPU is scene work, not all main-thread work. Pass CPU/submit timings include JavaScript/driver submission, not GPU execution. GPU passes may omit uploads, compute and presentation.\n${passText.join('\n')}`;
     const gpuMs = gpuMilliseconds();
     const extra =
       inst && scene
-        ? ` · CPU ${inst.frameTimeCounter.lastSecAverage.toFixed(1)} ms · GPU${webgpu ? ' passes' : ''} ${gpuMs > 0 ? gpuMs.toFixed(1) + ' ms' : 'unavailable'} · draws ${inst.drawCallsCounter.current} · tris ${Math.round(scene.getActiveIndices() / 3 / 1000)}k`
+        ? ` · CPU ${inst.frameTimeCounter.lastSecAverage.toFixed(1)} ms (anim ${inst.animationsTimeCounter.lastSecAverage.toFixed(2)}, targets ${inst.renderTargetsRenderTimeCounter.lastSecAverage.toFixed(2)}) · GPU${webgpu ? ' passes' : ''} ${gpuMs > 0 ? gpuMs.toFixed(1) + ' ms' : 'unavailable'} · draws ${inst.drawCallsCounter.current} · tris ${Math.round(scene.getActiveIndices() / 3 / 1000)}k`
         : '';
     setText(
       node,

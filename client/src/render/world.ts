@@ -10,6 +10,7 @@ import '@babylonjs/core/Lights/Shadows/shadowGeneratorSceneComponent';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { Frustum } from '@babylonjs/core/Maths/math.frustum';
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Viewport } from '@babylonjs/core/Maths/math.viewport';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
@@ -79,6 +80,10 @@ export interface Unit {
   arcEnd: number;
   /** building sites grow out of the ground: 0 = just placed, 1 = done */
   rise: number;
+  /** Conservative camera culling; logical position and hidden state remain independent. */
+  visualVisible: boolean;
+  animationStarted: number;
+  animationSpeed: number;
 }
 
 interface TreeSlot {
@@ -112,6 +117,15 @@ export class GameWorld {
   private groundMarks: UnitGroundMarks;
   private stress: ModelInstance[] = [];
   private menuMode = true;
+  private readonly viewMatrix = Matrix.Identity();
+  private readonly viewPlanes = Frustum.GetPlanes(Matrix.Identity());
+  private readonly viewPoint = new Vector3();
+  private shadowDirty = true;
+  private readonly shadowLight = new Vector3(Infinity, Infinity, Infinity);
+  private shadowSize = -1;
+  private shadowEnabled = false;
+  private readonly shadowPoses = new Map<Unit, Float64Array>();
+  readonly renderStats = { visible: 0, total: 0, shadowRefreshes: 0 };
   private readonly screenPosition = new Vector3();
   private readonly screenViewport = new Viewport(0, 0, 0, 0);
 
@@ -318,7 +332,13 @@ export class GameWorld {
 
   /** In a match the server sends Town Halls and gold mines: hide the menu copies. */
   setMenuBase(visible: boolean): void {
-    for (const b of this.menuBase) b.root.setEnabled(visible);
+    for (const b of this.menuBase) {
+      b.root.setEnabled(visible);
+      const idle = b.animations.get('idle');
+      if (visible) idle?.start(true);
+      else idle?.stop(true);
+    }
+    this.shadowDirty = true;
   }
 
   /** Faces a building toward the map center, like the menu Town Halls. */
@@ -364,15 +384,21 @@ export class GameWorld {
       arcStart: 0,
       arcEnd: 0,
       rise: 1,
+      visualVisible: true,
+      animationStarted: performance.now(),
+      animationSpeed: 1,
     };
     this.play(unit, 'idle');
     this.units.add(unit);
+    this.shadowDirty = true;
     this.syncUnit(unit);
     return unit;
   }
 
   removeUnit(u: Unit): void {
     if (!this.units.delete(u)) return;
+    this.shadowPoses.delete(u);
+    this.shadowDirty = true;
     if (this.selected === u) this.select(null);
     for (const mesh of u.model.meshes) this.shadows.removeShadowCaster(mesh, false);
     u.effects?.dispose();
@@ -474,14 +500,22 @@ export class GameWorld {
     if (unit.anim === name && loop) {
       if (name === 'walk') {
         const clip = unit.model.animations.get(name);
-        if (clip) clip.speedRatio = unit.speed / 3;
+        if (clip && clip.speedRatio !== unit.speed / 3) {
+          const now = performance.now();
+          unit.animationStarted = now - ((now - unit.animationStarted) * unit.animationSpeed) / (unit.speed / 3 || 1);
+          unit.animationSpeed = unit.speed / 3;
+          clip.speedRatio = unit.animationSpeed;
+        }
       }
       return;
     }
     const next = unit.model.animations.get(name);
     if (!next) return;
     unit.model.animations.get(unit.anim)?.stop();
-    next.start(loop, loop && name === 'walk' ? unit.speed / 3 : speed);
+    unit.animationSpeed = loop && name === 'walk' ? unit.speed / 3 : speed;
+    unit.animationStarted = performance.now();
+    next.start(loop, unit.animationSpeed);
+    if (!unit.visualVisible) next.stop(true);
     unit.anim = name;
   }
 
@@ -559,6 +593,97 @@ export class GameWorld {
     if (u === this.selected) this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.08, -y);
   }
 
+  /** Refresh once before sampling visual work. No allocations in the per-unit test. */
+  private updateView(): void {
+    this.camera.camera.getViewMatrix().multiplyToRef(this.camera.camera.getProjectionMatrix(), this.viewMatrix);
+    Frustum.GetPlanesToRef(this.viewMatrix, this.viewPlanes);
+  }
+
+  /** Include height, spell jumps, particles and shadows near the screen edge. */
+  inView(u: Unit): boolean {
+    this.viewPoint.set(u.x, this.terrain.heightAt(u.x, u.y) + u.flyHeight + u.height * u.scale * 0.5, -u.y);
+    const radius = Math.max(12, u.height * u.scale * 1.5 + 5);
+    for (const plane of this.viewPlanes) if (plane.dotCoordinate(this.viewPoint) < -radius) return false;
+    return true;
+  }
+
+  private updateVisualVisibility(u: Unit): void {
+    const visible = u.model.root.isEnabled() && this.inView(u);
+    if (visible === u.visualVisible) return;
+    u.visualVisible = visible;
+    for (const mesh of u.model.meshes) mesh.isVisible = visible;
+    u.effects?.setVisible(visible);
+    const clip = u.model.animations.get(u.anim);
+    if (!clip) return;
+    if (!visible) clip.stop(true);
+    else {
+      // Resume at the wall-clock phase, including attacks/deaths that ended off screen.
+      const fps = clip.targetedAnimations[0]?.animation.framePerSecond ?? 30;
+      const elapsed = (Math.max(0, performance.now() - u.animationStarted) * fps * u.animationSpeed) / 1000;
+      const length = clip.to - clip.from;
+      clip.start(clip.loopAnimation, u.animationSpeed);
+      clip.goToFrame(clip.from + (clip.loopAnimation && length > 0 ? elapsed % length : Math.min(length, elapsed)));
+      u.model.root.scaling.setAll(u.scale);
+    }
+  }
+
+  /** Reuse the shadow map only when every caster and the light projection are unchanged.
+   * Animated casters stay live: caching an idle skeleton would freeze its shadow. */
+  private updateShadowBudget(): void {
+    const sun = this.shadows.getLight() as DirectionalLight;
+    let dirty =
+      this.shadowDirty ||
+      !sun.position.equals(this.shadowLight) ||
+      this.shadowSize !== sun.shadowFrustumSize ||
+      this.shadowEnabled !== this.scene.shadowsEnabled;
+    this.shadowLight.copyFrom(sun.position);
+    this.shadowSize = sun.shadowFrustumSize;
+    this.shadowEnabled = this.scene.shadowsEnabled;
+    for (const u of this.units) {
+      if (!u.effects && !u.building) continue;
+      let pose = this.shadowPoses.get(u);
+      if (!pose) {
+        pose = new Float64Array(8).fill(NaN);
+        this.shadowPoses.set(u, pose);
+      }
+      const enabled = Number(u.model.root.isEnabled());
+      const visible = Number(u.visualVisible);
+      const scale = u.model.root.scaling.x;
+      if (
+        pose[0] !== u.x ||
+        pose[1] !== u.y ||
+        pose[2] !== u.facing ||
+        pose[3] !== u.rise ||
+        pose[4] !== scale ||
+        pose[5] !== enabled ||
+        pose[6] !== visible
+      )
+        dirty = true;
+      pose[0] = u.x;
+      pose[1] = u.y;
+      pose[2] = u.facing;
+      pose[3] = u.rise;
+      pose[4] = scale;
+      pose[5] = enabled;
+      pose[6] = visible;
+    }
+    const map = this.shadows.getShadowMap();
+    if (!map) return;
+    for (const mesh of map.renderList ?? []) {
+      if (mesh.isEnabled() && mesh.isVisible && mesh.skeleton) {
+        dirty = true;
+        break;
+      }
+    }
+    // The setter resets Babylon's counter, even when assigning the same value.
+    if (map.refreshRate !== 0) map.refreshRate = 0;
+    if (dirty) {
+      map.resetRefreshCounter();
+      this.renderStats.shadowRefreshes++;
+    }
+    this.shadowDirty = false;
+  }
+
   private tick(dt: number): void {
     dt = Math.min(dt, 0.1);
     // Spend shadow texels on the current view instead of spreading them across all four bases.
@@ -568,12 +693,18 @@ export class GameWorld {
     sun.shadowFrustumSize = this.menuMode
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
+    this.updateView();
     this.beforeFrame?.(dt);
     this.fog.update(dt);
     this.combat.update(dt);
     this.items.update();
     const now = performance.now();
+    this.renderStats.total = this.units.size;
+    this.renderStats.visible = 0;
     for (const u of this.units) {
+      this.updateVisualVisibility(u);
+      if (!u.visualVisible) continue;
+      this.renderStats.visible++;
       if (!u.dead && now >= u.actionUntil) this.play(u, u.moving ? 'walk' : 'idle');
       // Walking cancels an attack swing on screen, like it does in the game.
       else if (!u.dead && u.moving && (u.anim === 'attack' || u.anim === 'attack2')) {
@@ -582,7 +713,9 @@ export class GameWorld {
       }
       this.syncUnit(u, dt);
     }
+    this.ring.setEnabled(!!this.selected && !this.selected.dead && this.selected.visualVisible);
     this.groundMarks.update(this.units, this.terrain.heightAt, this.scene.shadowsEnabled);
+    this.updateShadowBudget();
     if (this.menuMode) {
       const t = performance.now() / 1000;
       const c = (this.grid.cols * this.grid.cellSize) / 2;

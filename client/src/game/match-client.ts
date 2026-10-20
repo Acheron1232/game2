@@ -921,7 +921,8 @@ export class MatchClient {
       }
       // Buff markers and Mountain Form size.
       u.scale = (e.buffs & BuffFlag.Big ? 1.4 : 1) * u.baseScale;
-      if (e.buffs && !dead) {
+      const visible = this.world.inView(u);
+      if (e.buffs && !dead && visible) {
         const ground = this.world.unitHeight(u, now);
         this.fx.setMarkers(e.id, e.buffs, u.x, ground, ground + u.height * u.model.root.scaling.y, -u.y, Math.max(0.8, u.height * 0.45));
       } else this.fx.clearMarkers(e.id);
@@ -930,6 +931,7 @@ export class MatchClient {
         if (isHeroType(e.type) && now - since > HIDE_DEAD_HERO_MS) this.world.hideUnit(u, true);
         continue;
       }
+      if (!visible) continue;
       // Health bar: heroes always, others when hurt or selected.
       const hero = isHeroType(e.type);
       if (!hero && !this.allBars && e.hp >= e.maxHp && this.world.selected !== u) continue;
