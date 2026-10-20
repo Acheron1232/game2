@@ -26,6 +26,24 @@ vi.mock('../src/render/hero-effects', async (original) => {
 });
 
 describe('combat render resources', () => {
+  it('does not upload matrix buffers for empty health-bar layers', () => {
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    const bars = new HealthBars(scene, 0.7);
+    try {
+      bars.update([{ x: 20, y: 3, z: -20, hp: 1, mana: 1, hero: true, color: '#00ff00' }], 1);
+      const uploads = scene.meshes.filter((m) => m.name.startsWith('bar-')).map((m) => vi.spyOn(m, 'thinInstanceBufferUpdated'));
+      bars.update([], 0);
+      for (const upload of uploads) expect(upload).not.toHaveBeenCalled();
+      bars.update([{ x: 30, y: 3, z: -20, hp: 0.5, mana: 0.5, hero: true, color: '#00ff00' }], 1);
+      for (const upload of uploads) expect(upload).toHaveBeenCalledTimes(1);
+    } finally {
+      bars.dispose();
+      scene.dispose();
+      engine.dispose();
+    }
+  });
+
   it('removes a cancelled channel zone before its normal duration ends', () => {
     const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
     const engine = new NullEngine();

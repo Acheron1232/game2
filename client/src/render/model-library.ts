@@ -96,8 +96,9 @@ export class ModelLibrary {
       animations,
       materials: mats,
       dispose() {
-        for (const g of entries.animationGroups) g.dispose();
-        root.dispose(false, false);
+        // Disposing only the root leaves cloned skeletons (and their bone buffers) alive.
+        // Entries owns the whole instance; shared materials/textures stay in the library.
+        entries.dispose();
       },
     };
   }

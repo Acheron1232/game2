@@ -20,6 +20,8 @@ import {
   param,
   parseTerrain,
   TICK_RATE,
+  UnitState,
+  unitStateOf,
   type CastTarget,
   type SimEntity,
 } from '../src/index';
@@ -63,6 +65,35 @@ function setup(heroId: string, enemyHero = false) {
 }
 
 const lost = (e: SimEntity) => e.stats.maxHp - e.hp;
+
+describe('movement animation state under crowd control', () => {
+  it.each(['stun', 'root'] as const)('keeps a queued path without reporting walking during %s', (kind) => {
+    const { sim, hero } = setup('staff_warrior');
+    sim.queueCommand(0, 2000, { type: CommandType.Move, x: 118, y: 222, queue: false });
+    sim.step();
+    expect(unitStateOf(hero) & UnitState.Moving).not.toBe(0);
+    const x = hero.mover.x;
+    const y = hero.mover.y;
+    sim.addBuff(hero, {
+      id: kind,
+      sourceId: hero.id,
+      sourceOwner: hero.owner,
+      sourceTeam: hero.team,
+      until: sim.tick + 3,
+      flags: 0,
+      [kind]: true,
+    });
+    sim.step();
+    expect(hero.mover.path.length).toBeGreaterThan(0);
+    expect([hero.mover.x, hero.mover.y]).toEqual([x, y]);
+    expect(unitStateOf(hero) & UnitState.ServerDriven).not.toBe(0);
+    expect(unitStateOf(hero) & UnitState.Moving).toBe(0);
+    sim.step();
+    sim.step();
+    expect(unitStateOf(hero) & UnitState.Moving).not.toBe(0);
+    expect(Math.hypot(hero.mover.x - x, hero.mover.y - y)).toBeGreaterThan(0);
+  });
+});
 
 describe('learning', () => {
   it('follows the level rule and spends skill points', () => {

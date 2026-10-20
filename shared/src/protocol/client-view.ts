@@ -75,7 +75,14 @@ export function progressOf(e: SimEntity): number {
 
 export function unitStateOf(e: SimEntity): number {
   let s = 0;
-  if (e.alive && (e.vx !== 0 || e.vy !== 0 || e.mover.path.length)) s |= UnitState.Moving;
+  // A root/stun preserves the path to resume later, but must not keep the walk clip running.
+  let immobilized = false;
+  let taunted = false;
+  for (const b of e.buffs) {
+    if (b.stun || b.root) immobilized = true;
+    if (b.tauntId) taunted = true;
+  }
+  if (e.alive && !immobilized && (e.vx !== 0 || e.vy !== 0 || e.mover.path.length)) s |= UnitState.Moving;
   if (e.swing === 1) s |= UnitState.Attacking;
   if (!e.alive) s |= UnitState.Dead;
   if (e.building && !e.building.done) s |= UnitState.Constructing;
@@ -93,7 +100,8 @@ export function unitStateOf(e: SimEntity): number {
     e.order === 'item' ||
     e.returning ||
     e.forced ||
-    e.buffs.some((b) => b.stun || b.root || b.tauntId)
+    immobilized ||
+    taunted
   )
     s |= UnitState.ServerDriven;
   return s;

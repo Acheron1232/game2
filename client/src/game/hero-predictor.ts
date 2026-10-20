@@ -111,8 +111,18 @@ export class HeroPredictor {
       this.prevY = this.mover.y;
       this.prevF = this.mover.facing;
       this.step++;
+      // Prune on input, not on position errors: perfect prediction may never correct.
+      // Without new movement keep its last clock, including through idle/learning.
+      if (this.pending.length) {
+        for (const [seq, at] of this.cmdStep) {
+          if (at >= this.step - HISTORY) break;
+          this.cmdStep.delete(seq);
+        }
+      }
       for (const p of this.pending) {
         applyCommand(this.mover, this.nav, p.cmd, this.flying);
+        // A wrapped sequence must take its new place in chronological order.
+        this.cmdStep.delete(p.seq);
         this.cmdStep.set(p.seq, this.step);
       }
       this.pending.length = 0;
@@ -200,7 +210,5 @@ export class HeroPredictor {
       this.offY -= ey;
       this.stats.corrections++;
     }
-    // Forget old command steps.
-    for (const seq of this.cmdStep.keys()) if (this.cmdStep.get(seq)! < this.step - HISTORY) this.cmdStep.delete(seq);
   }
 }

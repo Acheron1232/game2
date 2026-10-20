@@ -73,7 +73,8 @@ class Layer {
     // Zero thin instances would draw the source quad at the world origin.
     this.mesh.setEnabled(this.count > 0);
     this.mesh.thinInstanceCount = this.count;
-    this.mesh.thinInstanceBufferUpdated('matrix');
+    // A hidden layer has no changed matrices for the GPU to consume.
+    if (this.count) this.mesh.thinInstanceBufferUpdated('matrix');
     this.count = 0;
   }
 }

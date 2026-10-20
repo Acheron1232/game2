@@ -69,6 +69,6 @@ Final validation: **102 tests pass** (47 shared, 36 client, 10 server, 9 tools),
 - The crowded 300-unit **server-only** load case exceeds the downstream target: 23.65 KB/s versus 20 KB/s. It does not measure browser rendering of 300 fighting units.
 - No sustained temperature, fan or power measurement, weak-laptop run, or long soak test was completed. Short 120 FPS samples do not establish a thermal improvement.
 - Actual GPU device loss/recovery was not forced; only the terrain rebuild metadata was corrected.
-- Final code inspection found that predictor command-history pruning depends on reaching the correction path. A long session with near-perfect prediction may retain old entries; memory bounds and sequence-wrap behavior deserve a focused regression test. This is an inspection finding, not a reproduced or fixed gameplay bug.
+- The predictor command-history finding was subsequently reproduced and fixed in [PLAYTEST_FOLLOWUP.md](PLAYTEST_FOLLOWUP.md), with memory-bound and full sequence-cycle regression tests.
 - The existing ability visuals are still provisional. This pass fixes timing, alignment and readability; a complete art, sound and effects pass remains future work.
 - The snapshot protocol is now version 6. Client and server must be updated together when these changes are deployed.

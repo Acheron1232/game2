@@ -116,6 +116,43 @@ function run(oneWayMs: number, jitterMs: number, clicks: Input[], endMs: number,
 }
 
 describe('client prediction against the server', () => {
+  it('still reconciles a reused sequence after a complete sequence cycle', () => {
+    const [x, y] = gameData.map.starts[0]!.heroSpawn;
+    const p = new HeroPredictor(x, y, 0, 3.2, nav);
+    p.advance(0);
+    for (let tick = 1; tick <= 65540; tick++) {
+      p.issue(((tick - 1) % 65535) + 1, { type: CommandType.Stop });
+      p.advance(tick * 50 + 1);
+    }
+    p.skip(6);
+    p.issue(7, { type: CommandType.Stop });
+    p.advance(65541 * 50 + 1);
+    p.reconcile(7, 1, x + 0.5, y);
+    expect(p.stats.corrections).toBe(1);
+    expect(p.stats.snaps).toBe(0);
+  });
+
+  it('bounds command history even when a long session needs no corrections', () => {
+    const [x, y] = gameData.map.starts[0]!.heroSpawn;
+    const p = new HeroPredictor(x, y, 0, 3.2, nav);
+    p.advance(0);
+    for (let seq = 1; seq <= 2000; seq++) {
+      p.issue(seq, { type: CommandType.Stop });
+      p.advance(seq * 50 + 1);
+      p.reconcile(seq, 1, x, y);
+    }
+    expect(p.stats.corrections).toBe(0);
+    expect(p.stats.snaps).toBe(0);
+    const retained = Reflect.get(p, 'cmdStep') as Map<number, number>;
+    expect(retained.size).toBeLessThanOrEqual(513);
+    expect(retained.has(2000)).toBe(true);
+    // Keep the latest movement clock even if only learning follows a long idle.
+    p.skip(2001);
+    for (let tick = 2001; tick <= 2600; tick++) p.advance(tick * 50 + 1);
+    p.reconcile(2000, 601, x + 0.5, y);
+    expect(p.stats.corrections).toBe(1);
+  });
+
   it.each([false, true])('ignores an older movement ack across learning and sequence wrap (deferred: %s)', (deferred) => {
     const [x, y] = gameData.map.starts[0]!.heroSpawn;
     const p = new HeroPredictor(x, y, 0, 3.2, nav);
