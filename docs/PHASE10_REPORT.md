@@ -1,5 +1,7 @@
 # Phase 10 — release verification
 
+Historical Phase 10 evidence. The deployed release is now superseded by [the controls and unit interaction update](CONTROLS_AND_UNIT_INTERACTION.md); its report records the current release and verification.
+
 Branch: `codex/phase-10-release`, based on Phase 9 commit `1b45193`, including the follow-up resource fixes. Preserve High/native rendering and the 120 FPS game cap.
 
 ## Changes
