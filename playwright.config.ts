@@ -12,5 +12,19 @@ export default defineConfig({
     trace: 'retain-on-failure',
     launchOptions: { args: ['--enable-unsafe-swiftshader'] },
   },
-  webServer: { command: 'pnpm dev', url: 'http://127.0.0.1:5173/health', reuseExistingServer: !process.env['CI'], timeout: 60_000 },
+  webServer: [
+    {
+      command: 'pnpm --filter @game/server dev',
+      url: 'http://127.0.0.1:8787/health',
+      reuseExistingServer: !process.env['CI'],
+      timeout: 60_000,
+    },
+    {
+      command: 'pnpm --filter @game/client dev --host 127.0.0.1',
+      env: { GAME_SERVER: 'http://127.0.0.1:8787' },
+      url: 'http://127.0.0.1:5173/health',
+      reuseExistingServer: !process.env['CI'],
+      timeout: 60_000,
+    },
+  ],
 });
