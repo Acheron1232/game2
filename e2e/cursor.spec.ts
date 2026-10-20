@@ -24,9 +24,13 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   };
   const moveTo = async (selector: string) => {
     const target = (await page.locator(selector).first().boundingBox())!;
-    const cursor = (await page.locator('.game-cursor').boundingBox())!;
-    mouseX += target.x + target.width / 2 - (cursor.x + 8);
-    mouseY += target.y + target.height / 2 - (cursor.y + 3);
+    const cursor = await page.locator('.game-cursor').evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      const style = getComputedStyle(node);
+      return { x: rect.x - parseFloat(style.left), y: rect.y - parseFloat(style.top) };
+    });
+    mouseX += target.x + target.width / 2 - cursor.x;
+    mouseY += target.y + target.height / 2 - cursor.y;
     await page.mouse.move(mouseX, mouseY);
   };
   await page.evaluate(() => {
@@ -58,6 +62,11 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(false);
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await lock();
+  await moveTo('.ability');
+  await page.mouse.click(mouseX, mouseY);
+  await expect(page.locator('#game-canvas')).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true);
   await moveTo('.item-slot[data-slot="1"]');
   await page.mouse.down();
   await moveTo('.item-slot[data-slot="2"]');

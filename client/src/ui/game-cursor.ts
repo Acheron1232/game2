@@ -16,6 +16,7 @@ export class GameCursor {
     this.cursor.className = 'game-cursor';
     this.cursor.hidden = true;
     this.cursor.setAttribute('aria-hidden', 'true');
+    canvas.tabIndex = -1;
     document.body.append(this.cursor);
     document.addEventListener('pointerlockchange', () => this.changed());
     document.addEventListener('pointerlockerror', () => {
@@ -75,7 +76,9 @@ export class GameCursor {
         }
         this.pressed = target;
         this.button = event.button;
-        target.closest<HTMLElement>('button, [tabindex]')?.focus({ preventScroll: true });
+        // Keep game keys on the canvas. Focusing an ability would make Enter/Space
+        // activate that button instead of opening chat or centering the hero.
+        this.canvas.focus({ preventScroll: true });
         this.send(target, 'pointerdown', event);
       },
       true,
@@ -185,6 +188,7 @@ export class GameCursor {
       button.setAttribute('aria-pressed', String(this.locked));
     }
     if (this.locked) {
+      this.canvas.focus({ preventScroll: true });
       this.draw();
       this.setHover(this.hit());
     } else {
