@@ -471,6 +471,35 @@ for (let gy = 0; gy * DSPACE < C; gy++) {
     }
   }
 }
+// Temple plaza: a hand-made layout, the same in all four quarters. Pillar gates at the ramp
+// tops, a broken pillar ring around the market, statues on the diagonals, stone blocks around
+// the pools. The paved cross and the ring around the market stay free to walk through.
+{
+  const T = [
+    // [dx, dy, type, scale, yaw] for the north quarter (+y), rotated to the other three.
+    [-12.5, 42, D.ruin_pillar, 1.35, 0],
+    [12.5, 42, D.ruin_pillar, 1.2, 15],
+    [-14.5, 39, D.ruin_block, 1.1, 30],
+    [15, 37.5, D.ruin_block, 0.9, 70],
+    [-9.5, 9.5, D.ruin_pillar, 1.15, 10],
+    [9.5, 9.5, D.ruin_pillar, 0.8, 40],
+    [-4, 13, D.ruin_block, 0.8, 20],
+    [17, 17, D.statue, 1.25, 225],
+    [12, 21, D.ruin_block, 0.75, 55],
+    [37, 22, D.ruin_block, 1.0, 10],
+    [22, 37, D.ruin_block, 0.85, 80],
+    [36, 34, D.ruin_pillar, 0.9, 0],
+    [-36, 34, D.ruin_block, 1.05, 35],
+    [-22, 31, D.rock_small, 1, 0],
+  ];
+  for (let q = 0; q < 4; q++) {
+    for (const [dx, dy, type, scale, yaw] of T) {
+      let [x, y] = [dx, dy];
+      for (let k = 0; k < q; k++) [x, y] = [-y, x];
+      decor.push([Math.round((C + x) * 10) / 10, Math.round((C + y) * 10) / 10, type, scale, (yaw + q * 90) % 360]);
+    }
+  }
+}
 // Base props: crates and barrels next to each town hall, fence pieces around the base.
 for (const s of layout.starts) {
   const [tx, ty] = s.townHall;

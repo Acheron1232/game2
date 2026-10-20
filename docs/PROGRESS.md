@@ -4,6 +4,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Phase 5 map rework finished** (2026-10-20), user feedback "map is small, flat, empty": map 256 × 256 with hills, a watch hill, a lake dip and a mountain wall at the edge (plus 64 units of mountains with pines outside the map). 7,451 trees and 6,735 decor items (plants, rocks, stumps, ruins, fences, crates), all drawn as thin instances in 48-unit chunks. New temple plaza ruins: pillar gates at the ramp tops, a pillar ring around the market, statues on the diagonals, blocks around the pools. Fight zones and tactics written in [design/MAP.md](design/MAP.md#fight-zones-and-tactics), with measured walk times. Checked in the browser: WebGPU 120 FPS, 115–121 draws, 203–263k tris; WebGL2 120 FPS, GPU 4.0 ms, 118 draws. Build, lint, data check and 36 tests pass.
 - **Terrain and lighting pass** (2026-10-19), branch `codex/terrain-lighting-polish`: checkpointed the existing working tree, generated six quieter ground textures in one ImageGen call, softened transitions and adjusted sun/sky colors. Terrain sampling now merges duplicate layers instead of reading the same tile four times. 120 FPS and native resolution retained; no added geometry, draw calls or render passes. Both WebGL2 and WebGPU checked. See [TERRAIN_POLISH.md](TERRAIN_POLISH.md) for assets, measured readings and tradeoffs.
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
 - **Input and energy pass** (2026-10-19): fixed north/south edge scrolling over HUD panels; game/menu caps are 60/30 FPS, background rendering is off, and Retina rendering has a 1080p pixel budget. Removed duplicate MSAA and full-screen bloom, focused a smaller shadow map near the camera, and toned down yellow grading/vignette. Added GPU time and resolution to F3. 36 tests pass, including camera input and render-budget tests. A short whole-system GPU sample fell from 75% to 57% median; this is not a temperature or fan guarantee. Details in [CLIENT_AUDIT.md](CLIENT_AUDIT.md).
@@ -23,7 +24,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 2 | Project skeleton | **Done** | pnpm monorepo, Babylon client with WebGPU/WebGL2, ws server, binary protocol, typed data, 17 tests |
 | 3 | 2D art with Codex | **Done** | 7 Codex images → 340 assets, 2.7 MB WebP; UI skin in menu / lobby |
 | 4 | 3D models and animation | **Done** | 48 models (8 heroes, 8 units, 13 monsters, 14 buildings, 5 nature) with Codex skins, 11 MB |
-| 5 | Client engine and loading | **Done** | Terrain with blended tiles, 2,755 instanced trees, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
+| 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | Not started | |
 | 7 | Combat, heroes, camps, items | Not started | |
 | 8 | Faction AI and bots | Not started | |
@@ -131,6 +132,11 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Map size 256 × 256 (was 192). The layout is still written on the 192 grid and scaled by 4/3, so all old positions keep their shape. Walk times in MAP.md; keep their order when changing the layout.
+- 2026-10-20 — Map edge = mountain wall (8 units, blocked) + mountains drawn outside the map. No black edge, the camera stays inside.
+- 2026-10-20 — Decor never blocks movement and is not part of the nav grid; it is looks only. Hand-placed decor (base props, temple ruins) lives in `bake-terrain.mjs`.
+- 2026-10-20 — Trees and decor: thin instances split into 48-unit chunks, so the camera skips what it can not see (2M → ~260k drawn tris, ~20 more draw calls).
+- 2026-10-20 — High ground rules (sight, miss chance from below) are a Phase 7 decision; the map already has the watch hill and temple for it.
 - 2026-10-19 — Models: Blender 5.2 + Python scripts (user's choice). Rigid binding (one bone per part), like classic RTS models.
 - 2026-10-19 — Heroes (and later units) get their own Codex-painted texture sheet; the shared palette stays for trees, rocks and props.
 - 2026-10-19 — GLB compression: KHR_mesh_quantization only (no decoder needed in the browser). Meshopt later with a bundled decoder (the default Babylon decoder loads from a CDN).
@@ -181,11 +187,12 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 |---|---|---|
 | First download | < 100 MB | ~14 MB (2D art 2.7 MB + models and skins 11 MB) |
 | All assets | < 500 MB | — |
-| FPS (laptop, 300 units) | 60 | 120 (capped) on M5, 2.0 ms frame, 44 draws |
+| FPS (laptop, 300 units) | 60 | 120 (capped) on M5; normal view 115–121 draws, ~260k tris (no 300-unit run after the map rework) |
 | Server tick (4 players, full armies) | < 10 ms | — |
 | Bandwidth per player | < 20 KB/s down | — |
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
 
-(none yet)
+- Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
+- The minimap camera box is a fixed 46 × 30 rectangle; it does not follow zoom or screen shape.
