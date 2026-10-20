@@ -1,10 +1,27 @@
-import { expect, test } from '@playwright/test';
+import { expect as baseExpect, test } from '@playwright/test';
+
+const expect = baseExpect.configure({ timeout: 15_000 });
 
 test.use({ channel: 'chromium' });
 
 test('captured mouse routes hover and HUD clicks and releases for settings, chat and Escape', async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  // This test exercises native input, not GPU speed. Keep the software-only CI
+  // renderer responsive and verify CSS-pixel input at a different render scale.
+  // The separate live-match smoke still uses the default High/native settings.
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'tw-settings',
+      JSON.stringify({
+        quality: 'low',
+        renderScale: 0.5,
+        shadows: false,
+        effects: 'low',
+        showFps: false,
+      }),
+    ),
+  );
   await page.goto('/?play&webgl');
   const capture = page.getByRole('button', { name: 'Capture mouse', exact: true });
   await expect(capture).toBeVisible({ timeout: 45_000 });
@@ -39,7 +56,13 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   });
   await expect(page.locator('.item-slot').nth(0)).not.toHaveClass(/empty/);
   await lock();
-  mouseY -= 1500;
+  // CDP discards out-of-viewport mouse positions on some Linux hosts, even with
+  // pointer lock. Sweep full in-viewport ranges to align the driver and virtual
+  // cursor at the same corner before sending normal HUD coordinates.
+  const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+  await page.mouse.move(0, 0);
+  await page.mouse.move(viewport.width - 1, viewport.height - 1);
+  mouseX = mouseY = 0;
   await page.mouse.move(mouseX, mouseY);
   await expect.poll(async () => (await page.locator('.game-cursor').boundingBox())!.y).toBe(-3);
   await moveTo('.ability');
