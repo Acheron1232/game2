@@ -286,6 +286,16 @@ export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: Map
       tiles.updateMipLevel(mip, level);
       size /= 2;
     }
+    // updateMipLevel also replaces Babylon's base upload reference with the tiny last mip.
+    // A device rebuild must start with the full-sized data before it restores the other mips.
+    const restoreBaseData = () => {
+      const texture = tiles.getInternalTexture();
+      if (texture) texture._bufferView = tileData;
+    };
+    restoreBaseData();
+    const engine = scene.getEngine();
+    const lost = engine.onContextLostObservable.add(restoreBaseData);
+    scene.onDisposeObservable.addOnce(() => engine.onContextLostObservable.remove(lost));
   }
   tiles.wrapU = Texture.WRAP_ADDRESSMODE;
   tiles.wrapV = Texture.WRAP_ADDRESSMODE;

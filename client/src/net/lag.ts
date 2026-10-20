@@ -17,6 +17,7 @@ export function lagFromUrl(): LagSettings {
 
 export class LagLine<T> {
   private lastDue = 0;
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
 
   constructor(
     private readonly settings: LagSettings,
@@ -35,6 +36,17 @@ export class LagLine<T> {
     if (Math.random() * 100 < this.settings.lossPct) due += Math.max(200, this.settings.lagMs * 2);
     due = Math.max(due, this.lastDue);
     this.lastDue = due;
-    setTimeout(() => this.deliver(msg), due - now);
+    const timer = setTimeout(() => {
+      this.timers.delete(timer);
+      this.deliver(msg);
+    }, due - now);
+    this.timers.add(timer);
+  }
+
+  /** Delayed packets belong to one connection and must never enter its replacement. */
+  reset(): void {
+    for (const timer of this.timers) clearTimeout(timer);
+    this.timers.clear();
+    this.lastDue = 0;
   }
 }

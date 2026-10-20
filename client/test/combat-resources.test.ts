@@ -26,6 +26,28 @@ vi.mock('../src/render/hero-effects', async (original) => {
 });
 
 describe('combat render resources', () => {
+  it('removes a cancelled channel zone before its normal duration ends', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000);
+    const engine = new NullEngine();
+    const scene = new Scene(engine);
+    const fx = new AbilityFx(scene);
+    try {
+      fx.disc(20, 0, -20, 5, '#b07bff', 4, 7);
+      fx.update(0);
+      expect(scene.meshes.some((m) => m.name.endsWith('-c') && m.isEnabled())).toBe(true);
+      now.mockReturnValue(1500);
+      fx.endZones(7);
+      now.mockReturnValue(1800);
+      fx.update(0);
+      expect(scene.meshes.some((m) => m.name.endsWith('-c') && m.isEnabled())).toBe(false);
+    } finally {
+      fx.dispose();
+      scene.dispose();
+      engine.dispose();
+      now.mockRestore();
+    }
+  });
+
   it('returns to the scene baseline after repeated matches without disposing the shared atlas', () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);

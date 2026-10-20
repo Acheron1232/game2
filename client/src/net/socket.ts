@@ -48,7 +48,7 @@ export class GameSocket {
     this.state = { status: 'connecting', pingMs: null, playerId: null, downBps: 0, lag };
     this.lagIn = new LagLine(lag, (ev) => this.onMessage(ev));
     this.lagOut = new LagLine(lag, (data) => {
-      if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(data);
+      if (this.state.status === 'online' && this.ws?.readyState === WebSocket.OPEN) this.ws.send(data);
     });
     setInterval(() => {
       this.set({ downBps: this.bytesThisSecond });
@@ -81,11 +81,13 @@ export class GameSocket {
   }
 
   connect(): void {
+    if (this.ws) return;
     this.set({ status: 'connecting' });
     const ws = new WebSocket(this.url);
     ws.binaryType = 'arraybuffer';
     this.ws = ws;
     ws.onopen = () => {
+      if (this.ws !== ws) return;
       this.retryMs = 500;
       // hello goes out at once (not through the lag line), so connect order stays simple.
       const { own, others } = sessionCandidates();
@@ -100,17 +102,27 @@ export class GameSocket {
       );
     };
     ws.onmessage = (ev) => {
+      if (this.ws !== ws) return;
       this.bytesThisSecond += typeof ev.data === 'string' ? ev.data.length : (ev.data as ArrayBuffer).byteLength;
-      this.lagIn.push(ev);
+      // As with hello, finish the handshake before simulating game latency. Otherwise a
+      // protocol error may still be waiting in the lag queue when the socket closes.
+      if (this.state.status !== 'online' && typeof ev.data === 'string') this.onText(ev.data);
+      else this.lagIn.push(ev);
     };
     ws.onclose = (ev) => {
+      if (this.ws !== ws) return;
       this.stopPing();
-      if (this.ws === ws) this.ws = null;
+      this.ws = null;
+      this.lagIn.reset();
+      this.lagOut.reset();
+      if (ev.code === 4000) this.set({ status: 'outdated', pingMs: null });
       if (this.state.status === 'outdated') return;
       // Another tab took this player: start as a new one.
       if (ev.code === 4003) forgetOwnSession();
       this.set({ status: 'offline', pingMs: null });
-      setTimeout(() => this.connect(), this.retryMs);
+      setTimeout(() => {
+        if (!this.ws && this.state.status !== 'outdated') this.connect();
+      }, this.retryMs);
       this.retryMs = Math.min(this.retryMs * 2, 8000);
     };
   }

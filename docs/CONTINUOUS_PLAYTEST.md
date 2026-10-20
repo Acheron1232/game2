@@ -35,8 +35,18 @@ Ability burst pools now start only when used and stop themselves after their par
 
 The numeric Arcane Arrow tooltip was checked in the browser at level 3: damage 210, length 12, width 1, mana 75, cooldown 9 s. The new HUD text is visible and readable in the narrow viewport too.
 
+## Cycle 4 — four browser clients, leaps, rejoin and zones
+
+- Four real browser clients joined one room: Huntress, Staff Warrior, Forest Elf and Light Healer; three WebGPU clients and one WebGL2. Staff Warrior used 100 ms simulated round trip plus 2% delayed messages. Movement and skill learning were issued together. All four later showed `fixes 0/0`, confirming the cycle-3 fix in the browser. Death and respawn were observed for Huntress and Forest Elf; level, skills and HUD survived.
+- **Leap attachments (fixed).** Sky Pillar exposed a health bar left down near the ground while the model jumped. The model, bar, buff markers, picking and homing projectile targets now share the visual altitude, including the leap arc and flying bob. Compared screenshots: `screenshots/playtest-sky-pillar.jpg` and `screenshots/playtest-sky-pillar-fixed.jpg`.
+- **Rejoin during a walk (fixed).** A new client has no local path history. A moving own hero now starts in server-motion mode until its next local move, rather than correcting an idle predictor every snapshot. A snapshot-to-command regression test covers this handover. A WebGL2 client was reloaded during a walk and rejoined with `fixes 0/0`. Disconnect still sends the hero home, as in Phase 6.
+- **Ground zones are easier to read.** Thinner edges and less opaque fills keep the ground and units visible. Arcane Storm was cast and cancelled by a move in the browser; the zone disappeared. A timed render-resource test confirms that ending a caster's zone hides it within 0.3 s rather than its full four-second life. Before/after: `screenshots/playtest-arcane-storm.jpg` and `screenshots/playtest-arcane-storm-refined.jpg`.
+- **Latency queues across reconnect (fixed).** Regression tests reproduced an old snapshot delivered after disconnect and an outdated client trying to reconnect after a delayed protocol error. Incoming/outgoing delayed queues now clear on disconnect, replaced sockets cannot update the new connection, and the handshake finishes before game latency simulation starts. A third test verifies that old commands never leak into a replacement socket.
+- **Terrain rebuild metadata.** Babylon's per-mip upload also replaced its base-data reference with the final tiny mip. The terrain keeps the full upload reference ready before device rebuilds. An actual GPU device-loss/recovery cycle has not been forced or verified.
+
+Validation: 96 tests, production build (including typechecks) and lint pass. Browser consoles checked during the four-client session had no warnings/errors. Native buffers and the 120 FPS match limit remain unchanged. The extra browser tabs are test clients, so their combined load is not a single-player thermal benchmark.
+
 ## Still checking
 
-- Repeated multiplayer fights, respawn and reconnect.
-- Channel interruption, blink, leap visuals and hover descriptions in the browser.
+- Wrong-target and unavailable-ability feedback, blink and longer fights.
 - Crowded-match bandwidth, without lowering snapshot frequency or precision.

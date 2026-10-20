@@ -84,7 +84,7 @@ export class AbilityFx {
   private readonly markers = new Map<number, Marker>();
 
   constructor(private readonly scene: Scene) {
-    this.ringTemplate = CreateTorus('fx-ring', { diameter: 2, thickness: 0.12, tessellation: 48 }, scene);
+    this.ringTemplate = CreateTorus('fx-ring', { diameter: 2, thickness: 0.06, tessellation: 48 }, scene);
     this.ringTemplate.setEnabled(false);
     this.discTemplate = CreateDisc('fx-disc', { radius: 1, tessellation: 40 }, scene);
     this.discTemplate.rotation.x = Math.PI / 2;
@@ -143,8 +143,9 @@ export class AbilityFx {
   /** A flat disc on the ground for a while (zones), or a quick flash (life < 0.6). */
   disc(x: number, h: number, z: number, radius: number, color: string, life: number, owner = 0): void {
     const zone = life > 0.8;
-    this.flash(this.discTemplate, x, h, z, radius, radius, color, zone ? 0.32 : 0.45, life, zone, owner);
-    if (zone) this.flash(this.ringTemplate, x, h, z, radius, radius, color, 0.8, life, true, owner);
+    // Keep the edge clear without painting over units and the terrain inside a large zone.
+    this.flash(this.discTemplate, x, h, z, radius, radius, color, zone ? 0.14 : 0.45, life, zone, owner);
+    if (zone) this.flash(this.ringTemplate, x, h, z, radius, radius, color, 0.7, life, true, owner);
   }
 
   /** A cone flash (Fire Breath): a disc slice pointing at `angle` (radians, game space). */

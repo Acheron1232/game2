@@ -422,22 +422,27 @@ export class GameWorld {
     return p.z > 0 && p.z < 1;
   }
 
-  private syncUnit(u: Unit, dt = 1 / 60): void {
-    const { x, y, facing } = u;
+  /** Current visual altitude, shared by the model, bars, picking and homing effects. */
+  unitHeight(u: Unit, now = performance.now()): number {
+    const { x, y } = u;
     const ground = this.terrain.heightAt(x, y);
     // Flyers bob a little so they look alive.
-    const now = performance.now();
     let h = u.flyHeight ? ground + u.flyHeight + Math.sin(now / 600 + x) * 0.12 : ground;
     // Jumps (Sky Pillar, Inferno Dive): up and down in an arc.
     if (now >= u.arcStart && now < u.arcEnd) h += Math.sin((Math.PI * (now - u.arcStart)) / (u.arcEnd - u.arcStart)) * 3.5;
-    place(u.model.root, x, y, h, facing);
+    return h;
+  }
+
+  private syncUnit(u: Unit, dt = 1 / 60): void {
+    const { x, y, facing } = u;
+    place(u.model.root, x, y, this.unitHeight(u), facing);
     const sc = u.model.root.scaling;
     if (sc.x !== u.scale) {
       // Grow and shrink smoothly.
       const next = sc.x + (u.scale - sc.x) * (1 - Math.exp(-10 * dt));
       sc.setAll(Math.abs(next - u.scale) < 0.01 ? u.scale : next);
     }
-    if (u === this.selected) this.ring.position.set(x, ground + 0.08, -y);
+    if (u === this.selected) this.ring.position.set(x, this.terrain.heightAt(x, y) + 0.08, -y);
   }
 
   private tick(dt: number): void {

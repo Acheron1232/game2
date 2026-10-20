@@ -220,7 +220,8 @@ export class MatchClient {
       const u = e.unit;
       if (!u || u.dead) continue;
       const height = u.height * u.model.root.scaling.y;
-      if (!this.world.screenPoint(u.x, u.y, u.flyHeight + height * 0.5, this.pt)) continue;
+      const altitude = this.world.unitHeight(u) - this.world.terrain.heightAt(u.x, u.y);
+      if (!this.world.screenPoint(u.x, u.y, altitude + height * 0.5, this.pt)) continue;
       const d = Math.hypot(this.pt.x - sx, this.pt.y - sy);
       // Bigger models are easier to click.
       if (d < 18 + height * 10 && d < bestD) {
@@ -305,7 +306,7 @@ export class MatchClient {
           : ea.owner === NEUTRAL
             ? '#ffd966'
             : (TEAM_COLORS[TEAMS[ea.color] ?? 'red'] ?? '#ffffff');
-        const h = this.world.terrain.heightAt(from.x, from.y) + from.flyHeight + from.height * 0.6;
+        const h = this.world.unitHeight(from) + from.height * from.model.root.scaling.y * 0.6;
         this.projectiles.fire(
           from.x,
           from.y,
@@ -316,7 +317,7 @@ export class MatchClient {
             if (!tu || tu.dead || !this.entities.has(to.id)) return false;
             out.x = tu.x;
             out.y = tu.y;
-            out.h = this.world.terrain.heightAt(tu.x, tu.y) + tu.flyHeight + tu.height * tu.model.root.scaling.y * 0.5;
+            out.h = this.world.unitHeight(tu) + tu.height * tu.model.root.scaling.y * 0.5;
             return true;
           },
           color,
@@ -468,7 +469,9 @@ export class MatchClient {
     if (hero && e.owner === this.slot) {
       this.ownHero = e;
       this.predictor = new HeroPredictor(k.x, k.y, k.facing, moveSpeedOf(e.type), this.world.nav, isFlyingType(e.type));
-      this.serverMode = (e.state & UnitState.ServerDriven) !== 0;
+      // A rejoined walking hero has no local path history. Draw server motion until the next
+      // own order instead of correcting an idle predictor on every snapshot.
+      this.serverMode = (e.state & (UnitState.ServerDriven | UnitState.Moving)) !== 0;
       this.world.select(e.unit);
       if (!this.cameraPlaced) this.world.camera.lookAt(k.x, k.y, true);
       this.cameraPlaced = true;
@@ -525,16 +528,8 @@ export class MatchClient {
       // Buff markers and Mountain Form size.
       u.scale = e.buffs & BuffFlag.Big ? 1.4 : 1;
       if (e.buffs && !dead) {
-        const ground = this.world.terrain.heightAt(u.x, u.y);
-        this.fx.setMarkers(
-          e.id,
-          e.buffs,
-          u.x,
-          ground + u.flyHeight,
-          ground + u.flyHeight + u.height * u.scale,
-          -u.y,
-          Math.max(0.8, u.height * 0.45),
-        );
+        const ground = this.world.unitHeight(u, now);
+        this.fx.setMarkers(e.id, e.buffs, u.x, ground, ground + u.height * u.model.root.scaling.y, -u.y, Math.max(0.8, u.height * 0.45));
       } else this.fx.clearMarkers(e.id);
       if (dead) {
         const since = this.deadSince.get(e.id) ?? now;
@@ -547,7 +542,7 @@ export class MatchClient {
       const b = (this.barInput[bars] ??= { x: 0, y: 0, z: 0, hp: 1, mana: -1, hero: false, color: OWN_BAR });
       bars++;
       b.x = u.x;
-      b.y = this.world.terrain.heightAt(u.x, u.y) + u.flyHeight + u.height * u.model.root.scaling.y + 0.35;
+      b.y = this.world.unitHeight(u, now) + u.height * u.model.root.scaling.y + 0.35;
       b.z = -u.y;
       b.hp = e.maxHp ? e.hp / e.maxHp : 0;
       b.mana = hero && e.maxMana > 0 ? e.mana / e.maxMana : -1;
