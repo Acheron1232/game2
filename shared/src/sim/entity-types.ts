@@ -2,11 +2,16 @@
 // Both sides build the same list from the same data, so a u16 index is enough on the wire.
 
 import { gameData } from '../data/index';
-import { heroStats, unitStats, type CombatStats } from './stats';
+import { heroStats, unitStats, type CombatStats, type Layer } from './stats';
 
 export const ENTITY_TYPES: readonly string[] = [...gameData.heroes.map((h) => h.id), ...gameData.units.map((u) => u.id)];
 
 const INDEX = new Map(ENTITY_TYPES.map((id, i) => [id, i]));
+const LAYERS: readonly Layer[] = [...gameData.heroes, ...gameData.units].map((e) => e.movementLayer as Layer);
+
+export function layerOf(index: number): Layer {
+  return LAYERS[index] ?? 'ground';
+}
 
 export function entityTypeIndex(id: string): number {
   const i = INDEX.get(id);
@@ -44,5 +49,5 @@ function statsOf(index: number): CombatStats {
 
 /** Flying entities (Sky Dragon, harpies, hawk riders) ignore the walk grid. */
 export function isFlyingType(index: number): boolean {
-  return statsOf(index).layer !== 'ground';
+  return layerOf(index) !== 'ground';
 }

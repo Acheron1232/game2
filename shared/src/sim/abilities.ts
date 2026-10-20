@@ -9,7 +9,7 @@ import { BuffFlag, type Buff } from './buffs';
 import { entityTypeIndex } from './entity-types';
 import { abilityFxKind, EventType } from './events';
 import { TICK_RATE, type DamageSource, type MatchSim, type SimEntity } from './match-sim';
-import { canAttackLayer, canLearn, unitStats } from './stats';
+import { canAttackLayer, canLearn, unitStats, type Layer } from './stats';
 
 export const ABILITIES: readonly AbilityDef[] = gameData.abilities;
 const INDEX = new Map(ABILITIES.map((a, i) => [a.id, i]));
@@ -50,16 +50,16 @@ function healthCost(a: AbilityDef, level: number): number {
 /** Can this unit be the target of this ability? */
 export function targetAllowed(sim: MatchSim, caster: SimEntity, a: AbilityDef, t: SimEntity): boolean {
   if (!t.alive) return false;
+  return abilityTargetAllowed(a, t === caster ? 'self' : t.team === caster.team ? 'ally' : 'enemy', t.stats.layer);
+}
+
+/** Shared with aiming feedback; low-air targets use the ground filter, like in combat. */
+export function abilityTargetAllowed(a: AbilityDef, relation: 'self' | 'ally' | 'enemy', layer: Layer): boolean {
   const f = a.filter;
-  const self = t === caster;
-  const ally = !self && t.team === caster.team;
-  const enemy = t.team !== caster.team;
-  if (self && !f.includes('self')) return false;
-  if (ally && !f.includes('ally')) return false;
-  if (enemy && !f.includes('enemy')) return false;
-  const air = t.stats.layer === 'air';
+  if (!f.includes(relation)) return false;
+  const air = layer === 'air';
   if (air && !f.includes('air')) return false;
-  if (!air && !f.includes('ground') && !self) return false;
+  if (!air && !f.includes('ground') && relation !== 'self') return false;
   return true;
 }
 

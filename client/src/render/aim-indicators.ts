@@ -16,6 +16,10 @@ export type AimShape =
   | { kind: 'line'; length: number; width: number }
   | { kind: 'unit' };
 
+const GOOD = Color3.FromHexString('#7fd0ff');
+const EDGE = Color3.FromHexString('#bfe8ff');
+const BAD = Color3.FromHexString('#ff6a5a');
+
 export class AimIndicators {
   private readonly range: Mesh;
   private readonly circle: Mesh;
@@ -26,6 +30,8 @@ export class AimIndicators {
   private coneKey = '';
   private readonly mat: StandardMaterial;
   private readonly edgeMat: StandardMaterial;
+  private readonly meshes: Mesh[];
+  private readonly circleMeshes: Mesh[];
 
   constructor(private readonly scene: Scene) {
     this.mat = this.material('#7fd0ff', 0.25);
@@ -41,7 +47,9 @@ export class AimIndicators {
     this.line.material = this.mat;
     this.unitRing = CreateTorus('aim-unit', { diameter: 2, thickness: 0.12, tessellation: 32 }, scene);
     this.unitRing.material = this.edgeMat;
-    for (const m of [this.range, this.circle, this.circleEdge, this.line, this.unitRing]) {
+    this.meshes = [this.range, this.circle, this.circleEdge, this.line, this.unitRing];
+    this.circleMeshes = [this.circle, this.circleEdge];
+    for (const m of this.meshes) {
       m.isPickable = false;
       m.setEnabled(false);
     }
@@ -59,7 +67,7 @@ export class AimIndicators {
   }
 
   hide(): void {
-    for (const m of [this.range, this.circle, this.circleEdge, this.line, this.unitRing]) m.setEnabled(false);
+    for (const m of this.meshes) m.setEnabled(false);
     this.cone?.setEnabled(false);
   }
 
@@ -79,8 +87,8 @@ export class AimIndicators {
     bad: boolean,
   ): void {
     this.hide();
-    const tint = bad ? Color3.FromHexString('#ff6a5a') : Color3.FromHexString('#7fd0ff');
-    this.mat.emissiveColor = tint;
+    this.mat.emissiveColor.copyFrom(bad ? BAD : GOOD);
+    this.edgeMat.emissiveColor.copyFrom(bad ? BAD : EDGE);
     if (castRange > 0) {
       this.range.setEnabled(true);
       this.range.position.set(hx, h(hx, hy) + 0.1, -hy);
@@ -89,7 +97,7 @@ export class AimIndicators {
     const dir = Math.atan2(cy - hy, cx - hx);
     switch (shape.kind) {
       case 'circle':
-        for (const m of [this.circle, this.circleEdge]) {
+        for (const m of this.circleMeshes) {
           m.setEnabled(true);
           m.position.set(cx, h(cx, cy) + 0.12, -cy);
           m.scaling.set(shape.radius, m === this.circle ? shape.radius : 1, shape.radius);

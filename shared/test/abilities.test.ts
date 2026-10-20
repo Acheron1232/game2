@@ -13,6 +13,7 @@ import {
   gameData,
   EventType,
   abilityFxKind,
+  abilityTargetAllowed,
   MatchSim,
   NEUTRAL,
   NEUTRAL_TEAM,
@@ -94,6 +95,15 @@ describe('learning', () => {
 });
 
 describe('server refuses casts that should not happen', () => {
+  it('shares ally/enemy and air-layer filters with the client aim', () => {
+    expect(abilityTargetAllowed(ab('radiant_touch'), 'self', 'ground')).toBe(true);
+    expect(abilityTargetAllowed(ab('radiant_touch'), 'ally', 'ground')).toBe(true);
+    expect(abilityTargetAllowed(ab('radiant_touch'), 'enemy', 'ground')).toBe(false);
+    expect(abilityTargetAllowed(ab('blood_bolt'), 'self', 'ground')).toBe(false);
+    expect(abilityTargetAllowed(ab('boulder_toss'), 'enemy', 'air')).toBe(true);
+    expect(abilityTargetAllowed(ab('sweep'), 'enemy', 'air')).toBe(false);
+    expect(abilityTargetAllowed(ab('sweep'), 'enemy', 'lowAir')).toBe(true);
+  });
   it('sends visuals only for completed casts, with the learned level and target', () => {
     const { sim, hero, cast, at } = setup('sky_dragon');
     hero.heroState!.abilityLevels[0] = 1;

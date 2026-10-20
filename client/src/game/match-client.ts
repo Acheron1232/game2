@@ -10,6 +10,7 @@
 import {
   ABILITIES,
   abilityIndex,
+  abilityTargetAllowed,
   BinaryWriter,
   canLearn,
   dqPos,
@@ -26,6 +27,7 @@ import {
   isFlyingType,
   isHeroType,
   isPredicted,
+  layerOf,
   moveSpeedOf,
   NEUTRAL,
   quantizePoint,
@@ -97,6 +99,8 @@ export class MatchClient {
   readonly fx: AbilityFx;
   private readonly deadSince = new Map<number, number>();
   private readonly pt = { x: 0, y: 0 };
+  private readonly teams: number[] = [];
+  private readonly projectText = (x: number, y: number, up: number, out: { x: number; y: number }) => this.world.screenPoint(x, y, up, out);
   private readonly events = new EventTimeline();
   private readonly drawEvent = (ev: { type: number; a: number; b: number; value: number; kind: number }) =>
     this.onEvent(ev.type, ev.a, ev.b, ev.value, ev.kind);
@@ -107,6 +111,7 @@ export class MatchClient {
     readonly info: MatchStartInfo,
     private readonly floating: FloatingText | null = null,
   ) {
+    for (const slot of info.slots) this.teams[slot.index] = slot.team;
     this.unsubscribe = net.onSnapshot((data) => this.onSnapshot(data));
     world.beforeFrame = (dt) => this.frame(dt);
     this.bars = new HealthBars(world.scene, TILT);
@@ -119,16 +124,22 @@ export class MatchClient {
   }
 
   get myTeam(): number {
-    return this.info.slots.find((s) => s.index === this.slot)?.team ?? 0;
+    return this.teams[this.slot] ?? 0;
   }
 
   teamOf(e: NetEntity): number {
     if (e.owner === NEUTRAL) return 0;
-    return this.info.slots.find((s) => s.index === e.owner)?.team ?? -1;
+    return this.teams[e.owner] ?? -1;
   }
 
   isEnemy(e: NetEntity): boolean {
     return this.teamOf(e) !== this.myTeam;
+  }
+
+  canTarget(ability: AbilityDef, target: NetEntity): boolean {
+    if (!this.ownHero || target.state & UnitState.Dead) return false;
+    const relation = target === this.ownHero ? 'self' : this.isEnemy(target) ? 'enemy' : 'ally';
+    return abilityTargetAllowed(ability, relation, layerOf(target.type));
   }
 
   // ---------- commands ----------
@@ -173,7 +184,7 @@ export class MatchClient {
   /** What the HUD needs about the own hero's ability in a slot. */
   ability(slot: number): AbilityInfo | null {
     const own = this.ownHero;
-    const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
+    const def = gameData.heroes[own?.type ?? -1];
     const a = def ? ABILITIES[abilityIndex(def.abilities[slot]!)] : undefined;
     if (!own || !a) return null;
     const level = this.player.abilityLevels[slot] ?? 0;
@@ -562,7 +573,7 @@ export class MatchClient {
     this.bars.update(this.barInput, bars);
     this.projectiles.update(dt);
     this.fx.update(dt);
-    this.floating?.update((x, y, up, out) => this.world.screenPoint(x, y, up, out));
+    this.floating?.update(this.projectText);
   }
 
   /** Match time in seconds, from the server tick. */

@@ -409,11 +409,12 @@ export class GameWorld {
   /** Screen position (CSS pixels) of a point above a unit, or null when off screen. */
   screenPoint(x: number, y: number, up: number, out: { x: number; y: number }): boolean {
     const cam = this.camera.camera;
+    cam.viewport.toGlobalToRef(this.engine.getRenderWidth(), this.engine.getRenderHeight(), this.screenViewport);
     const p = Vector3.ProjectToRef(
       TMP.set(x, this.terrain.heightAt(x, y) + up, -y),
       Matrix.IdentityReadOnly,
       this.scene.getTransformMatrix(),
-      cam.viewport.toGlobalToRef(this.engine.getRenderWidth(), this.engine.getRenderHeight(), this.screenViewport),
+      this.screenViewport,
       this.screenPosition,
     );
     const scale = this.engine.getRenderWidth() / (this.engine.getRenderingCanvas()?.clientWidth || this.engine.getRenderWidth());

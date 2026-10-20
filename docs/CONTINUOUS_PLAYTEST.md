@@ -46,7 +46,18 @@ The numeric Arcane Arrow tooltip was checked in the browser at level 3: damage 2
 
 Validation: 96 tests, production build (including typechecks) and lint pass. Browser consoles checked during the four-client session had no warnings/errors. Native buffers and the 120 FPS match limit remain unchanged. The extra browser tabs are test clients, so their combined load is not a single-player thermal benchmark.
 
+## Cycle 5 — target feedback, projection and minimap control
+
+- **Wrong targets no longer fail silently.** Client aiming uses the same ally/enemy/self and air-layer filter as the server. Invalid unit targets keep aiming active, tint the ring red and say `Pick an enemy.` or `Pick an ally.`. Dead and silenced heroes get a short message. Aiming clears on death. Shared tests cover healing allies/self, rejecting enemies/self and ground/air/low-air rules.
+- **Projection regression caught and fixed.** The no-allocation screen projection from cycle 2 chained `Viewport.toGlobalToRef`, but Babylon returns the original normalized viewport rather than the filled target. Picking and floating numbers were projected near the screen corner. The target viewport is now passed explicitly. Three regression cases check real Babylon projection in CSS pixels at DPR 1, 2 and 3, including a raised point. Browser picking was retested on the own hero and camp enemies.
+- **Minimap control.** Clicking the minimap now leaves camera-follow mode. Right-clicking it while aiming cancels aim, matching the main view. The camera stayed on the temple after a minimap click while following a hero.
+- **Less aiming and team-lookup allocation.** Reused aim shapes, target point, mesh lists and tint colors. Cached the fixed owner/team lookup and floating-text projection callback instead of rebuilding callbacks during frame work. Entity movement layers no longer require a temporary full stats object.
+
+Browser proof: Huntress level 1 cast Mana Mark on herself: `Pick an enemy.`, red rings, no mana spent. A real bandit accepted the cast, showed the mark and cooldown, and spent mana. Camp combat showed **120/120 FPS**, native **1362 × 1544**, about **2.4–2.5 ms CPU**, 0.5 KB/s and `fixes 0/0` in the sampled view. The earlier 30 FPS observations were made with multiple browser surfaces running; they were not a lowered game limit. These are short observations, not a weak-laptop or temperature guarantee. Screenshots: `screenshots/playtest-invalid-target.jpg`, `screenshots/playtest-camp-combat.jpg`.
+
+Validation: **100 tests pass** (47 shared, 34 client, 10 server, 9 tools), production build/typechecks and lint pass. All changes remain in the isolated branch.
+
 ## Still checking
 
-- Wrong-target and unavailable-ability feedback, blink and longer fights.
+- Blink and longer fights; feedback if a caster becomes stunned/silenced after aiming starts.
 - Crowded-match bandwidth, without lowering snapshot frequency or precision.

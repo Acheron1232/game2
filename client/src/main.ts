@@ -12,6 +12,7 @@ import {
   MAX_LEVEL,
   parseTerrain,
   xpForLevel,
+  UnitState,
   type AbilityDef,
   type MatchStartInfo,
   type RoomState,
@@ -263,8 +264,14 @@ async function main(): Promise<void> {
     minimapHost,
     terrain,
     gameData.map,
-    (x, y) => w.camera.lookAt(x, y),
-    (x, y) => match?.moveTo(x, y, false),
+    (x, y) => {
+      w.camera.follow = null;
+      w.camera.lookAt(x, y);
+    },
+    (x, y) => {
+      if (aim) return setAim(null);
+      match?.moveTo(x, y, false);
+    },
   );
   const townHalls = gameData.map.starts.map((s) => ({ x: s.townHall[0], y: s.townHall[1], color: '#e8dcc0', size: 6 }));
   setInterval(() => {
@@ -289,6 +296,7 @@ async function main(): Promise<void> {
   setInterval(() => {
     if (router.screen !== 'game' || !match) return;
     const own = match.ownHero;
+    if (aim && own && own.state & UnitState.Dead) setAim(null);
     const p = match.player;
     const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
     if (own && def) {
@@ -363,22 +371,40 @@ async function main(): Promise<void> {
   /** Client-side check first, so the player gets a message at once. */
   useAbility = (slot) => {
     if (!match?.ownHero) return;
+    if (match.ownHero.state & UnitState.Dead) return game.alert(S.deadAbility);
     const info = match.ability(slot);
     if (!info) return;
     const a = info.def;
     if (info.level === 0) return game.alert(info.canLearn ? S.learn : S.notLearned);
     if (a.kind !== 'active') return game.alert(S.passive);
     if (match.ownHero.buffs & BuffFlag.Stun) return game.alert(S.stunned);
+    if (match.ownHero.buffs & BuffFlag.Silence) return game.alert(S.silenced);
     if (info.cooldownLeft > 0) return game.alert(S.abilityNotReady);
     if (!info.enoughMana) return game.alert(lv(a.params['healthCost'], 1) ? S.noHealth : S.noMana);
     if (a.target === 'none') return match.cast(slot, { kind: 0, id: 0, x: 0, y: 0 });
     setAim({ kind: 'ability', slot });
   };
+  const aimShapes = {
+    unit: { kind: 'unit' } as const,
+    circle: { kind: 'circle' as const, radius: 0.8 },
+    cone: { kind: 'cone' as const, length: 0, angleDeg: 0 },
+    line: { kind: 'line' as const, length: 0, width: 0 },
+  };
+  const aimTarget = { x: 0, y: 0, r: 1 };
   const aimShape = (a: AbilityDef, level: number): AimShape => {
-    if (a.target === 'unit') return { kind: 'unit' };
-    if (a.target === 'cone') return { kind: 'cone', length: lv(a.params['length'], level), angleDeg: lv(a.params['angleDeg'], level) };
-    if (a.target === 'line') return { kind: 'line', length: lv(a.params['length'], level), width: lv(a.params['width'], level) };
-    return { kind: 'circle', radius: lv(a.params['radius'], level) || 0.8 };
+    if (a.target === 'unit') return aimShapes.unit;
+    if (a.target === 'cone') {
+      aimShapes.cone.length = lv(a.params['length'], level);
+      aimShapes.cone.angleDeg = lv(a.params['angleDeg'], level);
+      return aimShapes.cone;
+    }
+    if (a.target === 'line') {
+      aimShapes.line.length = lv(a.params['length'], level);
+      aimShapes.line.width = lv(a.params['width'], level);
+      return aimShapes.line;
+    }
+    aimShapes.circle.radius = lv(a.params['radius'], level) || 0.8;
+    return aimShapes.circle;
   };
   w.scene.onBeforeRenderObservable.add(() => {
     if (!aim || aim.kind !== 'ability' || !match?.ownHero?.unit) return;
@@ -389,6 +415,11 @@ async function main(): Promise<void> {
     const hit = info.def.target === 'unit' ? match.pick(cursor.x, cursor.y) : null;
     const level = Math.max(1, info.level);
     const range = info.def.target === 'line' || info.def.target === 'cone' ? 0 : lv(info.def.castRange, level);
+    if (hit?.unit) {
+      aimTarget.x = hit.unit.x;
+      aimTarget.y = hit.unit.y;
+      aimTarget.r = Math.max(0.9, hit.unit.height * hit.unit.model.root.scaling.y * 0.45);
+    }
     indicators.show(
       aimShape(info.def, level),
       range,
@@ -397,8 +428,8 @@ async function main(): Promise<void> {
       p.x,
       p.y,
       w.terrain.heightAt,
-      hit?.unit ? { x: hit.unit.x, y: hit.unit.y, r: Math.max(0.9, hit.unit.height * 0.45) } : null,
-      !info.enoughMana,
+      hit?.unit ? aimTarget : null,
+      !info.enoughMana || (!!hit && !match.canTarget(info.def, hit)),
     );
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -428,6 +459,7 @@ async function main(): Promise<void> {
         if (!info) return setAim(null);
         if (info.def.target === 'unit') {
           if (!hit) return game.alert(S.pickTarget);
+          if (!match.canTarget(info.def, hit)) return game.alert(info.def.filter.includes('enemy') ? S.pickEnemy : S.pickAlly);
           setAim(null);
           return match.cast(a.slot, { kind: 1, id: hit.id, x: 0, y: 0 });
         }

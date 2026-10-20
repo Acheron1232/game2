@@ -1,5 +1,7 @@
 # Progress
 
+- **Continuous playtest, cycle 5** (2026-10-20): fixed wrong-target feedback and red unit markers, added dead/silenced messages, fixed a viewport-return regression in allocation-free screen projection (DPR 1/2/3 tests), and fixed minimap control while following/aiming. Reused aim/frame objects and cached team/layer lookups. Real camp combat sampled at native 1362 × 1544, 120/120 FPS, ~2.4 ms CPU, `fixes 0/0`. 100 tests, build/typechecks and lint pass. See [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md) for remaining cases and performance limits.
+
 - **Continuous playtest, cycle 4** (2026-10-20): four browser clients (WebGPU + WebGL2), learning during movement confirmed at `fixes 0/0`, death/respawn and rejoin checked. Fixed leap attachment height and prediction on joining a moving hero; made ground zones clearer; fixed stale latency queues and outdated-client reconnects. 96 tests, build/typechecks and lint pass. Before/after screenshots and remaining limits: [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md).
 
 - **Continuous playtest, cycle 3** (2026-10-20): fixed the movement clock being reset by learning while walking. Protocol 6 adds a separate move acknowledgement; sequence gaps/wrap and deferred acknowledgements are covered. All four bases pass long-route tests with latency. Empty burst systems now sleep until used. 91 tests, build and lint pass; browser retest of the new acknowledgement case is pending. See [CONTINUOUS_PLAYTEST.md](CONTINUOUS_PLAYTEST.md).
