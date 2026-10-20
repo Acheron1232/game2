@@ -33,6 +33,7 @@ import {
   type ItemStack,
   type MatchStartInfo,
   type RoomState,
+  type PlayerSummary,
 } from '@game/shared';
 import { AimIndicators, type AimShape } from './render/aim-indicators';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
@@ -62,6 +63,7 @@ import {
   toggleFullScreen,
   type ItemDrop,
   type ShopView,
+  type TeamHeroView,
 } from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
@@ -113,6 +115,11 @@ async function main(): Promise<void> {
 
   const router = new Router(uiHost);
   const floating = new FloatingText(uiHost);
+  /** Tab scoreboard: latest rows from the server, shown while Tab is held */
+  let scores: PlayerSummary[] = [];
+  let scoresShown = false;
+  let showScores = () => {};
+  let lastBaseAlert = 0;
   const settings = loadSettings();
   /** Set once the engine and the world exist (applies graphics, camera and HUD settings). */
   let applySettings = () => {};
@@ -139,6 +146,14 @@ async function main(): Promise<void> {
     end: () => net.send(room?.hostId === myId ? { type: 'endMatch' } : { type: 'leaveRoom' }),
     cast: (slot) => useAbility(slot),
     settings: () => openSettings(),
+    chat: (text) => net.send({ type: 'chat', text }),
+    showBase: () => {
+      const hall = match && [...match.entities.values()].find((e) => e.owner === match!.slot && HALL_TYPES.has(e.type) && e.unit);
+      if (hall?.unit) {
+        w.camera.follow = null;
+        w.camera.lookAt(hall.unit.x, hall.unit.y);
+      }
+    },
     learn: (slot) => match?.learn(slot),
     useItem: (slot) => useItem(slot),
     buy: (item) => buyItem(item),
@@ -202,6 +217,14 @@ async function main(): Promise<void> {
       if (slot === m.slot) game.setResult(S.defeat, S.youLose);
       else game.alert(S.playerLost(nameOf(slot)));
     };
+    m.onHeroKilled = (victim, killerId) => {
+      const nameOf2 = (slot: number) => m.info.slots.find((s) => s.index === slot)?.name ?? '';
+      const heroName = (e: NetEntity) => gameData.heroes.find((h) => h.id === ENTITY_TYPES[e.type])?.name ?? '';
+      const killer = m.entities.get(killerId);
+      const victimText = S.heroOf(nameOf2(victim.owner), heroName(victim));
+      if (killer && killer.owner < 4 && killer.owner !== victim.owner) game.killFeed(S.killedBy(nameOf2(killer.owner), victimText));
+      else game.killFeed(S.diedTo(victimText, killer && killer.owner < 4 ? nameOf2(killer.owner) : S.monsters));
+    };
     m.onMatchOver = (team) => {
       const won = team === m.myTeam;
       game.setResult(won ? S.victory : S.defeat, `${won ? S.youWin : S.teamWins(team)} ${S.backSoon}`);
@@ -257,10 +280,15 @@ async function main(): Promise<void> {
         break;
       case 'chat':
         lobby.addChat(msg.from, msg.text, !!msg.system);
+        if (router.screen === 'game') game.chatLine(msg.from, msg.text, !!msg.system);
         break;
       case 'error':
         if (router.screen === 'lobby') lobby.showError(msg.text);
         else menu.showError(msg.text);
+        break;
+      case 'scores':
+        scores = msg.scores;
+        if (scoresShown) showScores();
         break;
       case 'roomList':
         menu.setRooms(msg.rooms);
@@ -567,7 +595,31 @@ async function main(): Promise<void> {
           );
       }
       game.setStatus(lines.join('\n'));
-    } else game.setFaction(match.hasFaction ? match.faction : null);
+    } else {
+      game.setFaction(match.hasFaction ? match.faction : null);
+      // "Your base is under attack!" when the AI starts defending (not more than every 20 s).
+      const now = performance.now();
+      if (match.faction.status.startsWith('Defending') && now - lastBaseAlert > 20_000) {
+        lastBaseAlert = now;
+        game.alert(S.baseAttacked);
+      }
+    }
+    // Allied heroes in the top bar: level from the scoreboard, health from what we see.
+    const allies: TeamHeroView[] = [];
+    for (const s of match.info.slots) {
+      if (s.index === match.slot || match.info.slots.find((x) => x.index === match!.slot)?.team !== s.team) continue;
+      const hero = [...match.entities.values()].find((e) => e.owner === s.index && isHeroType(e.type));
+      const row = scores.find((r) => r.slot === s.index);
+      const def = gameData.heroes.find((h) => h.id === s.hero);
+      allies.push({
+        name: s.name,
+        color: TEAM_HEX[s.color] ?? '#fff',
+        level: row?.level ?? hero?.level ?? 1,
+        hp: hero && hero.maxHp ? hero.hp / hero.maxHp : -1,
+        portrait: def && assets.has(`portraits/${def.id}.webp`) ? assets.url(`portraits/${def.id}.webp`) : null,
+      });
+    }
+    game.setTeam(allies);
     if (aim && own && own.state & UnitState.Dead) setAim(null);
     const p = match.player;
     const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
@@ -848,6 +900,10 @@ async function main(): Promise<void> {
     if (router.screen !== 'game' || e.target instanceof HTMLInputElement || !match) return;
     // Held keys must not flood the server with casts or toggle follow repeatedly.
     if (e.repeat) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      return game.toggleChat();
+    }
     const action = actionOf(settings, e.code);
     if (action === 'hero' || e.key === 'F1') {
       e.preventDefault();
@@ -886,6 +942,44 @@ async function main(): Promise<void> {
       net.send({ type: 'cheat', xp: 6000 });
       game.alert('Test: level 10, health, mana and cooldowns restored.');
     }
+  });
+
+  // ---- Tab scoreboard: shown while Tab is held.
+  showScores = () => {
+    if (!match) return game.setScores(null);
+    const info = match.info;
+    game.setScores(
+      scores.map((r) => ({
+        name: info.slots.find((x) => x.index === r.slot)?.name ?? '',
+        hero: gameData.heroes.find((h) => h.id === r.hero)?.name ?? r.hero,
+        color: TEAM_HEX[r.color] ?? '#fff',
+        level: r.level,
+        kills: r.kills,
+        deaths: r.deaths,
+        gold: r.gold,
+        camps: r.camps,
+        army: r.army,
+        tier: r.tier,
+        own: r.slot === info.yourSlot,
+        out: r.defeated,
+      })),
+    );
+  };
+  window.addEventListener('keydown', (e) => {
+    if (e.code !== 'Tab' || router.screen !== 'game' || e.target instanceof HTMLInputElement) return;
+    e.preventDefault();
+    if (scoresShown) return;
+    scoresShown = true;
+    showScores();
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code !== 'Tab' || !scoresShown) return;
+    scoresShown = false;
+    game.setScores(null);
+  });
+  window.addEventListener('blur', () => {
+    scoresShown = false;
+    game.setScores(null);
   });
 
   router.onChange((name) => {

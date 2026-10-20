@@ -43,6 +43,7 @@ export function runTickLoop(
         tickMsMax: max,
         entities: runner.sim.entities.length,
         bytesPerSec: [0, 1, 2, 3].map((s) => Math.round((runner.bytes.get(s) ?? 0) / secs)),
+        scores: runner.summary().players,
       });
       for (const k of runner.bytes.keys()) runner.bytes.set(k, 0);
       sum = max = count = 0;

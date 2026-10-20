@@ -1046,3 +1046,130 @@ td .btn.tiny {
 .end-table tr.own td {
   color: var(--gold-light);
 }
+
+/* ---- match HUD: scoreboard, kill feed, allied heroes (Phase 9b) */
+.ai-status {
+  cursor: pointer;
+}
+.scoreboard {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 18px;
+  z-index: 5;
+}
+.scoreboard table {
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.scoreboard th,
+.scoreboard td {
+  padding: 4px 10px;
+  text-align: center;
+  white-space: nowrap;
+}
+.scoreboard th {
+  color: var(--muted);
+  font-weight: normal;
+}
+.scoreboard td:first-child {
+  text-align: left;
+}
+.scoreboard tr.own td {
+  color: var(--gold-light);
+}
+.scoreboard tr.out td {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.swatch-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.kill-feed {
+  position: absolute;
+  top: 54px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  pointer-events: none;
+}
+.feed-line {
+  padding: 3px 10px;
+  font-size: 13px;
+  color: #f2e6c8;
+  background: rgba(20, 12, 6, 0.7);
+  border: 1px solid rgba(214, 178, 100, 0.4);
+  border-radius: 3px;
+  transition: opacity 1s;
+}
+.feed-line.fade {
+  opacity: 0;
+}
+.hud-team {
+  display: flex;
+  gap: 10px;
+  margin-left: 18px;
+}
+.team-hero {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+}
+.team-face {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  background: #222 center / cover;
+}
+.team-hp {
+  display: block;
+  width: 36px;
+  height: 5px;
+  background: #400;
+}
+.team-hp > i {
+  display: block;
+  height: 100%;
+  background: #3fd93a;
+}
+.hud-chat {
+  position: absolute;
+  left: 14px;
+  bottom: 196px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.chat-line {
+  font-size: 13px;
+  color: #f2e6c8;
+  text-shadow: 0 1px 2px #000;
+  transition: opacity 1s;
+}
+.chat-line.system {
+  color: #d8c78a;
+  font-style: italic;
+}
+.chat-line.fade {
+  opacity: 0;
+}
+.hud-chat-input {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  color: #f2e6c8;
+  background: rgba(20, 12, 6, 0.85);
+  border: 1px solid rgba(214, 178, 100, 0.6);
+  border-radius: 3px;
+}

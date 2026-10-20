@@ -1,4 +1,4 @@
-import type { MatchSummary } from '../sim/summary';
+import type { MatchSummary, PlayerSummary } from '../sim/summary';
 // Lobby messages: JSON text frames. Rare and small, so JSON is fine and easy to debug.
 
 import { z } from 'zod';
@@ -69,6 +69,8 @@ export interface MatchStats {
   entities: number;
   /** bytes sent per slot per second (last second) */
   bytesPerSec: number[];
+  /** scoreboard rows (factions and heroes), once per second */
+  scores?: PlayerSummary[];
 }
 
 // ---------- client -> server ----------
@@ -158,4 +160,6 @@ export type ServerLobbyMessage =
   | { type: 'matchGo'; tick: number }
   /** winnerTeam: 0 when the host ended the match; summary: the end screen (a won match only) */
   | { type: 'matchEnd'; winnerTeam: number; summary?: MatchSummary }
-  | { type: 'stats'; stats: MatchStats };
+  | { type: 'stats'; stats: MatchStats }
+  /** the Tab scoreboard, once per second while a match runs */
+  | { type: 'scores'; scores: PlayerSummary[] };

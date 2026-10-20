@@ -148,6 +148,8 @@ export class MatchClient {
   onDefeated: ((slot: number) => void) | null = null;
   /** one team is left */
   onMatchOver: ((winnerTeam: number) => void) | null = null;
+  /** a hero died (kill feed); killer = entity id of the last hit (may be unknown to us) */
+  onHeroKilled: ((victim: NetEntity, killer: number) => void) | null = null;
   winnerTeam = 0;
   /** A message from the server for this player (inventory full...). */
   onNotice: ((code: number) => void) | null = null;
@@ -649,6 +651,9 @@ export class MatchClient {
       }
       case EventType.Notice:
         this.onNotice?.(value);
+        break;
+      case EventType.Death:
+        if (ea && isHeroType(ea.type)) this.onHeroKilled?.(ea, b);
         break;
       case EventType.LevelUp: {
         const u = ea?.unit;

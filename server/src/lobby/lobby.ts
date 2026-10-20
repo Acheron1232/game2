@@ -417,6 +417,10 @@ export class Lobby {
         if (room.match === host) this.finishMatch(room, winnerTeam, summary);
       }, this.options.matchEndDelayMs);
     };
+    // The Tab scoreboard: once per second to everyone in the room (JSON, a few rows).
+    host.onStats = (stats) => {
+      if (room.match === host && stats.scores) this.broadcast(room, { type: 'scores', scores: stats.scores });
+    };
     host.onPackets = (_tick, packets) => {
       for (const { slot, data } of packets) {
         // Watch mode: the spectator snapshot goes to every player in the room.

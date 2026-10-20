@@ -222,6 +222,40 @@ export interface GameScreen extends Screen {
   setFaction(v: FactionView | null): void;
   /** Big line in the middle: Victory / Defeat. null hides it. */
   setResult(title: string | null, text?: string): void;
+  /** Tab scoreboard rows (null hides it). */
+  setScores(rows: ScoreRow[] | null): void;
+  /** One line in the kill feed (top right, fades after a few seconds). */
+  killFeed(text: string): void;
+  /** Allied heroes in the top bar. */
+  setTeam(heroes: TeamHeroView[]): void;
+  /** A chat line in the match (fades after a while). */
+  chatLine(from: string, text: string, system: boolean): void;
+  /** Enter: open the chat box, or send what is typed. */
+  toggleChat(): void;
+}
+
+export interface ScoreRow {
+  name: string;
+  hero: string;
+  color: string;
+  level: number;
+  kills: number;
+  deaths: number;
+  gold: number;
+  camps: number;
+  army: number;
+  tier: number;
+  own: boolean;
+  out: boolean;
+}
+
+export interface TeamHeroView {
+  name: string;
+  color: string;
+  level: number;
+  /** 0..1, or -1 when not known */
+  hp: number;
+  portrait: string | null;
 }
 
 export interface FactionView {
@@ -244,6 +278,9 @@ export interface GameActions {
   dragItem(slot: number, to: ItemDrop): void;
   closeShop(): void;
   settings(): void;
+  /** click on the "Your Kingdom" panel: the camera goes to the base */
+  showBase(): void;
+  chat(text: string): void;
 }
 
 export function createGameScreen(actions: GameActions): GameScreen {
@@ -256,6 +293,41 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const resultTitle = el('h1', { class: 'title' });
   const resultText = el('p', {});
   const result = el('div', { class: 'hud-result', hidden: true }, resultTitle, resultText);
+  const scoreBody = el('tbody');
+  const scoreboard = el(
+    'div',
+    { class: 'panel scoreboard', hidden: true },
+    el(
+      'table',
+      {},
+      el(
+        'thead',
+        {},
+        el('tr', {}, ...[S.player, S.hero, S.levelShort, S.kills, S.deaths, S.gold, S.camps, S.army, S.tier].map((t) => el('th', {}, t))),
+      ),
+      scoreBody,
+    ),
+  );
+  const feed = el('div', { class: 'kill-feed' });
+  const chatLog = el('div', { class: 'hud-chat-log' });
+  const chatInput = el('input', { class: 'hud-chat-input', maxlength: '200', placeholder: S.chatHint, hidden: true });
+  chatInput.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Escape') {
+      chatInput.value = '';
+      chatInput.hidden = true;
+      chatInput.blur();
+    }
+    if (e.key === 'Enter') {
+      const text = chatInput.value.trim();
+      if (text) actions.chat(text);
+      chatInput.value = '';
+      chatInput.hidden = true;
+      chatInput.blur();
+    }
+  });
+  const team = el('span', { class: 'hud-team' });
+  let teamKey = '';
   const gold = el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`);
   const portraitImg = el('div', { class: 'portrait-img' });
   const portrait = el('div', { class: 'portrait' }, portraitImg);
@@ -418,11 +490,22 @@ export function createGameScreen(actions: GameActions): GameScreen {
       { class: 'hud-top' },
       clock,
       ping,
+      team,
       gold,
       el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
       el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest),
     ),
-    el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), facRes, facSupply, status),
+    el(
+      'aside',
+      { class: 'panel ai-status', title: S.goToBase, onclick: () => actions.showBase() },
+      el('h3', {}, S.yourKingdom),
+      facRes,
+      facSupply,
+      status,
+    ),
+    scoreboard,
+    feed,
+    el('div', { class: 'hud-chat' }, chatLog, chatInput),
     result,
     deathNote,
     selInfo,
@@ -588,6 +671,58 @@ export function createGameScreen(actions: GameActions): GameScreen {
         `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
       );
       setText(status, v.status);
+    },
+    setScores(rows) {
+      scoreboard.hidden = !rows;
+      if (!rows) return;
+      scoreBody.replaceChildren(
+        ...rows.map((r) =>
+          el(
+            'tr',
+            { class: `${r.own ? 'own' : ''} ${r.out ? 'out' : ''}` },
+            el('td', {}, el('i', { class: 'swatch-dot', style: `background:${r.color}` }), r.name),
+            ...[r.hero, r.level, r.kills, r.deaths, r.gold.toLocaleString('en-US'), r.camps, r.army, r.tier].map((v) =>
+              el('td', {}, String(v)),
+            ),
+          ),
+        ),
+      );
+    },
+    killFeed(text) {
+      const line = el('div', { class: 'feed-line' }, text);
+      feed.prepend(line);
+      while (feed.children.length > 5) feed.lastElementChild!.remove();
+      setTimeout(() => line.classList.add('fade'), 5000);
+      setTimeout(() => line.remove(), 6000);
+    },
+    setTeam(heroes) {
+      const key = heroes.map((h) => `${h.name}${h.level}${Math.round(h.hp * 20)}`).join('|');
+      if (key === teamKey) return;
+      teamKey = key;
+      team.replaceChildren(
+        ...heroes.map((h) =>
+          el(
+            'span',
+            { class: 'team-hero', title: h.name },
+            el('i', { class: 'team-face', style: `${h.portrait ? `background-image:url(${h.portrait});` : ''}border-color:${h.color}` }),
+            el('b', {}, `${S.levelShort} ${h.level}`),
+            h.hp >= 0 ? el('i', { class: 'team-hp' }, el('i', { style: `width:${Math.round(h.hp * 100)}%` })) : null,
+          ),
+        ),
+      );
+    },
+    chatLine(from, text, system) {
+      const line = el('div', { class: `chat-line ${system ? 'system' : ''}` }, system ? '' : el('b', {}, `${from}: `), text);
+      chatLog.append(line);
+      while (chatLog.children.length > 6) chatLog.firstElementChild!.remove();
+      setTimeout(() => line.classList.add('fade'), 9000);
+      setTimeout(() => line.remove(), 10000);
+    },
+    toggleChat() {
+      if (chatInput.hidden) {
+        chatInput.hidden = false;
+        chatInput.focus();
+      }
     },
     setResult(title, text = '') {
       result.hidden = !title;
