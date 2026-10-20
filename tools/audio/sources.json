@@ -1,0 +1,31 @@
+{
+  "notes": [
+    "Where the raw sounds come from (all CC0). They are not in git: download them into art/raw/audio/ and unzip, then run `pnpm --filter @game/tools audio:build`.",
+    "Approved by the user one by one on 2026-10-20."
+  ],
+  "downloads": [
+    {
+      "file": "kenney_impact-sounds.zip",
+      "unzipTo": "impact",
+      "url": "https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip",
+      "page": "https://kenney.nl/assets/impact-sounds",
+      "author": "Kenney",
+      "license": "CC0"
+    },
+    {
+      "file": "curemagic.zip",
+      "unzipTo": "cure",
+      "url": "https://opengameart.org/sites/default/files/curemagic.zip",
+      "page": "https://opengameart.org/content/cure-magic",
+      "author": "Someoneman",
+      "license": "CC0"
+    },
+    {
+      "file": "battleThemeA.mp3",
+      "url": "https://opengameart.org/sites/default/files/battleThemeA.mp3",
+      "page": "https://opengameart.org/content/battle-theme-a",
+      "author": "cynicmusic",
+      "license": "CC0"
+    }
+  ]
+}

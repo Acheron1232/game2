@@ -272,7 +272,6 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
           ),
         ),
       ),
-      el('p', { class: 'muted' }, S.soundSoon),
       el('div', { class: 'row' }, back),
     ),
   );

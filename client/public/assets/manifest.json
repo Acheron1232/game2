@@ -1,7 +1,253 @@
 {
   "version": 1,
-  "totalBytes": 13308442,
+  "totalBytes": 14403575,
   "files": [
+    {
+      "path": "audio/audio.json",
+      "bytes": 1974,
+      "hash": "64360c9741",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/building_fall_0.ogg",
+      "bytes": 3451,
+      "hash": "82edfbf7b4",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/building_fall_1.ogg",
+      "bytes": 2551,
+      "hash": "b32864eab6",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/building_fall_2.ogg",
+      "bytes": 2417,
+      "hash": "2f4e34a36d",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/building_fall_3.ogg",
+      "bytes": 2248,
+      "hash": "c2573b938e",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/building_fall_4.ogg",
+      "bytes": 2635,
+      "hash": "dfb03f4088",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/chop_0.ogg",
+      "bytes": 1336,
+      "hash": "ce4749a1bf",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/chop_1.ogg",
+      "bytes": 2058,
+      "hash": "1be499edef",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/chop_2.ogg",
+      "bytes": 1357,
+      "hash": "993484a76f",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/chop_3.ogg",
+      "bytes": 1971,
+      "hash": "60656eecee",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/chop_4.ogg",
+      "bytes": 1336,
+      "hash": "46ee3abacd",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/heal_0.ogg",
+      "bytes": 7265,
+      "hash": "397bc847c1",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/heal_1.ogg",
+      "bytes": 8363,
+      "hash": "c9d6b475b3",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/heal_2.ogg",
+      "bytes": 10009,
+      "hash": "9469be3fb5",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/heal_3.ogg",
+      "bytes": 7224,
+      "hash": "430a13f8e4",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_armor_0.ogg",
+      "bytes": 2867,
+      "hash": "2b09429069",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_armor_1.ogg",
+      "bytes": 2996,
+      "hash": "49b8ceaa28",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_armor_2.ogg",
+      "bytes": 2640,
+      "hash": "e4846f3009",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_armor_3.ogg",
+      "bytes": 3182,
+      "hash": "99869bd46e",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_armor_4.ogg",
+      "bytes": 2741,
+      "hash": "22e7447408",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_building_0.ogg",
+      "bytes": 1502,
+      "hash": "a84ef64c4a",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_building_1.ogg",
+      "bytes": 1524,
+      "hash": "bb4d0eb3ef",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_building_2.ogg",
+      "bytes": 1600,
+      "hash": "fbdfb1c493",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_building_3.ogg",
+      "bytes": 1546,
+      "hash": "c91ff23abf",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_building_4.ogg",
+      "bytes": 1471,
+      "hash": "30c6678894",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_melee_0.ogg",
+      "bytes": 2075,
+      "hash": "820b8958e5",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_melee_1.ogg",
+      "bytes": 1972,
+      "hash": "bdc6d3e6dc",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_melee_2.ogg",
+      "bytes": 3432,
+      "hash": "0e46921a99",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_melee_3.ogg",
+      "bytes": 2263,
+      "hash": "aa30b5dd23",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_melee_4.ogg",
+      "bytes": 2572,
+      "hash": "1bb44b64c4",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_ranged_0.ogg",
+      "bytes": 1530,
+      "hash": "3f10636f2c",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_ranged_1.ogg",
+      "bytes": 2070,
+      "hash": "4931baa2fa",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_ranged_2.ogg",
+      "bytes": 1556,
+      "hash": "c62f407b8b",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_ranged_3.ogg",
+      "bytes": 1694,
+      "hash": "be6acc5458",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_ranged_4.ogg",
+      "bytes": 1740,
+      "hash": "9ce3f28570",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_siege_0.ogg",
+      "bytes": 6433,
+      "hash": "4199e878d0",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_siege_1.ogg",
+      "bytes": 5801,
+      "hash": "53b69a427c",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_siege_2.ogg",
+      "bytes": 5549,
+      "hash": "3ac8b8cf20",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_siege_3.ogg",
+      "bytes": 6592,
+      "hash": "e1573f5892",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/hit_siege_4.ogg",
+      "bytes": 5627,
+      "hash": "60d3e09dbe",
+      "group": "Sounds"
+    },
+    {
+      "path": "audio/music_battle.ogg",
+      "bytes": 965963,
+      "hash": "710e38fbdf",
+      "group": "Sounds"
+    },
     {
       "path": "effects/effects.json",
       "bytes": 6074,

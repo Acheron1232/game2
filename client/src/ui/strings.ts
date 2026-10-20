@@ -141,7 +141,6 @@ export const S = {
   always: 'Always',
   pressKey: 'Press a key...',
   resetKeys: 'Default keys',
-  soundSoon: 'Sounds come in a later update.',
   actionNames: {
     ability1: 'Ability 1',
     ability2: 'Ability 2',

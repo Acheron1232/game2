@@ -1,0 +1,89 @@
+{
+  "sounds": {
+    "hit_melee": {
+      "files": [
+        "audio/hit_melee_0.ogg",
+        "audio/hit_melee_1.ogg",
+        "audio/hit_melee_2.ogg",
+        "audio/hit_melee_3.ogg",
+        "audio/hit_melee_4.ogg"
+      ],
+      "volume": 0.55
+    },
+    "hit_armor": {
+      "files": [
+        "audio/hit_armor_0.ogg",
+        "audio/hit_armor_1.ogg",
+        "audio/hit_armor_2.ogg",
+        "audio/hit_armor_3.ogg",
+        "audio/hit_armor_4.ogg"
+      ],
+      "volume": 0.45
+    },
+    "hit_ranged": {
+      "files": [
+        "audio/hit_ranged_0.ogg",
+        "audio/hit_ranged_1.ogg",
+        "audio/hit_ranged_2.ogg",
+        "audio/hit_ranged_3.ogg",
+        "audio/hit_ranged_4.ogg"
+      ],
+      "volume": 0.5
+    },
+    "hit_building": {
+      "files": [
+        "audio/hit_building_0.ogg",
+        "audio/hit_building_1.ogg",
+        "audio/hit_building_2.ogg",
+        "audio/hit_building_3.ogg",
+        "audio/hit_building_4.ogg"
+      ],
+      "volume": 0.6
+    },
+    "hit_siege": {
+      "files": [
+        "audio/hit_siege_0.ogg",
+        "audio/hit_siege_1.ogg",
+        "audio/hit_siege_2.ogg",
+        "audio/hit_siege_3.ogg",
+        "audio/hit_siege_4.ogg"
+      ],
+      "volume": 0.7
+    },
+    "chop": {
+      "files": [
+        "audio/chop_0.ogg",
+        "audio/chop_1.ogg",
+        "audio/chop_2.ogg",
+        "audio/chop_3.ogg",
+        "audio/chop_4.ogg"
+      ],
+      "volume": 0.35
+    },
+    "building_fall": {
+      "files": [
+        "audio/building_fall_0.ogg",
+        "audio/building_fall_1.ogg",
+        "audio/building_fall_2.ogg",
+        "audio/building_fall_3.ogg",
+        "audio/building_fall_4.ogg"
+      ],
+      "volume": 0.9
+    },
+    "heal": {
+      "files": [
+        "audio/heal_0.ogg",
+        "audio/heal_1.ogg",
+        "audio/heal_2.ogg",
+        "audio/heal_3.ogg"
+      ],
+      "volume": 0.45
+    }
+  },
+  "music": {
+    "battle": {
+      "file": "audio/music_battle.ogg",
+      "volume": 0.35
+    }
+  }
+}

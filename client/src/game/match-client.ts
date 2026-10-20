@@ -60,6 +60,7 @@ import type { GameSocket } from '../net/socket';
 import { AbilityFx, HERO_FX } from '../render/ability-fx';
 import { HealthBars, type BarInput } from '../render/health-bars';
 import type { FogGrid } from '../render/fog';
+import type { GameSound } from '../audio/sound';
 import { Projectiles } from '../render/projectiles';
 import { TILT } from '../render/rts-camera';
 import { TEAM_COLORS } from '../render/team-material';
@@ -135,6 +136,8 @@ export class MatchClient {
   snapshots = 0;
   /** true while the server drives the own hero (see the top of this file) */
   serverMode = false;
+  /** the game's sounds (set by main; null in tests) */
+  sound: GameSound | null = null;
   /** settings: health bars on every unit, not only on hurt or selected ones */
   allBars = false;
   /** Called when gold, XP, level or respawn time changed. */
@@ -573,7 +576,11 @@ export class MatchClient {
         break;
       }
       case EventType.Cast:
+        if (ea?.unit && kind !== 255) this.sound?.play('cast', 'sfx', ea.unit.x, ea.unit.y);
         this.onCast(ea, a, b, value, kind);
+        break;
+      case EventType.Chop:
+        if (ea?.unit) this.sound?.play('chop', 'sfx', ea.unit.x, ea.unit.y, 0.6);
         break;
       case EventType.AbilityEffect:
         this.onCast(ea, a, b, value, (kind & 31) | (kind & 128), true, ((kind >> 5) & 3) + 1);
@@ -585,6 +592,7 @@ export class MatchClient {
           y = dqPos(value);
         const look = this.heroFx(sp.hero);
         const h = this.world.terrain.heightAt(x, y);
+        this.sound?.play('spell_hit', 'sfx', x, y);
         const level = ((kind >> 5) & 3) + 1;
         const r = lv(sp.params['radius'], level) || 1.2;
         this.fx.ring(x, h, -y, r, look.color, 0.6);
@@ -618,6 +626,7 @@ export class MatchClient {
                   : 'attack';
           this.world.combat.hit(u.x, this.world.unitHeight(u) + u.height * 0.5, -u.y, hk);
         }
+        this.playHitSound(ea, src, kind, u.x, u.y);
         if (!this.floating) break;
         const mine = (x: NetEntity | undefined) => !!x && x.owner === this.slot;
         const up = u.flyHeight + u.height + 0.3;
@@ -635,6 +644,7 @@ export class MatchClient {
       case EventType.Gold: {
         const u = ea?.unit;
         if (u) this.world.combat.gold(u.x, this.world.unitHeight(u) + u.height, -u.y);
+        this.sound?.play('coin', 'ui', undefined, undefined, 0.7);
         if (u && this.floating) this.floating.show(`+${value}`, 'gold', u.x, u.y, u.flyHeight + u.height + 0.8);
         break;
       }
@@ -670,17 +680,32 @@ export class MatchClient {
         const u = ea?.unit;
         if (!ea || !u) break;
         const h = this.world.terrain.heightAt(u.x, u.y);
-        if (isBuildingType(ea.type)) this.world.combat.buildingDown(u.x, h, -u.y, footprintOf(ea.type)[0]);
-        else if (!u.flyHeight) this.world.combat.death(u.x, h, -u.y, Math.max(0.6, u.height * 0.5));
+        if (isBuildingType(ea.type)) {
+          this.world.combat.buildingDown(u.x, h, -u.y, footprintOf(ea.type)[0]);
+          this.sound?.play('building_fall', 'sfx', u.x, u.y);
+        } else if (!u.flyHeight) this.world.combat.death(u.x, h, -u.y, Math.max(0.6, u.height * 0.5));
         break;
       }
       case EventType.LevelUp: {
         const u = ea?.unit;
         if (u) this.world.combat.levelUp(u.x, this.world.unitHeight(u), -u.y, Math.max(1.2, u.height * 0.6));
+        if (ea?.owner === this.slot) this.sound?.play('level_up', 'ui');
         if (u && this.floating && ea.owner === this.slot) this.floating.show(`Level ${value}!`, 'level', u.x, u.y, u.height + 1.2);
         break;
       }
     }
+  }
+
+  /** Which hit sound: buildings, siege, arrows, armored heroes, or a plain melee hit. */
+  private playHitSound(target: NetEntity, src: NetEntity | undefined, kind: number, x: number, y: number): void {
+    const s = this.sound;
+    if (!s || kind === DamageKind.Miss || kind === DamageKind.Spell) return;
+    if (kind === DamageKind.Heal) return s.play('heal', 'sfx', x, y, 0.8);
+    const srcId = src ? ENTITY_TYPES[src.type] : '';
+    if (srcId === 'catapult') return s.play('hit_siege', 'sfx', x, y);
+    if (isBuildingType(target.type)) return s.play('hit_building', 'sfx', x, y);
+    if (src && statsOf(src.type).attackRange > 2) return s.play('hit_ranged', 'sfx', x, y);
+    s.play(isHeroType(target.type) ? 'hit_armor' : 'hit_melee', 'sfx', x, y);
   }
 
   private heroFx(heroId: string) {
@@ -920,6 +945,7 @@ export class MatchClient {
               ? (TEAM_COLORS[TEAMS[e.color] ?? 'red'] ?? OWN_BAR)
               : ENEMY_BAR;
     }
+    this.sound?.setListener(this.world.camera.target.x, this.world.camera.target.y);
     this.events.drain(rt, this.drawEvent);
     if (now >= this.sightAt) this.updateSight(now);
     this.bars.update(this.barInput, bars);

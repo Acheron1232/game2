@@ -1,0 +1,19 @@
+{
+  "notes": [
+    "Game sounds made from files in art/raw/audio/ (see sources.json). Each id gets one Ogg Opus file per variant in client/public/assets/audio/.",
+    "volume: 0..1 mix level in the game. Sounds made by code (clicks, coins, tunes) are in client/src/audio/synth.ts, not here."
+  ],
+  "sounds": {
+    "hit_melee": { "files": ["impact/Audio/impactPunch_medium_00{0-4}.ogg"], "volume": 0.55 },
+    "hit_armor": { "files": ["impact/Audio/impactPlate_medium_00{0-4}.ogg"], "volume": 0.45 },
+    "hit_ranged": { "files": ["impact/Audio/impactSoft_medium_00{0-4}.ogg"], "volume": 0.5 },
+    "hit_building": { "files": ["impact/Audio/impactWood_heavy_00{0-4}.ogg"], "volume": 0.6 },
+    "hit_siege": { "files": ["impact/Audio/impactMining_00{0-4}.ogg"], "volume": 0.7 },
+    "chop": { "files": ["impact/Audio/impactWood_light_00{0-4}.ogg"], "volume": 0.35 },
+    "building_fall": { "files": ["impact/Audio/impactPunch_heavy_00{0-4}.ogg"], "volume": 0.9 },
+    "heal": { "files": ["cure/Cure1.wav", "cure/Cure3.wav", "cure/Cure5.wav", "cure/Cure7.wav"], "volume": 0.45, "maxSec": 1.4 }
+  },
+  "music": {
+    "battle": { "file": "battleThemeA.mp3", "volume": 0.35 }
+  }
+}

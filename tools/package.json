@@ -13,7 +13,8 @@
     "art:process": "tsx art/process.ts",
     "art:manifest": "tsx art/manifest.ts",
     "models:palette": "tsx models/build-palette.ts",
-    "models:build": "tsx models/build.ts"
+    "models:build": "tsx models/build.ts",
+    "audio:build": "node audio/build-audio.mjs"
   },
   "dependencies": {
     "@game/shared": "workspace:*",

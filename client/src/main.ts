@@ -55,6 +55,7 @@ import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
 import { createSettingsScreen } from './ui/settings-screen';
+import { GameSound } from './audio/sound';
 import { actionOf, loadSettings, saveSettings } from './game/settings';
 import { createLobbyScreen, COLOR_NAMES } from './ui/lobby-screen';
 import { Minimap } from './ui/minimap';
@@ -119,6 +120,7 @@ async function main(): Promise<void> {
 
   const router = new Router(uiHost);
   const floating = new FloatingText(uiHost);
+  const sound = new GameSound();
   /** Tab scoreboard: latest rows from the server, shown while Tab is held */
   let scores: PlayerSummary[] = [];
   let scoresShown = false;
@@ -169,6 +171,16 @@ async function main(): Promise<void> {
   router.add('game', game);
   const endScreen = createEndScreen(router);
   router.add('end', endScreen);
+  // Alerts: the horn for an attack on the base, a short buzz for the rest ("Not enough gold.").
+  const showAlert = game.alert.bind(game);
+  game.alert = (text) => {
+    showAlert(text);
+    sound.play(text === S.baseAttacked ? 'horn' : 'error', text === S.baseAttacked ? 'voice' : 'ui');
+  };
+  // A click sound for every button and shop slot in the menus and the HUD.
+  uiHost.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('button, .shop-item')) sound.play('click', 'ui');
+  });
   const settingsScreen = createSettingsScreen(settings, () => {
     saveSettings(settings);
     applySettings();
@@ -203,6 +215,7 @@ async function main(): Promise<void> {
     } else net.send({ type: 'start' });
   };
   const endMatch = () => {
+    sound.stopMusic();
     match?.dispose();
     match = null;
     pendingMatch = null;
@@ -213,6 +226,8 @@ async function main(): Promise<void> {
     const m = new MatchClient(world, net, pendingMatch, floating);
     match = m;
     m.allBars = settings.healthBars === 'always';
+    m.sound = sound;
+    sound.playMusic('battle');
     m.onNotice = (code) => game.alert(code === NoticeCode.AllyFull ? S.allyFull : S.inventoryFull);
     game.setResult(null);
     game.setFaction(null);
@@ -232,6 +247,8 @@ async function main(): Promise<void> {
     m.onMatchOver = (team) => {
       const won = team === m.myTeam;
       game.setResult(won ? S.victory : S.defeat, `${won ? S.youWin : S.teamWins(team)} ${S.backSoon}`);
+      sound.stopMusic();
+      sound.play(won ? 'victory' : 'defeat', 'voice');
     };
     selected = null;
     pendingMatch = null;
@@ -366,9 +383,11 @@ async function main(): Promise<void> {
   const trees = ((await (await fetch(treesUrlBlob!)).json()) as { trees: TreeList }).trees;
   const decor = (await (await fetch(decorUrlBlob!)).json()) as { types: string[]; decor: DecorItem[] };
 
+  // Decoding sounds can not fail the game: it just stays silent.
+  await sound.load(assets).catch((err: unknown) => console.warn('Sounds not loaded:', err));
   const w = await GameWorld.create(engine, canvas, terrain, trees, decor, assets);
   world = w;
-  if (import.meta.env.DEV) Object.assign(window as object, { world: w, net, match: () => match }); // for debugging in the console
+  if (import.meta.env.DEV) Object.assign(window as object, { world: w, net, sound, match: () => match }); // for debugging in the console
   // Compile every material and model now, not when the match starts.
   await w.library.warmUp(TEAMS);
   await w.scene.whenReadyAsync();
@@ -387,6 +406,7 @@ async function main(): Promise<void> {
     w.camera.speedScale = settings.cameraSpeed;
     floating.damageNumbers = settings.damageNumbers;
     w.combat.setQuality(settings.effects);
+    sound.setVolumes(settings.master, settings.music, settings.sfx, settings.voice);
     if (match) match.allBars = settings.healthBars === 'always';
   };
   applySettings();

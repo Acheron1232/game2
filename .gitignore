@@ -10,3 +10,4 @@ test-results/
 tools/models/palette_preview.png
 __pycache__/
 *.pyc
+art/raw/audio/
