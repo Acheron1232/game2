@@ -993,21 +993,37 @@ export class FactionAI {
   readonly brains: FactionBrain[] = [];
   readonly army: ArmyMover;
   readonly bots: HeroBot[] = [];
+  /** slot of each hero bot in `bots` */
+  private readonly botSlots: number[] = [];
 
   constructor(private readonly sim: MatchSim) {
     this.army = new ArmyMover(sim);
     const fs = sim.factions;
     if (fs) for (const f of fs.list) if (f) this.brains.push(new FactionBrain(sim, fs, f, this.army));
-    for (const s of sim.setup.slots) {
-      if (!s.bot) continue;
-      const brain = this.brain(s.index);
-      this.bots.push(
-        new HeroBot(s.index, (s.ai ?? 'normal') as BotDifficulty, {
-          armyTarget: () => brain?.armyTarget() ?? null,
-          baseUnderAttack: () => brain?.threat ?? null,
-        }),
-      );
+    for (const s of sim.setup.slots) if (s.bot) this.setHeroBot(s.index, true);
+  }
+
+  /** A bot plays this slot's hero (a Bot slot, or a player who is away), or stops. */
+  setHeroBot(slot: number, on: boolean): void {
+    const at = this.botSlots.indexOf(slot);
+    if (!on) {
+      if (at >= 0) {
+        this.bots.splice(at, 1);
+        this.botSlots.splice(at, 1);
+      }
+      return;
     }
+    if (at >= 0) return;
+    const s = this.sim.setup.slots.find((x) => x.index === slot);
+    if (!s) return;
+    const brain = this.brain(slot);
+    this.bots.push(
+      new HeroBot(slot, (s.ai ?? 'normal') as BotDifficulty, {
+        armyTarget: () => brain?.armyTarget() ?? null,
+        baseUnderAttack: () => brain?.threat ?? null,
+      }),
+    );
+    this.botSlots.push(slot);
   }
 
   brain(slot: number): FactionBrain | undefined {

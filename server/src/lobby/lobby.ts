@@ -76,6 +76,11 @@ export class Lobby {
     const slot = room?.slotOf(p);
     if (room && slot) {
       slot.online = true;
+      if (room.phase === 'playing' && slot.away) {
+        room.match?.setBot(slot.index, false);
+        slot.away = false;
+        this.chat(room, `${slot.name} is back.`);
+      }
       this.broadcastRoom(room);
       if (room.phase === 'playing') this.sendMatchStart(room, p, true);
     }
@@ -97,7 +102,15 @@ export class Lobby {
     if (room.phase === 'playing') {
       room.match?.setOnline(slot.index, false);
       this.chat(room, `${slot.name} left. The hero waits at the base.`);
-      p.timer = setTimeout(() => !p.conn && this.botTakesOver(room, p), this.options.reconnectMs);
+      // Away for long: a bot plays the hero, but the seat stays this player's for the whole
+      // match. Coming back (same browser, even after closing it) gives the hero back.
+      p.timer = setTimeout(() => {
+        if (p.conn || p.room !== room || room.phase !== 'playing') return;
+        room.match?.setBot(slot.index, true);
+        slot.away = true;
+        this.chat(room, `A bot plays for ${slot.name} until they come back.`);
+        this.broadcastRoom(room);
+      }, this.options.reconnectMs);
     } else {
       p.timer = setTimeout(() => !p.conn && this.leave(p, 'left'), this.options.lobbyGraceMs);
     }
@@ -457,7 +470,11 @@ export class Lobby {
     room.matchInfo = null;
     room.going = false;
     room.phase = 'lobby';
-    for (const s of room.slots) if (s.kind === 'human') s.ready = false;
+    for (const s of room.slots)
+      if (s.kind === 'human') {
+        s.ready = false;
+        s.away = false;
+      }
     // Players who never came back are gone now.
     for (const m of [...room.members]) if (!m.conn) this.leave(m, 'left');
     if (!this.rooms.has(room.code)) return;

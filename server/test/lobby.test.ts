@@ -92,7 +92,7 @@ describe('lobby and match', () => {
     await Promise.all([host.close(), back.close()]);
   });
 
-  it('gives the slot to a bot when a player does not come back', async () => {
+  it('a bot plays for a player who is away long, and the player gets the hero back later', async () => {
     const host = await TestClient.connect(base, 'A');
     host.send({ type: 'createRoom' });
     const code = (await host.waitFor<Msg<'room'>>((m) => m.type === 'room')).room.code;
@@ -104,10 +104,36 @@ describe('lobby and match', () => {
     await host.waitUntil(() => host.lastRoom()?.slots[1]?.ready === true && host.lastRoom()?.slots[1]?.load === 100);
     host.send({ type: 'start' });
     await host.waitFor((m) => m.type === 'matchStart');
+    const session = b.session;
     await b.close();
+    // After the reconnect window (2 s here) a bot plays the hero, but the seat is still B's.
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.away === true, 4000);
+    expect(host.lastRoom()!.slots[1]!.kind).toBe('human');
+    expect(host.lastRoom()!.slots[1]!.name).toBe('B');
+    // Much later B opens the game again (same browser): straight back into the match.
+    const back = await TestClient.connect(base, 'B', session);
+    expect(back.playerId).toBe(b.playerId);
+    expect((await back.waitFor<Msg<'matchStart'>>((m) => m.type === 'matchStart')).match.rejoin).toBe(true);
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.away === false && host.lastRoom()?.slots[1]?.online === true);
+    await Promise.all([host.close(), back.close()]);
+  });
+
+  it('gives the slot to a bot for good when a player leaves the match', async () => {
+    const host = await TestClient.connect(base, 'C');
+    host.send({ type: 'createRoom' });
+    const code = (await host.waitFor<Msg<'room'>>((m) => m.type === 'room')).room.code;
+    const d = await TestClient.connect(base, 'D');
+    d.send({ type: 'joinRoom', code });
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.kind === 'human');
+    for (const c of [host, d]) c.send({ type: 'load', pct: 100 });
+    d.send({ type: 'ready', ready: true });
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.ready === true && host.lastRoom()?.slots[1]?.load === 100);
+    host.send({ type: 'start' });
+    await host.waitFor((m) => m.type === 'matchStart');
+    d.send({ type: 'leaveRoom' });
     await host.waitUntil(() => host.lastRoom()?.slots[1]?.kind === 'bot', 4000);
     expect(host.lastRoom()!.slots[1]!.name).toContain('(bot)');
-    await host.close();
+    await Promise.all([host.close(), d.close()]);
   });
 
   it('the host can kick and a full room says so', async () => {

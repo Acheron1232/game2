@@ -60,6 +60,23 @@ describe('faction brain', () => {
     }
   });
 
+  it('a hero bot can take over a hero and give it back', () => {
+    const { ai, sim, run } = match(3);
+    expect(ai.bots.length).toBe(2); // both slots are Bot slots here
+    ai.setHeroBot(0, false);
+    expect(ai.bots.length).toBe(1);
+    const hero = sim.heroes[0]!;
+    const at = [hero.mover.x, hero.mover.y];
+    run(20);
+    // Nobody plays hero 0 now: it stays where it is.
+    expect([hero.mover.x, hero.mover.y]).toEqual(at);
+    ai.setHeroBot(0, true);
+    ai.setHeroBot(0, true);
+    expect(ai.bots.length).toBe(2);
+    run(30);
+    expect(Math.hypot(hero.mover.x - at[0]!, hero.mover.y - at[1]!)).toBeGreaterThan(1);
+  });
+
   it('is the same game for the same seed', () => {
     const a = match(9),
       b = match(9);

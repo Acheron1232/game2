@@ -139,6 +139,11 @@ export class MatchRunner {
     return this.sim.factions?.winnerTeam ?? 0;
   }
 
+  /** A player is away for long: a hero bot plays for them until they come back (on = false). */
+  setBot(slot: number, on: boolean): void {
+    (this.sim.ai as FactionAI | null)?.setHeroBot(slot, on);
+  }
+
   resetView(slot: number): void {
     this.views.get(slot)?.reset();
   }

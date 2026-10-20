@@ -10,6 +10,7 @@ export type ToWorker =
   | { t: 'cmd'; slot: number; data: Uint8Array }
   | { t: 'online'; slot: number; on: boolean }
   | { t: 'reset'; slot: number }
+  | { t: 'bot'; slot: number; on: boolean }
   | { t: 'go' }
   | { t: 'stop' }
   | { t: 'cheat'; slot: number; cheat: Cheat };
@@ -30,6 +31,8 @@ export interface MatchHost {
   command(slot: number, data: Uint8Array): void;
   setOnline(slot: number, online: boolean): void;
   resetView(slot: number): void;
+  /** a hero bot plays this slot (the player is away), or gives the hero back */
+  setBot(slot: number, on: boolean): void;
   go(): void;
   stop(): void;
   /** dev only: XP and gold for a slot's hero */
@@ -67,6 +70,9 @@ class InlineMatchHost implements MatchHost {
   }
   resetView(slot: number): void {
     this.runner.resetView(slot);
+  }
+  setBot(slot: number, on: boolean): void {
+    this.runner.setBot(slot, on);
   }
   go(): void {
     this.stopLoop ??= runTickLoop(
@@ -124,6 +130,9 @@ class WorkerMatchHost implements MatchHost {
   }
   resetView(slot: number): void {
     this.post({ t: 'reset', slot });
+  }
+  setBot(slot: number, on: boolean): void {
+    this.post({ t: 'bot', slot, on });
   }
   go(): void {
     this.post({ t: 'go' });

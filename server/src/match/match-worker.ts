@@ -26,6 +26,9 @@ port.on('message', (msg: ToWorker) => {
     case 'reset':
       runner.resetView(msg.slot);
       break;
+    case 'bot':
+      runner.setBot(msg.slot, msg.on);
+      break;
     case 'go':
       stop ??= runTickLoop(
         runner,

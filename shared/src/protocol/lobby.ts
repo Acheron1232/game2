@@ -26,6 +26,8 @@ export interface SlotState {
   /** 0..100 */
   load: number;
   online: boolean;
+  /** in a match: the player is away for long and a bot plays the hero until they come back */
+  away?: boolean;
 }
 
 export type RoomPhase = 'lobby' | 'playing';
