@@ -1180,3 +1180,60 @@ td .btn.tiny {
   color: var(--muted);
   white-space: nowrap;
 }
+
+/* ---- main menu polish (Phase 9c): the logo comes in, then glows softly; banners sway */
+.screen.menu .title {
+  animation:
+    logo-in 1.2s ease-out both,
+    logo-glow 4s ease-in-out 1.2s infinite;
+}
+.screen.menu .crest {
+  animation: logo-in 1.2s ease-out 0.15s both;
+}
+.screen.menu .banner {
+  transform-origin: 50% 0;
+  animation: banner-sway 6s ease-in-out infinite;
+}
+.screen.menu .banner.right {
+  animation-delay: -3s;
+}
+@keyframes logo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+    letter-spacing: 0.25em;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes logo-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 2px 4px #000,
+      0 0 8px rgba(255, 200, 90, 0.25);
+  }
+  50% {
+    text-shadow:
+      0 2px 4px #000,
+      0 0 22px rgba(255, 200, 90, 0.65);
+  }
+}
+@keyframes banner-sway {
+  0%,
+  100% {
+    transform: rotate(-1.2deg);
+  }
+  50% {
+    transform: rotate(1.2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen.menu .title,
+  .screen.menu .crest,
+  .screen.menu .banner {
+    animation: none;
+  }
+}

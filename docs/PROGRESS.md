@@ -16,6 +16,12 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Phase 9 is done, with open checks** (2026-10-20). 9c: sound and main menu.
+  - Sound: the user chose free CC0 packs + sounds made by code, and approved each download: Kenney Impact Sounds, Cure Magic (Someoneman), Battle Theme A (cynicmusic) — see `docs/CREDITS.md`, links in `tools/audio/sources.json` (raw files are not in git). `pnpm --filter @game/tools audio:build` (ffmpeg, installed with Homebrew on the user's OK) makes Ogg Opus files: 1.1 MB in total. Code-made sounds (`client/src/audio/synth.ts`): click, error, coin, level up, spell cast and impact, base alarm horn, victory, defeat. `client/src/audio/sound.ts`: volume groups from Settings, distance and left/right from the camera, at most 4 copies of a sound and 24 in total, music loop with fades. Checked in the browser: all 17 sounds load; a fight at a wolf camp played 29 hit sounds in 10 s plus a coin; chopping and button clicks play; music runs in the match. (I could not listen myself — the checks count what plays.)
+  - Main menu: the map scene behind the menu (from Phase 5), the logo now fades in and glows, the banners sway (off with "reduce motion").
+  - Done-when: HUD parts work with real data (open: the selected-unit panel is still one text line; the Town Hall panel is a grid, UI.md shows a list); fog hides enemies on screen and on the minimap (yes); simple English that fits (yes, in the panels checked); **60 FPS with Low on a weak laptop is not checked** (no such laptop here; on this Mac Low renders 60% of the pixels without shadows).
+  - Not made: menu music and voice alerts (the user approved only one music track; the base alarm is a code-made horn).
+  - Next: **Phase 10 — speed, tests, release**.
 - **Phase 9b is done** (2026-10-20): final HUD and effects. Tab scoreboard (hero, level, kills, deaths, gold, camps, army, tier; the server sends the rows once per second), kill feed (hero deaths, top right), allied heroes in the top bar (portrait, level, health), chat in the match (Enter), "Your base is under attack!" alert, click the "Your Kingdom" panel to look at the base, hero stat line (Str / Agi / Int / damage / armor with items, same math as the server). Combat effects (`client/src/render/combat-fx.ts`, Codex): pooled hit sparks (attack, spell, siege, miss), level-up ring, gold sparks, death puffs, falling-building dust, dust for new building sites; the Effects setting (Low / High) halves them. Checked in the browser: scoreboard, chat, stat line, level-up ring and gold sparks; 120 FPS, CPU 2.9 ms, ~120–130 draws. Hit sparks and dust are faint on dark ground from the game camera — to tune when watching real fights. Not done: the "selected unit" panel still is one text line (UI.md wants portrait, name, health, armor, damage).
 - **Phase 9a is done** (2026-10-20): fog of war, settings, end screen.
   - Fog of war: `shared/src/sim/sight.ts` (Codex) — line of sight on a 2-unit grid: living trees and higher ground block sight, flyers see over everything, a building is seen when any part of it is; "explored" memory. The server sends each player only what its team sees with it; the client runs the same code for its own team (no extra traffic) and draws the fog with a material plugin on every material (`client/src/render/fog.ts`, Codex; compiled in the lobby, no new shaders in the match) plus a minimap overlay. Seen = normal, explored = 45% light, never seen = 25%. Checked in the browser (WebGPU): own base lit, the forest edge blocks sight, minimap dark outside sight; 120 FPS, CPU 2.2–2.4 ms, ~90 draws.
@@ -52,7 +58,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
 | 7 | Combat, heroes, camps, items | **Done** | 7a: combat core, 24 camps, XP and levels, HUD. 7b: all 32 abilities + buffs + auras + monster skills, Q W E R bar, aiming, placeholder effects. 7c: 23 items, inventory, shops, ground items, camp drops, fountains, uphill misses, 2-player browser test |
 | 8 | Faction AI and bots | **Done** | Factions, economy, buildings, real trees, faction brain (build order, army, defense, expansions), flow-field armies, target choice, Town Hall upgrades for the hero, hero bots that farm and shop, headless `sim:matches`: 10/10 bot games have a winner (7 inside 45 min). Spectator / game speed delayed by the user |
-| 9 | UI, effects, sound, fog | **In progress** | 9a: fog of war (line of sight), settings, end screen. 9b: scoreboard, kill feed, team bar, chat, stat line, combat effects. Next 9c: sound (needs the user's choice of source) and main menu polish |
+| 9 | UI, effects, sound, fog | **Done** (open checks: weak-laptop FPS, selected-unit panel) | 9a: fog of war (line of sight), settings, end screen. 9b: scoreboard, kill feed, team bar, chat, stat line, combat effects. Next 9c: sound (needs the user's choice of source) and main menu polish |
 | 10 | Speed, tests, release | Not started | |
 
 ## Phase 8 plan (split, because the phase is big)
@@ -369,6 +375,8 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
+
+- Once (in a browser tab reloaded many times) the main menu stopped drawing (FPS 0, the render loop did not call the scene); a clean reload fixed it and it did not come back. Cause unknown — watch for it.
 
 - Bot matches: 3 of 10 last 46–50 minutes (target 20–45). The headless stuck check counts a maxed-out faction (100 supply) with gold as "idle".
 - Phase 8 leftovers: no scouting, no army formations (only push-apart), defeated players do not become spectators yet.
