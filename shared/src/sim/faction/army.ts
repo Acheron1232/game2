@@ -23,6 +23,8 @@ export interface ArmyGroup {
   mode: ArmyMode;
   targetX: number;
   targetY: number;
+  /** attack mode also fights neutral monsters (clearing a camp); off: walk past camps */
+  neutrals: boolean;
 }
 
 interface MemberMove {
@@ -53,7 +55,7 @@ export class ArmyMover {
   }
 
   create(ids: readonly number[], mode: ArmyMode, x: number, y: number): ArmyGroup {
-    const group: ArmyGroup = { id: this.nextGroupId++, members: [], mode, targetX: x, targetY: y };
+    const group: ArmyGroup = { id: this.nextGroupId++, members: [], mode, targetX: x, targetY: y, neutrals: false };
     this.groupList.push(group);
     for (const id of ids) this.add(group, id);
     return group;
@@ -232,9 +234,11 @@ export class ArmyMover {
     e.orderX = g.mode === 'attack' ? e.mover.x : g.targetX;
     e.orderY = g.mode === 'attack' ? e.mover.y : g.targetY;
     e.order = g.mode === 'attack' ? 'attackMove' : 'idle';
+    e.skipNeutrals = g.mode === 'attack' && !g.neutrals;
   }
 
   private setOrder(g: ArmyGroup, e: SimEntity): void {
+    e.skipNeutrals = g.mode === 'attack' && !g.neutrals;
     e.order = g.mode === 'attack' ? 'attackMove' : 'move';
     e.orderX = g.targetX;
     e.orderY = g.targetY;

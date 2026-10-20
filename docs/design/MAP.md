@@ -39,9 +39,9 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 |---|---|---|
 | Town Hall | (101, 236) | Start spot. Hero spawns at (107, 224). Stands on a low rise (`base_rise`). |
 | Base build area | circle (104, 228), r 20 | AI places buildings here. A broken fence ring, crates and barrels mark it. |
-| Main gold mine | (91, 244) | 15,000 gold. |
-| Natural expansion | mine (181, 243), open area (179, 233) r 15 | 10,000 gold. Guarded by Orange Trolls. |
-| Corner expansion | mine (247, 247), open area (236, 236) r 13 | 12,000 gold. Guarded by Red Ogres. Only reachable along the road from the natural. |
+| Main gold mine | (91, 244) | 20,000 gold. |
+| Natural expansion | mine (181, 243), open area (179, 233) r 15 | 14,000 gold. Guarded by Orange Trolls. |
+| Corner expansion | mine (247, 247), open area (236, 236) r 13 | 16,000 gold. Guarded by Red Ogres. Only reachable along the road from the natural. |
 | Trader's Tent (side shop) | (75, 211) | Between the base and the lake. |
 | Lake | ellipse at (49, 211), 17 × 15 | Blocks ground units. Flying units cross it. Sits in a low dip. |
 | Green Wolves | (67, 232) | West of the base. |

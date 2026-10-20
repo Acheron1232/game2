@@ -16,6 +16,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Phase 8 is done** (2026-10-20). Final 10 headless 4-AI matches (`sim:matches`, seeds 1–10, Normal): **10 of 10 have a winner**, 7 inside 20–45 min (22, 30, 32, 35, 35, 35, 45) and 3 a little over (46, 50, 50); 1 stuck report (a faction at 100 supply with 2,500 gold and nothing it wants to build). Server tick: average 0.16–0.25 ms, p99 under 5.1 ms, rare single ticks of 10–34 ms from garbage collection. Two last tuning changes: AI armies on an attack walk past neutral camps (they only fight monsters that hit them; camp clearing still fights them), and gold mines hold more gold (main 20,000, natural 14,000, corner 16,000) because in 4 of 10 games the last two factions mined out and froze before one could win. Not done from the Phase 8 task list: scouting, army formations (only push-apart), defeated players becoming spectators (with the delayed watch mode). Next: **Phase 9 — UI, effects, sound, fog of war**.
 - **Phase 8c is done** (2026-10-20): Town Hall upgrades bought by the hero (`BuyUpgrade` command, `hall-shop.ts`, effects on living units at once, War Banner 60 s, Tier Up Fund gold for the next tier; panel in the client when the hero stands at its own Town Hall: price, level, "Needs: Forge"), hero bots buy potions, their item list and Town Hall upgrades (Codex, `hero-bot.ts`), lobby AI level of Bot slots is used for the faction and the hero bot. Protocol 9 (faction blocks are a list). Checked: 140 shared + 14 server + 36 client + 9 tools tests, lint, typecheck; browser: the panel opens at the hall, Rich Veins bought (level 1, 150 gold), dimmed upgrades say why. 10 headless matches after the hero shopping: 8 with a winner (28, 36, 37, 38, 45, 48, 50, 60 min), 2 stuck reports (one dying faction): the game length target is **not met yet** (only 4 of 10 inside 45 min) — next: tuning.
 - **Delayed by the user (2026-10-20): spectator mode and game speed.** Code for it exists but is off by default and **not tested in the browser**: `start` with `watch: { speed }` (dev servers only) makes every slot a bot, the players watch with a view that sees everything and every faction, the server runs N steps per network tick, the client clock runs N× faster; `?watch=5` and `?fps=30` in the client URL. Also delayed with it: "defeated players become spectators" (Phase 8 task 10) and the bot-watching analysis (8d).
 - **Phase 8b is done, with open tuning** (2026-10-20): the faction brain plays every faction. 10 headless 4-AI matches (`sim:matches`, seeds 1–10, Normal): 9 have a winner, at 31, 37, 39, 40, 40, 45, 47, 49 and 50 minutes; one has none after 60 minutes; 1 stuck report in all 10. So the Done-when target (all 10 with a winner in 20–45 min, no stuck) is **not fully met yet**: 3 games run a little long and 1 stalls. Tick time: average 0.11–0.22 ms, p99 ~3.7 ms; rare single ticks of 15–190 ms that come from garbage collection, not from AI work (checked by timing every part). The rest of the tuning is planned in 8d (watching bot games). Browser (WebGPU): the player's own faction builds its base by itself, status line in the "Your Kingdom" panel, 120 FPS, 141 draws, 1.8 KB/s down. 135 shared + 14 server + 36 client + 9 tools tests, lint, typecheck, data check, build pass.
@@ -43,7 +44,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
 | 7 | Combat, heroes, camps, items | **Done** | 7a: combat core, 24 camps, XP and levels, HUD. 7b: all 32 abilities + buffs + auras + monster skills, Q W E R bar, aiming, placeholder effects. 7c: 23 items, inventory, shops, ground items, camp drops, fountains, uphill misses, 2-player browser test |
-| 8 | Faction AI and bots | **In progress** (8a, 8b, 8c done; game length tuning open) | 8a done: factions, economy, buildings, trees, upgrades, hero bot, headless runner. 7c merged (protocol 8). 8b done: faction brain, army flow fields, target choice; 9/10 bot matches have a winner. Next 8c: hero upgrades shop, lobby difficulty, spectator + game speed; then 8d: watch bot games |
+| 8 | Faction AI and bots | **Done** | Factions, economy, buildings, real trees, faction brain (build order, army, defense, expansions), flow-field armies, target choice, Town Hall upgrades for the hero, hero bots that farm and shop, headless `sim:matches`: 10/10 bot games have a winner (7 inside 45 min). Spectator / game speed delayed by the user |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
 
@@ -260,6 +261,8 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Gold mines: main 20,000 (was 15,000), natural 14,000 (10,000), corner 16,000 (12,000). With 15,000 the main mines ran dry at ~20–25 min and 4 of 10 bot games froze with no winner.
+- 2026-10-20 — AI attack armies ignore neutral camps on the way (only monsters that attack them are fought); clearing a camp or an expansion spot still fights them.
 - 2026-10-20 — Flow fields are rebuilt only when walk cells close (a building is placed), not when they open (trees, ruins): an old field never leads into a wall then, and chopping no longer forces rebuilds.
 - 2026-10-20 — A neutral camp does not come back while a faction building is within 15 units (same rule as heroes), so a cleared expansion stays free.
 - 2026-10-20 — Every human player's faction is played by the same brain as a bot's; difficulty Normal for now (lobby picker in 8c).
@@ -358,7 +361,8 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 
 ## Known bugs
 
-- Bot matches: 3 of 10 last 47–50 minutes and 1 of 10 has no winner after 60 (target 20–45); tuning in 8d.
+- Bot matches: 3 of 10 last 46–50 minutes (target 20–45). The headless stuck check counts a maxed-out faction (100 supply) with gold as "idle".
+- Phase 8 leftovers: no scouting, no army formations (only push-apart), defeated players do not become spectators yet.
 - Rare tick spikes of 15–190 ms from garbage collection in long matches (paths and short step arrays are created per order). Pool them in Phase 10.
 
 - Hero bots do not buy items yet (potions, their item list in ai.json) and do not spend gold on Town Hall upgrades: 8c.

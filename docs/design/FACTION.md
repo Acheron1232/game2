@@ -13,7 +13,7 @@ Each faction starts with: a Town Hall at its start spot, 5 Workers, 500 gold, 15
 - Workers mine gold at the gold mine next to the Town Hall (10 gold per trip, max 5 workers in a mine at once) and chop trees (10 wood per trip).
 - Workers bring resources to the nearest Town Hall / Stronghold / Citadel.
 - Supply: each Town Hall gives 12, each House gives 8, max 100.
-- Gold mines run out: main 15,000, natural expansion 10,000, corner expansion 12,000 (guarded by ogres).
+- Gold mines run out: main 20,000, natural expansion 14,000, corner expansion 16,000 (guarded by ogres).
 - Trees are real: chopped trees are removed. This slowly opens the forest around bases, like in classic RTS games.
 
 ## Units

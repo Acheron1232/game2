@@ -66,14 +66,14 @@
       "kind": "main",
       "sector": "north",
       "pos": [90.7, 244],
-      "gold": 15000
+      "gold": 20000
     },
     {
       "id": "north_natural",
       "kind": "natural",
       "sector": "north",
       "pos": [181.3, 242.7],
-      "gold": 10000,
+      "gold": 14000,
       "townHallSpot": [177.3, 232]
     },
     {
@@ -81,7 +81,7 @@
       "kind": "corner",
       "sector": "north",
       "pos": [246.7, 246.7],
-      "gold": 12000,
+      "gold": 16000,
       "townHallSpot": [237.3, 237.3]
     },
     {
@@ -89,14 +89,14 @@
       "kind": "main",
       "sector": "east",
       "pos": [244, 165.3],
-      "gold": 15000
+      "gold": 20000
     },
     {
       "id": "east_natural",
       "kind": "natural",
       "sector": "east",
       "pos": [242.7, 74.7],
-      "gold": 10000,
+      "gold": 14000,
       "townHallSpot": [232, 78.7]
     },
     {
@@ -104,7 +104,7 @@
       "kind": "corner",
       "sector": "east",
       "pos": [246.7, 9.3],
-      "gold": 12000,
+      "gold": 16000,
       "townHallSpot": [237.3, 18.7]
     },
     {
@@ -112,14 +112,14 @@
       "kind": "main",
       "sector": "south",
       "pos": [165.3, 12],
-      "gold": 15000
+      "gold": 20000
     },
     {
       "id": "south_natural",
       "kind": "natural",
       "sector": "south",
       "pos": [74.7, 13.3],
-      "gold": 10000,
+      "gold": 14000,
       "townHallSpot": [78.7, 24]
     },
     {
@@ -127,7 +127,7 @@
       "kind": "corner",
       "sector": "south",
       "pos": [9.3, 9.3],
-      "gold": 12000,
+      "gold": 16000,
       "townHallSpot": [18.7, 18.7]
     },
     {
@@ -135,14 +135,14 @@
       "kind": "main",
       "sector": "west",
       "pos": [12, 90.7],
-      "gold": 15000
+      "gold": 20000
     },
     {
       "id": "west_natural",
       "kind": "natural",
       "sector": "west",
       "pos": [13.3, 181.3],
-      "gold": 10000,
+      "gold": 14000,
       "townHallSpot": [24, 177.3]
     },
     {
@@ -150,7 +150,7 @@
       "kind": "corner",
       "sector": "west",
       "pos": [9.3, 246.7],
-      "gold": 12000,
+      "gold": 16000,
       "townHallSpot": [18.7, 237.3]
     }
   ],

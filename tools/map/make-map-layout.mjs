@@ -24,9 +24,9 @@ const ROAD_S = 1.15;
 const SECTOR = {
   start: { townHall: [-20, 81], heroSpawn: [-16, 72], buildArea: { center: [-18, 75], radius: 15 } },
   mines: [
-    { kind: 'main', pos: [-28, 87], gold: 15000 },
-    { kind: 'natural', pos: [40, 86], gold: 10000, townHallSpot: [37, 78] },
-    { kind: 'corner', pos: [89, 89], gold: 12000, townHallSpot: [82, 82] },
+    { kind: 'main', pos: [-28, 87], gold: 20000 },
+    { kind: 'natural', pos: [40, 86], gold: 14000, townHallSpot: [37, 78] },
+    { kind: 'corner', pos: [89, 89], gold: 16000, townHallSpot: [82, 82] },
   ],
   openAreas: [
     { tag: 'base', center: [-18, 76], radius: 15, ground: 'grass' },

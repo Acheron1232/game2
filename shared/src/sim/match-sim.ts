@@ -239,6 +239,8 @@ export interface SimEntity {
   itemOrder: ItemOrder | null;
   /** does nothing by itself and is not pushed (wards) */
   inert: boolean;
+  /** an AI army on its way to an enemy: attack-move leaves neutral camps alone (unless they hit us) */
+  skipNeutrals: boolean;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -428,6 +430,7 @@ export class MatchSim {
       hidden: false,
       itemOrder: null,
       inert: false,
+      skipNeutrals: false,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
@@ -723,7 +726,7 @@ export class MatchSim {
         }
         break;
       case 'attackMove':
-        if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, true);
+        if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, !e.skipNeutrals);
         if (!e.targetId && !e.mover.path.length) {
           if (Math.hypot(e.orderX - e.mover.x, e.orderY - e.mover.y) > 1) {
             applyMove(e.mover, this.nav, e.orderX, e.orderY, false, this.isFlying(e));

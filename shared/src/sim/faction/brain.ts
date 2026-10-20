@@ -655,6 +655,7 @@ export class FactionBrain {
           this.armyState = 'gather';
         }
         if (this.armyState === 'gather' && this.groupSupply(gather) >= CLEAR_SUPPLY) {
+          gather.neutrals = true;
           this.army.setGoal(gather, 'attack', tx, ty);
           this.armyState = 'creep';
           this.creepCamp = -2;
@@ -733,6 +734,7 @@ export class FactionBrain {
     // Defense first: the home group fights in the base; the attack army comes home if it is
     // closer to home than to its target.
     if (this.threat) {
+      gather.neutrals = false;
       this.army.setGoal(gather, 'attack', this.threat.x, this.threat.y);
       if (this.armyState === 'creep') this.armyState = 'gather';
       const a = this.attack;
@@ -843,6 +845,7 @@ export class FactionBrain {
     if (best < 0) return false;
     const c = this.sim.camps[best]!;
     this.creepCamp = best;
+    gather.neutrals = true;
     this.army.setGoal(gather, 'attack', c.x, c.y);
     this.armyState = 'creep';
     return true;
@@ -854,6 +857,7 @@ export class FactionBrain {
     if (done || this.groupSupply(gather) === 0) {
       this.creepCamp = -1;
       this.armyState = 'gather';
+      gather.neutrals = false;
       this.army.setGoal(gather, 'gather', this.rally.x, this.rally.y);
       return;
     }
