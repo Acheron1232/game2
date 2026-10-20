@@ -571,6 +571,13 @@ export function createGameScreen(actions: GameActions): GameScreen {
       el('div', { class: 'panel inventory' }, ...items),
     ),
   );
+  // Windows can request a context menu through a secondary click, a held primary
+  // click or the keyboard. Suppress the browser action across the whole HUD, while
+  // keeping chat editing and the shop's own secondary-click purchase handler.
+  root.addEventListener('contextmenu', (event) => {
+    if (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) return;
+    event.preventDefault();
+  });
   return {
     root,
     setClock(seconds) {
