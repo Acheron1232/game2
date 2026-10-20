@@ -4,6 +4,9 @@
 
 import { labelRegions, type NavGrid } from './nav-grid';
 
+/** In cells. */
+const EDGE_SLACK = 0.02;
+
 export class NavBlockers {
   /** walk grid without any building (forest still closed) */
   private readonly base: Uint8Array;
@@ -18,13 +21,16 @@ export class NavBlockers {
     this.cover = new Uint8Array(nav.walk.length);
   }
 
-  /** Cells a center-based rectangle covers (same rounding as blockRect). */
+  /**
+   * Cells a center-based rectangle covers. Edges within EDGE_SLACK of a cell line snap to it:
+   * clients get the position quantized (about 0.002 units off) and must close the same cells.
+   */
   private forRect(x: number, y: number, w: number, h: number, fn: (i: number) => void): void {
     const g = this.nav;
-    const c0 = Math.max(0, Math.floor((x - w / 2) / g.cellSize + 1e-6));
-    const c1 = Math.min(g.cols - 1, Math.ceil((x + w / 2) / g.cellSize - 1e-6) - 1);
-    const r0 = Math.max(0, Math.floor((y - h / 2) / g.cellSize + 1e-6));
-    const r1 = Math.min(g.rows - 1, Math.ceil((y + h / 2) / g.cellSize - 1e-6) - 1);
+    const c0 = Math.max(0, Math.floor((x - w / 2) / g.cellSize + EDGE_SLACK));
+    const c1 = Math.min(g.cols - 1, Math.ceil((x + w / 2) / g.cellSize - EDGE_SLACK) - 1);
+    const r0 = Math.max(0, Math.floor((y - h / 2) / g.cellSize + EDGE_SLACK));
+    const r1 = Math.min(g.rows - 1, Math.ceil((y + h / 2) / g.cellSize - EDGE_SLACK) - 1);
     for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) fn(r * g.cols + c);
   }
 

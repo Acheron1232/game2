@@ -93,6 +93,17 @@ export const S = {
   endMatchTest: 'End Match (test)',
 
   victory: 'Victory',
+  defeat: 'Defeat',
+  wood: 'Wood',
+  supply: 'Supply',
+  tier: 'Tier',
+  workers: 'Workers',
+  army: 'Army',
+  youWin: 'Your team wins.',
+  youLose: 'Your Town Halls are gone.',
+  teamWins: (n: number) => `Team ${n} wins.`,
+  playerLost: (name: string) => `${name} is out of the game.`,
+  backSoon: 'Back to the lobby soon.',
   backToLobby: 'Back to Lobby',
   mainMenu: 'Main Menu',
 

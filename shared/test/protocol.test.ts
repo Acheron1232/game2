@@ -120,7 +120,9 @@ describe('match messages', () => {
       maxMana: 180,
       level: 4,
       buffs: 3,
+      progress: 128,
     });
+    sw.factionState({ gold: 1234, wood: 456, supplyUsed: 17, supplyCap: 28, tier: 2, workers: 9, army: 8, status: 'Building a House' });
     sw.update({
       id: 9,
       type: 0,
@@ -138,7 +140,8 @@ describe('match messages', () => {
       maxMana: 8,
       level: 3,
       buffs: 1024,
-      mask: Field.State | Field.Hp | Field.Mana | Field.Buffs,
+      progress: 200,
+      mask: Field.State | Field.Hp | Field.Mana | Field.Buffs | Field.Progress,
     });
     sw.remove(33);
     sw.event(EventType.Damage, 9, 5, 26, DamageKind.Attack);
@@ -162,8 +165,19 @@ describe('match messages', () => {
       abilityLevels: [1, 0, 2, 0],
       cooldownEnds: [0, 1300, 0, 0],
     });
-    expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4, buffs: 3 });
-    expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8, buffs: 1024 });
+    expect(s.hasFaction).toBe(true);
+    expect(s.faction).toEqual({
+      gold: 1234,
+      wood: 456,
+      supplyUsed: 17,
+      supplyCap: 28,
+      tier: 2,
+      workers: 9,
+      army: 8,
+      status: 'Building a House',
+    });
+    expect(s.spawns[0]).toMatchObject({ id: 5, vx: -30, mana: 50, maxMana: 180, level: 4, buffs: 3, progress: 128 });
+    expect(s.updates[0]).toMatchObject({ id: 9, state: UnitState.Dead, hp: 0, mana: 7, maxMana: 8, buffs: 1024, progress: 200 });
     expect(s.gone.slice(0, s.goneCount)).toEqual([33]);
     expect(s.events[0]).toMatchObject({ type: EventType.Damage, a: 9, b: 5, value: 26, kind: DamageKind.Attack });
   });

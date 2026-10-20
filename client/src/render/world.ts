@@ -69,7 +69,21 @@ export interface Unit {
   /** a jump on screen: an arc between these times (ms) */
   arcStart: number;
   arcEnd: number;
+  /** building sites grow out of the ground: 0 = just placed, 1 = done */
+  rise: number;
 }
+
+interface TreeSlot {
+  mesh: Mesh;
+  slot: number;
+  /** the mesh's thin-instance matrix buffer (Babylon writes into it) */
+  data: Float32Array;
+  /** the tree's own matrix, kept while it is hidden */
+  matrix?: Matrix;
+}
+
+/** A zero matrix: the copy has no size, so nothing is drawn. */
+const HIDDEN_MATRIX = Matrix.Zero();
 
 /** Flying units hover this high (Sky Dragon, harpies). */
 const FLY_HEIGHT = 2.6;
@@ -100,6 +114,9 @@ export class GameWorld {
     shadows: ShadowGenerator,
     ring: Mesh,
     nav: NavGrid,
+    readonly trees: TreeList,
+    private readonly treeSlots: TreeSlot[][],
+    private readonly menuBase: ModelInstance[],
   ) {
     this.scene = scene;
     this.camera = camera;
@@ -163,7 +180,13 @@ export class GameWorld {
     // mountain slopes outside the map, so the world does not end at a hard line.
     const size = grid.cols * grid.cellSize;
     const byType: TreeList[] = [[], [], [], []];
-    for (const t of trees) byType[t[2]]?.push(t);
+    // map tree index of each copy, so a chopped tree can be hidden later
+    const mapIndex: number[][] = [[], [], [], []];
+    trees.forEach((t, i) => {
+      byType[t[2]]?.push(t);
+      mapIndex[t[2]]?.push(i);
+    });
+    const treeSlots: TreeSlot[][] = trees.map(() => []);
     for (let k = 0; k < 2600; k++) {
       const a = Math.sin(k * 12.9898) * 43758.5453,
         b = Math.sin(k * 78.233) * 12345.6789;
@@ -193,6 +216,11 @@ export class GameWorld {
             pos.set(x, terrain.heightAt(x, y) - 0.05, -y);
             Matrix.ComposeToRef(sc, q, pos, out);
           },
+          undefined,
+          (i, m, slot, data) => {
+            const at = mapIndex[k]![i];
+            if (at !== undefined) treeSlots[at]!.push({ mesh: m, slot, data });
+          },
         );
       }
     });
@@ -211,8 +239,10 @@ export class GameWorld {
       for (const mesh of inst.meshes) mesh.freezeWorldMatrix();
       return inst;
     };
-    layout.starts.forEach((s, i) => put('town_hall', s.townHall[0], s.townHall[1], TEAMS[i % TEAMS.length]!));
-    for (const m of layout.goldMines) put('gold_mine', m.pos[0], m.pos[1], 'red');
+    // Town Halls and mines for the menu view; in a match they come from the server.
+    const menuBase: ModelInstance[] = [];
+    layout.starts.forEach((s, i) => menuBase.push(put('town_hall', s.townHall[0], s.townHall[1], TEAMS[i % TEAMS.length]!)));
+    for (const m of layout.goldMines) menuBase.push(put('gold_mine', m.pos[0], m.pos[1], 'red'));
     for (const s of layout.shops) put(s.type === 'temple_market' ? 'temple_market' : 'side_shop', s.pos[0], s.pos[1], 'red');
     for (const f of layout.fountains) put('fountain_of_life', f.pos[0], f.pos[1], 'red');
 
@@ -232,17 +262,65 @@ export class GameWorld {
     ring.setEnabled(false);
 
     const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
-    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav);
+    const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase);
     world.setupPostProcess();
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
     return world;
   }
 
-  /** Adds a unit (hero or unit model) to the scene. Heroes cast shadows and get their effects. */
-  addUnit(modelId: string, team: string, x: number, y: number, facing: number, speed: number, hero: boolean, flying = false): Unit {
+  /** Hides chopped trees (map tree indices). Safe to call again for the same tree. */
+  hideTrees(ids: readonly number[]): void {
+    const dirty = new Set<Mesh>();
+    for (const id of ids) {
+      for (const s of this.treeSlots[id] ?? []) {
+        if (s.matrix) continue;
+        s.matrix = Matrix.FromArray(s.data, s.slot * 16);
+        s.mesh.thinInstanceSetMatrixAt(s.slot, HIDDEN_MATRIX, false);
+        dirty.add(s.mesh);
+      }
+    }
+    for (const m of dirty) m.thinInstanceBufferUpdated('matrix');
+  }
+
+  /** Back to the full forest (the match is over). */
+  showAllTrees(): void {
+    const dirty = new Set<Mesh>();
+    for (const slots of this.treeSlots)
+      for (const s of slots) {
+        if (!s.matrix) continue;
+        s.mesh.thinInstanceSetMatrixAt(s.slot, s.matrix, false);
+        s.matrix = undefined;
+        dirty.add(s.mesh);
+      }
+    for (const m of dirty) m.thinInstanceBufferUpdated('matrix');
+  }
+
+  /** In a match the server sends Town Halls and gold mines: hide the menu copies. */
+  setMenuBase(visible: boolean): void {
+    for (const b of this.menuBase) b.root.setEnabled(visible);
+  }
+
+  /** Faces a building toward the map center, like the menu Town Halls. */
+  buildingFacing(x: number, y: number): number {
+    const c = (this.grid.cols * this.grid.cellSize) / 2;
+    return Math.atan2(-(c - x), c - y);
+  }
+
+  /** Adds a unit (hero or unit model) to the scene. Heroes and buildings cast shadows; heroes get their effects. */
+  addUnit(
+    modelId: string,
+    team: string,
+    x: number,
+    y: number,
+    facing: number,
+    speed: number,
+    hero: boolean,
+    flying = false,
+    building = false,
+  ): Unit {
     const model = this.library.spawn(modelId, team);
-    if (hero) for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
+    if (hero || building) for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
     const effects = hero ? attachHeroEffects(this.scene, modelId, model.nodes, model.materials.glow) : null;
     const unit: Unit = {
       modelId,
@@ -262,6 +340,7 @@ export class GameWorld {
       scale: 1,
       arcStart: 0,
       arcEnd: 0,
+      rise: 1,
     };
     this.play(unit, 'idle');
     this.units.add(unit);
@@ -431,6 +510,8 @@ export class GameWorld {
     let h = u.flyHeight ? ground + u.flyHeight + Math.sin(now / 600 + x) * 0.12 : ground;
     // Jumps (Sky Pillar, Inferno Dive): up and down in an arc.
     if (now >= u.arcStart && now < u.arcEnd) h += Math.sin((Math.PI * (now - u.arcStart)) / (u.arcEnd - u.arcStart)) * 3.5;
+    // A building site sits low in the ground and rises while it is built.
+    if (u.rise < 1) h -= (1 - u.rise) * u.height * 0.85;
     return h;
   }
 

@@ -8,6 +8,7 @@ import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { TeamVision } from '../sim/vision';
 import type { BinaryWriter } from './binary';
 import {
+  blankFactionState,
   blankPlayerState,
   dqPos,
   dqVel,
@@ -38,6 +39,7 @@ interface Sent {
   maxMana: number;
   level: number;
   buffs: number;
+  progress: number;
   seenAt: number;
 }
 
@@ -47,12 +49,30 @@ const DRIFT_OTHERS = 0.05;
 const DRIFT_OWN_HERO = 0.01;
 /** Velocity change that counts as "the unit changed its way" (in 1/2000 units per second). */
 const VEL_STEP = 40;
+/** Building progress bars: send a change of at least this much (of 255). */
+const PROGRESS_STEP = 3;
+
+/** Construction, training or tier upgrade of a building, 0..255. */
+export function progressOf(e: SimEntity): number {
+  const b = e.building;
+  if (!b || !e.alive) return 0;
+  let p = 0;
+  if (!b.done) p = b.progress;
+  else if (b.upgradeTo >= 0 && b.upgradeTotal > 0) p = 1 - b.upgradeLeft / b.upgradeTotal;
+  else if (b.trainTotal > 0) p = 1 - b.trainLeft / b.trainTotal;
+  return Math.max(0, Math.min(255, Math.round(p * 255)));
+}
 
 export function unitStateOf(e: SimEntity): number {
   let s = 0;
   if (e.alive && (e.vx !== 0 || e.vy !== 0 || e.mover.path.length)) s |= UnitState.Moving;
   if (e.swing === 1) s |= UnitState.Attacking;
   if (!e.alive) s |= UnitState.Dead;
+  if (e.building && !e.building.done) s |= UnitState.Constructing;
+  if (e.hidden) s |= UnitState.Hidden;
+  const carry = e.job?.carry;
+  if (carry === 'gold') s |= UnitState.CarryGold;
+  else if (carry === 'wood') s |= UnitState.CarryWood;
   if (
     !e.alive ||
     e.targetId ||
@@ -89,10 +109,13 @@ export class ClientView {
     maxMana: 0,
     level: 0,
     buffs: 0,
+    progress: 0,
     mask: 0,
   };
   private readonly player = blankPlayerState();
   private playerKey = '';
+  private readonly faction = blankFactionState();
+  private factionKey = '';
   /** False while the player is offline: nothing is written. */
   active = true;
 
@@ -106,6 +129,7 @@ export class ClientView {
     this.sent.clear();
     this.full = true;
     this.playerKey = '';
+    this.factionKey = '';
   }
 
   write(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, w: BinaryWriter): Uint8Array<ArrayBuffer> {
@@ -118,10 +142,19 @@ export class ClientView {
       this.full ? SnapshotFlag.Full : 0,
       sim.predictionSeq[this.slot] ?? 0,
     );
+    const full = this.full;
     this.full = false;
     this.writePlayer(sim, sw);
+    this.writeFaction(sim, sw);
     for (const e of sim.entities) {
-      if (!vision.sees(this.team, e)) continue;
+      // Buildings and mines stay known in the fog (like a map), so the client can block their
+      // cells for movement prediction. Their changes are only sent while the team sees them.
+      const seen = vision.sees(this.team, e);
+      if (!seen && !(e.building && e.alive && this.sent.has(e.id))) continue;
+      if (!seen) {
+        this.sent.get(e.id)!.seenAt = stamp;
+        continue;
+      }
       const qx = qPos(e.mover.x),
         qy = qPos(e.mover.y),
         qvx = qVel(e.vx),
@@ -133,7 +166,8 @@ export class ClientView {
         mana = Math.floor(e.mana),
         maxMana = Math.round(e.stats.maxMana),
         level = e.heroState?.level ?? e.stats.level,
-        buffs = e.alive ? sim.buffFlagsOf(e) : 0;
+        buffs = e.alive ? sim.buffFlagsOf(e) : 0,
+        progress = progressOf(e);
       const s = this.sent.get(e.id);
       if (!s) {
         sw.spawn({
@@ -153,6 +187,7 @@ export class ClientView {
           maxMana,
           level,
           buffs,
+          progress,
         });
         this.sent.set(e.id, {
           x: qx,
@@ -168,6 +203,7 @@ export class ClientView {
           maxMana,
           level,
           buffs,
+          progress,
           seenAt: stamp,
         });
         continue;
@@ -187,6 +223,8 @@ export class ClientView {
       if (e.hero && (mana !== s.mana || maxMana !== s.maxMana)) mask |= Field.Mana;
       if (level !== s.level) mask |= Field.Level;
       if (buffs !== s.buffs) mask |= Field.Buffs;
+      if (progress !== s.progress && (Math.abs(progress - s.progress) >= PROGRESS_STEP || progress === 0 || progress === 255))
+        mask |= Field.Progress;
       if (!mask) continue;
       const u = this.upd;
       u.id = e.id;
@@ -203,6 +241,7 @@ export class ClientView {
       u.maxMana = maxMana;
       u.level = level;
       u.buffs = buffs;
+      u.progress = progress;
       sw.update(u);
       if (mask & Field.Motion) {
         s.x = qx;
@@ -219,13 +258,14 @@ export class ClientView {
       s.maxMana = maxMana;
       s.level = level;
       s.buffs = buffs;
+      if (mask & Field.Progress) s.progress = progress;
     }
     for (const [id, s] of this.sent) {
       if (s.seenAt === stamp) continue;
       sw.remove(id);
       this.sent.delete(id);
     }
-    this.writeEvents(sim, vision, sw);
+    this.writeEvents(sim, vision, sw, full);
     return sw.finish(w);
   }
 
@@ -256,12 +296,39 @@ export class ClientView {
     sw.playerState(p);
   }
 
-  private writeEvents(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter): void {
+  private writeFaction(sim: MatchSim, sw: SnapshotWriter): void {
+    const fs = sim.factions?.get(this.slot);
+    if (!fs) return;
+    const f = this.faction;
+    f.gold = Math.floor(fs.gold);
+    f.wood = Math.floor(fs.wood);
+    f.supplyUsed = Math.min(255, fs.supplyUsed);
+    f.supplyCap = Math.min(255, fs.supplyCap);
+    f.tier = fs.tier;
+    let workers = 0;
+    for (const id of fs.units) if (sim.get(id)?.job) workers++;
+    f.workers = Math.min(255, workers);
+    f.army = Math.max(0, Math.min(255, fs.supplyUsed - workers));
+    f.status = fs.status;
+    const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status}`;
+    if (key === this.factionKey) return;
+    this.factionKey = key;
+    sw.factionState(f);
+  }
+
+  private writeEvents(sim: MatchSim, vision: TeamVision, sw: SnapshotWriter, full: boolean): void {
+    // A new (or rejoined) client gets every tree that is already gone.
+    if (full && sim.factions) for (const t of sim.factions.cutTrees) sw.event(EventType.TreeGone, t, 0, 0, 0);
     const list = sim.events;
     for (let i = 0; i < list.count; i++) {
       const e = list.items[i]!;
       if (e.type === EventType.Gold) {
         if (e.kind === this.slot) sw.event(e.type, e.a, e.b, e.value, e.kind);
+        continue;
+      }
+      // Not about one entity: everyone gets them (a = tree index / slot / team).
+      if (e.type === EventType.TreeGone || e.type === EventType.Defeated || e.type === EventType.MatchOver) {
+        sw.event(e.type, e.a, e.b, e.value, e.kind);
         continue;
       }
       const a = sim.get(e.a),

@@ -40,6 +40,7 @@ export const Field = {
   Mana: 32, // mana u16, max mana u16
   Level: 64, // u8
   Buffs: 128, // u16 BuffFlag bits
+  Progress: 256, // u8: construction, training or tier upgrade, 0..255
 } as const;
 
 /** Bits of the entity state byte. */
@@ -50,6 +51,12 @@ export const UnitState = {
   Dead: 4,
   /** the unit follows a server order (attack, chase, hold): do not predict it */
   ServerDriven: 8,
+  /** a building site, not finished yet */
+  Constructing: 16,
+  /** a worker inside a gold mine: do not draw it */
+  Hidden: 32,
+  CarryGold: 64,
+  CarryWood: 128,
 } as const;
 
 export const SnapshotFlag = {
@@ -57,7 +64,27 @@ export const SnapshotFlag = {
   Full: 1,
   /** A player state block follows the header. */
   HasPlayer: 2,
+  /** A faction state block follows (after the player state). */
+  HasFaction: 4,
 } as const;
+
+/** The player's own AI faction, for the faction panel. */
+export interface NetFactionState {
+  gold: number;
+  wood: number;
+  supplyUsed: number;
+  supplyCap: number;
+  tier: number;
+  workers: number;
+  /** army supply (not workers) */
+  army: number;
+  /** one short line: what the AI does now */
+  status: string;
+}
+
+export function blankFactionState(): NetFactionState {
+  return { gold: 0, wood: 0, supplyUsed: 0, supplyCap: 0, tier: 1, workers: 0, army: 0, status: '' };
+}
 
 /** One entity as it is sent: quantized numbers. */
 export interface NetEntityState {
@@ -77,6 +104,8 @@ export interface NetEntityState {
   maxMana: number;
   level: number;
   buffs: number;
+  /** buildings: progress of construction / training / upgrade, 0..255 */
+  progress: number;
 }
 
 export interface NetUpdate extends NetEntityState {
@@ -201,6 +230,7 @@ function blank(): NetEntityState {
     maxMana: 0,
     level: 0,
     buffs: 0,
+    progress: 0,
   };
 }
 
@@ -219,6 +249,7 @@ export class SnapshotWriter {
   private nGone = 0;
   private nEvent = 0;
   private player: NetPlayerState | null = null;
+  private faction: NetFactionState | null = null;
   private head = { tick: 0, ack: 0, prediction: 0, sinceAck: 0, flags: 0 };
 
   begin(tick: number, ackSeq: number, ticksSinceAck: number, flags = 0, predictionSeq = ackSeq): void {
@@ -229,6 +260,7 @@ export class SnapshotWriter {
     this.head.flags = flags;
     this.nSpawn = this.nUpdate = this.nGone = this.nEvent = 0;
     this.player = null;
+    this.faction = null;
   }
 
   spawn(s: NetEntityState): void {
@@ -256,12 +288,16 @@ export class SnapshotWriter {
     this.player = p;
   }
 
+  factionState(f: NetFactionState): void {
+    this.faction = f;
+  }
+
   get empty(): boolean {
-    return this.nSpawn + this.nUpdate + this.nGone + this.nEvent === 0 && !this.player;
+    return this.nSpawn + this.nUpdate + this.nGone + this.nEvent === 0 && !this.player && !this.faction;
   }
 
   finish(w: BinaryWriter): Uint8Array<ArrayBuffer> {
-    const flags = this.head.flags | (this.player ? SnapshotFlag.HasPlayer : 0);
+    const flags = this.head.flags | (this.player ? SnapshotFlag.HasPlayer : 0) | (this.faction ? SnapshotFlag.HasFaction : 0);
     w.reset()
       .u8(MsgId.Snapshot)
       .u32(this.head.tick)
@@ -275,16 +311,18 @@ export class SnapshotWriter {
       for (const l of p.abilityLevels) w.u8(l);
       for (const c of p.cooldownEnds) w.u32(c);
     }
+    const f = this.faction;
+    if (f) w.u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
     w.u16(this.nSpawn);
     for (let i = 0; i < this.nSpawn; i++) {
       const s = this.spawns[i]!;
       w.u16(s.id).u16(s.type).u8(s.owner).u8(s.color).u16(s.x).u16(s.y).i16(s.vx).i16(s.vy).u8(s.facing).u8(s.state);
-      w.u16(s.hp).u16(s.maxHp).u16(s.mana).u16(s.maxMana).u8(s.level).u16(s.buffs);
+      w.u16(s.hp).u16(s.maxHp).u16(s.mana).u16(s.maxMana).u8(s.level).u16(s.buffs).u8(s.progress);
     }
     w.u16(this.nUpdate);
     for (let i = 0; i < this.nUpdate; i++) {
       const u = this.updates[i]!;
-      w.u16(u.id).u8(u.mask);
+      w.u16(u.id).u16(u.mask);
       if (u.mask & Field.Motion) w.u16(u.x).u16(u.y).i16(u.vx).i16(u.vy);
       if (u.mask & Field.Facing) w.u8(u.facing);
       if (u.mask & Field.State) w.u8(u.state);
@@ -293,6 +331,7 @@ export class SnapshotWriter {
       if (u.mask & Field.Mana) w.u16(u.mana).u16(u.maxMana);
       if (u.mask & Field.Level) w.u8(u.level);
       if (u.mask & Field.Buffs) w.u16(u.buffs);
+      if (u.mask & Field.Progress) w.u8(u.progress);
     }
     w.u16(this.nGone);
     for (let i = 0; i < this.nGone; i++) w.u16(this.gone[i]!);
@@ -323,6 +362,8 @@ export class SnapshotData {
   eventCount = 0;
   hasPlayer = false;
   readonly player: NetPlayerState = blankPlayerState();
+  hasFaction = false;
+  readonly faction: NetFactionState = blankFactionState();
   readonly spawns: NetEntityState[] = [];
   readonly updates: NetUpdate[] = [];
   readonly gone: number[] = [];
@@ -348,6 +389,18 @@ export class SnapshotData {
       for (let i = 0; i < 4; i++) p.abilityLevels[i] = r.u8();
       for (let i = 0; i < 4; i++) p.cooldownEnds[i] = r.u32();
     }
+    this.hasFaction = (this.flags & SnapshotFlag.HasFaction) !== 0;
+    if (this.hasFaction) {
+      const f = this.faction;
+      f.gold = r.u32();
+      f.wood = r.u32();
+      f.supplyUsed = r.u8();
+      f.supplyCap = r.u8();
+      f.tier = r.u8();
+      f.workers = r.u8();
+      f.army = r.u8();
+      f.status = r.str();
+    }
     this.spawnCount = r.u16();
     for (let i = 0; i < this.spawnCount; i++) {
       const s = (this.spawns[i] ??= blank());
@@ -367,12 +420,13 @@ export class SnapshotData {
       s.maxMana = r.u16();
       s.level = r.u8();
       s.buffs = r.u16();
+      s.progress = r.u8();
     }
     this.updateCount = r.u16();
     for (let i = 0; i < this.updateCount; i++) {
       const u = (this.updates[i] ??= { ...blank(), mask: 0 });
       u.id = r.u16();
-      u.mask = r.u8();
+      u.mask = r.u16();
       if (u.mask & Field.Motion) {
         u.x = r.u16();
         u.y = r.u16();
@@ -389,6 +443,7 @@ export class SnapshotData {
       }
       if (u.mask & Field.Level) u.level = r.u8();
       if (u.mask & Field.Buffs) u.buffs = r.u16();
+      if (u.mask & Field.Progress) u.progress = r.u8();
     }
     this.goneCount = r.u16();
     for (let i = 0; i < this.goneCount; i++) this.gone[i] = r.u16();

@@ -136,6 +136,7 @@ Keep this section current. Node 24+, pnpm 10+.
 | `pnpm --filter @game/tools art:manifest` | Rewrite `client/public/assets/manifest.json` |
 | `pnpm --filter @game/tools models:build [ids] [--preview]` | Blender scripts → GLB (quantized) + `models.json` + manifest; `--preview` renders `art/source/models/<id>.png` |
 | `pnpm --filter @game/tools models:palette` | Rebuild the shared model palette atlas |
+| `pnpm --filter @game/server sim:matches [--matches 10 --minutes 60 --slots 4 --difficulty normal --verbose]` | Headless bot-only matches (no browser): winner, stuck reports, tick times; JSON report in `server/logs/` |
 
 Notes:
 - The server reads `GAME_PORT` / `GAME_HOST` (not `PORT`, which dev tools often set for Vite).

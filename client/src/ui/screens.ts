@@ -178,6 +178,21 @@ export interface GameScreen extends Screen {
   setHero(v: HeroView): void;
   /** Info line for a selected unit that is not your hero, or null. */
   setSelected(text: string | null): void;
+  /** The player's AI faction, or null before the first faction data. */
+  setFaction(v: FactionView | null): void;
+  /** Big line in the middle: Victory / Defeat. null hides it. */
+  setResult(title: string | null, text?: string): void;
+}
+
+export interface FactionView {
+  gold: number;
+  wood: number;
+  supplyUsed: number;
+  supplyCap: number;
+  tier: number;
+  workers: number;
+  army: number;
+  status: string;
 }
 
 export interface GameActions {
@@ -191,6 +206,11 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const clock = el('span', { class: 'clock' }, '00:00');
   const ping = el('span', { class: 'hud-ping' }, '');
   const status = el('p', {}, S.aiIdle);
+  const facRes = el('p', { class: 'faction-line', hidden: true });
+  const facSupply = el('p', { class: 'faction-line', hidden: true });
+  const resultTitle = el('h1', { class: 'title' });
+  const resultText = el('p', {});
+  const result = el('div', { class: 'hud-result', hidden: true }, resultTitle, resultText);
   const gold = el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`);
   const portraitImg = el('div', { class: 'portrait-img' });
   const portrait = el('div', { class: 'portrait' }, portraitImg);
@@ -249,7 +269,8 @@ export function createGameScreen(actions: GameActions): GameScreen {
     'section',
     { class: 'screen game' },
     el('header', { class: 'hud-top' }, clock, ping, gold, el('button', { class: 'btn small', onclick: onEnd }, S.endMatchTest)),
-    el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), status),
+    el('aside', { class: 'panel ai-status' }, el('h3', {}, S.yourKingdom), facRes, facSupply, status),
+    result,
     deathNote,
     selInfo,
     alertBox,
@@ -341,6 +362,22 @@ export function createGameScreen(actions: GameActions): GameScreen {
     setSelected(text) {
       selInfo.hidden = !text;
       if (text) setText(selInfo, text);
+    },
+    setFaction(v) {
+      facRes.hidden = facSupply.hidden = !v;
+      if (!v) return;
+      setText(facRes, `${S.gold} ${v.gold} · ${S.wood} ${v.wood}`);
+      setText(
+        facSupply,
+        `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
+      );
+      setText(status, v.status);
+    },
+    setResult(title, text = '') {
+      result.hidden = !title;
+      if (!title) return;
+      setText(resultTitle, title);
+      setText(resultText, text);
     },
   };
 }

@@ -7,6 +7,7 @@ import {
   buildMatchNav,
   ClientView,
   gameData,
+  HeroBot,
   MatchSim,
   MsgId,
   parseTerrain,
@@ -15,6 +16,7 @@ import {
   TeamVision,
   TICK_RATE,
   type MatchSetup,
+  type TreeList,
 } from '@game/shared';
 
 /** Commands per second per player. Real play needs far less; the rest is dropped. */
@@ -35,10 +37,14 @@ export class MatchRunner {
   /** bytes written per slot since the last stats read */
   readonly bytes = new Map<number, number>();
   droppedCommands = 0;
+  /** AI heroes of Bot slots */
+  private readonly bots: HeroBot[] = [];
 
-  constructor(setup: MatchSetup, terrainBytes: Uint8Array) {
-    const nav = buildMatchNav(parseTerrain(terrainBytes), gameData.map);
-    this.sim = new MatchSim(setup, nav);
+  /** trees: with them the match has factions (bases, workers, the AI); without them only heroes. */
+  constructor(setup: MatchSetup, terrainBytes: Uint8Array, trees?: TreeList) {
+    const terrain = parseTerrain(terrainBytes);
+    const nav = buildMatchNav(terrain, gameData.map);
+    this.sim = new MatchSim(setup, nav, trees ? { terrain, trees } : undefined);
     this.vision = new TeamVision(gameData.map.size.width);
     this.vision.update(this.sim.entities);
     // Players can only order attacks on what their team sees.
@@ -46,6 +52,7 @@ export class MatchRunner {
     for (const s of setup.slots) {
       this.views.set(s.index, new ClientView(s.index, s.team));
       this.bytes.set(s.index, 0);
+      if (s.bot) this.bots.push(new HeroBot(s.index, s.ai ?? 'normal'));
     }
   }
 
@@ -91,6 +98,11 @@ export class MatchRunner {
     }
   }
 
+  /** The winning team once the match is over, else 0. */
+  get winnerTeam(): number {
+    return this.sim.factions?.winnerTeam ?? 0;
+  }
+
   resetView(slot: number): void {
     this.views.get(slot)?.reset();
   }
@@ -98,6 +110,7 @@ export class MatchRunner {
   /** Runs one tick and returns one snapshot per online player. */
   tick(): MatchPacket[] {
     this.sim.step();
+    for (const bot of this.bots) bot.update(this.sim);
     if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();
     // Vision every 2 ticks (10 Hz) is enough for "who can I see".
     if (this.sim.tick % 2 === 1) this.vision.update(this.sim.entities);

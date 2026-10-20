@@ -4,6 +4,8 @@ What Phase 8 adds to the simulation and how the parts fit. Game rules and number
 
 Phase 8 is split into three parts:
 
+Status (2026-10-20): **8a done**, plus two parts planned for later that Codex finished early — the hero bot (`shared/src/sim/hero-bot.ts`) and the headless runner (`server/src/match/headless.ts`). Lobby bot difficulty, hero-bot hooks and the end screen stay in 8c.
+
 - **8a — economy and buildings:** buildings and gold mines become simulation entities; workers gather gold and wood; trees are chopped for real (the walk grid opens); construction, training queues, supply, tier upgrades; start of the match (Town Hall + 5 workers + 500 gold + 150 wood); defeat and victory.
 - **8b — the faction brain:** build order, placement, production, armies (defense group, attack army), gather / attack / retreat / defend / expand, flow fields for army movement, target priority, towers and catapults, AI status line, headless bot-only match runner.
 - **8c — hero and faction together:** Town Hall upgrades bought by the hero, hero bots, spectators and the end screen, performance budgets.

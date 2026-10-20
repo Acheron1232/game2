@@ -19,8 +19,18 @@ import {
   TICK_RATE,
   type AbilityDef,
   type CastTarget,
+  blankFactionState,
   blankPlayerState,
+  buildingDefOf,
+  buildTreeIndex,
   CommandType,
+  footprintOf,
+  isBuildingType,
+  labelRegions,
+  NavBlockers,
+  removeTree,
+  type NetFactionState,
+  type TreeIndex,
   DamageKind,
   ENTITY_TYPES,
   EventType,
@@ -85,6 +95,14 @@ export class MatchClient {
   serverMode = false;
   /** Called when gold, XP, level or respawn time changed. */
   onPlayer: ((p: NetPlayerState) => void) | null = null;
+  /** the player's AI faction (gold, wood, supply, what it does) */
+  readonly faction: NetFactionState = blankFactionState();
+  hasFaction = false;
+  /** a slot lost (its Town Halls are gone) */
+  onDefeated: ((slot: number) => void) | null = null;
+  /** one team is left */
+  onMatchOver: ((winnerTeam: number) => void) | null = null;
+  winnerTeam = 0;
   private seq = 0;
   private markCount = 0;
   private readonly snap = new SnapshotData();
@@ -105,6 +123,14 @@ export class MatchClient {
   private readonly events = new EventTimeline();
   private readonly drawEvent = (ev: { type: number; a: number; b: number; value: number; kind: number }) =>
     this.onEvent(ev.type, ev.a, ev.b, ev.value, ev.kind);
+  /** The same walk-grid changes as the server (buildings, chopped trees), for own-hero prediction. */
+  private readonly blockers: NavBlockers;
+  private readonly walkAtStart: Uint8Array;
+  private readonly trees: TreeIndex;
+  private readonly blocked = new Map<number, { x: number; y: number; w: number; h: number }>();
+  private readonly cutTrees: number[] = [];
+  /** workers inside a gold mine (not drawn) */
+  private readonly inside = new Set<number>();
 
   constructor(
     readonly world: GameWorld,
@@ -118,6 +144,10 @@ export class MatchClient {
     this.bars = new HealthBars(world.scene, TILT);
     this.projectiles = new Projectiles(world.scene);
     this.fx = new AbilityFx(world.scene);
+    this.walkAtStart = world.nav.walk.slice();
+    this.blockers = new NavBlockers(world.nav);
+    this.trees = buildTreeIndex(world.trees, world.grid);
+    world.setMenuBase(false);
   }
 
   get slot(): number {
@@ -258,6 +288,10 @@ export class MatchClient {
       if (this.predictor) this.predictor.mover.speed = s.player.moveSpeed / 100;
       this.onPlayer?.(this.player);
     }
+    if (s.hasFaction) {
+      Object.assign(this.faction, s.faction);
+      this.hasFaction = true;
+    }
     for (let i = 0; i < s.spawnCount; i++) {
       const sp = s.spawns[i]!;
       this.remove(sp.id);
@@ -272,11 +306,26 @@ export class MatchClient {
       if (!e) continue;
       e.apply(s.tick, u);
       e.mark = mark;
+      if (e.state & UnitState.Dead) this.unblock(e.id);
     }
     for (let i = 0; i < s.goneCount; i++) this.remove(s.gone[i]!);
     if (full) for (const e of [...this.entities.values()]) if (e.mark !== mark) this.remove(e.id);
     for (let i = 0; i < s.eventCount; i++) {
       const ev = s.events[i]!;
+      // Map changes count at once (prediction needs them now), not on the render timeline.
+      if (ev.type === EventType.TreeGone) {
+        this.cutTree(ev.a);
+        continue;
+      }
+      if (ev.type === EventType.MatchOver) {
+        this.winnerTeam = ev.a;
+        this.onMatchOver?.(ev.a);
+        continue;
+      }
+      if (ev.type === EventType.Defeated) {
+        this.onDefeated?.(ev.a);
+        continue;
+      }
       if (ev.type === EventType.Cast && ev.kind !== 255 && ABILITIES[ev.kind & 127]?.id === 'blink') {
         const caster = this.entities.get(ev.a);
         if (caster) {
@@ -293,6 +342,8 @@ export class MatchClient {
       this.events.add(s.tick, ev);
     }
 
+    this.blockers.refresh();
+    this.hideCutTrees();
     const hero = this.ownHero;
     const p = this.predictor;
     if (hero && p) {
@@ -491,11 +542,20 @@ export class MatchClient {
   private show(e: NetEntity): void {
     const modelId = ENTITY_TYPES[e.type] ?? 'swordsman';
     const hero = isHeroType(e.type);
+    const building = isBuildingType(e.type);
     const k = e.last;
     // Neutral monsters have no team color: their masks are black anyway.
     const team = e.owner === NEUTRAL ? 'red' : (TEAMS[e.color] ?? 'red');
-    e.unit = this.world.addUnit(modelId, team, k.x, k.y, k.facing, moveSpeedOf(e.type), hero, isFlyingType(e.type));
+    const facing = building ? this.world.buildingFacing(k.x, k.y) : k.facing;
+    e.unit = this.world.addUnit(modelId, team, k.x, k.y, facing, moveSpeedOf(e.type), hero, isFlyingType(e.type), building);
     if (e.state & UnitState.Dead) this.world.setDead(e.unit, true);
+    else if (buildingDefOf(e.type)) {
+      // Faction buildings close their cells (gold mines are in the map grid already).
+      const [w, h] = footprintOf(e.type);
+      const r = { x: k.x, y: k.y, w, h };
+      this.blockers.addRect(r.x, r.y, r.w, r.h);
+      this.blocked.set(e.id, r);
+    }
     if (hero && e.owner === this.slot) {
       this.ownHero = e;
       this.predictor = new HeroPredictor(k.x, k.y, k.facing, moveSpeedOf(e.type), this.world.nav, isFlyingType(e.type));
@@ -512,6 +572,8 @@ export class MatchClient {
     const e = this.entities.get(id);
     if (!e) return;
     if (e.unit) this.world.removeUnit(e.unit);
+    this.unblock(id);
+    this.inside.delete(id);
     this.fx.clearMarkers(id);
     this.entities.delete(id);
     this.deadSince.delete(id);
@@ -520,6 +582,26 @@ export class MatchClient {
       this.ownHero = null;
       this.predictor = null;
     }
+  }
+
+  private unblock(id: number): void {
+    const r = this.blocked.get(id);
+    if (!r) return;
+    this.blockers.removeRect(r.x, r.y, r.w, r.h);
+    this.blocked.delete(id);
+  }
+
+  /** A tree fell: open its cells now, hide its model with the next batch. */
+  private cutTree(i: number): void {
+    if (!this.trees.alive[i]) return;
+    this.blockers.openCells(removeTree(this.trees, i));
+    this.cutTrees.push(i);
+  }
+
+  private hideCutTrees(): void {
+    if (!this.cutTrees.length) return;
+    this.world.hideTrees(this.cutTrees);
+    this.cutTrees.length = 0;
   }
 
   // ---------- every frame ----------
@@ -547,7 +629,22 @@ export class MatchClient {
         u.moving = (this.pose.state & UnitState.Moving) !== 0;
       }
       if (e === this.ownHero) u.speed = this.player.moveSpeed / 100;
-      const dead = (e.state & UnitState.Dead) !== 0;
+      const state = e.state;
+      // A worker inside a gold mine is not drawn.
+      const inMine = (state & UnitState.Hidden) !== 0;
+      if (inMine !== this.inside.has(e.id)) {
+        if (inMine) this.inside.add(e.id);
+        else this.inside.delete(e.id);
+        this.world.hideUnit(u, inMine);
+        if (inMine && this.world.selected === u) this.world.select(null);
+      }
+      if (inMine) continue;
+      if (isBuildingType(e.type)) {
+        u.facing = this.world.buildingFacing(u.x, u.y);
+        u.moving = false;
+        u.rise = state & UnitState.Constructing ? 0.15 + 0.85 * (e.progress / 255) : 1;
+      }
+      const dead = (state & UnitState.Dead) !== 0;
       if (dead !== u.dead) {
         this.world.setDead(u, dead);
         if (dead) this.deadSince.set(e.id, now);
@@ -606,6 +703,11 @@ export class MatchClient {
     this.world.beforeFrame = null;
     for (const id of [...this.entities.keys()]) this.remove(id);
     this.world.select(null);
+    // Back to the map as it was before the match.
+    this.world.nav.walk.set(this.walkAtStart);
+    labelRegions(this.world.nav);
+    this.world.showAllTrees();
+    this.world.setMenuBase(true);
     this.bars.dispose();
     this.projectiles.dispose();
     this.fx.dispose();

@@ -16,6 +16,7 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 
 ## Current state
 
+- **Phase 8a is done** (2026-10-20): factions in the simulation and on screen. Every player slot has a faction run by the AI: Town Hall + 5 workers at the start, 12 gold mines, gold and wood gathering, chopped trees open the walk grid, building sites, training, Town Hall tiers, upgrade effects, supply, defeat and victory. Bot slots get a hero bot. The client draws buildings and workers from the server, hides chopped trees, mirrors building footprints in its own walk grid (prediction), and shows a faction panel and a Victory / Defeat banner. The faction does not plan anything yet (no brain): that is **Phase 8b**. Checked: 84 shared + 14 server + 36 client + 9 tools tests, lint, typecheck, build, data check; browser (WebGPU) match with a bot slot: 120 FPS, 104–166 draws, `fixes 0/0`, ~1 KB/s down. 7c is being made by another agent on branch `claude/amazing-rubin-vm77ll`; it is validated and merged after Phase 8a.
 - **Phase 5 map rework finished** (2026-10-20), user feedback "map is small, flat, empty": map 256 × 256 with hills, a watch hill, a lake dip and a mountain wall at the edge (plus 64 units of mountains with pines outside the map). 7,451 trees and 6,735 decor items (plants, rocks, stumps, ruins, fences, crates), all drawn as thin instances in 48-unit chunks. New temple plaza ruins: pillar gates at the ramp tops, a pillar ring around the market, statues on the diagonals, blocks around the pools. Fight zones and tactics written in [design/MAP.md](design/MAP.md#fight-zones-and-tactics), with measured walk times. Checked in the browser: WebGPU 120 FPS, 115–121 draws, 203–263k tris; WebGL2 120 FPS, GPU 4.0 ms, 118 draws. Build, lint, data check and 36 tests pass.
 - **Terrain and lighting pass** (2026-10-19), branch `codex/terrain-lighting-polish`: checkpointed the existing working tree, generated six quieter ground textures in one ImageGen call, softened transitions and adjusted sun/sky colors. Terrain sampling now merges duplicate layers instead of reading the same tile four times. 120 FPS and native resolution retained; no added geometry, draw calls or render passes. Both WebGL2 and WebGPU checked. See [TERRAIN_POLISH.md](TERRAIN_POLISH.md) for assets, measured readings and tradeoffs.
 - **Display preference restored** (2026-10-19): the user wants 120 FPS in game and a sharp hero. Removed the 1080p/1.5-DPR drawing-buffer limits and restored native display resolution. Menus remain at 30 FPS; background rendering still stops. Earlier 60 FPS energy measurements below are historical and do not describe the current configuration.
@@ -42,9 +43,26 @@ The AI updates this file at the end of every phase. Newest notes go on top of ea
 | 5 | Client engine and loading | **Done** | 256 map with hills and mountain wall, blended tiles, 7,451 trees + 6,735 decor in chunks, RTS camera, click-to-move hero, minimap, lobby preload + cache, 120 FPS |
 | 6 | Server and multiplayer | **Done** | Lobby (rooms, slots, chat, load %, game list with search), match worker at 20 Hz, motion-based delta snapshots, team vision, interpolation + own-hero prediction, lag tool, rejoin, rate limits, load test: 300 units, tick max 2 ms, 0.8–1.8 KB/s |
 | 7 | Combat, heroes, camps, items | **In progress** | 7a done: combat core, 24 camps, XP and levels, HUD. 7b done: all 32 abilities + buffs + auras + monster skills, Q W E R bar with cooldowns and learn, aiming markers, placeholder effects. Next 7c: items, shops, fountains, 2-player test |
-| 8 | Faction AI and bots | Not started | |
+| 8 | Faction AI and bots | **In progress** | 8a done: factions, economy, buildings, trees, upgrades, hero bot, headless runner, protocol 7. Next 8b: faction brain + army movement + 10 bot matches |
 | 9 | UI, effects, sound, fog | Not started | |
 | 10 | Speed, tests, release | Not started | |
+
+## Phase 8 plan (split, because the phase is big)
+
+Full design: [design/AI_ARCHITECTURE.md](design/AI_ARCHITECTURE.md).
+
+- **8a — faction core (done):** see below.
+- **8b — faction brain:** economy / build / production / army / target / defense / expansion / retreat managers from `ai.json` and FACTION.md, army movement with flow fields, target priority (catapults hit buildings first, focus fire), AI status line, `pnpm --filter @game/server sim:matches` with 10 bot matches: a winner in 20–45 min, no stuck report.
+- **8c — hero side and polish:** Town Hall upgrade shop for the hero (command + panel), bot difficulty in the lobby, hero bot hooks (join attacks, defend), hero bot tuning after 7c fountains, building death look, end screen with stats, budgets with full armies.
+
+## Phase 8a — what was made
+
+- Buildings and gold mines are simulation entities (`SimEntity.building`). Town Halls left the static map grid; footprints close walk cells through `NavBlockers` (same code on server and client). 12 mines can not be hurt; a mine with no gold left is removed.
+- `Factions` (`shared/src/sim/faction/faction.ts`): money, supply, buildings, units, worker jobs (gold: walk, 1 s inside the mine, carry 10; wood: chop next to a tree, carry back, a tree falls after 50 wood), building sites with progress, repair, training queues with rally points, Town Hall → Stronghold → Citadel, defeat when a team has no Town Hall left, the last team wins.
+- Codex modules (each in its own worktree, reviewed and merged): flow fields (`nav/flow-field.ts`), tree index (`nav/trees.ts`), build-spot finder with base corridors (`sim/faction/placement.ts`), upgrade rules and effects (`sim/faction/upgrades.ts`), hero bot (`sim/hero-bot.ts`), headless match runner + `sim:matches` script (`server/src/match/headless.ts`).
+- Protocol 7: field mask is 16 bits, `Progress` field, unit states `Constructing` / `Hidden` (in a mine) / `CarryGold` / `CarryWood`, faction block (gold, wood, supply, tier, workers, army, status), global events `TreeGone` / `Defeated` / `MatchOver`; a full snapshot (join, rejoin) repeats every cut tree.
+- Server: matches get the trees (factions on), Bot slots run a `HeroBot`, a won match goes back to the lobby after 20 s (`matchEnd` has `winnerTeam`).
+- Client: buildings with shadows, sites rise out of the ground while built, workers in a mine are hidden, chopped trees hidden (thin-instance matrix set to zero, restored after the match), menu Town Halls / mines hidden in a match, minimap dots for buildings and mines, faction lines in the "Your Kingdom" panel, Victory / Defeat banner.
 
 ## Phase 7 plan (split, because the phase is big)
 
@@ -206,6 +224,10 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-20 — Phase 8: every player (human or bot) has an AI faction; a Bot slot also has an AI hero. Lobby slots use Normal until 8c adds a difficulty picker.
+- 2026-10-20 — Buildings and mines stay known to a player once seen (like a map under fog); their changes are only sent while the team sees them. This lets the client close building cells for prediction.
+- 2026-10-20 — Building footprints snap to cell lines with 0.02-cell slack, so the quantized position on the client closes the same cells as the server.
+- 2026-10-20 — Codex for parallel code work: one git worktree + branch per module, a written brief in `tools/codex-tasks/`, Codex does not commit, the lead reviews and merges.
 - 2026-10-20 — Casts are checked twice: when ordered (refused at once) and when the effect fires (mana or stun may have changed). Mana and cooldown are paid when the effect fires, not when the cast starts (classic RTS rule).
 - 2026-10-20 — Unit-target and zone spells walk into range; jumps, dives, charges and Blink go as far as their range allows toward the click instead.
 - 2026-10-20 — Damage and heal over time land every 0.5 s (half the per-second value), to keep events and numbers readable.
@@ -282,10 +304,16 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 | All assets | < 500 MB | — |
 | FPS (laptop, 300 units) | 60 | 120 (capped) on M5; normal view 115–121 draws, ~260k tris (no 300-unit run after the map rework) |
 | Server tick (4 players, full armies) | < 10 ms | avg 1.5 ms, max 7.7 ms (4 players + 300 walking units + 24 camps, Phase 7a) |
+| Bandwidth with factions (4 bots, 3 min, no armies yet) | < 20 KB/s down | 0.8–0.9 KB/s, largest snapshot 303 bytes (Phase 8a) |
 | Bandwidth per player | < 20 KB/s down | 0.8 KB/s (300 units, each player sees its base), 1.8 KB/s (everyone sees all 300); up ≈ 0.1 KB/s |
 | Codex image calls used | — | 27 images in total (Phase 3: 7, Phase 4: 20) |
 
 ## Known bugs
+
+- Hero bots level slowly (level 2 after 8 minutes): a hurt bot waits at home until 85% health, and fountains do not heal yet. The 8-minute bot test is skipped until 7c fountains are merged.
+- On a tall, narrow window the camera can not center on a base at the map edge (camera clamp); fine at 16:9.
+- Destroyed buildings play no death look yet (they stay as a corpse for 3 s).
+- A tree's reachability is not checked when a worker picks it (`Factions.findTree`); a worker may walk to a tree it can not reach.
 
 - Temple paving and plain grass still repeat a lot at the RTS camera distance (art pass, see CLIENT_AUDIT.md).
 - The minimap camera box is a fixed 46 × 30 rectangle; it does not follow zoom or screen shape.

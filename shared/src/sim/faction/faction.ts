@@ -577,7 +577,11 @@ export class Factions {
     if (!b.done) return;
     if (b.upgradeTo >= 0 && --b.upgradeLeft <= 0) this.finishTier(e, f);
     if (!b.queue.length) return;
-    if (b.trainTotal === 0) b.trainTotal = b.trainLeft = Math.max(1, Math.round(secs(unitDef(ENTITY_TYPES[b.queue[0]!]!)?.buildTime ?? 20) * this.sim.trainTimeFactor(f)));
+    if (b.trainTotal === 0)
+      b.trainTotal = b.trainLeft = Math.max(
+        1,
+        Math.round(secs(unitDef(ENTITY_TYPES[b.queue[0]!]!)?.buildTime ?? 20) * this.sim.trainTimeFactor(f)),
+      );
     if (--b.trainLeft > 0) return;
     const type = b.queue.shift()!;
     b.trainTotal = 0;
@@ -585,7 +589,10 @@ export class Factions {
     const dx = b.rallyX - e.mover.x,
       dy = b.rallyY - e.mover.y;
     const d = Math.hypot(dx, dy) || 1;
-    const p = nearestWalkable(this.sim.nav, e.mover.x + (dx / d) * (b.w / 2 + 0.8), e.mover.y + (dy / d) * (b.h / 2 + 0.8), 12) ?? [e.mover.x, e.mover.y];
+    const p = nearestWalkable(this.sim.nav, e.mover.x + (dx / d) * (b.w / 2 + 0.8), e.mover.y + (dy / d) * (b.h / 2 + 0.8), 12) ?? [
+      e.mover.x,
+      e.mover.y,
+    ];
     const u = this.spawnUnit(f, type, p[0], p[1]);
     this.sim.events.push(EventType.Trained, u.id, e.id);
     if (ENTITY_TYPES[type] === 'worker') {

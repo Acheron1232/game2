@@ -5,10 +5,11 @@ import { parentPort, workerData } from 'node:worker_threads';
 import type { MatchSetup } from '@game/shared';
 import { MatchRunner } from './match-runner';
 import { runTickLoop } from './tick-loop';
-import type { ToWorker, FromWorker } from './match-host';
+import type { ToWorker, FromWorker, MatchMap } from './match-host';
 
-const { setup, terrain } = workerData as { setup: MatchSetup; terrain: Uint8Array };
-const runner = new MatchRunner(setup, terrain);
+const { setup, map } = workerData as { setup: MatchSetup; map: MatchMap };
+const runner = new MatchRunner(setup, map.terrain, map.trees ?? undefined);
+let ended = false;
 const port = parentPort!;
 let stop: (() => void) | null = null;
 
@@ -28,11 +29,16 @@ port.on('message', (msg: ToWorker) => {
     case 'go':
       stop ??= runTickLoop(
         runner,
-        (tick, packets) =>
+        (tick, packets) => {
           post(
             { t: 'out', tick, packets },
             packets.map((p) => p.data.buffer),
-          ),
+          );
+          if (!ended && runner.winnerTeam) {
+            ended = true;
+            post({ t: 'end', winnerTeam: runner.winnerTeam });
+          }
+        },
         (stats) => post({ t: 'stats', stats }),
       );
       break;

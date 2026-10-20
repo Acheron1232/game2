@@ -3,10 +3,11 @@
 //   /ws          -> WebSocket for lobby (JSON) and game (binary) messages
 
 import { createServer, type Server } from 'node:http';
-import { gameData } from '@game/shared';
+import { gameData, type TreeList } from '@game/shared';
 import { WebSocketServer } from 'ws';
 import { readSharedDataFile } from './data-files';
 import { Lobby, type LobbyOptions } from './lobby/lobby';
+import type { MatchMap } from './match/match-host';
 import { PlayerRegistry } from './lobby/players';
 import { ClientConnection } from './net/connection';
 
@@ -27,7 +28,7 @@ export interface GameServerOptions extends Partial<Omit<LobbyOptions, 'serverVer
 export function createGameServer(options: GameServerOptions = {}): GameServer {
   const startedAt = Date.now();
   const players = new PlayerRegistry();
-  let terrain: Uint8Array | null = null;
+  let map: MatchMap | null = null;
   const lobby = new Lobby(players, {
     serverVersion: SERVER_VERSION,
     matchMode: options.matchMode ?? 'worker',
@@ -35,7 +36,14 @@ export function createGameServer(options: GameServerOptions = {}): GameServer {
     lobbyGraceMs: options.lobbyGraceMs ?? 20_000,
     reconnectMs: options.reconnectMs ?? gameData.rules.match.reconnectWindowSec * 1000,
     matchReadyTimeoutMs: options.matchReadyTimeoutMs ?? 10_000,
-    terrain: options.terrain ?? (() => (terrain ??= readSharedDataFile('map-terrain.bin'))),
+    matchEndDelayMs: options.matchEndDelayMs ?? 20_000,
+    map:
+      options.map ??
+      (() =>
+        (map ??= {
+          terrain: readSharedDataFile('map-terrain.bin'),
+          trees: (JSON.parse(new TextDecoder().decode(readSharedDataFile('map-trees.json'))) as { trees: TreeList }).trees,
+        })),
   });
 
   const http = createServer((req, res) => {

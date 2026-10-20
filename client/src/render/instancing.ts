@@ -19,6 +19,8 @@ export function scatterInstances(
   at: (i: number) => [number, number],
   compose: (i: number, out: Matrix) => void,
   chunk = INSTANCE_CHUNK,
+  /** told where copy i ended up (mesh, thin instance index, the mesh's matrix buffer), for later changes */
+  placed?: (i: number, mesh: Mesh, slot: number, data: Float32Array) => void,
 ): Mesh[] {
   const local = mesh.computeWorldMatrix(true).clone();
   mesh.parent = null;
@@ -52,8 +54,10 @@ export function scatterInstances(
       compose(i, m);
       local.multiplyToRef(m, out);
       out.copyToArray(buf, j * 16);
+      placed?.(i, target, j, buf);
     });
-    target.thinInstanceSetBuffer('matrix', buf, 16, true);
+    // A buffer that may change later (chopped trees) must not be static.
+    target.thinInstanceSetBuffer('matrix', buf, 16, !placed);
     target.thinInstanceRefreshBoundingInfo(false);
     target.alwaysSelectAsActiveMesh = false;
     target.isPickable = false;

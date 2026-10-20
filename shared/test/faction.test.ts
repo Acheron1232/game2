@@ -22,7 +22,13 @@ function match(slots = 2, seed = 1) {
     {
       seed,
       noCamps: true,
-      slots: Array.from({ length: slots }, (_, i) => ({ index: i, heroType: entityTypeIndex('stone_golem'), team: i + 1, color: i, start: i })),
+      slots: Array.from({ length: slots }, (_, i) => ({
+        index: i,
+        heroType: entityTypeIndex('stone_golem'),
+        team: i + 1,
+        color: i,
+        start: i,
+      })),
     },
     buildMatchNav(terrain, gameData.map),
     { terrain, trees },
@@ -36,7 +42,8 @@ function match(slots = 2, seed = 1) {
   return { sim, f: sim.factions!, run };
 }
 
-const units = (sim: MatchSim, slot: number, id: string) => sim.entities.filter((e) => e.alive && e.owner === slot && ENTITY_TYPES[e.type] === id);
+const units = (sim: MatchSim, slot: number, id: string) =>
+  sim.entities.filter((e) => e.alive && e.owner === slot && ENTITY_TYPES[e.type] === id);
 
 describe('faction start', () => {
   it('gets a Town Hall, 5 workers, money and supply', () => {
@@ -106,7 +113,8 @@ describe('economy', () => {
     const dx = Math.sign(128 - hall.mover.x),
       dy = Math.sign(128 - hall.mover.y);
     let site: SimEntity | null = null;
-    for (let k = 0; k < 30 && !site; k++) site = f.startBuilding(a, 'house', Math.round(hall.mover.x + dx * (7 + k * 0.5)), Math.round(hall.mover.y + dy * 6), w);
+    for (let k = 0; k < 30 && !site; k++)
+      site = f.startBuilding(a, 'house', Math.round(hall.mover.x + dx * (7 + k * 0.5)), Math.round(hall.mover.y + dy * 6), w);
     expect(site).toBeTruthy();
     expect(a.gold).toBe(500 - 80);
     expect(site!.building!.done).toBe(false);

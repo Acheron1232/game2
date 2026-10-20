@@ -13,7 +13,7 @@ import {
   type ServerLobbyMessage,
   type SlotState,
 } from '@game/shared';
-import { createMatchHost, type MatchHost } from '../match/match-host';
+import { createMatchHost, type MatchHost, type MatchMap } from '../match/match-host';
 import type { Player, PlayerConn, PlayerRegistry } from './players';
 import { emptySlot, makeRoomCode, Room } from './room';
 
@@ -28,7 +28,10 @@ export interface LobbyOptions {
   reconnectMs: number;
   /** The match starts this long after "start" even if a client did not say it is ready. */
   matchReadyTimeoutMs: number;
-  terrain: () => Uint8Array;
+  /** terrain grid + trees; read once and shared by all matches */
+  map: () => MatchMap;
+  /** after one team wins, players see the end screen this long, then the room goes back to the lobby */
+  matchEndDelayMs: number;
 }
 
 const HERO_IDS = new Set(gameData.heroes.map((h) => h.id));
@@ -256,6 +259,7 @@ export class Lobby {
   private closeRoom(room: Room): void {
     room.match?.stop();
     if (room.goTimer) clearTimeout(room.goTimer);
+    if (room.endTimer) clearTimeout(room.endTimer);
     for (const m of room.members) {
       m.room = null;
       this.send(m, { type: 'roomLeft', reason: 'closed' });
@@ -356,6 +360,9 @@ export class Lobby {
         team: s.team,
         color: s.color,
         start: starts[i]!,
+        // Every player has a faction run by the AI; a bot slot also has an AI hero.
+        ai: 'normal' as const,
+        bot: s.kind === 'bot',
       })),
     };
     if (test && this.options.allowTestOptions) {
@@ -384,7 +391,13 @@ export class Lobby {
   }
 
   private createMatch(room: Room, setup: MatchSetup): MatchHost {
-    const host = createMatchHost(setup, this.options.terrain(), this.options.matchMode);
+    const host = createMatchHost(setup, this.options.map(), this.options.matchMode);
+    host.onEnd = (winnerTeam) => {
+      if (room.match !== host) return;
+      room.endTimer = setTimeout(() => {
+        if (room.match === host) this.finishMatch(room, winnerTeam);
+      }, this.options.matchEndDelayMs);
+    };
     host.onPackets = (_tick, packets) => {
       for (const { slot, data } of packets) {
         const id = room.slots[slot]?.playerId;
@@ -421,6 +434,12 @@ export class Lobby {
     const room = p.room;
     if (!room || room.phase !== 'playing') return;
     if (room.hostId !== p.id) return this.error(p, 'not_host');
+    this.finishMatch(room, 0);
+  }
+
+  private finishMatch(room: Room, winnerTeam: number): void {
+    if (room.endTimer) clearTimeout(room.endTimer);
+    room.endTimer = null;
     room.match?.stop();
     room.match = null;
     room.matchInfo = null;
@@ -430,7 +449,7 @@ export class Lobby {
     // Players who never came back are gone now.
     for (const m of [...room.members]) if (!m.conn) this.leave(m, 'left');
     if (!this.rooms.has(room.code)) return;
-    this.broadcast(room, { type: 'matchEnd' });
+    this.broadcast(room, { type: 'matchEnd', winnerTeam });
     this.broadcastRoom(room);
   }
 

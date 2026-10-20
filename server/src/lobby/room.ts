@@ -41,6 +41,8 @@ export class Room {
   /** the match clock runs */
   going = false;
   goTimer: ReturnType<typeof setTimeout> | null = null;
+  /** after the match is won: back to the lobby when this fires */
+  endTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     readonly code: string,

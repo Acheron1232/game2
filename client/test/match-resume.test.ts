@@ -37,7 +37,12 @@ describe('joining a match already in motion', () => {
     const unit = { x: 20, y: 20, facing: 0, moving: true, dead: false } as Unit;
     const world = {
       scene: {},
-      nav: { cols: 64, rows: 64, cellSize: 1, walk: new Uint8Array(64 * 64).fill(1) } as NavGrid,
+      nav: { cols: 64, rows: 64, cellSize: 1, walk: new Uint8Array(64 * 64).fill(1), region: new Int32Array(64 * 64) } as NavGrid,
+      trees: [],
+      grid: { cols: 64, rows: 64, cellSize: 1, flags: new Uint8Array(64 * 64) },
+      setMenuBase: vi.fn(),
+      showAllTrees: vi.fn(),
+      hideTrees: vi.fn(),
       camera: { lookAt: vi.fn() },
       addUnit: () => unit,
       removeUnit: vi.fn(),
@@ -64,6 +69,7 @@ describe('joining a match already in motion', () => {
       maxMana: 100,
       level: 1,
       buffs: 0,
+      progress: 0,
     });
     receive(sw.finish(new BinaryWriter()).slice().buffer);
     expect(match.ownHero).not.toBeNull();

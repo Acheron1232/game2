@@ -6,6 +6,9 @@ import './styles.css';
 import './ui-skin.css';
 import {
   ENTITY_TYPES,
+  footprintOf,
+  isBuildingType,
+  isMineType,
   gameData,
   lv,
   MAX_LEVEL,
@@ -133,7 +136,19 @@ async function main(): Promise<void> {
   const startMatchIfReady = () => {
     if (!world || !pendingMatch) return;
     match?.dispose();
-    match = new MatchClient(world, net, pendingMatch, floating);
+    const m = new MatchClient(world, net, pendingMatch, floating);
+    match = m;
+    game.setResult(null);
+    game.setFaction(null);
+    const nameOf = (slot: number) => m.info.slots.find((s) => s.index === slot)?.name ?? '';
+    m.onDefeated = (slot) => {
+      if (slot === m.slot) game.setResult(S.defeat, S.youLose);
+      else game.alert(S.playerLost(nameOf(slot)));
+    };
+    m.onMatchOver = (team) => {
+      const won = team === m.myTeam;
+      game.setResult(won ? S.victory : S.defeat, `${won ? S.youWin : S.teamWins(team)} ${S.backSoon}`);
+    };
     selected = null;
     pendingMatch = null;
     game.setStatus(matchGoing ? S.matchRunning : S.matchWaiting);
@@ -273,15 +288,17 @@ async function main(): Promise<void> {
       match?.moveTo(x, y, false);
     },
   );
-  const townHalls = gameData.map.starts.map((s) => ({ x: s.townHall[0], y: s.townHall[1], color: '#e8dcc0', size: 6 }));
+  const dots: { x: number; y: number; color: string; size: number }[] = [];
   setInterval(() => {
     if (router.screen !== 'game') return;
     if (match) game.setClock(match.seconds);
-    const dots = [...townHalls];
+    dots.length = 0;
     for (const e of match?.entities.values() ?? []) {
       const u = e.unit;
-      if (u)
-        dots.push({ x: u.x, y: u.y, color: e === match!.ownHero ? '#ffffff' : TEAM_HEX[e.color]!, size: e === match!.ownHero ? 5 : 3 });
+      if (!u || e.state & UnitState.Hidden) continue;
+      if (isMineType(e.type)) dots.push({ x: u.x, y: u.y, color: '#ffd24a', size: 5 });
+      else if (isBuildingType(e.type)) dots.push({ x: u.x, y: u.y, color: TEAM_HEX[e.color]!, size: footprintOf(e.type)[0] >= 5 ? 7 : 5 });
+      else dots.push({ x: u.x, y: u.y, color: e === match!.ownHero ? '#ffffff' : TEAM_HEX[e.color]!, size: e === match!.ownHero ? 5 : 3 });
     }
     minimap.draw(dots, { x: w.camera.target.x, y: w.camera.target.y + 4, w: 46, h: 30 });
   }, 120);
@@ -296,6 +313,7 @@ async function main(): Promise<void> {
   setInterval(() => {
     if (router.screen !== 'game' || !match) return;
     const own = match.ownHero;
+    game.setFaction(match.hasFaction ? match.faction : null);
     if (aim && own && own.state & UnitState.Dead) setAim(null);
     const p = match.player;
     const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);

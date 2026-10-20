@@ -142,5 +142,6 @@ export type ServerLobbyMessage =
   | { type: 'chat'; from: string; text: string; system?: boolean }
   | { type: 'matchStart'; match: MatchStartInfo }
   | { type: 'matchGo'; tick: number }
-  | { type: 'matchEnd' }
+  /** winnerTeam: 0 when the host ended the match */
+  | { type: 'matchEnd'; winnerTeam: number }
   | { type: 'stats'; stats: MatchStats };

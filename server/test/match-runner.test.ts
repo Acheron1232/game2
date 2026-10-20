@@ -1,9 +1,23 @@
-import { BinaryWriter, CommandType, entityTypeIndex, isWalkable, readSnapshot, SnapshotData, writeCommand, MsgId } from '@game/shared';
+import {
+  BinaryWriter,
+  CommandType,
+  ENTITY_TYPES,
+  entityTypeIndex,
+  EventType,
+  isWalkable,
+  readSnapshot,
+  SnapshotData,
+  UnitState,
+  writeCommand,
+  MsgId,
+  type TreeList,
+} from '@game/shared';
 import { describe, expect, it } from 'vitest';
 import { readSharedDataFile } from '../src/data-files';
 import { MAX_COMMANDS_PER_SEC, MatchRunner } from '../src/match/match-runner';
 
 const terrain = readSharedDataFile('map-terrain.bin');
+const trees = (JSON.parse(new TextDecoder().decode(readSharedDataFile('map-trees.json'))) as { trees: TreeList }).trees;
 const setup = {
   seed: 7,
   slots: [0, 1].map((i) => ({ index: i, heroType: entityTypeIndex('staff_warrior'), team: i + 1, color: i, start: i })),
@@ -60,5 +74,38 @@ describe('match runner', () => {
     const s = readSnapshot(back.data, new SnapshotData());
     expect(s.flags & 1).toBe(1);
     expect(s.spawnCount).toBe(1);
+  });
+
+  it('with factions: the own base, the faction block, and cut trees on a full snapshot', () => {
+    const r = new MatchRunner(setup, terrain, trees);
+    const s = readSnapshot(r.tick().find((p) => p.slot === 0)!.data, new SnapshotData());
+    expect(s.hasFaction).toBe(true);
+    expect(s.faction).toMatchObject({ gold: 500, wood: 150, supplyUsed: 5, supplyCap: 12, tier: 1, workers: 5, army: 0 });
+    const types = s.spawns.slice(0, s.spawnCount).map((sp) => ENTITY_TYPES[sp.type]);
+    expect(types.filter((t) => t === 'worker').length).toBe(5);
+    expect(types).toContain('town_hall');
+    expect(types).toContain('gold_mine');
+    // The enemy base is far away and not seen.
+    expect(s.spawns.slice(0, s.spawnCount).every((sp) => sp.owner === 0 || ENTITY_TYPES[sp.type] === 'gold_mine')).toBe(true);
+    // Run a while: workers go into the mine (hidden) and the faction block only comes on changes.
+    let hidden = false;
+    for (let i = 0; i < 200; i++)
+      for (const p of r.tick())
+        if (p.slot === 0) {
+          const t = readSnapshot(p.data, new SnapshotData());
+          for (let k = 0; k < t.updateCount; k++) if (t.updates[k]!.state & UnitState.Hidden) hidden = true;
+        }
+    expect(hidden).toBe(true);
+    // A rejoin gets every cut tree again.
+    r.sim.factions!.cutTrees.push(3, 9);
+    r.setOnline(0, false);
+    r.setOnline(0, true);
+    const back = readSnapshot(r.tick().find((p) => p.slot === 0)!.data, new SnapshotData());
+    const gone = back.events
+      .slice(0, back.eventCount)
+      .filter((e) => e.type === EventType.TreeGone)
+      .map((e) => e.a);
+    expect(gone).toEqual([3, 9]);
+    expect(r.winnerTeam).toBe(0);
   });
 });

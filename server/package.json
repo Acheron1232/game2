@@ -8,7 +8,8 @@
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "load-test": "tsx scripts/load-test.ts"
+    "load-test": "tsx scripts/load-test.ts",
+    "sim:matches": "tsx scripts/sim-matches.ts"
   },
   "dependencies": {
     "@game/shared": "workspace:*",

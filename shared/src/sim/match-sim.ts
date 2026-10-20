@@ -570,7 +570,15 @@ export class MatchSim {
     for (const e of this.entities) {
       const px = e.mover.x,
         py = e.mover.y;
-      const frozen = !e.alive || e.hidden || e.building || e.forced || e.swing === 1 || this.isStunned(e) || this.isRooted(e) || (e.cast && e.cast.castEnd > 0);
+      const frozen =
+        !e.alive ||
+        e.hidden ||
+        e.building ||
+        e.forced ||
+        e.swing === 1 ||
+        this.isStunned(e) ||
+        this.isRooted(e) ||
+        (e.cast && e.cast.castEnd > 0);
       if (!frozen) {
         e.mover.speed = e.stats.moveSpeed;
         stepMover(e.mover, TICK_DT);

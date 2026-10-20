@@ -40,6 +40,8 @@ export class NetEntity {
   level: number;
   /** BuffFlag bits */
   buffs: number;
+  /** buildings: construction / training / upgrade, 0..255 */
+  progress: number;
   unit: Unit | null = null;
   /** for full snapshots: was it in the last one */
   mark = 0;
@@ -56,6 +58,7 @@ export class NetEntity {
     this.maxMana = s.maxMana;
     this.level = s.level;
     this.buffs = s.buffs;
+    this.progress = s.progress;
     this.keys.push({ tick, x: dqPos(s.x), y: dqPos(s.y), vx: dqVel(s.vx), vy: dqVel(s.vy), facing: dqFacing(s.facing), state: s.state });
   }
 
@@ -93,6 +96,7 @@ export class NetEntity {
     }
     if (u.mask & Field.Level) this.level = u.level;
     if (u.mask & Field.Buffs) this.buffs = u.buffs;
+    if (u.mask & Field.Progress) this.progress = u.progress;
     if (prev.tick === tick) this.keys[this.keys.length - 1] = key;
     else this.keys.push(key);
     if (this.keys.length > MAX_KEYS) this.keys.shift();
