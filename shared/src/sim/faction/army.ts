@@ -1,9 +1,12 @@
 // Army movement for the faction AI: groups walk on shared flow fields (one per goal) instead of
 // one A* per unit; attack groups fight what they meet. Written by Codex for Phase 8b
-// (task: tools/codex-tasks/army.md).
+// (task: tools/codex-tasks/army.md). Marching in one block (pace, who walks in front) and the
+// chase leash came later (faction AI pass).
 
+import { gameData } from '../../data/index';
 import { FlowFieldCache, flowDirection, flowDistance, type FlowField } from '../../nav/flow-field';
 import { TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
+import { CATAPULT_TYPE } from './targeting';
 
 const SAMPLE_TICKS = 5;
 const STEP_DISTANCE = 1.5;
@@ -13,6 +16,17 @@ const STUCK_TICKS = 3 * TICK_RATE;
 const FALLBACK_TICKS = 5 * TICK_RATE;
 /** A field build takes a few ms: at most this many per tick, other groups wait a tick. */
 const BUILDS_PER_TICK = 1;
+const ARMY = gameData.ai.faction.army;
+const MELEE_RANGE = gameData.rules.combat.meleeRange + 0.6;
+/** Groups smaller than this walk freely (no pace). */
+const PACE_MIN_MEMBERS = 3;
+/** A unit this far behind the middle of its group walks at full speed to catch up. */
+const CATCH_UP = 5;
+/** Close to the goal everyone walks freely (the fight starts there). */
+const PACE_GOAL_DISTANCE = 12;
+/** In front of its place by up to this much more: a unit slows down; farther: it waits. */
+const PACE_WAIT = 6;
+const PACE_SLOW = 0.6;
 
 export type ArmyMode = 'gather' | 'attack' | 'retreat';
 
@@ -25,6 +39,10 @@ export interface ArmyGroup {
   targetY: number;
   /** attack mode also fights neutral monsters (clearing a camp); off: walk past camps */
   neutrals: boolean;
+  /** marching: median path distance to the goal of the walking members (NaN = no pace this tick) */
+  paceMiddle: number;
+  /** marching: move speed of the slowest walking member */
+  paceSpeed: number;
 }
 
 interface MemberMove {
@@ -41,6 +59,8 @@ export class ArmyMover {
   private readonly moves = new Map<number, MemberMove>();
   private readonly fields: FlowFieldCache;
   private readonly direction = { x: 0, y: 0 };
+  /** path distances of one group's walking members (reused every tick) */
+  private readonly paceList: number[] = [];
   private nextGroupId = 1;
   private blockersVersion: number;
   private builds = 0;
@@ -55,7 +75,16 @@ export class ArmyMover {
   }
 
   create(ids: readonly number[], mode: ArmyMode, x: number, y: number): ArmyGroup {
-    const group: ArmyGroup = { id: this.nextGroupId++, members: [], mode, targetX: x, targetY: y, neutrals: false };
+    const group: ArmyGroup = {
+      id: this.nextGroupId++,
+      members: [],
+      mode,
+      targetX: x,
+      targetY: y,
+      neutrals: false,
+      paceMiddle: NaN,
+      paceSpeed: 0,
+    };
     this.groupList.push(group);
     for (const id of ids) this.add(group, id);
     return group;
@@ -88,6 +117,8 @@ export class ArmyMover {
       if (this.owner.get(id) !== g) continue;
       this.owner.delete(id);
       this.moves.delete(id);
+      const e = this.sim.get(id);
+      if (e) e.speedCap = 0;
     }
     g.members.length = 0;
   }
@@ -161,7 +192,35 @@ export class ArmyMover {
       this.builds++;
       field = this.fields.get(g.targetX, g.targetY);
     }
+    this.pace(g, field);
     for (const id of g.members) this.updateMember(g, this.sim.get(id)!, field);
+  }
+
+  /**
+   * An attack group marches as one block: the slowest walking member sets the speed, and the
+   * middle of the group (median path distance to the goal) sets who waits. Without this, fast
+   * riders arrive first and die alone, and the army reaches the enemy as a long stream. The
+   * median (not the mean) so a few stragglers far behind do not stop the whole army.
+   */
+  private pace(g: ArmyGroup, field: FlowField): void {
+    g.paceMiddle = NaN;
+    g.paceSpeed = 0;
+    if (g.mode !== 'attack') return;
+    const list = this.paceList;
+    list.length = 0;
+    let slowest = Infinity;
+    for (const id of g.members) {
+      const e = this.sim.get(id)!;
+      if (e.targetId || this.sim.isFlying(e)) continue;
+      const d = flowDistance(field, e.mover.x, e.mover.y);
+      if (!Number.isFinite(d)) continue;
+      list.push(d);
+      if (e.stats.moveSpeed < slowest) slowest = e.stats.moveSpeed;
+    }
+    if (list.length < PACE_MIN_MEMBERS) return;
+    list.sort(byNumber);
+    g.paceMiddle = list[list.length >> 1]!;
+    g.paceSpeed = slowest;
   }
 
   private updateMember(g: ArmyGroup, e: SimEntity, groupField: FlowField): void {
@@ -174,10 +233,27 @@ export class ArmyMover {
     if (g.mode === 'retreat') {
       e.targetId = 0;
       e.swing = 0;
+      e.speedCap = 0;
       this.setOrder(g, e);
     } else if (g.mode === 'attack' && e.targetId) {
-      this.markNotWalking(move, e);
-      return;
+      e.speedCap = 0;
+      // Chase leash: a unit that ran this far away, or this far from the group's goal, is let
+      // go and the unit walks on with its group. Without the goal leash a tough hero walking
+      // away pulled a whole siege army out of the enemy base.
+      const t = this.sim.get(e.targetId);
+      if (
+        t &&
+        !t.building &&
+        e.swing !== 1 &&
+        (Math.hypot(t.mover.x - e.mover.x, t.mover.y - e.mover.y) > ARMY.chaseLeash ||
+          Math.hypot(t.mover.x - g.targetX, t.mover.y - g.targetY) > ARMY.goalLeash)
+      ) {
+        e.targetId = 0;
+        e.mover.path = [];
+      } else {
+        this.markNotWalking(move, e);
+        return;
+      }
     }
 
     const dx = g.targetX - e.mover.x;
@@ -216,6 +292,20 @@ export class ArmyMover {
     }
 
     if ((this.sim.tick + e.id) % SAMPLE_TICKS !== 0) return;
+    if (field && !Number.isNaN(g.paceMiddle)) {
+      const d = flowDistance(field, e.mover.x, e.mover.y);
+      const ahead = g.paceMiddle - d - ARMY.groupSpread[roleOf(e)];
+      if (d > PACE_GOAL_DISTANCE && ahead > PACE_WAIT) {
+        // Far in front: wait for the group (idle still fights what comes close).
+        e.mover.path = [];
+        e.order = 'idle';
+        e.speedCap = 0;
+        this.markNotWalking(move, e);
+        return;
+      }
+      // A little in front: slower; behind: full speed to catch up; else the group's pace.
+      e.speedCap = d <= PACE_GOAL_DISTANCE || ahead < -CATCH_UP ? 0 : ahead > 0 ? g.paceSpeed * PACE_SLOW : g.paceSpeed;
+    } else e.speedCap = 0;
     this.setOrder(g, e);
     if (flying) {
       this.direction.x = dx / directDistance;
@@ -231,6 +321,7 @@ export class ArmyMover {
   /** At the goal: gather/retreat stop; attackers stay and fight what is near (the goal may be a building). */
   private finishAtGoal(g: ArmyGroup, e: SimEntity): void {
     e.mover.path = [];
+    e.speedCap = 0;
     e.orderX = g.mode === 'attack' ? e.mover.x : g.targetX;
     e.orderY = g.mode === 'attack' ? e.mover.y : g.targetY;
     e.order = g.mode === 'attack' ? 'attackMove' : 'idle';
@@ -253,6 +344,7 @@ export class ArmyMover {
 
   private resetMove(id: number): void {
     const e = this.sim.get(id);
+    if (e) e.speedCap = 0;
     this.moves.set(id, {
       x: e?.mover.x ?? 0,
       y: e?.mover.y ?? 0,
@@ -260,4 +352,14 @@ export class ArmyMover {
       fallbackUntil: 0,
     });
   }
+}
+
+/** Melee walks in front of a marching group, siege at the back (ai.json army.groupSpread). */
+export function roleOf(e: SimEntity): 'melee' | 'ranged' | 'siege' {
+  if (e.type === CATAPULT_TYPE) return 'siege';
+  return e.stats.attackRange <= MELEE_RANGE ? 'melee' : 'ranged';
+}
+
+function byNumber(a: number, b: number): number {
+  return a - b;
 }

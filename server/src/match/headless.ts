@@ -4,6 +4,7 @@ import {
   FactionAI,
   difficultyRules,
   ENTITY_TYPES,
+  FACTION_HERO_SLOT,
   gameData,
   MatchSim,
   parseTerrain,
@@ -42,6 +43,12 @@ export interface FactionMinute {
   buildings: number;
   tier: number;
   heroLevel: number;
+  /** the faction's own hero ("stone_golem 5"), '' before it is summoned */
+  factionHero: string;
+  /** neutral camps the faction's units and heroes cleared so far */
+  campsCleared: number;
+  /** army-vs-army fights far from every Town Hall so far */
+  fieldFights: number;
   status: string;
   defeated: boolean;
 }
@@ -71,6 +78,7 @@ export interface HeadlessResult {
   wallSeconds: number;
   stuck: StuckReport[];
   log: MinuteLog[];
+  factions: FactionTotals[];
 }
 
 interface MapTreesFile {
@@ -213,9 +221,25 @@ function factionMinute(sim: MatchSim, f: FactionState): FactionMinute {
     buildings,
     tier: f.tier,
     heroLevel: sim.heroes[f.slot]?.heroState?.level ?? 0,
+    factionHero: factionHero(sim, f),
+    campsCleared: f.campsCleared,
+    fieldFights: f.fieldFights,
     status: f.status,
     defeated: f.defeated,
   };
+}
+
+function factionHero(sim: MatchSim, f: FactionState): string {
+  const hs = sim.heroes[FACTION_HERO_SLOT + f.slot]?.heroState;
+  return hs ? `${hs.def.id} ${hs.level}` : '';
+}
+
+/** Per faction at the end: its own hero, camps cleared, field fights. */
+export interface FactionTotals {
+  slot: number;
+  factionHero: string;
+  campsCleared: number;
+  fieldFights: number;
 }
 
 function minuteLog(sim: MatchSim, minute: number): MinuteLog {
@@ -318,5 +342,13 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
     wallSeconds,
     stuck,
     log,
+    factions: sim
+      .factions!.list.filter((f) => !!f)
+      .map((f) => ({
+        slot: f.slot,
+        factionHero: factionHero(sim, f),
+        campsCleared: f.campsCleared,
+        fieldFights: f.fieldFights,
+      })),
   };
 }

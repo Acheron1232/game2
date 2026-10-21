@@ -420,6 +420,16 @@ export class MatchClient {
     return best;
   }
 
+  /**
+   * A player's own hero (not the faction's hero, which has the same owner). Player heroes are
+   * made when the match starts, before anything else, so theirs is the lowest id.
+   */
+  playerHero(slot: number): NetEntity | null {
+    let best: NetEntity | null = null;
+    for (const e of this.entities.values()) if (e.owner === slot && isHeroType(e.type) && (!best || e.id < best.id)) best = e;
+    return best;
+  }
+
   // ---------- snapshots ----------
 
   private onSnapshot(data: ArrayBuffer): void {
@@ -822,7 +832,8 @@ export class MatchClient {
       this.blockers.addRect(r.x, r.y, r.w, r.h);
       this.blocked.set(e.id, r);
     }
-    if (hero && e.owner === this.slot) {
+    // The faction's own hero has our owner too: the player block names our hero.
+    if (hero && e.owner === this.slot && (!this.player.heroId || e.id === this.player.heroId)) {
       this.ownHero = e;
       this.predictor = new HeroPredictor(k.x, k.y, k.facing, moveSpeedOf(e.type), this.world.nav, isFlyingType(e.type));
       // A rejoined walking hero has no local path history. Draw server motion until the next

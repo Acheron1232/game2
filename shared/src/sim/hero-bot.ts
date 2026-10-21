@@ -20,6 +20,10 @@ export interface HeroBotHooks {
   armyTarget?: () => { x: number; y: number } | null;
   /** Our base is under attack: point to defend, or null. */
   baseUnderAttack?: () => { x: number; y: number } | null;
+  /** A faction's own hero: where its army is while the army is out (camps, enemy armies, attacks), or null. */
+  withArmy?: () => { x: number; y: number } | null;
+  /** withArmy only from this hero level (before that the hero farms alone) */
+  withArmyFromLevel?: number;
 }
 
 interface DifficultySettings {
@@ -44,6 +48,9 @@ const PLAN_DEFEND = 3;
 const PLAN_ATTACK = 4;
 const PLAN_SHOP = 5;
 const PLAN_UPGRADES = 6;
+const PLAN_ARMY = 7;
+/** With the army: a new walk order only when the army moved this far from the last one. */
+const ARMY_REORDER = 6;
 const MAX_COMMANDS_PER_THINK = 3;
 const POTION_ITEM = itemIndex('healing_potion');
 const POTION_TARGET = 2;
@@ -97,7 +104,7 @@ function mainAbilitySlot(hero: SimEntity): number {
  * no healing, and a fountain heals about ten times faster than resting, so a longer walk pays.
  */
 function retreatPoint(hero: SimEntity): readonly [number, number] {
-  const home = gameData.map.starts[hero.heroState!.start]!.heroSpawn as readonly [number, number];
+  const home: readonly [number, number] = hero.heroState!.home;
   let best = home;
   let bestD = distance(hero, home[0], home[1]) + FOUNTAIN_DETOUR;
   for (const f of gameData.map.fountains) {
@@ -114,6 +121,11 @@ function aliveCampLevel(camp: CampState): number {
   let total = 0;
   for (const member of camp.members) if (member.alive) total += member.stats.level;
   return total;
+}
+
+function campHasFlyers(camp: CampState): boolean {
+  for (const member of camp.members) if (member.alive && member.stats.layer !== 'ground') return true;
+  return false;
 }
 
 function lowestHealthMember(camp: CampState): SimEntity | null {
@@ -245,6 +257,24 @@ export class HeroBot {
       }
     }
 
+    const group = hero.heroState.level >= (this.hooks.withArmyFromLevel ?? 1) ? (this.hooks.withArmy?.() ?? null) : null;
+    if (group) {
+      this.campIndex = -1;
+      this.stateText = 'With the army';
+      const moved = Math.hypot(this.planX - group.x, this.planY - group.y) > ARMY_REORDER;
+      if (
+        commands < MAX_COMMANDS_PER_THINK &&
+        !hero.targetId &&
+        (this.plan !== PLAN_ARMY ||
+          (moved && distance(hero, group.x, group.y) > ARMY_REORDER) ||
+          (hero.order !== 'attackMove' && distance(hero, group.x, group.y) > 3))
+      ) {
+        this.send(sim, { type: CommandType.AttackMove, x: group.x, y: group.y });
+        this.setPointPlan(PLAN_ARMY, group.x, group.y);
+      }
+      return;
+    }
+
     const army = this.settings.joinsAttacks && hero.heroState.level >= 4 ? (this.hooks.armyTarget?.() ?? null) : null;
     if (army) {
       this.campIndex = -1;
@@ -304,10 +334,15 @@ export class HeroBot {
     const main = mainAbilitySlot(hero);
     if (this.canLearnSlot(hero, 3)) return this.send(sim, { type: CommandType.Learn, slot: 3 });
     if (this.canLearnSlot(hero, main)) return this.send(sim, { type: CommandType.Learn, slot: main });
+    // Then the least learned of the other two, so the third skill (often a passive or an aura)
+    // is not left empty until level 8.
+    const levels = hero.heroState!.abilityLevels;
+    let pick = -1;
     for (let slot = 0; slot < 3; slot++) {
-      if (slot !== main && this.canLearnSlot(hero, slot)) return this.send(sim, { type: CommandType.Learn, slot });
+      if (slot === main || !this.canLearnSlot(hero, slot)) continue;
+      if (pick < 0 || (levels[slot] ?? 0) < (levels[pick] ?? 0)) pick = slot;
     }
-    return false;
+    return pick >= 0 && this.send(sim, { type: CommandType.Learn, slot: pick });
   }
 
   private canLearnSlot(hero: SimEntity, slot: number): boolean {
@@ -564,6 +599,8 @@ export class HeroBot {
       if (camp.respawnAt !== 0) continue;
       const level = aliveCampLevel(camp);
       if (level === 0 || level > maxLevel) continue;
+      // A melee hero can not hit flying monsters (harpies): it would stand under them forever.
+      if (!hero.stats.canHitAir && campHasFlyers(camp)) continue;
       const d = distance(hero, camp.x, camp.y);
       if (d < bestDistance) {
         bestDistance = d;
@@ -616,7 +653,9 @@ export class HeroBot {
       if (!target?.alive || !sim.canSee(hero.team, target)) continue;
       if (a.target === 'unit') {
         if (!targetAllowed(sim, hero, a, target) || !this.inCastRange(hero, target, a, level)) continue;
-        if (this.isDamageOrControl(a) && this.cast(sim, hero, slot, { kind: 1, id: target.id, x: 0, y: 0 })) return true;
+        // Debuffs (Mana Mark) only on heroes: they are worth it there.
+        const debuff = target.hero && a.params.bonusSpellDamagePct !== undefined && !target.buffs.some((b) => b.id === a.id);
+        if ((this.isDamageOrControl(a) || debuff) && this.cast(sim, hero, slot, { kind: 1, id: target.id, x: 0, y: 0 })) return true;
       } else if (a.target === 'point' || a.target === 'line' || a.target === 'cone') {
         if (!this.pointInRange(hero, target.mover.x, target.mover.y, a, level)) continue;
         const radius = Math.max(1.5, param(a, 'radius', level), param(a, 'width', level));

@@ -8,9 +8,9 @@ import type { TerrainGrid } from '../../map/terrain';
 import { NavBlockers } from '../../nav/blockers';
 import { isWalkable, nearestWalkable } from '../../nav/nav-grid';
 import { buildTreeIndex, nearestChoppableTree, removeTree, type TreeIndex, type TreeList } from '../../nav/trees';
-import { buildingDefOf, entityTypeIndex, ENTITY_TYPES, footprintOf, GOLD_MINE } from '../entity-types';
+import { buildingDefOf, entityTypeIndex, ENTITY_TYPES, footprintOf, GOLD_MINE, isHeroType } from '../entity-types';
 import { EventType } from '../events';
-import { NEUTRAL, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
+import { FACTION_HERO_SLOT, NEUTRAL, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
 import { buildingStats, rectDistance } from '../stats';
 
 const E = gameData.rules.economy;
@@ -51,6 +51,12 @@ export interface FactionState {
   status: string;
   /** the Town Hall at the start spot (may be gone) */
   homeHallId: number;
+  /** the faction's own hero (summoned at the Hero Shrine), 0 = none yet */
+  heroId: number;
+  /** neutral camps this faction's units or heroes cleared (last hit) */
+  campsCleared: number;
+  /** fights of its army against an enemy army far from every Town Hall (match report) */
+  fieldFights: number;
 }
 
 export interface BuildingState {
@@ -168,6 +174,9 @@ export class Factions {
       defeated: false,
       status: 'Starting',
       homeHallId: 0,
+      heroId: 0,
+      campsCleared: 0,
+      fieldFights: 0,
     };
     this.list[slot] = f;
     const [tx, ty] = gameData.map.starts[start]!.townHall;
@@ -297,6 +306,29 @@ export class Factions {
     b.queue.push(entityTypeIndex(unitId));
     f.supplyUsed += def.supply ?? 0;
     return true;
+  }
+
+  /**
+   * The faction's own hero, at a finished Hero Shrine (pays now). One per faction: not while it
+   * has a hero or one is on the way.
+   */
+  summonHero(f: FactionState, shrine: SimEntity, heroType: number): boolean {
+    const b = shrine.building;
+    const summon = b?.def?.heroSummon;
+    if (!b || !summon || !b.done || !shrine.alive || f.defeated || !isHeroType(heroType)) return false;
+    if (f.heroId || this.heroOnTheWay(f) || b.queue.length || !this.canPay(f, summon.cost)) return false;
+    this.pay(f, summon.cost);
+    b.queue.push(heroType);
+    return true;
+  }
+
+  /** A hero waits in the queue of one of our shrines. */
+  heroOnTheWay(f: FactionState): boolean {
+    for (const id of f.buildings) {
+      const b = this.sim.get(id)?.building;
+      if (b?.def?.heroSummon && b.queue.length) return true;
+    }
+    return false;
   }
 
   /** Town Hall -> Stronghold -> Citadel. The Tier Up Fund gold can be used here. */
@@ -592,10 +624,9 @@ export class Factions {
     if (b.upgradeTo >= 0 && --b.upgradeLeft <= 0) this.finishTier(e, f);
     if (!b.queue.length) return;
     if (b.trainTotal === 0)
-      b.trainTotal = b.trainLeft = Math.max(
-        1,
-        Math.round(secs(unitDef(ENTITY_TYPES[b.queue[0]!]!)?.buildTime ?? 20) * this.sim.trainTimeFactor(f)),
-      );
+      b.trainTotal = b.trainLeft = b.def?.heroSummon
+        ? Math.max(1, secs(b.def.heroSummon.timeSec))
+        : Math.max(1, Math.round(secs(unitDef(ENTITY_TYPES[b.queue[0]!]!)?.buildTime ?? 20) * this.sim.trainTimeFactor(f)));
     if (--b.trainLeft > 0) return;
     const type = b.queue.shift()!;
     b.trainTotal = 0;
@@ -607,6 +638,13 @@ export class Factions {
       e.mover.x,
       e.mover.y,
     ];
+    if (isHeroType(type)) {
+      // The faction's own hero: not one of f.units (no supply, not in the army groups).
+      const hero = this.sim.spawnHero(FACTION_HERO_SLOT + f.slot, type, f.slot, f.team, f.color, f.start, p[0], p[1]);
+      f.heroId = hero.id;
+      this.sim.events.push(EventType.Trained, hero.id, e.id);
+      return;
+    }
     const u = this.spawnUnit(f, type, p[0], p[1]);
     this.sim.events.push(EventType.Trained, u.id, e.id);
     if (ENTITY_TYPES[type] === 'worker') {
@@ -661,8 +699,8 @@ export class Factions {
         const u = this.sim.get(id);
         if (u?.alive) this.sim.kill(u, { id: u.id, owner: u.owner, team: u.team });
       }
-      const hero = this.sim.heroes[f.slot];
-      if (hero) {
+      for (const hero of [this.sim.heroes[f.slot], this.sim.heroes[FACTION_HERO_SLOT + f.slot]]) {
+        if (!hero) continue;
         if (hero.alive) this.sim.kill(hero, { id: hero.id, owner: hero.owner, team: hero.team });
         if (hero.heroState) hero.heroState.respawnAt = 0;
         hero.removeAt = this.sim.tick + 60;

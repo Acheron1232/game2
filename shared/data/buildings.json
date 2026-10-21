@@ -89,6 +89,15 @@
       "supplyGiven": 0, "trains": [], "requires": ["barracks"], "upgradesTo": null, "sight": 16, "bounty": 40,
       "attack": { "attackType": "pierce", "damage": [22, 26], "attackCooldown": 1.0, "attackRange": 7, "projectileSpeed": 20, "canHit": ["ground", "air"] },
       "look": "Thin wooden tower on a stone base with a roofed top. Team color: flag on top."
+    },
+    {
+      "id": "hero_shrine", "name": "Hero Shrine", "tier": 1,
+      "hp": 900, "armor": 5, "armorType": "fortified",
+      "cost": { "gold": 180, "wood": 60 }, "buildTime": 45, "footprint": [3, 3],
+      "supplyGiven": 0, "trains": [], "requires": ["barracks"], "upgradesTo": null, "sight": 12, "bounty": 60,
+      "heroSummon": { "cost": { "gold": 250, "wood": 50 }, "timeSec": 30 },
+      "notes": "Summons the faction's own hero (one per faction, chosen by the AI). The hero comes back to life here, with the same wait as player heroes.",
+      "look": "Round stone platform with four pillars and a glowing crystal in the middle. Team color: banners on the pillars."
     }
   ],
   "neutralBuildings": [

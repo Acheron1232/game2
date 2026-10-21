@@ -673,7 +673,7 @@ async function main(): Promise<void> {
     const allies: TeamHeroView[] = [];
     for (const s of match.info.slots) {
       if (s.index === match.slot || match.info.slots.find((x) => x.index === match!.slot)?.team !== s.team) continue;
-      const hero = [...match.entities.values()].find((e) => e.owner === s.index && isHeroType(e.type));
+      const hero = match.playerHero(s.index);
       const row = scores.find((r) => r.slot === s.index);
       const def = gameData.heroes.find((h) => h.id === s.hero);
       allies.push({

@@ -483,7 +483,7 @@ function useNow(sim: MatchSim, e: SimEntity, slot: number, target: CastTarget): 
   }
   if (a.gainXp) sim.addXp(e, a.gainXp);
   if (a.teleportTo === 'own_town_hall') {
-    [px, py] = gameData.map.starts[hs.start]!.heroSpawn;
+    [px, py] = hs.home;
     sim.teleport(e, px, py);
   }
   if (a.target === 'point' && a.sight) {

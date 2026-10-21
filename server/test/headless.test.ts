@@ -3,10 +3,17 @@ import { runHeadlessMatch } from '../src/match/headless';
 
 describe('headless match', () => {
   it('does not call a supply-limited winning army idle just because it could afford another worker', () => {
-    const result = runHeadlessMatch({ seed: 10, slots: 4, maxMinutes: 40 });
-    expect(result.winnerTeam).toBe(3);
+    // Who wins changes with every AI tuning; that somebody wins (with a maxed army) does not.
+    const result = runHeadlessMatch({ seed: 10, slots: 4, maxMinutes: 60 });
+    expect(result.winnerTeam).toBeGreaterThan(0);
     expect(result.stuck).toEqual([]);
-  }, 60_000);
+    // Faction AI pass: every faction summoned its own hero, cleared camps and fought in the field.
+    for (const f of result.factions) {
+      expect(f.factionHero, `slot ${f.slot} hero`).not.toBe('');
+      expect(f.campsCleared, `slot ${f.slot} camps`).toBeGreaterThan(0);
+    }
+    expect(result.factions.reduce((n, f) => n + f.fieldFights, 0)).toBeGreaterThan(0);
+  }, 90_000);
 
   it('runs three game minutes quickly and records the economy', () => {
     const started = performance.now();

@@ -370,6 +370,17 @@
       "idle"
     ]
   },
+  "hero_shrine": {
+    "skin": "buildings_1_skin",
+    "height": 2.56,
+    "triangles": 600,
+    "sockets": [
+      "crystal"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "house": {
     "skin": "buildings_2_skin",
     "height": 2.8,

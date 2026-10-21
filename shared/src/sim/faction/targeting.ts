@@ -1,6 +1,8 @@
-// How faction units pick a target: units that attack us first, catapults go for buildings
-// (towers first), focus fire on the weakest when the difficulty allows it.
-// Written by Codex for Phase 8b (task: tools/codex-tasks/targeting.md).
+// How faction units pick a target: units that fight back (and heroes) before towers, towers
+// before other buildings, and inside each class the ones that attack us first; catapults go for
+// buildings (towers first); focus fire on the weakest when the difficulty allows it.
+// Written by Codex for Phase 8b (task: tools/codex-tasks/targeting.md); classes reworked in the
+// faction AI pass (armies used to hit a tower while enemy units hit them).
 
 import { gameData } from '../../data/index';
 import { hiddenFrom } from '../buffs';
@@ -15,7 +17,7 @@ export interface TargetRules {
   takeNeutrals: boolean;
 }
 
-const CATAPULT_TYPE = ENTITY_TYPES.indexOf('catapult');
+export const CATAPULT_TYPE = ENTITY_TYPES.indexOf('catapult');
 const WATCHTOWER_TYPE = ENTITY_TYPES.indexOf('watchtower');
 const catapultDef = gameData.units.find((unit) => unit.id === 'catapult') as
   ((typeof gameData.units)[number] & { minRange?: number }) | undefined;
@@ -52,6 +54,12 @@ function attacksOurTeam(sim: MatchSim, e: SimEntity, o: SimEntity): boolean {
   return !!target && target.team === e.team;
 }
 
+/** Units that can hurt our army: not buildings, not workers at work, not wards. */
+export function fightsBack(o: SimEntity): boolean {
+  return !o.building && !o.inert && (!o.job || o.job.kind === 'idle') && o.stats.damageMax > 0;
+}
+
+/** Building 0, worker 1, tower 2, fighter or hero 3; +0.5 when it attacks our team. */
 function priorityClass(sim: MatchSim, e: SimEntity, o: SimEntity): number {
   const building = !!o.building;
   const tower = building && o.type === WATCHTOWER_TYPE;
@@ -59,8 +67,8 @@ function priorityClass(sim: MatchSim, e: SimEntity, o: SimEntity): number {
     if (!building) return 0;
     return tower ? 2 : 1;
   }
-  const targetKind = building ? (tower ? 1 : 0) : 2;
-  return targetKind + (attacksOurTeam(sim, e, o) ? 3 : 0);
+  const targetKind = building ? (tower ? 2 : 0) : fightsBack(o) ? 3 : 1;
+  return targetKind + (attacksOurTeam(sim, e, o) ? 0.5 : 0);
 }
 
 /** Score used by pickTarget (exported for tests): higher is better, -Infinity = not allowed. */
@@ -84,7 +92,8 @@ export function targetScore(sim: MatchSim, e: SimEntity, o: SimEntity, d2: numbe
   if (e.type === CATAPULT_TYPE && distance < CATAPULT_MIN_RANGE) return -Infinity;
 
   const priority = priorityClass(sim, e, o);
-  return rules.focusFire ? priority + 1 / (2 + Math.max(0, o.hp)) : priority + 1 / (2 + distance);
+  // The tie-break stays under 0.5, so it never beats a class step.
+  return rules.focusFire ? priority + 0.4 / (2 + Math.max(0, o.hp)) : priority + 0.4 / (2 + distance);
 }
 
 function considerTarget(o: SimEntity, d2: number): void {

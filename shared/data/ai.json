@@ -17,7 +17,7 @@
       },
       "normal": {
         "thinkDelaySec": 0.5, "workerTarget": 16, "maxProductionBuildings": 3,
-        "firstAttackArmySupply": 24, "attackArmySupply": 28, "retreatAtArmyPct": 30,
+        "firstAttackArmySupply": 24, "attackArmySupply": 28, "retreatAtArmyPct": 20,
         "expandAtMinute": 10, "towersAtBase": 2, "targetChoice": "closest_or_weakest",
         "focusFire": true, "pullWoundedUnits": false, "buildOrderDelaySec": 0
       },
@@ -34,6 +34,8 @@
       { "do": "build", "what": "barracks" },
       { "do": "build", "what": "house" },
       { "do": "build", "what": "archery_range" },
+      { "do": "build", "what": "hero_shrine" },
+      { "do": "summon", "what": "hero", "when": "the Hero Shrine is ready; runs on its own and does not hold the order back" },
       { "do": "train", "what": "swordsman", "count": 2 },
       { "do": "build", "what": "watchtower" },
       { "do": "build", "what": "forge" },
@@ -70,6 +72,48 @@
       "retargetEverySec": 5,
       "catapultsTarget": "buildings first, towers before other buildings",
       "creepCampsWhenIdle": true
+    },
+
+    "factionHero": {
+      "notes": [
+        "The faction summons one hero of its own at the Hero Shrine. It never picks the hero its player plays.",
+        "Score of a hero = base + the bonuses that fit + random x a number from 0 to 1. The highest score wins.",
+        "frontNeeded: our army has less than frontShareWanted melee supply. rangedNeeded: it has less ranged supply than that.",
+        "supportBigArmy / casterBigArmy: the army has at least bigArmySupply supply (a healer or a caster helps more units).",
+        "The hero farms camps alone while the army is at home; from followArmyFromLevel it walks with the army when the army is out (camps, enemy armies, attacks) and shares the XP of everything the army kills."
+      ],
+      "roles": {
+        "blood_witch": "caster", "staff_warrior": "front", "sky_dragon": "ranged", "stone_golem": "front",
+        "light_healer": "support", "arcane_huntress": "ranged", "centaur_raider": "front", "forest_elf": "ranged"
+      },
+      "score": { "base": 1, "frontNeeded": 2, "rangedNeeded": 2, "supportBigArmy": 1.5, "casterBigArmy": 1, "random": 2 },
+      "frontShareWanted": 0.5,
+      "bigArmySupply": 16,
+      "followArmyFromLevel": 1
+    },
+
+    "army": {
+      "notes": [
+        "Between attacks the army roams: it clears neutral camps it can beat (total monster level <= campLevelPerSupply x army supply), up to roamRadius[tier - 1] from home, camp after camp while its health is above roamMinHpPct.",
+        "An enemy army seen within huntRange of our army, away from the enemy base, is fought when our strength is at least huntStrengthRatio x theirs.",
+        "Base under attack: a roaming or gathering army always comes home. An attack army comes home too, unless it is within siegeRange of the building it attacks and fighting there.",
+        "chaseLeash / goalLeash: an army unit stops chasing a unit that got this far away from it, or this far from the group's goal (the building it attacks, the camp, the enemy army), and walks on with its group.",
+        "groupSpread: how far (in path distance) a unit may walk ahead of its group's middle before it slows down (6 more and it waits). Melee walks in front, siege at the back.",
+        "fieldFightMinFromBase: a fight between armies at least this far from every Town Hall counts as a field fight (for the match report).",
+        "lateGameMinute: from this game minute the AI stops roaming, keeps no home group and does not retreat: the whole army attacks, so long games between equal armies end."
+      ],
+      "roamAtSupply": 10,
+      "roamRadius": [70, 100, 140],
+      "roamMinHpPct": 55,
+      "campLevelPerSupply": 0.6,
+      "huntRange": 32,
+      "huntStrengthRatio": 0.8,
+      "siegeRange": 30,
+      "chaseLeash": 10,
+      "goalLeash": 20,
+      "groupSpread": { "melee": 4, "ranged": 1, "siege": -2 },
+      "fieldFightMinFromBase": 30,
+      "lateGameMinute": 40
     }
   },
 
@@ -79,7 +123,8 @@
       "normal": { "reactionSec": 0.4, "abilityUseQuality": 0.7, "retreatAtHpPct": 30, "lastHitSkill": 0.6, "joinsAttacks": true },
       "hard": { "reactionSec": 0.2, "abilityUseQuality": 0.9, "retreatAtHpPct": 35, "lastHitSkill": 0.9, "joinsAttacks": true }
     },
-    "campChoice": "Pick the closest camp whose total monster level is at most 4 + 2 x hero level (4 + 3 x hero level when the hero has an ally hero near). Each base has only weak camps close by, so a stricter rule makes bots walk across the map.",
+    "campChoice": "Pick the closest camp whose total monster level is at most 4 + 2 x hero level (4 + 3 x hero level when the hero has an ally hero near). Each base has only weak camps close by, so a stricter rule makes bots walk across the map. A hero that can not hit air (melee) skips camps with flying monsters (harpies).",
+    "skills": "Learn the ultimate when allowed, then the main damage or control skill, then the least learned of the other two (so the third skill is not empty until level 8). Cast Q/W/E/R when they fit: damage and control on enemies, heals on hurt allies, self buffs when hit, Mana Mark on enemy heroes.",
     "shopping": "Buy healing potions when below 2. Then follow the hero's item list (heroBuild below) at the nearest shop when gold allows.",
     "upgrades": "Spend 30% of gold above 300 on Town Hall upgrades, in this order: iron_plates, sharper_blades, better_arrows, rich_veins, stone_walls.",
     "heroBuild": {

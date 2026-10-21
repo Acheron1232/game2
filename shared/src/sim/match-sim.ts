@@ -67,7 +67,7 @@ import {
   type CombatStats,
 } from './stats';
 import { qPos } from '../protocol/game';
-import { pickTarget } from './faction/targeting';
+import { CATAPULT_TYPE, fightsBack, pickTarget } from './faction/targeting';
 import { buyUpgrade, upgradeProblem } from './faction/hall-shop';
 
 /** Focus fire per AI difficulty (ai.json). */
@@ -81,6 +81,8 @@ export const TICK_DT = 1 / TICK_RATE;
 export const NEUTRAL = 255;
 /** Team of neutral monsters: everyone's enemy. */
 export const NEUTRAL_TEAM = 0;
+/** Command slots from here on belong to the factions' own heroes (FACTION_HERO_SLOT + player slot). */
+export const FACTION_HERO_SLOT = 4;
 
 const R = gameData.rules;
 const secs = (s: number) => Math.round(s * TICK_RATE);
@@ -130,8 +132,11 @@ export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'follow' | '
 
 export interface HeroState {
   def: HeroDef;
+  /** command slot: the player's slot, or FACTION_HERO_SLOT + slot for a faction's own hero */
   slot: number;
   start: number;
+  /** where the hero comes back to life (start spot, or the faction's Hero Shrine) */
+  home: [number, number];
   xp: number;
   level: number;
   skillPoints: number;
@@ -253,6 +258,8 @@ export interface SimEntity {
   inert: boolean;
   /** an AI army on its way to an enemy: attack-move leaves neutral camps alone (unless they hit us) */
   skipNeutrals: boolean;
+  /** an AI army walks at the pace of its slowest unit: move speed limit, 0 = none */
+  speedCap: number;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -356,28 +363,7 @@ export class MatchSim {
     this.grid = new SpatialGrid(this.size, 4);
     for (const s of setup.slots) {
       const [x, y] = gameData.map.starts[s.start]!.heroSpawn;
-      const hero = this.spawn(s.heroType, s.index, s.team, s.color, x, y);
-      const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[s.heroType])!;
-      hero.heroState = {
-        def,
-        slot: s.index,
-        start: s.start,
-        xp: 0,
-        level: 1,
-        skillPoints: 1,
-        gold: R.gold.startGold,
-        respawnAt: 0,
-        abilityLevels: [0, 0, 0, 0],
-        inventory: emptyInventory(),
-        itemCooldowns: new Map(),
-        revive: null,
-        stats: { kills: 0, deaths: 0, goldEarned: 0, camps: 0 },
-      };
-      this.heroes[s.index] = hero;
-      this.lastSeq[s.index] = 0;
-      this.lastSeqTick[s.index] = 0;
-      this.predictionSeq[s.index] = 0;
-      this.predictionTick[s.index] = 0;
+      this.spawnHero(s.index, s.heroType, s.index, s.team, s.color, s.start, x, y);
     }
     this.camps = setup.noCamps ? [] : createCamps(this);
     this.factions = world ? new Factions(this, world.terrain, world.trees) : null;
@@ -386,6 +372,46 @@ export class MatchSim {
 
   get(id: number): SimEntity | undefined {
     return this.byId.get(id);
+  }
+
+  /**
+   * A hero with its own command slot: a player's hero (slot = player slot) or a faction's own
+   * hero (slot = FACTION_HERO_SLOT + player slot, played by a hero bot).
+   */
+  spawnHero(slot: number, type: number, owner: number, team: number, color: number, start: number, x: number, y: number): SimEntity {
+    const hero = this.spawn(type, owner, team, color, x, y);
+    const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[type])!;
+    hero.heroState = {
+      def,
+      slot,
+      start,
+      home: [x, y],
+      xp: 0,
+      level: 1,
+      skillPoints: 1,
+      gold: R.gold.startGold,
+      respawnAt: 0,
+      abilityLevels: [0, 0, 0, 0],
+      inventory: emptyInventory(),
+      itemCooldowns: new Map(),
+      revive: null,
+      stats: { kills: 0, deaths: 0, goldEarned: 0, camps: 0 },
+    };
+    this.heroes[slot] = hero;
+    this.lastSeq[slot] = 0;
+    this.lastSeqTick[slot] = 0;
+    this.predictionSeq[slot] = 0;
+    this.predictionTick[slot] = 0;
+    return hero;
+  }
+
+  /** The hero that gets the gold and the kill: the killer itself, a summon's hero, else its player's hero. */
+  creditHero(killer: DamageSource): SimEntity | null {
+    const k = this.byId.get(killer.id);
+    if (k?.heroState) return k;
+    const leader = k?.leaderId ? this.byId.get(k.leaderId) : undefined;
+    if (leader?.heroState) return leader;
+    return killer.owner < FACTION_HERO_SLOT ? (this.heroes[killer.owner] ?? null) : null;
   }
 
   spawn(type: number, owner: number, team: number, color: number, x: number, y: number, facing?: number): SimEntity {
@@ -444,6 +470,7 @@ export class MatchSim {
       itemOrder: null,
       inert: false,
       skipNeutrals: false,
+      speedCap: 0,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
@@ -625,7 +652,7 @@ export class MatchSim {
   sendHome(slot: number): void {
     const hero = this.heroes[slot];
     if (!hero?.heroState || !hero.alive) return;
-    const [x, y] = gameData.map.starts[hero.heroState.start]!.heroSpawn;
+    const [x, y] = hero.heroState.home;
     this.runCommand(hero, { type: CommandType.Move, x, y, queue: false });
   }
 
@@ -708,7 +735,7 @@ export class MatchSim {
         (e.cast && e.cast.castEnd > 0) ||
         (e.itemOrder && e.itemOrder.channelEnd > 0);
       if (!frozen) {
-        e.mover.speed = e.stats.moveSpeed;
+        e.mover.speed = e.speedCap > 0 && e.speedCap < e.stats.moveSpeed ? e.speedCap : e.stats.moveSpeed;
         stepMover(e.mover, TICK_DT);
       }
       if (e.jumped) {
@@ -767,6 +794,7 @@ export class MatchSim {
         break;
       case 'attackMove':
         if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, !e.skipNeutrals);
+        else if (e.targetId && due) this.betterTarget(e, !e.skipNeutrals);
         if (!e.targetId && !e.mover.path.length) {
           if (Math.hypot(e.orderX - e.mover.x, e.orderY - e.mover.y) > 1) {
             applyMove(e.mover, this.nav, e.orderX, e.orderY, false, this.isFlying(e));
@@ -781,7 +809,25 @@ export class MatchSim {
       case 'idle':
       case 'cast':
         if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
+        else if (e.targetId && due) this.betterTarget(e, false);
         break;
+    }
+  }
+
+  /**
+   * A faction unit that hits a building or a worker turns to an enemy that fights back when one
+   * comes close (catapults stay on buildings). Before, an army kept hitting a tower while enemy
+   * units killed it.
+   */
+  private betterTarget(e: SimEntity, takeNeutrals: boolean): void {
+    if (e.hero || e.type === CATAPULT_TYPE || !this.factions?.factionOf(e)) return;
+    const t = this.byId.get(e.targetId);
+    if (!t || fightsBack(t)) return;
+    const next = this.acquire(e, ACQUIRE_RANGE, takeNeutrals);
+    const n = next ? this.byId.get(next) : undefined;
+    if (n && fightsBack(n)) {
+      e.targetId = next;
+      e.swing = 0;
     }
   }
 
@@ -1256,7 +1302,7 @@ export class MatchSim {
     if (e.heroState) {
       const hs = e.heroState;
       hs.stats.deaths++;
-      const killerHero = killer.owner < 4 ? this.heroes[killer.owner] : null;
+      const killerHero = this.creditHero(killer);
       if (killerHero?.heroState && killer.team !== e.team) killerHero.heroState.stats.kills++;
       // Phoenix Feather: back soon, where the hero fell. The death still counts (bounty, gold loss).
       const feather = takeRevive(hs);
@@ -1274,7 +1320,7 @@ export class MatchSim {
   /** Gold for the last hit (and allies near), XP for enemy heroes near the death. */
   private reward(victim: SimEntity, killer: DamageSource): void {
     const victimLevel = victim.heroState?.level ?? victim.stats.level;
-    const killerHero = killer.owner < 4 ? this.heroes[killer.owner] : null;
+    const killerHero = this.creditHero(killer);
     if (killerHero?.heroState && killer.team !== victim.team) {
       const gold = victim.heroState ? heroKillBounty(victimLevel) : this.bountyOf(victim);
       this.addGold(killerHero, gold, victim);
@@ -1347,7 +1393,7 @@ export class MatchSim {
   private respawn(e: SimEntity): void {
     const hs = e.heroState!;
     const rv = hs.revive;
-    const [x, y] = rv ? [rv.x, rv.y] : gameData.map.starts[hs.start]!.heroSpawn;
+    const [x, y] = rv ? [rv.x, rv.y] : hs.home;
     hs.respawnAt = 0;
     hs.revive = null;
     e.alive = true;

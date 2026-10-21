@@ -1,0 +1,17 @@
+{
+  "id": "hero_shrine",
+  "triangles": 600,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 2.56,
+  "sockets": [
+    "crystal"
+  ],
+  "skin": "buildings_1_skin"
+}

@@ -10,18 +10,18 @@ import { buildMatchNav } from '../src/nav/match-nav';
 import type { TreeList } from '../src/nav/trees';
 import { entityTypeIndex, ENTITY_TYPES } from '../src/sim/entity-types';
 import { FactionAI } from '../src/sim/faction/brain';
-import { MatchSim, TICK_RATE } from '../src/sim/match-sim';
+import { FACTION_HERO_SLOT, MatchSim, TICK_RATE } from '../src/sim/match-sim';
 
 const DATA = join(__dirname, '..', 'data');
 const terrain = parseTerrain(readFileSync(join(DATA, 'map-terrain.bin')));
 const trees = (JSON.parse(readFileSync(join(DATA, 'map-trees.json'), 'utf8')) as { trees: TreeList }).trees;
 const nav0 = () => buildMatchNav(terrain, gameData.map);
 
-function match(seed: number) {
+function match(seed: number, slots = 2) {
   const sim = new MatchSim(
     {
       seed,
-      slots: [0, 1].map((i) => ({
+      slots: [0, 1].slice(0, slots).map((i) => ({
         index: i,
         heroType: entityTypeIndex(i ? 'blood_witch' : 'staff_warrior'),
         team: i + 1,
@@ -86,5 +86,51 @@ describe('faction brain', () => {
       m.sim.entities.reduce((s, e) => s + (e.alive ? e.mover.x * 3 + e.mover.y + e.hp : 0), 0) + m.sim.factions!.get(0)!.gold;
     expect(sum(a)).toBeCloseTo(sum(b), 6);
     expect(a.sim.factions!.get(1)!.status).toBe(b.sim.factions!.get(1)!.status);
+  });
+
+  it('summons its own hero at the shrine; the hero walks with the army and levels up', () => {
+    const { sim, run } = match(5);
+    run(13 * 60);
+    for (const slot of [0, 1]) {
+      const f = sim.factions!.get(slot)!;
+      expect(count(sim, slot, 'hero_shrine'), 'shrine').toBe(1);
+      const hero = sim.heroes[FACTION_HERO_SLOT + slot];
+      expect(hero, 'faction hero').toBeTruthy();
+      expect(hero!.id).toBe(f.heroId);
+      // Never a copy of the player's hero.
+      expect(hero!.type).not.toBe(sim.heroes[slot]!.type);
+      expect(hero!.heroState!.level, 'faction hero level').toBeGreaterThanOrEqual(2);
+    }
+    const camps = sim.factions!.get(0)!.campsCleared + sim.factions!.get(1)!.campsCleared;
+    expect(camps, 'camps cleared').toBeGreaterThan(2);
+  });
+
+  it('a roaming army comes home when the base is attacked', () => {
+    const { sim, ai, run } = match(5);
+    type Peek = { armyState: string; gather: { targetX: number; targetY: number; mode: string } };
+    const brain = ai.brain(0)! as unknown as Peek;
+    let t = 0;
+    while (brain.armyState !== 'creep' && t++ < 12 * 60) run(1);
+    expect(brain.armyState).toBe('creep');
+    // Enemy soldiers next to our Town Hall.
+    const hall = sim.get(sim.factions!.get(0)!.homeHallId)!;
+    for (let i = 0; i < 4; i++) {
+      const u = sim.spawn(entityTypeIndex('swordsman'), 1, 2, 1, hall.mover.x + 6, hall.mover.y + i);
+      sim.factions!.get(1)!.units.add(u.id);
+      u.order = 'hold';
+    }
+    run(2);
+    expect(brain.armyState).toBe('gather');
+    expect(brain.gather.mode).toBe('attack');
+    expect(Math.hypot(brain.gather.targetX - hall.mover.x, brain.gather.targetY - hall.mover.y)).toBeLessThan(12);
+    expect(ai.brain(0)!.status).toContain('Defending');
+  });
+
+  it('a solo match says there is no enemy instead of waiting for the army forever', () => {
+    const { ai, run } = match(4, 1);
+    run(9 * 60);
+    const status = ai.brain(0)!.status;
+    expect(status).not.toContain('waiting for the army');
+    expect(status).toMatch(/No enemy left to attack|Army clearing|Clearing/);
   });
 });

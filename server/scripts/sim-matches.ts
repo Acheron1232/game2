@@ -37,7 +37,10 @@ if (difficulty !== 'easy' && difficulty !== 'normal' && difficulty !== 'hard') t
 
 function printMinute(seed: number, minute: MinuteLog): void {
   const factions = minute.factions
-    .map((faction) => `S${faction.slot + 1} ${faction.gold}g/${faction.wood}w ${faction.armySupply} army ${faction.status}`)
+    .map(
+      (faction) =>
+        `S${faction.slot + 1} ${faction.gold}g/${faction.wood}w ${faction.armySupply} army${faction.factionHero ? ` [${faction.factionHero}]` : ''} ${faction.status}`,
+    )
     .join(' | ');
   console.log(`seed ${seed} minute ${minute.minute}: ${factions}`);
 }
@@ -68,6 +71,9 @@ console.table(
     winner: result.winnerTeam || 'none',
     minutes: result.minutes.toFixed(2),
     maxArmySupply: result.maxArmySupply.join('/'),
+    factionHeroes: result.factions.map((f) => f.factionHero || '-').join(' / '),
+    camps: result.factions.map((f) => f.campsCleared).join('/'),
+    fieldFights: result.factions.map((f) => f.fieldFights).join('/'),
     stuck: result.stuck.length,
     tickMsAvg: result.tickMsAvg.toFixed(3),
     tickMsP99: result.tickMsP99.toFixed(3),

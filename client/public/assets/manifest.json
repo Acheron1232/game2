@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 14403575,
+  "totalBytes": 14446191,
   "files": [
     {
       "path": "audio/audio.json",
@@ -1203,6 +1203,12 @@
       "group": "Units"
     },
     {
+      "path": "models/hero_shrine.glb",
+      "bytes": 42444,
+      "hash": "59c59e4e5a",
+      "group": "Units"
+    },
+    {
       "path": "models/house.glb",
       "bytes": 20952,
       "hash": "822e05049f",
@@ -1246,8 +1252,8 @@
     },
     {
       "path": "models/models.json",
-      "bytes": 12097,
-      "hash": "131b43fe53",
+      "bytes": 12269,
+      "hash": "c3f2e4246a",
       "group": "Units"
     },
     {

@@ -239,7 +239,7 @@ export class ClientView {
       let mask = 0;
       const t = (tick - s.tick) * TICK_DT;
       const drift = Math.hypot(dqPos(s.x) + dqVel(s.vx) * t - e.mover.x, dqPos(s.y) + dqVel(s.vy) * t - e.mover.y);
-      const limit = e.hero && e.owner === this.slot ? DRIFT_OWN_HERO : DRIFT_OTHERS;
+      const limit = e.heroState?.slot === this.slot ? DRIFT_OWN_HERO : DRIFT_OTHERS;
       if (drift > limit || Math.abs(qvx - s.vx) > VEL_STEP || Math.abs(qvy - s.vy) > VEL_STEP) mask |= Field.Motion;
       const df = Math.abs(qf - s.facing);
       if (Math.min(df, 256 - df) >= 2) mask |= Field.Facing;

@@ -122,7 +122,11 @@ function buildingTable() {
       b.buildTime,
       b.footprint.join('×'),
       b.supplyGiven || '—',
-      b.trains.length ? b.trains.map(nameOf).join(', ') : '—',
+      b.heroSummon
+        ? `Faction hero (${b.heroSummon.cost.gold}/${b.heroSummon.cost.wood}, ${b.heroSummon.timeSec} s)`
+        : b.trains.length
+          ? b.trains.map(nameOf).join(', ')
+          : '—',
       b.requires.length ? b.requires.map(nameOf).join(', ') : '—',
     ]),
   );

@@ -83,7 +83,10 @@ export function validateGameData(d: GameData): string[] {
     for (const t of b.trains) if (!unitById.has(t)) fail(`building ${b.id}: trains unknown unit ${t}`);
     for (const r of b.requires) if (!buildingById.has(r)) fail(`building ${b.id}: unknown requirement ${r}`);
     if (b.upgradesTo && !buildingById.has(b.upgradesTo)) fail(`building ${b.id}: unknown upgradesTo ${b.upgradesTo}`);
+    if (b.heroSummon && b.trains.length) fail(`building ${b.id}: a hero shrine trains no units`);
   }
+  const shrines = d.buildings.buildings.filter((b) => b.heroSummon);
+  if (shrines.length > 1) fail('buildings: more than one building with heroSummon');
 
   for (const it of d.items) {
     if (it.tier === 'consumable' && !it.charges) fail(`item ${it.id}: consumables need charges`);
@@ -125,7 +128,11 @@ export function validateGameData(d: GameData): string[] {
     if ((step.do === 'build' || step.do === 'upgrade') && !buildingById.has(step.what))
       fail(`ai build order: unknown building ${step.what}`);
     if (step.do === 'train' && !unitById.has(step.what)) fail(`ai build order: unknown unit ${step.what}`);
+    if (step.do === 'summon' && (step.what !== 'hero' || !shrines.length))
+      fail(`ai build order: summon needs what "hero" and a hero shrine`);
   }
+  for (const hid of heroIds) if (!d.ai.faction.factionHero.roles[hid]) fail(`ai faction hero: no role for ${hid}`);
+  for (const hid of Object.keys(d.ai.faction.factionHero.roles)) if (!heroIds.has(hid)) fail(`ai faction hero: unknown hero ${hid}`);
   for (const [tier, mix] of Object.entries(d.ai.faction.unitMix)) {
     if (typeof mix === 'string') continue;
     let sum = 0;

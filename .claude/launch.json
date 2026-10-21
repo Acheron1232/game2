@@ -6,6 +6,15 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
       "port": 5173
+    },
+    {
+      "name": "dev-alt",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "(cd server && GAME_PORT=8797 pnpm dev) & (cd client && GAME_SERVER=http://localhost:8797 pnpm exec vite --port 5183 --strictPort); wait"
+      ],
+      "port": 5183
     }
   ]
 }

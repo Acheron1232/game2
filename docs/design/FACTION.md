@@ -8,6 +8,17 @@ Data: `shared/data/units.json` (group `faction`), `shared/data/buildings.json`, 
 
 Each faction starts with: a Town Hall at its start spot, 5 Workers, 500 gold, 150 wood. The hero spawns next to the Town Hall.
 
+## The faction's own hero (Hero Shrine)
+
+Besides the player's hero, every faction gets **one hero of its own**, played by the AI:
+
+- The AI builds a **Hero Shrine** (needs Barracks; cost and time in the buildings table) right after the Archery Range, then summons the hero there as soon as it can pay (`heroSummon` in `buildings.json`). One hero per faction.
+- **Which hero** (ai.json `factionHero`): every hero has a role (front, ranged, support, caster). The AI scores each hero: + bonus for a front-line hero when its army has less than half melee supply, + bonus for a ranged hero when it lacks ranged units, + bonus for a healer or caster when the army is big, + some luck. It **never picks the hero its player plays**, so the two heroes of one side always look different.
+- The hero is a full hero: levels, skill points, items (it shops with the same item list as hero bots), its own gold from last hits and camps. It does **not** buy Town Hall upgrades: that stays the player's job.
+- It plays with the hero-bot logic: farms camps alone while the army is at home; walks with the army when the army is out (camps, enemy armies, attacks) and shares the XP of everything the army kills; defends the base when it is attacked; goes to a fountain or home when hurt.
+- It comes back to life at the shrine (same wait as player heroes). Shrine gone: at the start spot. When the faction is defeated, its hero dies for good.
+- Technical: it has its own command slot (`FACTION_HERO_SLOT + player slot`, so slot 4–7) and sends the same commands a player sends. It belongs to the player's team and color. Kills by a hero give the gold to that hero; kills by army units still give it to the player's hero, as before.
+
 ## Economy
 
 - Workers mine gold at the gold mine next to the Town Hall (10 gold per trip, max 5 workers in a mine at once) and chop trees (10 wood per trip).
@@ -55,6 +66,7 @@ Roles in one line:
 | Workshop | 2 | 1100 | 5 | 160/100 | 55 | 4×4 | — | Catapult | Stronghold, Forge |
 | Hawk Roost | 3 | 1200 | 5 | 200/150 | 60 | 4×4 | — | Hawk Rider | Citadel |
 | Watchtower (attacks 22-26 pierce, range 7) | 1 | 550 | 5 | 110/60 | 35 | 2×2 | — | — | Barracks |
+| Hero Shrine | 1 | 900 | 5 | 180/60 | 45 | 3×3 | — | Faction hero (250/50, 30 s) | Barracks |
 <!-- /table -->
 
 ## Tech tree
@@ -103,11 +115,33 @@ The faction AI runs on the server, 2–4 times per second (not every tick). It h
 1. **Economy manager** — keeps workers busy, trains workers up to `workerTarget`, sends 70% to gold and 30% to wood (changes with what the next build needs), builds Houses before supply runs out (when free supply < 6).
 2. **Build manager** — follows the build order, then free play. Picks building spots from the base build area (a grid around the Town Hall), never blocks the mine path, keeps 1 unit of space between buildings, puts Watchtowers on the side facing the map center.
 3. **Production manager** — keeps production buildings busy with the unit mix for its tier.
-4. **Army manager** — groups units into a **defense group** (at least 4 supply at home after the first attack) and an **attack army**. Gathers the army at a rally point, waits for stragglers, then attacks.
-5. **Target picker** — picks which enemy to attack (by difficulty: closest, weakest, or where our hero is fighting). Re-checks every 5 seconds.
-6. **Defense** — when the base is hit, the army comes home if it is closer to home than to its target. Workers fight only if the Town Hall is below 30% health.
-7. **Expansion** — takes the natural expansion when it is safe (camp cleared, no enemy army near). Clears the camp with the army first if needed.
-8. **Retreat** — if the army drops below `retreatAtArmyPct` of its starting supply and is losing, it goes home.
+4. **Army manager** — groups units into a **defense group** (at least 4 supply at home after the first attack) and an **attack army**. Gathers the army at a rally point, waits for stragglers, then attacks. Between attacks the army **roams** (see "A living map" below).
+5. **Target picker** — picks which enemy to attack (by difficulty: closest, weakest, or where our hero is fighting). Re-checks every 5 seconds. At the enemy base the army walks to the Town Hall first when it is close.
+6. **Defense** — see "Coming home to defend" below. Workers fight only if the Town Hall is below 30% health, and then only the half nearest the fight (the other half keeps gathering).
+7. **Expansion** — takes the natural expansion when it is safe (camp cleared, no enemy army near). Clears the camp with the army first if needed (but never pulls the army out of a siege for it).
+8. **Retreat** — if the army drops below `retreatAtArmyPct` of its starting supply, it goes home. Not when the faction is maxed out (100 supply) and rich: then its losses come back at once.
+9. **Faction hero** — builds the Hero Shrine and summons the hero (see above).
+
+### A living map (ai.json `army`)
+
+- **Roaming.** From `roamAtSupply` army supply, while the next attack is not ready, the army clears neutral camps it can beat (total monster level ≤ `campLevelPerSupply` × army supply, our hero counts too; flying monsters only with enough archers or other units that hit air), up to `roamRadius` from home (bigger at higher tiers), never right next to an enemy base. After a camp it goes on to the nearest next camp while its health is above `roamMinHpPct`, else home. When it is strong enough for an attack it attacks straight from where it is.
+- **Meeting other armies.** An enemy army (at least 4 supply of units; heroes alone do not count) seen within `huntRange` of our army, away from its own base, is attacked when our strength is at least `huntStrengthRatio` × theirs (supply, a hero counts as 2 + level). A much stronger army that is close: our army goes home. An attack army on its way also fights an enemy army it meets, then walks on.
+- **Reinforcements** walk to the attack army as one wave and join it when they reach it.
+
+### Coming home to defend
+
+When enemies (not workers passing by) are within 24 of one of our Town Halls:
+- the home group fights them;
+- a **roaming** army (camps, a fight in the forest) always comes home;
+- an **attack** army comes home only if it is closer to home than to its goal **and** it is not already fighting at the building it attacks (within `siegeRange` of it). An army in the middle of a siege finishes the job.
+- A wave of reinforcements on its way turns back home.
+
+### Marching and fighting
+
+- An attack group marches as one block: the slowest walking unit sets the speed; a unit more than `groupSpread` (by role) in front of the middle of the group slows down, and waits when it is far in front. Melee walks in front, ranged units in the middle, catapults at the back. Close to the goal everybody walks freely.
+- **Target classes** (army units and towers): enemy units that fight back and heroes first, then Watchtowers, then workers, then other buildings; inside a class, the ones that attack our team first; then the weakest (focus fire) or the nearest. Catapults still hit buildings first (towers first).
+- A unit that is hitting a building or a worker turns to an enemy fighter that comes within 7.
+- **Chase leash:** an army unit lets a fleeing unit go when it is more than `chaseLeash` away and walks on with its group.
 
 ### Difficulty
 
@@ -121,7 +155,7 @@ The faction AI runs on the server, 2–4 times per second (not every tick). It h
 | Expands at | never | 10 min | 7 min |
 | Focus fire | no | yes | yes |
 | Pulls wounded units back | no | no | yes |
-| Retreats when army is below | never | 30% | 40% |
+| Retreats when army is below | never | 20% | 40% |
 | Target | closest | closest or weakest | weakest, or where its hero fights |
 
 Difficulty never changes stats or income. A Hard AI is smarter, not stronger.
@@ -134,19 +168,20 @@ Easy waits 20 seconds between steps. Steps start when the one before has **start
 2. Barracks
 3. House
 4. Archery Range
-5. 2× Swordsman
-6. Watchtower
-7. Forge
-8. House
-9. 3× Archer
-10. Upgrade to Stronghold
-11. House
-12. Chapel
-13. Workshop
-14. Expand to natural (when allowed)
-15. Second Barracks (if allowed)
-16. Upgrade to Citadel
-17. Hawk Roost
+5. Hero Shrine (the hero is summoned when it is ready)
+6. 2× Swordsman
+7. Watchtower
+8. Forge
+9. House
+10. 3× Archer
+11. Upgrade to Stronghold
+12. House
+13. Chapel
+14. Workshop
+15. Expand to natural (when allowed)
+16. Second Barracks (if allowed)
+17. Upgrade to Citadel
+18. Hawk Roost
 
 After this: free play — keep supply ahead, keep production busy, rebuild lost buildings, add towers (Hard adds a tower at the expansion).
 
@@ -174,7 +209,11 @@ The player can not give orders, but always sees what the AI is doing. The AI wri
 - "Building Barracks"
 - "Saving for Stronghold (240 / 300 gold)"
 - "Army gathering (18 / 24 supply)"
+- "Army clearing camps"
+- "Fighting Blue's army"
+- "Summoning the stone golem"
 - "Attacking Blue"
 - "Defending the base!"
 - "Taking the expansion"
 - "Retreating"
+- "No enemy left to attack" (a solo match, or the last faction standing)

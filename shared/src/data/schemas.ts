@@ -168,6 +168,8 @@ export const buildingSchema = z.looseObject({
       canHit: z.array(z.enum(['ground', 'air'])),
     })
     .optional(),
+  /** Hero Shrine: the faction summons its own hero here (once; it comes back to life here) */
+  heroSummon: z.object({ cost, timeSec: num }).optional(),
 });
 export const buildingsSchema = z.looseObject({
   version: num,
@@ -268,8 +270,31 @@ export const aiSchema = z.looseObject({
   version: num,
   faction: z.looseObject({
     difficulties: z.record(difficultyNames, z.looseObject({ thinkDelaySec: num, workerTarget: num, maxProductionBuildings: num })),
-    buildOrder: z.array(z.looseObject({ do: z.enum(['build', 'train', 'upgrade', 'expand']), what: z.string(), count: num.optional() })),
+    buildOrder: z.array(
+      z.looseObject({ do: z.enum(['build', 'train', 'upgrade', 'expand', 'summon']), what: z.string(), count: num.optional() }),
+    ),
     unitMix: z.record(z.string(), z.union([z.string(), z.record(id, num)])),
+    factionHero: z.looseObject({
+      roles: z.record(id, z.enum(['front', 'ranged', 'support', 'caster'])),
+      score: z.looseObject({ base: num, frontNeeded: num, rangedNeeded: num, supportBigArmy: num, casterBigArmy: num, random: num }),
+      frontShareWanted: num,
+      bigArmySupply: num,
+      followArmyFromLevel: num,
+    }),
+    army: z.looseObject({
+      roamAtSupply: num,
+      roamRadius: z.array(num),
+      roamMinHpPct: num,
+      campLevelPerSupply: num,
+      huntRange: num,
+      huntStrengthRatio: num,
+      siegeRange: num,
+      chaseLeash: num,
+      goalLeash: num,
+      groupSpread: z.record(z.enum(['melee', 'ranged', 'siege']), num),
+      fieldFightMinFromBase: num,
+      lateGameMinute: num,
+    }),
   }),
   heroBot: z.looseObject({
     difficulties: z.record(difficultyNames, z.looseObject({ reactionSec: num })),
