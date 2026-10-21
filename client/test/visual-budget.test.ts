@@ -5,7 +5,7 @@ import { NullEngine } from '@babylonjs/core/Engines/nullEngine';
 import { RenderTargetTexture } from '@babylonjs/core/Materials/Textures/renderTargetTexture';
 import { Skeleton } from '@babylonjs/core/Bones/skeleton';
 import { Frustum } from '@babylonjs/core/Maths/math.frustum';
-import { Matrix, Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Matrix, Vector3, Vector4 } from '@babylonjs/core/Maths/math.vector';
 import { Mesh } from '@babylonjs/core/Meshes/mesh';
 import { Scene } from '@babylonjs/core/scene';
 import { describe, expect, it, vi } from 'vitest';
@@ -127,6 +127,28 @@ describe('off-camera visual work', () => {
       expect(f.unit.model.root.rotation.y).toBeCloseTo(1);
     } finally {
       now.mockRestore();
+      f.dispose();
+    }
+  });
+});
+
+describe('baked army units off camera', () => {
+  it('hide their instance without touching the GPU clip, and snap scale on return', () => {
+    const f = fixture();
+    try {
+      const settings = new Vector4(5, 30, 2, 60);
+      Object.assign(f.unit.model, { animations: new Map(), baked: { clips: new Map(), settings, loop: true, held: false } });
+      f.unit.x = 200;
+      methods.updateVisualVisibility.call(f.world, f.unit);
+      expect(f.unit.model.meshes[0]!.isVisible).toBe(false);
+      f.unit.x = 0;
+      f.unit.scale = 1.2;
+      methods.updateVisualVisibility.call(f.world, f.unit);
+      expect(f.unit.model.meshes[0]!.isVisible).toBe(true);
+      expect(f.unit.model.root.scaling.x).toBe(1.2);
+      expect(settings.asArray()).toEqual([5, 30, 2, 60]);
+      expect(f.clip.isPlaying).toBe(true);
+    } finally {
       f.dispose();
     }
   });

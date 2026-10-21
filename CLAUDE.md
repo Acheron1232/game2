@@ -140,7 +140,7 @@ Keep this section current. Node 24+, pnpm 10+.
 
 Notes:
 - The server reads `GAME_PORT` / `GAME_HOST` (not `PORT`, which dev tools often set for Vite).
-- `?play` makes a room and starts a match alone as soon as loading is done (Vite reloads repeat it). `?join=<CODE>` joins a room. `/dev/models.html` is the model viewer, F4 in game = 300-unit render stress test (client only).
+- `?play` makes a room and starts a match alone as soon as loading is done (Vite reloads repeat it). `?join=<CODE>` joins a room. `/dev/models.html` is the model viewer, F4 in game = 300-unit render stress test (client only: real army units, 6 types x 4 teams). `?skinned` (dev) turns off baked vertex animation for army units, for A/B.
 - Dev cheat in the browser console (dev servers only): `net.send({ type: 'cheat', xp: 6000 })` gives XP (level 10); also `gold: 1000`, `item: 'storm_hammer'` (an item id), `pos: [x, y]` (put the hero there). Every `cheat` refills health, mana and cooldowns (abilities and items).
 - F6 in a dev match runs that same cheat: level 10, full health/mana and ready cooldowns. Learn skills with Ctrl + Q/W/E/R; F6 does not spend skill points.
 - Node 22 (the cloud sandbox): the dev match worker can not load `.ts` files, so matches never start. Run `MATCH_INLINE=1 pnpm dev` there (Node 24 works without it).

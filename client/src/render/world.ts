@@ -15,7 +15,6 @@ import { Matrix, Quaternion, Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Viewport } from '@babylonjs/core/Maths/math.viewport';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
-import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import '@babylonjs/core/Culling/ray';
 import { Scene } from '@babylonjs/core/scene';
@@ -24,6 +23,7 @@ import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
 import { buildMatchNav, gameData, SIGHT_CELL, type NavGrid, type TerrainGrid } from '@game/shared';
 import selectionRingUrl from '../assets/ui/selection_ring.webp?url';
 import type { GameAssets } from '../loader/assets';
+import { bakedClock, bakedPose } from './baked-animation';
 import { attachHeroEffects, type HeroEffects } from './hero-effects';
 import { ModelLibrary, type ModelInstance } from './model-library';
 import { UnitGroundMarks, groundMarkRadius } from './unit-ground-marks';
@@ -38,6 +38,8 @@ import { createTerrain, type Terrain } from './terrain';
 
 export type TreeList = [number, number, number, number][];
 const TREE_MODELS = ['tree_pine', 'tree_oak', 'tree_dead', 'bush'];
+/** F4 stress test: a mixed army (types x teams), like a big late-game fight. */
+const STRESS_UNITS = ['swordsman', 'archer', 'worker', 'lancer', 'cleric', 'catapult'];
 export const TEAMS = ['red', 'blue', 'teal', 'purple'];
 const TMP = new Vector3();
 
@@ -114,7 +116,7 @@ export class GameWorld {
   private shadows: ShadowGenerator;
   private ring: Mesh;
   private groundMarks: UnitGroundMarks;
-  private stress: ModelInstance[] = [];
+  private stress: Unit[] = [];
   private menuMode = true;
   private readonly viewMatrix = Matrix.Identity();
   private readonly viewPlanes = Frustum.GetPlanes(Matrix.Identity());
@@ -207,6 +209,8 @@ export class GameWorld {
     const terrain = await createTerrain(scene, grid, layout, assets);
     const library = new ModelLibrary(scene, assets);
     await library.loadAll();
+    // Army units: baked vertex animation + instancing (`?skinned` in dev keeps skeletons, for A/B).
+    if (!(import.meta.env.DEV && new URLSearchParams(location.search).has('skinned'))) library.bake(gameData.units.map((u) => u.id));
     const nav = buildMatchNav(grid, layout);
 
     // ---- trees: one thin-instanced mesh set per tree type. Pines also grow on the lower
@@ -358,7 +362,7 @@ export class GameWorld {
     flying = false,
     building = false,
   ): Unit {
-    const model = this.library.spawn(modelId, team);
+    const model = this.library.spawn(modelId, team, !hero && !building);
     if (hero || building) for (const mesh of model.meshes) this.shadows.addShadowCaster(mesh, false);
     const effects = hero ? attachHeroEffects(this.scene, modelId, model.nodes, model.materials.glow) : null;
     const unit: Unit = {
@@ -437,33 +441,30 @@ export class GameWorld {
     if (!on && this.selected) this.camera.lookAt(this.selected.x, this.selected.y);
   }
 
-  /** Debug: N copies of a unit around the hero (shared animation), to measure speed. */
-  toggleStress(count = 300, id = 'swordsman'): number {
+  /**
+   * Debug (F4): `count` real army units on screen, mixed types and teams, each walking or
+   * swinging in its own phase. Same path as match units, so it measures a big fight.
+   */
+  toggleStress(count = 300): number {
     if (this.stress.length) {
-      for (const s of this.stress) s.dispose();
+      for (const u of this.stress) this.removeUnit(u);
       this.stress = [];
       return 0;
     }
-    const cx = this.selected?.x ?? (this.grid.cols * this.grid.cellSize) / 2,
-      cy = this.selected?.y ?? (this.grid.cols * this.grid.cellSize) / 2;
-    const base = this.library.spawn(id, 'blue');
-    base.animations.get('walk')?.start(true);
-    this.stress.push(base);
+    const ids = STRESS_UNITS.filter((id) => this.library.models[id]);
+    const target = this.camera.camera.target;
     const side = Math.ceil(Math.sqrt(count));
-    const source = base.meshes[0] as Mesh;
-    place(base.root, cx - side, cy + 4, this.terrain.heightAt(cx - side, cy + 4), 0);
-    for (let i = 1; i < count; i++) {
-      const x = cx - side + (i % side) * 2,
-        y = cy + 4 + Math.floor(i / side) * 2;
-      // Each copy gets its own root node; the instance keeps the source mesh's local transform.
-      const node = new TransformNode(`stress-${i}`, this.scene);
-      place(node, x, y, this.terrain.heightAt(x, y), 0);
-      const inst = source.createInstance(`stress-${i}-mesh`);
-      inst.parent = node;
-      inst.position.copyFrom(source.position);
-      inst.rotationQuaternion = source.rotationQuaternion?.clone() ?? null;
-      inst.scaling.copyFrom(source.scaling);
-      this.stress.push({ ...base, root: node, dispose: () => node.dispose() });
+    const now = performance.now();
+    for (let i = 0; i < count; i++) {
+      const x = target.x + ((i % side) - side / 2) * 1.6,
+        y = -target.z + (Math.floor(i / side) - side / 2) * 1.6;
+      const u = this.addUnit(ids[i % ids.length]!, TEAMS[Math.floor(i / ids.length) % TEAMS.length]!, x, y, (i * 0.7) % 6.283, 3, false);
+      u.moving = i % 4 !== 0;
+      this.play(u, u.moving ? 'walk' : 'idle');
+      // Spread the phases so the army does not move in lockstep.
+      u.animationStarted = now - ((i * 173) % 2000);
+      this.poseBaked(u, now);
+      this.stress.push(u);
     }
     return count;
   }
@@ -499,34 +500,59 @@ export class GameWorld {
   }
 
   private play(unit: Unit, name: string, loop = true, speed = 1): void {
+    const baked = unit.model.baked;
     if (unit.anim === name && loop) {
-      if (name === 'walk') {
+      if (name === 'walk' && unit.animationSpeed !== unit.speed / 3) {
         const clip = unit.model.animations.get(name);
-        if (clip && clip.speedRatio !== unit.speed / 3) {
+        if (clip || baked) {
           const now = performance.now();
           unit.animationStarted = now - ((now - unit.animationStarted) * unit.animationSpeed) / (unit.speed / 3 || 1);
           unit.animationSpeed = unit.speed / 3;
-          clip.speedRatio = unit.animationSpeed;
+          if (clip) clip.speedRatio = unit.animationSpeed;
+          this.poseBaked(unit, now);
         }
       }
       return;
     }
     const next = unit.model.animations.get(name);
-    if (!next) return;
+    if (baked ? !baked.clips.has(name) : !next) return;
     unit.model.animations.get(unit.anim)?.stop();
     unit.animationSpeed = loop && name === 'walk' ? unit.speed / 3 : speed;
     unit.animationStarted = performance.now();
-    next.start(loop, unit.animationSpeed);
-    if (!unit.visualVisible) next.stop(true);
     unit.anim = name;
+    if (baked) {
+      baked.loop = loop;
+      baked.held = false;
+      this.poseBaked(unit, unit.animationStarted);
+      return;
+    }
+    next!.start(loop, unit.animationSpeed);
+    if (!unit.visualVisible) next!.stop(true);
+  }
+
+  /** Baked units: GPU clip settings from the wall-clock phase (same timing as the skeleton path). */
+  private poseBaked(u: Unit, now: number): void {
+    const baked = u.model.baked;
+    const clip = baked?.clips.get(u.anim);
+    if (!baked || !clip) return;
+    const elapsed = clip.seconds > 0 ? (Math.max(0, now - u.animationStarted) * u.animationSpeed) / 1000 / clip.seconds : 1;
+    baked.held = bakedPose(clip, baked.loop, elapsed, u.animationSpeed, bakedClock(now), baked.settings);
+  }
+
+  /** Length in seconds of a model's clip at speed 1. */
+  private clipSeconds(u: Unit, name: string): number | undefined {
+    const baked = u.model.baked?.clips.get(name);
+    if (baked) return baked.seconds;
+    const g = u.model.animations.get(name);
+    if (!g) return undefined;
+    const fps = g.targetedAnimations[0]?.animation.framePerSecond ?? 30;
+    return (g.to - g.from) / fps;
   }
 
   /** Plays a one-time clip (attack, cast, death). `seconds` = how long it should take. */
   playOnce(u: Unit, name: string, seconds?: number): void {
-    const g = u.model.animations.get(name);
-    if (!g) return;
-    const fps = g.targetedAnimations[0]?.animation.framePerSecond ?? 30;
-    const length = (g.to - g.from) / fps;
+    const length = this.clipSeconds(u, name);
+    if (length === undefined) return;
     const speed = seconds && length > seconds ? length / seconds : 1;
     this.play(u, name, false, speed);
     u.actionUntil = performance.now() + (length / speed) * 1000;
@@ -615,6 +641,11 @@ export class GameWorld {
     u.visualVisible = visible;
     for (const mesh of u.model.meshes) mesh.isVisible = visible;
     u.effects?.setVisible(visible);
+    // Baked clips follow the shared GPU clock, so they are in phase again on their own.
+    if (u.model.baked) {
+      if (visible) u.model.root.scaling.setAll(u.scale);
+      return;
+    }
     const clip = u.model.animations.get(u.anim);
     if (!clip) return;
     if (!visible) clip.stop(true);
@@ -701,6 +732,7 @@ export class GameWorld {
     this.combat.update(dt);
     this.items.update();
     const now = performance.now();
+    this.library.setBakedTime(bakedClock(now));
     this.renderStats.total = this.units.size;
     this.renderStats.visible = 0;
     for (const u of this.units) {
@@ -713,6 +745,9 @@ export class GameWorld {
         u.actionUntil = 0;
         this.play(u, 'walk');
       }
+      // A one-shot clip (attack, death) holds its last pose once it is over.
+      const baked = u.model.baked;
+      if (baked && !baked.loop && !baked.held) this.poseBaked(u, now);
       this.syncUnit(u, dt);
     }
     this.ring.setEnabled(!!this.selected && !this.selected.dead && this.selected.visualVisible);

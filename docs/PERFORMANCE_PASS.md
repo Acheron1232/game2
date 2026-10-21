@@ -62,6 +62,32 @@ Next options if the user wants no extra step at all: a real desktop app (Electro
 
 ## Next steps (not done)
 
-- **Baked vertex animation + instancing for army units** (CLAUDE.md asks for it): one draw per unit type instead of one per unit, no CPU skeleton work. This is the fix for big fights and for weak PCs.
+- ~~Baked vertex animation + instancing for army units~~ — done, see below.
 - Cheaper main menu background (lower resolution or fewer FPS behind the menu).
 - Optional "60 FPS on battery" setting (Chrome has `navigator.getBattery()`).
+
+## Baked vertex animation for army units
+
+2026-10-21, same Mac (M5, Chrome, 3024 × 1562, WebGPU). Heroes and buildings keep skeletons.
+
+How it works (`render/baked-animation.ts`, `render/model-library.ts`):
+- While loading, each unit type in `units.json` (21 models) plays its idle, walk, attack, attack2, cast and death clips frame by frame; the bone matrices of every frame go into one float texture (one row per frame at 60 fps, about 0.5 MB per type, ~11 MB for all).
+- Per (type, team) there is one hidden source mesh with Babylon's `BakedVertexAnimationManager`. Every unit is an instance of it with four numbers: first row, last row, phase offset, rows per second. The vertex shader reads the pose from the texture. One draw shows all units of a type and team, each in its own clip and phase.
+- The CPU sets those four numbers only when a clip starts, the walk speed changes, or a one-shot clip ends (attack, death: then the last pose is held). The shared GPU clock keeps the phase, so off-camera units need no pause/resume. Picking was never done on meshes, so it is unchanged.
+- Team color and fog of war are material plugins and work as before. The lobby compiles the real "VAT + instances" shaders, and draws each source once far under the map for 3 frames, so WebGPU builds its pipelines before the match.
+- Small change in look: clips switch without the 0.12 s blend that skeletons had. Not noticeable at RTS zoom.
+- F4 now spawns 300 real units (swordsman, archer, worker, lancer, cleric, catapult × 4 teams, own phases, 3/4 walking). `?skinned` (dev) turns baking off for A/B in the same build.
+
+How measured: Playwright starting the installed Chrome (headed, own profile). The battery was low, so Chrome's battery saver (caps pages at 30 FPS) was switched off in that profile. "Uncapped" = `--disable-gpu-vsync --disable-frame-rate-limit`, maxFPS 2000. Fresh `?play` match each time, units added with F4 code (`toggleStress`) at the home base; scene CPU = `scene.render` time per frame.
+
+| Units added (F4) | Draws baked / skeletons | 120 cap (vsync) FPS baked / skeletons | Scene CPU at 120 cap | Uncapped FPS baked / skeletons |
+|---|---|---|---|---|
+| 0 (start of match, ~11–20 units) | 113 / 126 | 120 / 120 | 1.9 / 1.9 ms | 440–510 / 450–510 (noise) |
+| 84 | 142 / 225 | 120 / 120 | 2.1 / 3.8 ms | ~360 / ~195 |
+| 300 | 142 / 462 | **120 / 72** | **2.3 / 12.4 ms** | **~293 / ~68** |
+
+- WebGL2 fallback (`?webgl`): 120 FPS with 300 units, team colors and poses correct.
+- Poses checked by eye: baked and skeleton copies of swordsman, archer, cleric, catapult and harpy side by side on the same frame of attack and death look the same.
+- The user's earlier "84 units → ~95 FPS" was in their own Chrome during a real fight; in this cleaner test skeletons still held 120 with 84 units, but 300 units showed the problem clearly. With baking the draw count no longer grows with the army size.
+
+Not done: the `?skinned` A/B flag stays for dev only. Heroes still use skeletons (≤ 4 on screen).
