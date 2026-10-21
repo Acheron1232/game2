@@ -43,9 +43,9 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<GameEngin
   if (!forceWebGL && (await WebGPUEngine.IsSupportedAsync)) {
     let engine: WebGPUEngine | undefined;
     try {
-      // FXAA is applied by the scene; avoid paying for native MSAA as well.
+      // MSAA instead of an FXAA post-process: no extra full-screen pass (see GameWorld).
       engine = new WebGPUEngine(canvas, {
-        antialias: false,
+        antialias: true,
         adaptToDeviceRatio: false,
         powerPreference: 'high-performance',
         // Babylon filters unsupported features before requestDevice. Keep timings optional.
@@ -66,7 +66,7 @@ export async function createEngine(canvas: HTMLCanvasElement): Promise<GameEngin
   }
   const engine = new Engine(
     canvas,
-    false,
+    true,
     { powerPreference: 'high-performance', preserveDrawingBuffer: false, stencil: true, disableWebGL2Support: false },
     false,
   );

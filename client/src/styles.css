@@ -1237,3 +1237,22 @@ td .btn.tiny {
     animation: none;
   }
 }
+
+/* Windows built-in graphics notice in the main menu (ui/gpu-hint.ts) */
+.gpu-hint {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  max-width: min(420px, calc(100vw - 36px));
+  padding: 14px 16px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.gpu-hint p {
+  margin: 0;
+}
+.gpu-hint .muted {
+  font-size: 12px;
+}

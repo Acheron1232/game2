@@ -1,7 +1,7 @@
 import type { Scene } from '@babylonjs/core/scene';
 
 /** Keep the full projection/picking area, but skip shading under the opaque top HUD.
- * Leave eight CSS pixels of overscan for FXAA/texture filtering at the boundary.
+ * Leave eight CSS pixels of overscan for MSAA/texture filtering at the boundary.
  * Transparent bottom-panel gaps deliberately stay rendered. */
 export class HudOcclusion {
   enabled = false;

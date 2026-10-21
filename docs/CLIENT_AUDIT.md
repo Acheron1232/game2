@@ -11,7 +11,7 @@ The first audit focused too much on FPS. A 120 FPS cap still lets the game use s
 - Fixed vertical edge scrolling: top and bottom HUD panels were intercepting pointer movement. The camera now tracks window pointer movement, clears it when the pointer leaves the window or focus is lost, and normalizes diagonal movement. Verified north/south scrolling over the HUD in the browser and with a client regression test.
 - Rendering now caps at 60 FPS in game and 30 FPS in menus. Background rendering is disabled, and hidden documents skip scene rendering.
 - The drawing buffer uses at most 1.5 times CSS resolution and about 2.07 million pixels. The HTML HUD stays at native display resolution. Five tests cover Retina, normal, narrow and ultra-wide windows.
-- Native MSAA is disabled because the scene already uses FXAA. Full-screen bloom is off; hero particles and emissive materials remain.
+- (Replaced 2026-10-21, see [PERFORMANCE_PASS.md](PERFORMANCE_PASS.md): color grading now runs in the material shaders and native MSAA replaced the HDR + FXAA post-process.) Full-screen bloom is off; hero particles and emissive materials remain.
 - Shadows already existed for heroes and buildings. Changed the 2048 map to a camera-centered 1024 map with low-cost PCF, rather than spreading its texels across four distant bases. Tree ground shading is baked into the terrain colors; individual tree shadows are not added.
 - Lighting is less yellow, sky fill is a little brighter, color contrast and vignette are reduced. Shadows are stronger locally without adding lights or shadow passes.
 - F3 now labels CPU scene time, reports the drawing-buffer size and FPS limit, and shows GPU time when the renderer exposes timer queries. Unsupported timing is shown as a dash.

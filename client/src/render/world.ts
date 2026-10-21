@@ -19,7 +19,6 @@ import { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import '@babylonjs/core/Meshes/thinInstanceMesh';
 import '@babylonjs/core/Culling/ray';
 import { Scene } from '@babylonjs/core/scene';
-import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
 import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
 import { buildMatchNav, gameData, SIGHT_CELL, type NavGrid, type TerrainGrid } from '@game/shared';
@@ -297,7 +296,7 @@ export class GameWorld {
 
     const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
     const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase, fog, combat);
-    world.setupPostProcess();
+    world.setupColorGrading();
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
     return world;
@@ -469,12 +468,16 @@ export class GameWorld {
     return count;
   }
 
-  /** One color-grading pass and FXAA; particles supply glow without full-screen bloom. */
-  private setupPostProcess(): void {
-    const pipe = new DefaultRenderingPipeline('post', true, this.scene, [this.camera.camera]);
-    pipe.fxaaEnabled = true;
-    pipe.imageProcessingEnabled = true;
-    const ip = pipe.imageProcessing;
+  /**
+   * Color grading runs inside every material shader, not as a post-process. A post-process
+   * needs a full-screen half-float copy of the frame plus extra full-screen passes; at Retina
+   * size and 120 FPS that was about half of all GPU time. Edges are smoothed by MSAA
+   * (see engine.ts), which costs little on tile-based GPUs. Particles supply glow, no bloom.
+   */
+  private setupColorGrading(): void {
+    const ip = this.scene.imageProcessingConfiguration;
+    ip.applyByPostProcess = false;
+    ip.isEnabled = true;
     ip.toneMappingEnabled = true;
     ip.toneMappingType = ImageProcessingConfiguration.TONEMAPPING_ACES;
     ip.exposure = 1.05;
@@ -493,7 +496,6 @@ export class GameWorld {
     curves.shadowsDensity = 10;
     curves.shadowsSaturation = 10;
     ip.colorCurves = curves;
-    pipe.bloomEnabled = false;
   }
 
   private play(unit: Unit, name: string, loop = true, speed = 1): void {

@@ -53,7 +53,7 @@ import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
-import { MENU_FPS } from './render/render-budget';
+import { ANIMATION_MIN_STEP_MS, MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
@@ -78,6 +78,7 @@ import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
 import { isTextEntry } from './render/rts-camera';
 import { abilityBlockReason } from './ui/ability-feedback';
+import { createGpuHint } from './ui/gpu-hint';
 
 const NAME_KEY = 'tw.playerName';
 function readName(): string {
@@ -370,6 +371,8 @@ async function main(): Promise<void> {
   net.connect();
 
   const { engine, kind, adapter, setRenderScale } = await createEngine(canvas);
+  const gpuHint = createGpuHint(adapter);
+  if (gpuHint) menu.root.append(gpuHint);
   registerAssetCache();
 
   // Loading starts at once, so it is done (or nearly) when the player reaches the lobby.
@@ -1102,8 +1105,16 @@ async function main(): Promise<void> {
   w.setMenuMode(router.screen !== 'game');
   hudOcclusion.enabled = router.screen === 'game';
   engine.maxFPS = router.screen === 'game' ? settings.fpsLimit : MENU_FPS;
+  // Skeleton poses update at most ~80 times a second; at 120 FPS that is every second frame
+  // and halves the animation CPU work. Units still move every frame. Babylon times animations
+  // by the wall clock, so skipped frames do not slow them down.
+  let lastPoseUpdate = 0;
   engine.runRenderLoop(() => {
-    if (!document.hidden) w.scene.render();
+    if (document.hidden) return;
+    const now = performance.now();
+    const poses = now - lastPoseUpdate >= ANIMATION_MIN_STEP_MS;
+    if (poses) lastPoseUpdate = now;
+    w.scene.render(true, !poses);
   });
 }
 

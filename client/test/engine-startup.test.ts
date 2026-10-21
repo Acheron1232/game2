@@ -55,13 +55,13 @@ function environment(search = '') {
 describe('graphics startup and monitor changes', () => {
   const canvas = {} as HTMLCanvasElement;
 
-  it('requests a performance adapter and optional GPU timings without enabling all features', async () => {
+  it('requests a performance adapter, MSAA and optional GPU timings without enabling all features', async () => {
     environment();
     const game = await createEngine(canvas);
     expect(game.kind).toBe('WebGPU');
     expect(game.adapter).toContain('RTX 3060');
     expect(mocks.Engine.instances[0]!.args[1]).toMatchObject({
-      antialias: false,
+      antialias: true,
       powerPreference: 'high-performance',
       deviceDescriptor: { requiredFeatures: ['timestamp-query'] },
     });

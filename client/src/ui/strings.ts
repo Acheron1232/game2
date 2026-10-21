@@ -11,6 +11,14 @@ export const S = {
   code: 'Code',
   fullScreen: 'Full screen',
   comingSoon: 'Coming soon',
+  gpuHintTitle: 'Low FPS on this PC?',
+  gpuHint:
+    'The game runs on the built-in graphics chip. If your PC has an NVIDIA or AMD graphics card, start the game with our launcher: it opens the game on that card.',
+  gpuHintStill:
+    'The game still runs on the built-in graphics chip. This PC may not have another graphics card. Try Low quality in Settings.',
+  gpuHintGet: 'Get launcher',
+  gpuHintHide: 'Hide',
+  gpuHintHow: 'Open the downloaded file "Temple Wars.cmd". If Windows asks, choose More info, then Run anyway.',
 
   lobbyTitle: 'Game',
   copyLink: 'Copy Link',
