@@ -560,3 +560,13 @@ body.aiming .game-cursor {
     font-size: 10px;
   }
 }
+
+.set-fps {
+  width: 100px;
+  padding: 6px 8px;
+  color: var(--text);
+  background: #120c06;
+  border: 1px solid var(--gold);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}

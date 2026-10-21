@@ -53,14 +53,14 @@ import { loadGameAssets, registerAssetCache } from './loader/assets';
 import { Loader } from './loader/loader';
 import { defaultServerUrl, GameSocket } from './net/socket';
 import { createEngine } from './render/engine';
-import { GAME_FPS, MENU_FPS } from './render/render-budget';
+import { MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
 import { startDebugOverlay } from './ui/debug-overlay';
 import { GameCursor } from './ui/game-cursor';
 import { createSettingsScreen } from './ui/settings-screen';
 import { GameSound } from './audio/sound';
-import { actionOf, loadSettings, saveSettings } from './game/settings';
+import { actionOf, loadSettings, normalizeFps, saveSettings } from './game/settings';
 import { createLobbyScreen, COLOR_NAMES } from './ui/lobby-screen';
 import { Minimap } from './ui/minimap';
 import { Router } from './ui/router';
@@ -119,7 +119,6 @@ async function main(): Promise<void> {
   // Dev shortcut: ?play makes a room and starts a match alone as soon as loading is done.
   // ?watch=5 (dev): bots play all four slots, we watch at 5x speed. ?fps=30 caps the frame rate.
   const watchSpeed = Math.max(0, Math.min(10, Number(params.get('watch')) || 0));
-  const gameFps = Math.max(10, Number(params.get('fps')) || GAME_FPS);
   let autoPlay = params.has('play') || watchSpeed > 0;
   let roomCheck: ReturnType<typeof setTimeout> | null = null;
 
@@ -132,6 +131,7 @@ async function main(): Promise<void> {
   let showScores = () => {};
   let lastBaseAlert = 0;
   const settings = loadSettings();
+  if (params.has('fps')) settings.fpsLimit = normalizeFps(Number(params.get('fps')), settings.fpsLimit);
   /** Set once the engine and the world exist (applies graphics, camera and HUD settings). */
   let applySettings = () => {};
   let selected: NetEntity | null = null;
@@ -416,6 +416,7 @@ async function main(): Promise<void> {
   applySettings = () => {
     // Native pixels at render scale 1 (see render-budget), fewer pixels below it.
     setRenderScale(settings.renderScale);
+    engine.maxFPS = router.screen === 'game' ? settings.fpsLimit : MENU_FPS;
     w.scene.shadowsEnabled = settings.shadows;
     debugNode.hidden = !settings.showFps;
     w.camera.edgeScroll = settings.edgeScroll;
@@ -1095,12 +1096,12 @@ async function main(): Promise<void> {
       return setAim(null);
     }
     if (name !== 'game') setAim(null);
-    engine.maxFPS = name === 'game' ? gameFps : MENU_FPS;
+    engine.maxFPS = name === 'game' ? settings.fpsLimit : MENU_FPS;
     w.setMenuMode(name !== 'game');
   });
   w.setMenuMode(router.screen !== 'game');
   hudOcclusion.enabled = router.screen === 'game';
-  engine.maxFPS = router.screen === 'game' ? gameFps : MENU_FPS;
+  engine.maxFPS = router.screen === 'game' ? settings.fpsLimit : MENU_FPS;
   engine.runRenderLoop(() => {
     if (!document.hidden) w.scene.render();
   });

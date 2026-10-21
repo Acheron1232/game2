@@ -1,6 +1,14 @@
 // Player settings (UI.md section 8), kept in this browser (localStorage). Plain data plus key
 // binds; main.ts applies them to the engine, camera, HUD and input.
 
+import { GAME_FPS } from '../render/render-budget';
+
+export const MIN_FPS = 10;
+export const MAX_FPS = 500;
+export function normalizeFps(value: number, fallback = GAME_FPS): number {
+  return Number.isFinite(value) ? Math.round(Math.min(MAX_FPS, Math.max(MIN_FPS, value))) : fallback;
+}
+
 export type Quality = 'low' | 'medium' | 'high';
 
 /** Actions a key can be bound to. */
@@ -29,6 +37,7 @@ export interface Settings {
   shadows: boolean;
   effects: 'low' | 'high';
   showFps: boolean;
+  fpsLimit: number;
   /** 0 .. 1 */
   master: number;
   music: number;
@@ -77,6 +86,7 @@ export function defaultSettings(): Settings {
     quality: 'high',
     ...QUALITY_PRESETS.high,
     showFps: true,
+    fpsLimit: GAME_FPS,
     master: 0.8,
     music: 0,
     sfx: 0.8,
@@ -114,6 +124,7 @@ export function parseSettings(raw: unknown): Settings {
     shadows: bool(r['shadows'], d.shadows),
     effects: pick(r['effects'], ['low', 'high'], d.effects),
     showFps: bool(r['showFps'], d.showFps),
+    fpsLimit: typeof r['fpsLimit'] === 'number' ? normalizeFps(r['fpsLimit']) : d.fpsLimit,
     master: clamp(r['master'], 0, 1, d.master),
     music: r['soundVersion'] === 2 ? clamp(r['music'], 0, 1, d.music) : 0,
     sfx: clamp(r['sfx'], 0, 1, d.sfx),

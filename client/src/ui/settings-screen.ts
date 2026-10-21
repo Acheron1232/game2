@@ -1,7 +1,19 @@
 // Settings screen (UI.md section 8): Graphics, Sound, Controls, Game. Changes apply at once
 // (onChange) and are saved in this browser. "Back" returns to the screen it came from.
 
-import { ACTIONS, bindKey, DEFAULT_KEYS, keyLabel, QUALITY_PRESETS, type Action, type Quality, type Settings } from '../game/settings';
+import {
+  ACTIONS,
+  MAX_FPS,
+  MIN_FPS,
+  normalizeFps,
+  bindKey,
+  DEFAULT_KEYS,
+  keyLabel,
+  QUALITY_PRESETS,
+  type Action,
+  type Quality,
+  type Settings,
+} from '../game/settings';
 import { el } from './dom';
 import type { Screen } from './router';
 import { toggleFullScreen } from './screens';
@@ -114,6 +126,30 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
   document.addEventListener('fullscreenchange', refreshFullscreen);
   refresh.push(refreshFullscreen);
 
+  const fpsLimit = el('input', {
+    type: 'number',
+    min: String(MIN_FPS),
+    max: String(MAX_FPS),
+    step: '1',
+    'aria-label': 'FPS limit',
+    class: 'set-fps',
+  });
+  const commitFps = () => {
+    settings.fpsLimit = normalizeFps(fpsLimit.valueAsNumber, settings.fpsLimit);
+    fpsLimit.value = String(settings.fpsLimit);
+    changed();
+  };
+  fpsLimit.addEventListener('change', commitFps);
+  fpsLimit.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      commitFps();
+    }
+  });
+  refresh.push(() => {
+    fpsLimit.value = String(settings.fpsLimit);
+  });
+
   const root = el(
     'section',
     { class: 'screen settings' },
@@ -130,6 +166,8 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
           section(
             S.graphics,
             row('Display', fullScreen),
+            row('FPS limit', fpsLimit),
+            el('p', { class: 'control-help' }, 'In game: 10–500 FPS. Menus and Settings stay at 30 FPS.'),
             row(
               S.quality,
               select<Quality>(

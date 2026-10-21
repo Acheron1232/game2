@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { actionOf, bindKey, defaultSettings, keyLabel, parseSettings } from '../src/game/settings';
+import { actionOf, bindKey, defaultSettings, keyLabel, normalizeFps, parseSettings } from '../src/game/settings';
 
 describe('settings', () => {
+  it('defaults old settings to 120 FPS and validates saved custom limits', () => {
+    expect(parseSettings({}).fpsLimit).toBe(120);
+    expect(parseSettings({ fpsLimit: 165 }).fpsLimit).toBe(165);
+    expect(parseSettings({ fpsLimit: Infinity }).fpsLimit).toBe(120);
+    expect(parseSettings({ fpsLimit: 'bad' }).fpsLimit).toBe(120);
+    expect(normalizeFps(0)).toBe(10);
+    expect(normalizeFps(900)).toBe(500);
+    expect(normalizeFps(144.4)).toBe(144);
+    expect(normalizeFps(NaN, 90)).toBe(90);
+  });
   it('starts silent, migrates old loud music once, and keeps an explicit new choice', () => {
     expect(defaultSettings().music).toBe(0);
     expect(parseSettings({ music: 0.6 }).music).toBe(0);
