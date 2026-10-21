@@ -21,6 +21,7 @@ const cost = z.object({ gold: num, wood: num });
 
 export const rulesSchema = z.looseObject({
   version: num,
+  hire: z.looseObject({ priceFactor: num, maxSupply: num, useRange: num, followDistance: num, leash: num }),
   simulation: z.looseObject({ tickRate: num, aiFactionThinkRate: num, heroBotThinkRate: num, navCellSize: num, flowFieldCellSize: num }),
   match: z.looseObject({ maxSlots: num, reconnectWindowSec: num }),
   attributes: z.looseObject({
@@ -299,6 +300,7 @@ export const aiSchema = z.looseObject({
   heroBot: z.looseObject({
     difficulties: z.record(difficultyNames, z.looseObject({ reactionSec: num })),
     heroBuild: z.record(id, z.array(id)),
+    hiring: z.looseObject({ fromLevel: num, goldBuffer: num, maxTravel: num }),
   }),
 });
 

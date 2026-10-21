@@ -8,6 +8,7 @@ import type { CampState } from './camps';
 import { CommandType, type GameCommand } from './commands';
 import { isTownHall } from './faction/faction';
 import { factionTech, hallInRange, UPGRADE_IDS, upgradeProblem } from './faction/hall-shop';
+import { HIRE, hirePrice, hiredSupply, hireProblem } from './faction/hire';
 import { upgradeStatus, type UpgradeId } from './faction/upgrades';
 import { ITEMS, canStore, itemIndex, itemReadyAt, newCharges, shopInRange } from './items';
 import { TICK_RATE, type MatchSim, type SimEntity } from './match-sim';
@@ -24,6 +25,8 @@ export interface HeroBotHooks {
   withArmy?: () => { x: number; y: number } | null;
   /** withArmy only from this hero level (before that the hero farms alone) */
   withArmyFromLevel?: number;
+  /** hire soldiers at the faction's production buildings (player heroes played by a bot) */
+  hires?: boolean;
 }
 
 interface DifficultySettings {
@@ -49,6 +52,8 @@ const PLAN_ATTACK = 4;
 const PLAN_SHOP = 5;
 const PLAN_UPGRADES = 6;
 const PLAN_ARMY = 7;
+const PLAN_HIRE = 8;
+const HIRING = gameData.ai.heroBot.hiring;
 /** With the army: a new walk order only when the army moved this far from the last one. */
 const ARMY_REORDER = 6;
 const MAX_COMMANDS_PER_THINK = 3;
@@ -255,6 +260,7 @@ export class HeroBot {
         const buildShopping = this.shopForBuild(sim, hero, MAX_COMMANDS_PER_THINK - commands);
         if (buildShopping >= 0) return;
       }
+      if (this.hireSoldiers(sim, hero, MAX_COMMANDS_PER_THINK - commands) >= 0) return;
     }
 
     const group = hero.heroState.level >= (this.hooks.withArmyFromLevel ?? 1) ? (this.hooks.withArmy?.() ?? null) : null;
@@ -502,6 +508,59 @@ export class HeroBot {
       return 1;
     }
     return 0;
+  }
+
+  /**
+   * Hire soldiers (ai.json heroBot.hiring): the most expensive unit an own production building
+   * within maxTravel has, while the hire limit allows and gold stays above the buffer. -1 = nothing to do.
+   */
+  private hireSoldiers(sim: MatchSim, hero: SimEntity, availableCommands: number): number {
+    const hs = hero.heroState!;
+    if (!this.hooks.hires || hs.level < HIRING.fromLevel || hs.gold < HIRING.goldBuffer) return -1;
+    const f = sim.factions?.get(this.slot);
+    if (!f || f.defeated) return -1;
+    const room = HIRE.maxSupply - hiredSupply(sim, hero);
+    if (room <= 0) return -1;
+    let building: SimEntity | null = null;
+    let unit = -1;
+    let best = 0;
+    for (const id of f.buildings) {
+      const b = sim.get(id);
+      if (!b?.alive || !b.building?.done || !b.building.def?.trains.length) continue;
+      const d = rectDistance(hero.mover.x, hero.mover.y, b.mover.x, b.mover.y, b.building.w, b.building.h);
+      if (d > HIRING.maxTravel) continue;
+      for (const unitId of b.building.def.trains) {
+        const index = gameData.units.findIndex((u) => u.id === unitId);
+        const price = hirePrice(index);
+        const def = gameData.units[index];
+        if (price === null || !def || price <= best || price > hs.gold - HIRING.goldBuffer || (def.supply ?? 0) > room) continue;
+        if (sim.factions!.missing(f, def.requires).length) continue;
+        building = b;
+        unit = index;
+        best = price;
+      }
+    }
+    if (!building) {
+      if (this.plan === PLAN_HIRE) this.plan = PLAN_NONE;
+      return -1;
+    }
+    this.stateText = 'Hiring soldiers';
+    this.campIndex = -1;
+    if (hireProblem(sim, hero, unit) === 'range') {
+      this.setHallApproach(hero, building);
+      if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_HIRE, building.id, this.planX, this.planY)) {
+        this.send(sim, { type: CommandType.Move, x: this.planX, y: this.planY, queue: false });
+        this.setItemPlan(PLAN_HIRE, building.id, this.planX, this.planY);
+        return 1;
+      }
+      return 0;
+    }
+    if (availableCommands > 0 && hireProblem(sim, hero, unit) === null && this.send(sim, { type: CommandType.Hire, unit })) {
+      this.plan = PLAN_HIRE;
+      this.planTarget = building.id;
+      return 1;
+    }
+    return -1;
   }
 
   private nearestShop(

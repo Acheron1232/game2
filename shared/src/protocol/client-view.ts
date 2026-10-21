@@ -12,6 +12,7 @@ import { ENTITY_TYPES } from '../sim/entity-types';
 const UPGRADE_IDS = gameData.upgrades.upgrades.map((u) => u.id);
 /** supply per entity type (0 for heroes and buildings) */
 const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
+import { hiredSupply } from '../sim/faction/hire';
 import { itemReadyAt } from '../sim/items';
 import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { Vision } from '../sim/vision';
@@ -331,6 +332,7 @@ export class ClientView {
     p.skillPoints = hs.skillPoints;
     p.respawnTicks = hs.respawnAt ? Math.max(0, hs.respawnAt - sim.tick) : 0;
     p.moveSpeed = Math.round(hero.stats.moveSpeed * 100);
+    p.hiredSupply = hiredSupply(sim, hero);
     for (let i = 0; i < 4; i++) {
       p.abilityLevels[i] = hs.abilityLevels[i] ?? 0;
       p.cooldownEnds[i] = (hero.cooldowns[i] ?? 0) > sim.tick ? hero.cooldowns[i]! : 0;
@@ -342,7 +344,7 @@ export class ClientView {
       p.itemCooldownEnds[i] = itemReadyAt(hs, i, sim.tick);
     }
     // Respawn time counts down every tick: send it in whole seconds only.
-    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')},${p.items.join(',')},${p.charges.join(',')},${p.itemCooldownEnds.join(',')}`;
+    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.hiredSupply},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')},${p.items.join(',')},${p.charges.join(',')},${p.itemCooldownEnds.join(',')}`;
     if (key === this.playerKey) return;
     this.playerKey = key;
     sw.playerState(p);

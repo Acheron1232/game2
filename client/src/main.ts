@@ -39,6 +39,7 @@ import {
   heroStats,
   statsOf,
   buildingDefOf,
+  hirePrice,
   itemBonus,
   type HeroDef,
 } from '@game/shared';
@@ -522,6 +523,70 @@ async function main(): Promise<void> {
     return false;
   };
   const buildingName = (id: string) => gameData.buildings.buildings.find((b) => b.id === id)?.name ?? id;
+
+  // ---- Hiring soldiers: the same panel, when the hero stands at its own production building.
+  /** the building whose units the panel shows (entity id), 0 = none */
+  let hireShownAt = 0;
+  /** closed by the player while standing there: do not open again until the hero leaves */
+  let hireClosedAt = 0;
+  /** The nearest own finished building that trains soldiers, in hire range of the hero. */
+  const hireNear = (): NetEntity | null => {
+    const u = match?.ownHero?.unit;
+    if (!match || !u || u.dead) return null;
+    let best: NetEntity | null = null,
+      bestD = Infinity;
+    for (const e of match.entities.values()) {
+      if (e.owner !== match.slot || e.state & (UnitState.Constructing | UnitState.Dead) || !e.unit) continue;
+      const def = buildingDefOf(e.type);
+      if (!def?.trains.some((id) => hirePrice(gameData.units.findIndex((x) => x.id === id)) !== null)) continue;
+      const [w, h] = footprintOf(e.type);
+      const d = rectDistance(u.x, u.y, e.unit.x, e.unit.y, w, h);
+      if (d <= gameData.rules.hire.useRange - 0.2 && d < bestD) {
+        bestD = d;
+        best = e;
+      }
+    }
+    return best;
+  };
+  /** The faction has this building ('stronghold' = tier 2+, 'citadel' = tier 3), like the server. */
+  const factionHas = (id: string): boolean => {
+    const f = match!.faction;
+    if (id === 'stronghold') return f.tier >= 2;
+    if (id === 'citadel') return f.tier >= 3;
+    return f.tech.some((t) => ENTITY_TYPES[t] === id);
+  };
+  const hireView = (at: NetEntity): ShopView => {
+    const def = buildingDefOf(at.type)!;
+    const gold = match!.player.gold;
+    const used = match!.player.hiredSupply;
+    const max = gameData.rules.hire.maxSupply;
+    const units = def.trains.map((id) => gameData.units.findIndex((x) => x.id === id)).filter((i) => hirePrice(i) !== null);
+    return {
+      name: S.hireAt(def.name),
+      hint: `${S.hireHint} ${S.hireCount(used, max)}`,
+      inRange: true,
+      items: units.map((i) => {
+        const u = gameData.units[i]!;
+        const price = hirePrice(i)!;
+        const needs = (u.requires ?? []).filter((r) => !factionHas(r));
+        const why = needs.length
+          ? S.upgradeNeeds(needs.map(buildingName).join(', '))
+          : used + (u.supply ?? 0) > max
+            ? S.hireFull
+            : gold < price
+              ? S.noGold
+              : '';
+        return {
+          item: i,
+          icon: assets.has(`portraits/${u.id}.webp`) ? assets.url(`portraits/${u.id}.webp`) : null,
+          cost: price,
+          canAfford: !why,
+          // The reason it can not be hired comes last: the alert shows it.
+          tooltip: [u.name, `${S.gold}: ${price}`, S.hireSupply(u.supply ?? 0), why].filter(Boolean),
+        };
+      }),
+    };
+  };
   const hallView = (): ShopView => {
     const f = match!.faction;
     const tech: FactionTech = {
@@ -566,13 +631,22 @@ async function main(): Promise<void> {
   };
   const updateShop = () => {
     const near = shopNear();
-    // No map shop open: the Town Hall panel when the hero is at its own hall.
+    // No map shop open: the Town Hall panel when the hero is at its own hall, else the hire
+    // panel when it is at one of its own production buildings.
     if (!shop && near < 0 && match?.hasFaction) {
       const atHall = hallNear();
       if (!atHall) hallClosed = false;
       hallShown = atHall && !hallClosed;
-      if (hallShown) return game.setShop(hallView());
+      if (hallShown) {
+        hireShownAt = 0;
+        return game.setShop(hallView());
+      }
+      const at = hireNear();
+      if (!at || at.id !== hireClosedAt) hireClosedAt = 0;
+      hireShownAt = at && at.id !== hireClosedAt ? at.id : 0;
+      if (at && hireShownAt) return game.setShop(hireView(at));
     } else hallShown = false;
+    hireShownAt = 0;
     if (near < 0) shopClosedNear = -1;
     if (near >= 0 && !shop && near !== shopClosedNear) shop = { index: near, pinned: false };
     if (shop && !shop.pinned && near !== shop.index) shop = null;
@@ -595,6 +669,11 @@ async function main(): Promise<void> {
     });
   };
   closeShop = () => {
+    if (hireShownAt) {
+      hireClosedAt = hireShownAt;
+      hireShownAt = 0;
+      return game.setShop(null);
+    }
     if (hallShown) {
       hallClosed = true;
       hallShown = false;
@@ -611,6 +690,13 @@ async function main(): Promise<void> {
       return info ? { item: info.index, charges: info.charges } : null;
     });
   buyItem = (item) => {
+    if (hireShownAt && match) {
+      const at = hireNear();
+      if (!at) return game.alert(S.goToBuilding);
+      const view = hireView(at).items.find((v) => v.item === item);
+      if (view && !view.canAfford) return game.alert(view.tooltip[view.tooltip.length - 1] ?? S.noGold);
+      return match.hire(item);
+    }
     if (hallShown && match) {
       if (!hallNear()) return game.alert(S.goToHall);
       const view = hallView().items[item];

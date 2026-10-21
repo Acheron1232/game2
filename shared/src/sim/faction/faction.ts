@@ -57,6 +57,8 @@ export interface FactionState {
   campsCleared: number;
   /** fights of its army against an enemy army far from every Town Hall (match report) */
   fieldFights: number;
+  /** soldiers hired by the player's hero (not in `units`: no supply, not in the army) */
+  hired: Set<number>;
 }
 
 export interface BuildingState {
@@ -177,6 +179,7 @@ export class Factions {
       heroId: 0,
       campsCleared: 0,
       fieldFights: 0,
+      hired: new Set(),
     };
     this.list[slot] = f;
     const [tx, ty] = gameData.map.starts[start]!.townHall;
@@ -610,7 +613,7 @@ export class Factions {
       if (sim.tick % 10 === f.slot) this.updateSupply(f);
       // War Banner is over: back to normal stats.
       if (f.warBannerUntil && sim.tick === f.warBannerUntil)
-        for (const id of [...f.units, ...f.buildings]) {
+        for (const id of [...f.units, ...f.buildings, ...f.hired]) {
           const u = sim.get(id);
           if (u?.alive) sim.applyFactionStats(u);
         }
@@ -682,6 +685,7 @@ export class Factions {
     if (!f) return;
     f.buildings.delete(e.id);
     f.units.delete(e.id);
+    f.hired.delete(e.id);
     this.updateSupply(f);
   }
 
@@ -695,7 +699,7 @@ export class Factions {
       f.defeated = true;
       f.status = 'Defeated';
       this.sim.events.push(EventType.Defeated, f.slot);
-      for (const id of [...f.units, ...f.buildings]) {
+      for (const id of [...f.units, ...f.buildings, ...f.hired]) {
         const u = this.sim.get(id);
         if (u?.alive) this.sim.kill(u, { id: u.id, owner: u.owner, team: u.team });
       }

@@ -67,6 +67,7 @@ import {
   type CombatStats,
 } from './stats';
 import { qPos } from '../protocol/game';
+import { HIRE, hire, hireProblem } from './faction/hire';
 import { CATAPULT_TYPE, fightsBack, pickTarget } from './faction/targeting';
 import { buyUpgrade, upgradeProblem } from './faction/hall-shop';
 
@@ -260,6 +261,8 @@ export interface SimEntity {
   skipNeutrals: boolean;
   /** an AI army walks at the pace of its slowest unit: move speed limit, 0 = none */
   speedCap: number;
+  /** a soldier hired by a hero (leaderId): follows it, picks its own fights */
+  hired: boolean;
 }
 
 /** Who dealt damage. Kept on projectiles, because the shooter may be gone when it lands. */
@@ -471,6 +474,7 @@ export class MatchSim {
       inert: false,
       skipNeutrals: false,
       speedCap: 0,
+      hired: false,
     };
     this.entities.push(e);
     this.byId.set(e.id, e);
@@ -534,6 +538,7 @@ export class MatchSim {
     if (cmd.type === CommandType.Learn) return cmd.slot >= 0 && cmd.slot < 4 && (hero.heroState?.skillPoints ?? 0) > 0;
     if (isItemCommand(cmd)) return itemCommandProblem(this, hero, cmd) === null;
     if (cmd.type === CommandType.BuyUpgrade) return upgradeProblem(this, hero, cmd.upgrade) === null;
+    if (cmd.type === CommandType.Hire) return hireProblem(this, hero, cmd.unit) === null;
     if (!hero.alive) return false;
     switch (cmd.type) {
       case CommandType.Move:
@@ -591,6 +596,10 @@ export class MatchSim {
     // Town Hall upgrades are instant too (checked again: gold or range may have changed).
     if (cmd.type === CommandType.BuyUpgrade) {
       if (!upgradeProblem(this, e, cmd.upgrade)) buyUpgrade(this, e, cmd.upgrade);
+      return;
+    }
+    if (cmd.type === CommandType.Hire) {
+      if (!hireProblem(this, e, cmd.unit)) hire(this, e, cmd.unit);
       return;
     }
     // A new order stops a cast, a channel or an item order that has not happened yet.
@@ -765,6 +774,7 @@ export class MatchSim {
       e.swing = 0;
     }
     const due = (this.tick + e.id) % THINK_EVERY === 0;
+    if (e.hired) return this.followHired(e, due);
     if (e.leaderId) return this.followLeader(e, due);
     switch (e.order) {
       case 'follow': {
@@ -843,6 +853,56 @@ export class MatchSim {
     else if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
     if (!e.targetId && due && Math.hypot(leader.mover.x - e.mover.x, leader.mover.y - e.mover.y) > 4)
       this.moveTo(e, leader.mover.x, leader.mover.y);
+  }
+
+  /**
+   * Hired soldiers: they pick their own targets and stay in their fight when the hero takes a
+   * step; they leave a fight only when it is more than hire.leash from the hero, and walk back
+   * to a spot near it. Without a hero (dead) they wait at its respawn point.
+   */
+  private followHired(e: SimEntity, due: boolean): void {
+    const leader = this.byId.get(e.leaderId);
+    if (!leader?.heroState) {
+      // The hero is gone (its faction lost): an ordinary unit now.
+      e.hired = false;
+      e.leaderId = 0;
+      return;
+    }
+    const alive = leader.alive;
+    const lx = alive ? leader.mover.x : leader.heroState.home[0],
+      ly = alive ? leader.mover.y : leader.heroState.home[1];
+    if (e.targetId) {
+      const t = this.byId.get(e.targetId)!;
+      if (Math.hypot(t.mover.x - lx, t.mover.y - ly) <= HIRE.leash) return;
+      e.targetId = 0;
+      e.swing = 0;
+      e.mover.path = [];
+    }
+    if (due) {
+      // Neutral monsters only when the hero fights (it chose the camp).
+      const fighting = alive && leader.targetId !== 0;
+      const t = this.acquire(e, ACQUIRE_RANGE, fighting);
+      const o = t ? this.byId.get(t) : undefined;
+      if (o && Math.hypot(o.mover.x - lx, o.mover.y - ly) <= HIRE.leash) e.targetId = t;
+      else if (fighting) {
+        // Nothing near us: help the hero with its target.
+        const lt = this.byId.get(leader.targetId);
+        if (lt?.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer)) e.targetId = lt.id;
+      }
+      if (e.targetId) return;
+    }
+    // Each soldier has its own spot around the hero, so they do not stand in one heap.
+    const a = e.id * 2.39996;
+    const r = 2 + (e.id % 3);
+    const px = lx + Math.cos(a) * r,
+      py = ly + Math.sin(a) * r;
+    const far = Math.hypot(lx - e.mover.x, ly - e.mover.y) > HIRE.followDistance;
+    if ((far || !alive) && this.tick >= e.repathAt && Math.hypot(px - e.chaseX, py - e.chaseY) > 1.5) {
+      e.chaseX = px;
+      e.chaseY = py;
+      e.repathAt = this.tick + 20;
+      if (Math.hypot(px - e.mover.x, py - e.mover.y) > 1) this.moveTo(e, px, py);
+    }
   }
 
   private tauntOf(e: SimEntity): number {

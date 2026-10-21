@@ -33,6 +33,8 @@ export const CommandType = {
   /** buy a Town Hall upgrade (index in upgrades.json) for the hero's faction, at its own Town Hall */
   BuyUpgrade: 15,
   Follow: 16,
+  /** hire a soldier (index in units.json) at one of the hero's own production buildings */
+  Hire: 17,
 } as const;
 export type CommandType = (typeof CommandType)[keyof typeof CommandType];
 
@@ -56,7 +58,8 @@ export type GameCommand =
   /** target: entity id of the allied hero */
   | { type: typeof CommandType.GiveItem; slot: number; target: number }
   | { type: typeof CommandType.SwapItems; from: number; to: number }
-  | { type: typeof CommandType.BuyUpgrade; upgrade: number };
+  | { type: typeof CommandType.BuyUpgrade; upgrade: number }
+  | { type: typeof CommandType.Hire; unit: number };
 
 /** Commands the client can predict for its own hero. */
 export function isPredicted(cmd: GameCommand): boolean {

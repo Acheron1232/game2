@@ -73,7 +73,7 @@ export function buyUpgrade(sim: MatchSim, hero: SimEntity, index: number): void 
 
 /** New stats for every unit and building of the faction (upgrades work on living units too). */
 export function refreshFactionStats(sim: MatchSim, f: FactionState): void {
-  for (const id of f.units) {
+  for (const id of [...f.units, ...f.hired]) {
     const u = sim.get(id);
     if (u?.alive) sim.applyFactionStats(u);
   }

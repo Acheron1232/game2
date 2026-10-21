@@ -1479,6 +1479,7 @@ export class FactionAI {
       new HeroBot(slot, (s.ai ?? 'normal') as BotDifficulty, {
         armyTarget: () => brain?.armyTarget() ?? null,
         baseUnderAttack: () => brain?.threat ?? null,
+        hires: true,
       }),
     );
     this.botSlots.push(slot);

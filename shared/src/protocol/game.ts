@@ -158,6 +158,8 @@ export interface NetPlayerState {
   respawnTicks: number;
   /** move speed * 100, for prediction */
   moveSpeed: number;
+  /** supply of the soldiers the hero hired (rules.json hire.maxSupply) */
+  hiredSupply: number;
   abilityLevels: [number, number, number, number];
   /** server tick each ability is ready again (0 = ready) */
   cooldownEnds: [number, number, number, number];
@@ -188,6 +190,7 @@ export function blankPlayerState(): NetPlayerState {
     level: 1,
     skillPoints: 0,
     respawnTicks: 0,
+    hiredSupply: 0,
     moveSpeed: 0,
     abilityLevels: [0, 0, 0, 0],
     cooldownEnds: [0, 0, 0, 0],
@@ -254,6 +257,9 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
     case CommandType.BuyUpgrade:
       w.u8(cmd.upgrade);
       break;
+    case CommandType.Hire:
+      w.u8(cmd.unit);
+      break;
   }
   return w.bytes();
 }
@@ -303,6 +309,8 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
       return { seq, cmd: { type, from: r.u8(), to: r.u8() } };
     case CommandType.BuyUpgrade:
       return { seq, cmd: { type, upgrade: r.u8() } };
+    case CommandType.Hire:
+      return { seq, cmd: { type, unit: r.u8() } };
   }
   return null;
 }
@@ -434,7 +442,7 @@ export class SnapshotWriter {
       .u8(flags);
     const p = this.player;
     if (p) {
-      w.u16(p.heroId).u32(p.gold).u32(p.xp).u8(p.level).u8(p.skillPoints).u16(p.respawnTicks).u16(p.moveSpeed);
+      w.u16(p.heroId).u32(p.gold).u32(p.xp).u8(p.level).u8(p.skillPoints).u16(p.respawnTicks).u16(p.moveSpeed).u8(p.hiredSupply);
       for (const l of p.abilityLevels) w.u8(l);
       for (const c of p.cooldownEnds) w.u32(c);
       for (let i = 0; i < SLOTS; i++)
@@ -538,6 +546,7 @@ export class SnapshotData {
       p.skillPoints = r.u8();
       p.respawnTicks = r.u16();
       p.moveSpeed = r.u16();
+      p.hiredSupply = r.u8();
       for (let i = 0; i < 4; i++) p.abilityLevels[i] = r.u8();
       for (let i = 0; i < 4; i++) p.cooldownEnds[i] = r.u32();
       for (let i = 0; i < SLOTS; i++) {

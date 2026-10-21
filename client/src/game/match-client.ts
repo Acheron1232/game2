@@ -300,6 +300,11 @@ export class MatchClient {
     this.sendSide({ type: CommandType.BuyUpgrade, upgrade });
   }
 
+  /** Hire a soldier (index in units.json) with hero gold at an own production building. */
+  hire(unit: number): void {
+    this.sendSide({ type: CommandType.Hire, unit });
+  }
+
   sell(slot: number): void {
     this.sendSide({ type: CommandType.SellItem, slot });
   }

@@ -86,6 +86,16 @@ Town Hall (tier 1) ── trains Worker
                                               └─ Hawk Roost ── Hawk Rider
 ```
 
+## Hired soldiers (the hero's own small army)
+
+The player's hero can hire soldiers for itself, with **hero gold** (rules.json `hire`):
+
+- Stand next to one of your own finished production buildings (Barracks, Archery Range, Chapel, Workshop, Hawk Roost). A "Hire at …" panel opens with the units that building trains. Same tech as the kingdom: a Lancer needs Stronghold and Forge.
+- Price = (unit gold + unit wood) × `priceFactor` (1.5): Swordsman 180, Archer 225, Cleric 285, Catapult 420, Lancer 450, Hawk Rider 525.
+- Up to `maxSupply` (12) supply of soldiers per hero. They use no kingdom supply and are not part of the kingdom's army; Town Hall upgrades work on them.
+- The player does not give them orders. They follow the hero (a spot near it), choose their own targets, and stay in their fight when the hero takes a few steps. They leave a fight only when it is more than `leash` (14) from the hero. They fight neutral camps only when the hero fights. When the hero is dead they walk to its respawn point and wait.
+- Bot heroes (Bot slots) hire too (ai.json `heroBot.hiring`): from level 3, the most expensive unit they can pay while keeping 350 gold, at an own building within 90. The faction's own hero does not hire (it has the whole army).
+
 ## Town Hall upgrades
 
 Bought by **your hero** with **hero gold** at your own Town Hall. They help only your own faction.
