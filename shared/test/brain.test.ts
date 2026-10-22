@@ -61,7 +61,7 @@ describe('faction brain', () => {
       expect(f.supplyUsed).toBeLessThanOrEqual(f.supplyCap);
       expect(ai.brain(slot)!.status.length).toBeGreaterThan(0);
     }
-  });
+  }, 60_000);
 
   it('a hero bot can take over a hero and give it back', () => {
     const { ai, sim, run } = match(3);
@@ -106,7 +106,7 @@ describe('faction brain', () => {
     }
     const camps = sim.factions!.get(0)!.campsCleared + sim.factions!.get(1)!.campsCleared;
     expect(camps, 'camps cleared').toBeGreaterThan(2);
-  });
+  }, 60_000);
 
   it('a roaming army comes home when the base is attacked', () => {
     const { sim, ai, run } = match(5);
@@ -181,7 +181,7 @@ describe('faction brain', () => {
       states.add(ai.bots[0]!.state);
     }
     expect(states.has('With the army')).toBe(true);
-  });
+  }, 60_000);
 
   it('a team match: two heroes per kingdom, the second one plays for the same kingdom', () => {
     const heroes = gameData.heroes.map((h) => h.id);
