@@ -143,6 +143,36 @@ describe('lobby and match', () => {
     await Promise.all([host.close(), d.close()]);
   });
 
+  it('a team room: 8 slots, the partner of a kingdom joins its team, open team slots get bots', async () => {
+    const host = await TestClient.connect(base, 'H');
+    host.send({ type: 'createRoom' });
+    const code = (await host.waitFor<Msg<'room'>>((m) => m.type === 'room')).room.code;
+    host.send({ type: 'setMode', mode: 'teams' });
+    await host.waitUntil(() => host.lastRoom()?.mode === 'teams' && host.lastRoom()!.slots.length === 8);
+    // Kingdoms 3 and 4 do not play: both their slots closed.
+    for (const i of [2, 3, 6, 7]) host.send({ type: 'setSlotKind', slot: i, kind: 'closed' });
+    host.send({ type: 'setSlotKind', slot: 5, kind: 'closed' });
+    await host.waitUntil(() => host.lastRoom()?.slots[5]?.kind === 'closed');
+    const g = await TestClient.connect(base, 'G');
+    g.send({ type: 'joinRoom', code });
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.kind === 'human');
+    // Team and color belong to the slot in a team room.
+    g.send({ type: 'updateSlot', slot: 1, team: 1, color: 0 });
+    for (const c of [host, g]) c.send({ type: 'load', pct: 100 });
+    g.send({ type: 'ready', ready: true });
+    await host.waitUntil(() => host.lastRoom()?.slots[1]?.ready === true && host.lastRoom()?.slots[1]?.load === 100);
+    expect(host.lastRoom()!.slots[1]!.team).toBe(2);
+    host.send({ type: 'start' });
+    const info = (await g.waitFor<Msg<'matchStart'>>((m) => m.type === 'matchStart')).match;
+    // Host's kingdom: host + a bot in its open second slot 4; guest's kingdom: guest only (slot 5 closed).
+    expect(info.slots.map((s) => s.index).sort()).toEqual([0, 1, 4]);
+    const partner = info.slots.find((s) => s.index === 4)!;
+    expect(partner.kind).toBe('bot');
+    expect(partner.team).toBe(1);
+    expect(partner.start).toBe(info.slots.find((s) => s.index === 0)!.start);
+    await Promise.all([host.close(), g.close()]);
+  });
+
   it('the host can kick and a full room says so', async () => {
     const host = await TestClient.connect(base, 'H');
     host.send({ type: 'createRoom' });

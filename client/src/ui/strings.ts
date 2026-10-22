@@ -21,6 +21,11 @@ export const S = {
   gpuHintHow: 'Open the downloaded file "Temple Wars.cmd". If Windows asks, choose More info, then Run anyway.',
 
   lobbyTitle: 'Game',
+  mode: 'Mode',
+  modeFfa: 'Free for all (4)',
+  modeTeams: 'Teams of two (8)',
+  modeTeamsHint: 'Two heroes share each kingdom. An open slot in a team gets a bot.',
+  teamSlot: (team: number, n: number) => `${team} · ${n === 0 ? 'I' : 'II'}`,
   copyLink: 'Copy Link',
   leave: 'Leave',
   ready: 'Ready',

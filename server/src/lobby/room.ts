@@ -1,6 +1,7 @@
-// One game room: 4 slots, a host, and later the running match.
+// One game room: 4 slots (free for all) or 8 (teams of two heroes per kingdom), a host, and
+// later the running match.
 
-import { RANDOM_HERO, SLOT_COUNT, type MatchStartInfo, type RoomPhase, type RoomState, type SlotState } from '@game/shared';
+import { RANDOM_HERO, SLOT_COUNT, type MatchStartInfo, type RoomMode, type RoomPhase, type RoomState, type SlotState } from '@game/shared';
 import type { MatchHost } from '../match/match-host';
 import type { Player } from './players';
 
@@ -14,14 +15,15 @@ export function makeRoomCode(taken: (code: string) => boolean): string {
   }
 }
 
+/** In a team room slot k and slot 4 + k play for kingdom k: same team and color, always. */
 export function emptySlot(index: number): SlotState {
   return {
     index,
     kind: 'open',
     playerId: null,
     name: '',
-    team: index + 1,
-    color: index,
+    team: (index % SLOT_COUNT) + 1,
+    color: index % SLOT_COUNT,
     hero: RANDOM_HERO,
     ai: 'normal',
     ready: false,
@@ -32,6 +34,7 @@ export function emptySlot(index: number): SlotState {
 
 export class Room {
   phase: RoomPhase = 'lobby';
+  mode: RoomMode = 'ffa';
   readonly slots: SlotState[] = Array.from({ length: SLOT_COUNT }, (_, i) => emptySlot(i));
   readonly members = new Set<Player>();
   match: MatchHost | null = null;
@@ -58,6 +61,6 @@ export class Room {
   }
 
   state(): RoomState {
-    return { code: this.code, hostId: this.hostId, phase: this.phase, slots: this.slots.map((s) => ({ ...s })) };
+    return { code: this.code, hostId: this.hostId, phase: this.phase, mode: this.mode, slots: this.slots.map((s) => ({ ...s })) };
   }
 }

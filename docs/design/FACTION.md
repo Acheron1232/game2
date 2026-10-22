@@ -8,6 +8,10 @@ Data: `shared/data/units.json` (group `faction`), `shared/data/buildings.json`, 
 
 Each faction starts with: a Town Hall at its start spot, 5 Workers, 500 gold, 150 wood. The hero spawns next to the Town Hall.
 
+## Team match (8 players: two heroes per kingdom)
+
+A team room has 8 slots: slot k (1 · I) and slot 4 + k (1 · II) play for kingdom k. The kingdom is run by the faction AI as always; its two heroes are played by people or bots. The second hero is the kingdom's own hero from the first minute (it takes the Hero Shrine hero's place, so the AI builds no shrine): same owner, team and color, it spawns next to the first one. Both heroes hire soldiers at their own buildings, buy Town Hall upgrades and earn their own gold and XP. A Bot hero in a team walks with the kingdom's army when it is out, defends the base, and **comes to help an allied hero** (its human teammate too) that fights enemy units or heroes within 35. Code: `MatchSetup.teams`, `ClientView.kingdom`, `MatchClient.owner`.
+
 ## The faction's own hero (Hero Shrine)
 
 Besides the player's hero, every faction gets **one hero of its own**, played by the AI:
@@ -135,8 +139,8 @@ Bought by **your hero** with **hero gold** at your own Town Hall. They help only
 
 The faction AI runs on the server, 2–4 times per second (not every tick). It has these parts:
 
-1. **Economy manager** — keeps workers busy, trains workers up to `workerTarget`, sends 70% to gold and 30% to wood (changes with what the next build needs), builds Houses before supply runs out (when free supply < 6).
-2. **Build manager** — follows the build order, then free play. Picks building spots from the base build area (a grid around the Town Hall), never blocks the mine path, keeps 1 unit of space between buildings, puts Watchtowers on the side facing the map center.
+1. **Economy manager** — keeps workers busy, trains workers up to `workerTarget`, sends 70% to gold and 30% to wood (changes with what the next build needs), builds Houses before supply runs out (when free supply drops below the personality's `houseAhead`, 5–9). Workers **repair** hurt buildings for free (below 70% health, towers below 85%; up to 3 repairers; while the base is under attack only towers).
+2. **Build manager** — follows the build order (changed a little by the personality), then free play. Picks building spots from the base build area (a grid around the Town Hall), never blocks the mine path or the exit toward the map center. Where a building goes depends on the personality (see "AI personality"). When the build area is full the base **grows** (6, 12, 18 units past it; outside the area only on open ground with 2 units of walkable space around, so a building never closes a narrow path). Free play never ends: tier ups, more Watchtowers over time (main base, then 1–3 at every expansion), more production buildings for the unit mix.
 3. **Production manager** — keeps production buildings busy with the unit mix for its tier.
 4. **Army manager** — groups units into a **defense group** (at least 4 supply at home after the first attack) and an **attack army**. Gathers the army at a rally point, waits for stragglers, then attacks. Between attacks the army **roams** (see "A living map" below).
 5. **Target picker** — picks which enemy to attack (by difficulty: closest, weakest, or where our hero is fighting). Re-checks every 5 seconds. At the enemy base the army walks to the Town Hall first when it is close.
@@ -144,10 +148,29 @@ The faction AI runs on the server, 2–4 times per second (not every tick). It h
 7. **Expansion** — takes the natural expansion when it is safe (camp cleared, no enemy army near). Clears the camp with the army first if needed (but never pulls the army out of a siege for it).
 8. **Retreat** — if the army drops below `retreatAtArmyPct` of its starting supply, it goes home. Not when the faction is maxed out (100 supply) and rich: then its losses come back at once.
 9. **Faction hero** — builds the Hero Shrine and summons the hero (see above).
+10. **Attack timing** — before an attack the AI compares its army (and heroes with it) with the defense of the target base: towers (3 supply each) and units near its Town Hall. It attacks when it is at least 1.15 × stronger; until then it clears camps. After 75 s of waiting it goes anyway, and in the late game it never waits. Weakly defended factions are better targets. Against an enemy with 6+ towers it trains more catapults (+15% of the mix). In the late game the army walks past towers to the Town Hall.
+
+### Building prices rise (rules.json `economy.buildingPriceRise`)
+
+Like upkeep in classic RTS games, there is no fixed limit on towers or production buildings. After `freeCount` buildings of one type (sites too), every next one costs `pctPerExtra` % more gold and wood, adding up. A lost building makes the next one cheaper again. Now: Watchtower 4 free, then +25% each (5th 138/75, 8th 220/120); Barracks and Archery Range 2 free, +35%; Chapel, Workshop, Hawk Roost 1 free, +35%. Town Halls, Houses, Forge and Hero Shrine never rise. Each AI personality pays for a tower only up to its own price limit (rusher 1.25–1.75 ×, balanced and boomer 1.75–2.5 ×, turtle 3–4 × the first price), and a risen tower only when it keeps 1.5 × its price in the bank (army money).
+
+### AI personality (personality.ts)
+
+Every faction AI gets a character for the match, made from the match seed and its slot (the same seed gives the same game). Difficulty still decides how well it plays; the personality decides its style:
+
+| Style | What it does |
+|---|---|
+| Balanced | The normal build order and timings. |
+| Turtle | 3–5 extra towers, a new one every 3–5 minutes, two extra towers in the build order, pays a lot for towers, attacks with 10–30% more army. |
+| Rusher | 1–2 more soldiers in every train step, the first tower after the Stronghold, attacks with 10–25% less army, expands later. |
+| Boomer | Expands 2–4 minutes earlier, 1–2 more production buildings, a second expansion at minute 15–20, more towers at expansions. |
+
+For everyone, picked at random: the side the base grows toward and how strongly, where houses go (often behind the hall like a wall), the space between buildings (1–2.5), a random spread of spots, the angle of the tower line and the space between towers (6–11), how far ahead houses are built, the attack size (± 10–15%), the expansion minute (−1 to +2), and the unit mix (each unit × 0.75–1.3). Picture of bases from three seeds: [ai-bases-preview.png](ai-bases-preview.png) (gold = Town Hall, magenta = towers, brown = houses).
 
 ### A living map (ai.json `army`)
 
-- **Roaming.** From `roamAtSupply` army supply, while the next attack is not ready, the army clears neutral camps it can beat (total monster level ≤ `campLevelPerSupply` × army supply, our hero counts too; flying monsters only with enough archers or other units that hit air), up to `roamRadius` from home (bigger at higher tiers), never right next to an enemy base. After a camp it goes on to the nearest next camp while its health is above `roamMinHpPct`, else home. When it is strong enough for an attack it attacks straight from where it is.
+- **Heroes walk with the army.** Both heroes of a Bot slot (the player's hero and the faction's hero) join the army whenever it is out (camps, enemy armies, attacks) and share the XP of its kills; they count as army strength (2 + level each) when they are near it. When the army is at home they farm camps near the base, hire soldiers and shop. A bot hero walks home for Town Hall upgrades when its upgrade savings (30% of the gold it earns, kept apart from items and hiring) pay for one.
+- **Roaming.** From `roamAtSupply` army supply (6), while the next attack is not ready, the army clears neutral camps it can beat (total monster level ≤ `campLevelPerSupply` × army supply, our hero counts too; flying monsters only with enough archers or other units that hit air), up to `roamRadius` from home (bigger at higher tiers), never right next to an enemy base. After a camp it goes on to the nearest next camp while its health is above `roamMinHpPct`, else home. When it is strong enough for an attack it attacks straight from where it is.
 - **Meeting other armies.** An enemy army (at least 4 supply of units; heroes alone do not count) seen within `huntRange` of our army, away from its own base, is attacked when our strength is at least `huntStrengthRatio` × theirs (supply, a hero counts as 2 + level). A much stronger army that is close: our army goes home. An attack army on its way also fights an enemy army it meets, then walks on.
 - **Reinforcements** walk to the attack army as one wave and join it when they reach it.
 

@@ -102,7 +102,7 @@
         "fieldFightMinFromBase: a fight between armies at least this far from every Town Hall counts as a field fight (for the match report).",
         "lateGameMinute: from this game minute the AI stops roaming, keeps no home group and does not retreat: the whole army attacks, so long games between equal armies end."
       ],
-      "roamAtSupply": 10,
+      "roamAtSupply": 6,
       "roamRadius": [70, 100, 140],
       "roamMinHpPct": 55,
       "campLevelPerSupply": 0.6,
@@ -113,7 +113,7 @@
       "goalLeash": 20,
       "groupSpread": { "melee": 4, "ranged": 1, "siege": -2 },
       "fieldFightMinFromBase": 30,
-      "lateGameMinute": 40
+      "lateGameMinute": 34
     }
   },
 

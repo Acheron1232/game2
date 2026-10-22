@@ -68,6 +68,7 @@ export const rulesSchema = z.looseObject({
     chopTimeSec: num,
     maxWorkersPerMine: num,
     supplyCap: num,
+    buildingPriceRise: z.record(z.string(), z.union([z.string(), z.strictObject({ freeCount: num, pctPerExtra: num })])),
   }),
   neutrals: z.looseObject({ aggroRange: num, leashRange: num, returnHealPctPerSec: num, respawnNeedsNoHeroInRange: num }),
   items: z.looseObject({ groundItemSec: num, pickUpRange: num, giveRange: num }),

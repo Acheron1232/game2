@@ -14,6 +14,7 @@ import { FACTION_HERO_SLOT, NEUTRAL, NEUTRAL_TEAM, TICK_RATE, type MatchSim, typ
 import { buildingStats, rectDistance } from '../stats';
 
 const E = gameData.rules.economy;
+const PRICE_RISE = E.buildingPriceRise as Record<string, { freeCount: number; pctPerExtra: number } | string>;
 const secs = (s: number) => Math.round(s * TICK_RATE);
 /** How close (edge distance) a worker must be to use a mine, a drop-off or a building site. */
 const REACH = 0.9;
@@ -132,8 +133,14 @@ export class Factions {
     this.trees = buildTreeIndex(treeList, terrain);
     this.blockers = new NavBlockers(sim.nav);
     for (const m of gameData.map.goldMines) this.spawnMine(m.pos[0], m.pos[1], m.gold);
-    for (const s of sim.setup.slots) this.setupStart(s.index, s.team, s.color, s.start, s.ai ?? 'normal');
+    for (const s of sim.setup.slots) if (s.index < FACTION_HERO_SLOT) this.setupStart(s.index, s.team, s.color, s.start, s.ai ?? 'normal');
     this.teamsAtStart = new Set(sim.setup.slots.map((s) => s.team));
+    // Team match: the second player's hero is the kingdom's own hero (no Hero Shrine needed).
+    if (sim.setup.teams)
+      for (const f of this.list) {
+        const second = f && sim.heroes[FACTION_HERO_SLOT + f.slot];
+        if (f && second) f.heroId = second.id;
+      }
   }
 
   get(slot: number): FactionState | null {
@@ -216,6 +223,24 @@ export class Factions {
     return (requires ?? []).filter((r) => !this.has(f, r));
   }
 
+  /**
+   * What the next building of this type costs the faction now (rules.json buildingPriceRise):
+   * the data price, plus pctPerExtra % for every building of the type above freeCount.
+   */
+  buildCost(f: FactionState, def: BuildingDef): { gold: number; wood: number } {
+    const rise = PRICE_RISE[def.id];
+    if (!rise || typeof rise === 'string') return def.cost;
+    let have = 0;
+    for (const bid of f.buildings) {
+      const b = this.sim.get(bid);
+      if (b?.alive && b.building?.def?.id === def.id) have++;
+    }
+    const extra = Math.max(0, have + 1 - rise.freeCount);
+    if (!extra) return def.cost;
+    const k = 1 + (extra * rise.pctPerExtra) / 100;
+    return { gold: Math.round(def.cost.gold * k), wood: Math.round(def.cost.wood * k) };
+  }
+
   canPay(f: FactionState, cost: { gold: number; wood: number } | undefined, useEarmark = false): boolean {
     if (!cost) return true;
     const gold = f.gold - (useEarmark ? 0 : f.earmarkedGold);
@@ -240,9 +265,10 @@ export class Factions {
     const def = gameData.buildings.buildings.find((b) => b.id === defId);
     if (!def || f.defeated) return null;
     if (TOWN_HALLS.has(def.id) && def.id !== 'town_hall') return null; // tiers come from upgrades
-    if (this.missing(f, def.requires).length || !this.canPay(f, def.cost)) return null;
+    const cost = this.buildCost(f, def);
+    if (this.missing(f, def.requires).length || !this.canPay(f, cost)) return null;
     if (!this.spotFree(x, y, def.footprint[0], def.footprint[1])) return null;
-    this.pay(f, def.cost);
+    this.pay(f, cost);
     const site = this.placeSite(f, entityTypeIndex(def.id), x, y);
     if (!site) return null;
     if (worker) this.setJob(worker, 'build', site.id);

@@ -10,6 +10,9 @@ import { buildMatchNav } from '../src/nav/match-nav';
 import type { TreeList } from '../src/nav/trees';
 import { entityTypeIndex, ENTITY_TYPES } from '../src/sim/entity-types';
 import { FactionAI } from '../src/sim/faction/brain';
+import { heroKingdom } from '../src/sim/faction/hire';
+import { makePersonality } from '../src/sim/faction/personality';
+import { ClientView } from '../src/protocol/client-view';
 import { FACTION_HERO_SLOT, MatchSim, TICK_RATE } from '../src/sim/match-sim';
 
 const DATA = join(__dirname, '..', 'data');
@@ -125,6 +128,103 @@ describe('faction brain', () => {
     expect(Math.hypot(brain.gather.targetX - hall.mover.x, brain.gather.targetY - hall.mover.y)).toBeLessThan(12);
     expect(ai.brain(0)!.status).toContain('Defending');
   });
+
+  it('every match gets its own AI personality; the same seed gives the same one', () => {
+    const order = gameData.ai.faction.buildOrder as Parameters<typeof makePersonality>[2];
+    expect(makePersonality(7, 1, order)).toEqual(makePersonality(7, 1, order));
+    const styles = new Set<string>();
+    const angles = new Set<number>();
+    for (let seed = 0; seed < 40; seed++) {
+      const p = makePersonality(seed, seed % 4, order);
+      styles.add(p.style);
+      angles.add(Math.round(p.growAngle));
+      // The changed build order still has every step of the data one.
+      for (const s of order) expect(p.buildOrder.some((x) => x.do === s.do && x.what === s.what)).toBe(true);
+    }
+    expect(styles.size).toBe(4);
+    expect(angles.size).toBeGreaterThan(3);
+  });
+
+  it('buildings of one type cost more after the free count (rules.json buildingPriceRise)', () => {
+    const { sim } = match(2, 1);
+    const fs = sim.factions!;
+    const f = fs.get(0)!;
+    // Barracks need nothing else (a watchtower needs a barracks first).
+    const tower = gameData.buildings.buildings.find((b) => b.id === 'barracks')!;
+    const rise = gameData.rules.economy.buildingPriceRise['barracks'] as { freeCount: number; pctPerExtra: number };
+    const hall = sim.get(f.homeHallId)!;
+    expect(fs.buildCost(f, tower)).toEqual(tower.cost);
+    f.gold = f.wood = 100_000;
+    let placed = 0;
+    for (let i = 0; placed < rise.freeCount + 2 && i < 200; i++) {
+      const x = Math.round(hall.mover.x - 18 + (i % 8) * 5);
+      const y = Math.round(hall.mover.y - 18 + Math.floor(i / 8) * 5);
+      const before = fs.buildCost(f, tower);
+      const gold = f.gold;
+      if (!fs.startBuilding(f, 'barracks', x, y, null)) continue;
+      expect(gold - f.gold, 'paid the shown price').toBe(before.gold);
+      placed++;
+    }
+    expect(placed).toBe(rise.freeCount + 2);
+    // Two over the free count: the next one is three steps up.
+    expect(fs.buildCost(f, tower).gold).toBe(Math.round(tower.cost.gold * (1 + (3 * rise.pctPerExtra) / 100)));
+    // Houses never rise.
+    const house = gameData.buildings.buildings.find((b) => b.id === 'house')!;
+    expect(fs.buildCost(f, house)).toEqual(house.cost);
+  });
+
+  it("the player's bot hero walks with the army instead of farming alone", () => {
+    const { ai, run } = match(5);
+    const states = new Set<string>();
+    for (let s = 0; s < 12 * 60; s += 2) {
+      run(2);
+      states.add(ai.bots[0]!.state);
+    }
+    expect(states.has('With the army')).toBe(true);
+  });
+
+  it('a team match: two heroes per kingdom, the second one plays for the same kingdom', () => {
+    const heroes = gameData.heroes.map((h) => h.id);
+    const sim = new MatchSim(
+      {
+        seed: 21,
+        teams: true,
+        slots: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => ({
+          index: i,
+          heroType: entityTypeIndex(heroes[i]!),
+          team: (i % 4) + 1,
+          color: i % 4,
+          start: i % 4,
+          ai: 'normal' as const,
+          bot: true,
+        })),
+      },
+      nav0(),
+      { terrain, trees },
+    );
+    const ai = new FactionAI(sim);
+    sim.ai = ai;
+    expect(ai.bots.length).toBe(8);
+    expect(ai.factionBots.length).toBe(0);
+    for (let k = 0; k < 4; k++) {
+      const second = sim.heroes[FACTION_HERO_SLOT + k]!;
+      expect(second.owner).toBe(k);
+      expect(second.team).toBe(sim.heroes[k]!.team);
+      expect(sim.factions!.get(k)!.heroId).toBe(second.id);
+      expect(heroKingdom(sim, second)).toBe(sim.factions!.get(k));
+    }
+    expect(sim.factions!.get(FACTION_HERO_SLOT)).toBeNull();
+    expect(new ClientView(FACTION_HERO_SLOT + 2, 3).kingdom).toBe(2);
+    const states = new Set<string>();
+    for (let t = 0; t < 9 * 60; t += 2) {
+      for (let i = 0; i < 2 * TICK_RATE; i++) sim.step();
+      for (const b of ai.bots) states.add(b.state);
+    }
+    for (let k = 0; k < 4; k++) expect(count(sim, k, 'hero_shrine'), 'no shrine in a team match').toBe(0);
+    expect(states.has('With the army')).toBe(true);
+    const levels = [4, 5, 6, 7].map((slot) => sim.heroes[slot]!.heroState!.level);
+    expect(Math.max(...levels), 'second heroes level up').toBeGreaterThanOrEqual(2);
+  }, 60_000);
 
   it('a solo match says there is no enemy instead of waiting for the army forever', () => {
     const { ai, run } = match(4, 1);

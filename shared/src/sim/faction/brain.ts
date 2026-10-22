@@ -13,6 +13,7 @@ import { HeroBot, type BotDifficulty } from '../hero-bot';
 import { FACTION_HERO_SLOT, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
 import { ArmyMover, roleOf, type ArmyGroup } from './army';
 import { isTownHall, unitDef, type Difficulty, type Factions, type FactionState } from './faction';
+import { makePersonality, spotNoise, type BuildStep, type Personality } from './personality';
 import { baseCorridors, findBuildSpot, type Rect } from './placement';
 
 interface DifficultyRules {
@@ -30,11 +31,7 @@ interface DifficultyRules {
   buildOrderDelaySec: number;
 }
 
-interface Step {
-  do: 'build' | 'train' | 'upgrade' | 'expand' | 'summon';
-  what: string;
-  count?: number;
-}
+type Step = BuildStep;
 
 const AI = gameData.ai.faction as unknown as {
   difficulties: Record<Difficulty, DifficultyRules>;
@@ -60,8 +57,6 @@ const MAX_GOLD_WORKERS_PER_MINE = 12;
 const MINE_TO_HALL = 16;
 /** enemies this close to a Town Hall mean the base is under attack */
 const BASE_RADIUS = 24;
-/** free supply under this: build a House */
-const HOUSE_AT_FREE_SUPPLY = 6;
 /** keep this much army supply at home after the first attack */
 const DEFENSE_SUPPLY = 4;
 const BUILD_RADIUS_EXPANSION = 12;
@@ -89,8 +84,37 @@ const RICH_GOLD = 400;
 const HERO_TO_GOAL = 16;
 /** at an enemy base the army walks to a Town Hall this much farther than the nearest building */
 const HALL_BONUS = 15;
+/** ...and this much in the late game, past the towers and houses of a big base */
+const HALL_BONUS_LATE = 40;
+/** an enemy with this many towers gets more catapults from us */
+const MANY_TOWERS = 6;
+const CATAPULTS_VS_TOWERS = 0.15;
+/** a tower whose price has risen is built only with this much more gold than it costs (army money) */
+const RISEN_PRICE_SPARE = 1.5;
+/** with this much gold a faction does not need a new mine badly: its army is not called back */
+const RICH_NO_RECALL = 1500;
 /** a reinforcement wave this close to the attack army joins it */
 const WAVE_JOIN = 15;
+/** the base may grow this far past its build area, in steps of BASE_GROW_STEP */
+const BASE_GROW_MAX = 18;
+const BASE_GROW_STEP = 6;
+/** no free spot for a building: try again after this long */
+const NO_SPOT_RETRY_SEC = 20;
+/** expansion towers are placed within this distance of their Town Hall */
+const EXPANSION_TOWER_RADIUS = 13;
+/** workers repair buildings below this share of health (towers: a bit higher) */
+const REPAIR_BELOW = 0.7;
+const REPAIR_TOWER_BELOW = 0.85;
+/** a building takes one repairer, a tower under attack two */
+const MAX_REPAIRERS = 3;
+/** an enemy tower counts like this much army supply when we decide to attack */
+const TOWER_STRENGTH = 3;
+/** our army must be this much stronger than the defense it attacks into... */
+const ATTACK_EDGE = 1.15;
+/** ...but after waiting this long with a ready army it goes anyway */
+const ATTACK_WAIT_MAX_SEC = 75;
+/** enemy units this close to their Town Hall defend it */
+const DEFENDERS_RADIUS = 30;
 
 function supplyOf(e: SimEntity): number {
   return unitDef(ENTITY_TYPES[e.type]!)?.supply ?? 0;
@@ -158,6 +182,15 @@ export class FactionBrain {
   private doing = '';
   /** our mines are nearly empty: the next Town Hall comes before everything */
   private urgent = false;
+  /** this match's character: base layout, towers, timings (personality.ts) */
+  readonly personality: Personality;
+  /** how far the base has grown past its build area */
+  private baseGrow = 0;
+  /** building id → tick until which we do not look for a spot again */
+  private readonly noSpotUntil = new Map<string, number>();
+  private expansions = 0;
+  /** tick since when the army is big enough but waits for more against strong defense */
+  private waitingSince = 0;
 
   constructor(
     private readonly sim: MatchSim,
@@ -166,6 +199,10 @@ export class FactionBrain {
     private readonly army: ArmyMover,
   ) {
     this.rules = difficultyRules(f.difficulty);
+    this.personality = makePersonality(sim.setup.seed, f.slot, AI.buildOrder);
+    // Team match: a second player plays the kingdom's own hero, so no Hero Shrine.
+    if (sim.setup.teams && sim.heroes[FACTION_HERO_SLOT + f.slot])
+      this.personality.buildOrder = this.personality.buildOrder.filter((s) => s.what !== 'hero_shrine' && s.do !== 'summon');
     this.thinkTicks = Math.max(1, Math.round(this.rules.thinkDelaySec * TICK_RATE));
   }
 
@@ -202,6 +239,7 @@ export class FactionBrain {
     // Under attack the army comes first: savings may be spent on units.
     if (this.threat && !this.urgent) this.reserveGold = this.reserveWood = 0;
     this.production();
+    this.repair();
     this.armyThink();
     f.status = this.status = this.statusLine();
   }
@@ -385,22 +423,29 @@ export class FactionBrain {
   private houses(): void {
     const f = this.f;
     if (f.supplyCap >= gameData.rules.economy.supplyCap) return;
-    if (f.supplyCap - f.supplyUsed >= HOUSE_AT_FREE_SUPPLY || this.siteOf('house')) return;
+    if (f.supplyCap - f.supplyUsed >= this.personality.houseAhead || this.siteOf('house')) return;
     if (this.savingFor === 'Town Hall' && f.supplyCap - f.supplyUsed > 1) return;
     this.tryBuild('house');
   }
 
   /** Starts a building at a free spot of the home base. False when it can not (yet). */
-  private tryBuild(id: string, near?: { x: number; y: number; radius: number }): boolean {
+  /** `save`: keep the money for it when it can not be paid yet (off for "nice to have" buildings). */
+  private tryBuild(id: string, near?: { x: number; y: number; radius: number }, save = true): boolean {
     const f = this.f;
     const def = buildingDef(id);
     if (!def || this.fs.missing(f, def.requires).length) return false;
-    if (!this.fs.canPay(f, def.cost)) {
-      this.save(def.name, def.cost.gold, def.cost.wood);
+    const cost = this.fs.buildCost(f, def);
+    if (!this.fs.canPay(f, cost)) {
+      if (save) this.save(def.name, cost.gold, cost.wood);
       return false;
     }
+    const key = near ? `${id}@${Math.round(near.x)},${Math.round(near.y)}` : id;
+    if (this.sim.tick < (this.noSpotUntil.get(key) ?? 0)) return false;
     const spot = near ? this.spotNear(def, near.x, near.y, near.radius) : this.spotInBase(def);
-    if (!spot) return false;
+    if (!spot) {
+      this.noSpotUntil.set(key, this.sim.tick + NO_SPOT_RETRY_SEC * TICK_RATE);
+      return false;
+    }
     const worker = this.builder(spot.x, spot.y);
     if (!worker) return false;
     const site = this.fs.startBuilding(f, id, spot.x, spot.y, worker);
@@ -416,23 +461,105 @@ export class FactionBrain {
     this.reserveWood = wood;
   }
 
+  /**
+   * A spot in the home base, picked by the personality: buildings lean toward its grow side,
+   * houses toward theirs, towers stand at the edge facing the map center and keep apart. When
+   * the build area is full the base grows (up to BASE_GROW_MAX), so it never stops at one shape.
+   */
   private spotInBase(def: BuildingDef): { x: number; y: number } | null {
     const start = gameData.map.starts[this.f.start]!;
     const hall = this.sim.get(this.f.homeHallId);
     const hx = hall?.alive ? hall.mover.x : start.townHall[0],
       hy = hall?.alive ? hall.mover.y : start.townHall[1];
+    // Towers search from the build area each time: they stand at its edge, not far out.
+    const tower = def.id === 'watchtower';
+    for (let grow = tower ? 0 : this.baseGrow; grow <= BASE_GROW_MAX; grow += BASE_GROW_STEP) {
+      const [cx, cy] = start.buildArea.center;
+      const spot = this.spotAround(def, hx, hy, cx, cy, start.buildArea.radius + grow, grow > 0);
+      if (spot) {
+        if (!tower) this.baseGrow = grow;
+        return spot;
+      }
+    }
+    if (!tower) this.baseGrow = BASE_GROW_MAX;
+    return null;
+  }
+
+  /** A spot within `radius` of (cx, cy) for a base whose Town Hall stands at (hx, hy). */
+  private spotAround(
+    def: BuildingDef,
+    hx: number,
+    hy: number,
+    cx: number,
+    cy: number,
+    radius: number,
+    open = false,
+  ): { x: number; y: number } | null {
+    const p = this.personality;
     const mine = this.fs.nearestMine(hx, hy);
     const c = this.sim.size / 2;
+    const tower = def.id === 'watchtower';
+    let score: (x: number, y: number) => number;
+    if (tower) {
+      // Toward the map center (turned a little by the personality), at the edge, apart.
+      const a = Math.atan2(c - hy, c - hx) + p.towerTurn;
+      const ax = Math.cos(a),
+        ay = Math.sin(a);
+      const towers = this.towersNear(hx, hy, radius * 2);
+      score = (x, y) => {
+        const dx = x - hx,
+          dy = y - hy;
+        let s = -(dx * ax + dy * ay) - Math.hypot(dx, dy) * 0.4 + spotNoise(x, y, p.noiseSeed) * p.noise;
+        for (const t of towers) {
+          const d = Math.hypot(t.mover.x - x, t.mover.y - y);
+          if (d < p.towerGap) s += (p.towerGap - d) * 6;
+        }
+        return s;
+      };
+    } else {
+      const a = def.id === 'house' ? p.houseAngle : p.growAngle;
+      const ax = Math.cos(a),
+        ay = Math.sin(a);
+      score = (x, y) => {
+        const dx = x - hx,
+          dy = y - hy;
+        return Math.hypot(dx, dy) - (dx * ax + dy * ay) * p.growPull + spotNoise(x, y, p.noiseSeed) * p.noise;
+      };
+    }
     return findBuildSpot(this.fs.terrain, this.sim.nav, {
       footprint: [def.footprint[0], def.footprint[1]],
-      center: [start.buildArea.center[0], start.buildArea.center[1]],
-      radius: start.buildArea.radius,
+      center: [cx, cy],
+      radius,
       townHall: [hx, hy],
-      existing: this.rects(hx, hy, start.buildArea.radius + 8),
-      corridors: mine ? baseCorridors([hx, hy], [mine.mover.x, mine.mover.y], [c, c], start.buildArea.radius) : [],
-      minFromTownHall: def.id === 'watchtower' ? 3 : 1.5,
-      ...(def.id === 'watchtower' ? { preferToward: [c, c] as [number, number] } : {}),
+      existing: this.rects(hx, hy, radius + 8),
+      corridors: mine ? baseCorridors([hx, hy], [mine.mover.x, mine.mover.y], [c, c], radius) : [],
+      spacing: tower ? 1 : p.spacing,
+      minFromTownHall: tower ? 3 : 1.5,
+      // Outside the build area only on open ground, so a building never closes a narrow path.
+      ...(open ? { clearance: 2 } : {}),
+      score,
     });
+  }
+
+  /** Our watchtowers (sites too) whose nearest own Town Hall is this one. */
+  private towersOf(hall: SimEntity): number {
+    const halls = this.fs.halls(this.f);
+    let n = 0;
+    for (const t of this.towersNear(hall.mover.x, hall.mover.y, Infinity)) {
+      const d = Math.hypot(t.mover.x - hall.mover.x, t.mover.y - hall.mover.y);
+      if (halls.every((h) => h === hall || Math.hypot(t.mover.x - h.mover.x, t.mover.y - h.mover.y) >= d)) n++;
+    }
+    return n;
+  }
+
+  /** Our watchtowers (sites too) within r of a point. */
+  private towersNear(x: number, y: number, r: number): SimEntity[] {
+    const out: SimEntity[] = [];
+    for (const id of this.f.buildings) {
+      const b = this.sim.get(id);
+      if (b?.alive && b.building?.def?.id === 'watchtower' && Math.hypot(b.mover.x - x, b.mover.y - y) <= r) out.push(b);
+    }
+    return out;
   }
 
   private spotNear(def: BuildingDef, x: number, y: number, radius: number): { x: number; y: number } | null {
@@ -483,6 +610,41 @@ export class FactionBrain {
     return best;
   }
 
+  /**
+   * Workers repair hurt buildings (free, like building). Towers first and a little earlier; while
+   * the base is under attack only towers, so the rest of the workers keep mining.
+   */
+  private repair(): void {
+    let repairers = 0;
+    const busy = new Set<number>();
+    for (const id of this.f.units) {
+      const u = this.sim.get(id);
+      if (u?.alive && u.job?.kind === 'repair') {
+        repairers++;
+        busy.add(u.job.target);
+      }
+    }
+    if (repairers >= MAX_REPAIRERS) return;
+    let pick: SimEntity | null = null,
+      worst = Infinity;
+    for (const id of this.f.buildings) {
+      const b = this.sim.get(id);
+      if (!b?.alive || !b.building?.done || busy.has(b.id)) continue;
+      const tower = b.building.def?.id === 'watchtower';
+      if (this.threat && !tower) continue;
+      const share = b.hp / b.stats.maxHp;
+      if (share >= (tower ? REPAIR_TOWER_BELOW : REPAIR_BELOW)) continue;
+      const score = share - (tower ? 0.3 : 0);
+      if (score < worst) {
+        worst = score;
+        pick = b;
+      }
+    }
+    if (!pick) return;
+    const worker = this.builder(pick.mover.x, pick.mover.y);
+    if (worker) this.fs.setJob(worker, 'repair', pick.id);
+  }
+
   // ---------- build order and free play ----------
 
   private stepDone(steps: readonly Step[], i: number): boolean {
@@ -517,7 +679,7 @@ export class FactionBrain {
   private buildOrder(): void {
     // The expansion money comes first when the mines run low.
     if (this.savingFor === 'Town Hall') return;
-    const steps = AI.buildOrder;
+    const steps = this.personality.buildOrder;
     let i = 0;
     while (i < steps.length && this.stepDone(steps, i)) i++;
     if (i >= steps.length) return this.freePlay();
@@ -536,18 +698,104 @@ export class FactionBrain {
     return n;
   }
 
+  /**
+   * After the build order the base keeps growing: tier ups, more watchtowers over time (main
+   * base first, then every expansion), and more production buildings for the unit mix.
+   */
   private freePlay(): void {
     const f = this.f;
-    if (this.siteCount() >= 2) return;
+    const p = this.personality;
+    if (this.siteCount() >= (f.gold > 1000 ? 3 : 2)) return;
     if (f.tier < 3) {
       if (this.tierUp()) return;
     }
-    if (this.count('watchtower') < this.rules.towersAtBase && this.tryBuild('watchtower')) return;
-    // More production when money piles up.
-    if (this.productionCount() < this.rules.maxProductionBuildings && f.gold > 500) {
-      const next = this.count('archery_range') < this.count('barracks') ? 'archery_range' : 'barracks';
-      this.tryBuild(next);
+    const home = this.home!;
+    const minute = this.sim.tick / (60 * TICK_RATE);
+    // No fixed limit: every tower above the free count costs more (rules.json buildingPriceRise),
+    // and each personality pays only up to its own price limit.
+    const towers = this.rules.towersAtBase + p.extraTowers + Math.floor(Math.max(0, minute - 8) / p.towerEveryMin);
+    const towerOk = this.towerPriceOk();
+    if (towerOk && this.towersOf(home) < towers && this.tryBuild('watchtower', undefined, !this.towerPriceRisen())) return;
+    for (const h of this.fs.halls(f)) {
+      if (!towerOk) break;
+      if (h === home || !h.building!.done) continue;
+      if (this.towersOf(h) >= p.towersPerExpansion) continue;
+      if (this.buildTowerAt(h)) return;
     }
+    // More production when money piles up.
+    if (this.productionCount() < this.rules.maxProductionBuildings + p.extraProduction && f.gold > 500) {
+      const next = this.nextProduction();
+      if (next) this.tryBuild(next);
+    }
+  }
+
+  /** The next tower's price is within this personality's limit (and affordable when it has risen). */
+  private towerPriceOk(): boolean {
+    const def = buildingDef('watchtower')!;
+    const cost = this.fs.buildCost(this.f, def);
+    if (cost.gold > def.cost.gold * this.personality.towerPriceLimit) return false;
+    return !this.towerPriceRisen() || (this.f.gold - this.f.earmarkedGold >= cost.gold * RISEN_PRICE_SPARE && this.f.wood >= cost.wood);
+  }
+
+  private towerPriceRisen(): boolean {
+    const def = buildingDef('watchtower')!;
+    return this.fs.buildCost(this.f, def).gold > def.cost.gold;
+  }
+
+  /** Finished towers of the enemy we attack (or the next one we would attack). */
+  private enemyTowers(): number {
+    const slot = this.attackSlot >= 0 ? this.attackSlot : (this.pickEnemy()?.owner ?? -1);
+    const o = slot >= 0 ? this.fs.get(slot) : null;
+    if (!o || o.defeated) return 0;
+    let n = 0;
+    for (const id of o.buildings) {
+      const b = this.sim.get(id);
+      if (b?.alive && b.building?.done && b.building.def?.id === 'watchtower') n++;
+    }
+    return n;
+  }
+
+  /** A watchtower at an expansion Town Hall. */
+  private buildTowerAt(hall: SimEntity): boolean {
+    const f = this.f;
+    const def = buildingDef('watchtower')!;
+    if (this.fs.missing(f, def.requires).length) return false;
+    const cost = this.fs.buildCost(f, def);
+    if (!this.fs.canPay(f, cost)) {
+      if (!this.towerPriceRisen()) this.save(def.name, cost.gold, cost.wood);
+      return false;
+    }
+    const key = `watchtower@${hall.id}`;
+    if (this.sim.tick < (this.noSpotUntil.get(key) ?? 0)) return false;
+    const spot = this.spotAround(def, hall.mover.x, hall.mover.y, hall.mover.x, hall.mover.y, EXPANSION_TOWER_RADIUS, true);
+    if (!spot) {
+      this.noSpotUntil.set(key, this.sim.tick + NO_SPOT_RETRY_SEC * TICK_RATE);
+      return false;
+    }
+    const worker = this.builder(spot.x, spot.y);
+    if (!worker || !this.fs.startBuilding(f, 'watchtower', spot.x, spot.y, worker)) return false;
+    this.doing = 'Building a tower at the expansion';
+    return true;
+  }
+
+  /** The production building whose units the mix wants most, per building we already have. */
+  private nextProduction(): string | null {
+    const mix = this.mix();
+    let best: string | null = null,
+      bestScore = Infinity;
+    for (const id of PRODUCTION) {
+      const def = buildingDef(id);
+      if (!def || this.fs.missing(this.f, def.requires).length) continue;
+      let want = 0;
+      for (const u of def.trains) want += mix[u] ?? 0;
+      if (want <= 0) continue;
+      const score = (this.count(id) + 1) / want;
+      if (score < bestScore) {
+        bestScore = score;
+        best = id;
+      }
+    }
+    return best;
   }
 
   private siteCount(): number {
@@ -611,6 +859,12 @@ export class FactionBrain {
     if (f.upgrades['sharper_blades']) shift(['swordsman', 'lancer'], 'archer', 0.1);
     if (f.upgrades['better_arrows']) shift(['archer'], 'swordsman', 0.1);
     if (f.upgrades['siege_works']) m['catapult'] = (m['catapult'] ?? 0) + 0.05;
+    // Against a base full of towers catapults pay (they outrange towers).
+    if (f.tier >= 2 && this.enemyTowers() >= MANY_TOWERS) {
+      shift(['catapult'], 'swordsman', CATAPULTS_VS_TOWERS * 0.5);
+      shift(['catapult'], 'archer', CATAPULTS_VS_TOWERS * 0.5);
+    }
+    for (const id in m) m[id] = (m[id] ?? 0) * (this.personality.mixScale[id] ?? 1);
     return m;
   }
 
@@ -676,12 +930,17 @@ export class FactionBrain {
    * the gold we mine runs low (main mines run dry after about 20 minutes).
    */
   private expansion(): void {
-    const at = this.rules.expandAtMinute;
+    const base = this.rules.expandAtMinute;
+    const at = base === null ? null : Math.max(4, base + this.personality.expandShift);
     let left = 0;
     for (const m of this.mineOfHall.values()) left += this.sim.get(m)?.building?.gold ?? 0;
     const low = left < LOW_GOLD;
     this.urgent = left < URGENT_GOLD;
-    const timeUp = at !== null && this.sim.tick >= at * 60 * TICK_RATE && !this.expanded;
+    const minute = this.sim.tick / (60 * TICK_RATE);
+    const second = this.personality.secondExpandMinute;
+    const timeUp =
+      (at !== null && minute >= at && !this.expanded) ||
+      (at !== null && second !== null && minute >= second && this.expansions < 2 && this.fs.halls(this.f).length < 3);
     if (!low && !timeUp) return;
     for (const h of this.fs.halls(this.f)) if (!h.building!.done) return; // one at a time
     const spot = this.freeExpansion();
@@ -694,9 +953,11 @@ export class FactionBrain {
     // before any attack: the attack army is called back for it.
     if (this.hostilesNear(tx, ty, 10)) {
       const gather = this.gather;
-      if (gather && this.armyState !== 'creep') {
+      // Rich and late: the gold can wait, the army ends the game first.
+      const rich = this.f.gold >= RICH_NO_RECALL;
+      if (gather && this.armyState !== 'creep' && !(rich && this.lateGame())) {
         // ...but never out of a siege: the enemy base is worth more than the camp.
-        if (low && this.attack && (this.armyState === 'attack' || this.armyState === 'retreat') && !this.sieging(this.attack)) {
+        if (low && !rich && this.attack && (this.armyState === 'attack' || this.armyState === 'retreat') && !this.sieging(this.attack)) {
           for (const id of [...this.attack.members]) this.army.add(gather, id);
           this.army.disband(this.attack);
           this.attack = null;
@@ -715,6 +976,7 @@ export class FactionBrain {
     if (this.tryBuild('town_hall', { x: tx, y: ty, radius: BUILD_RADIUS_EXPANSION })) {
       this.doing = 'Taking the expansion';
       this.expanded = true;
+      this.expansions++;
     }
   }
 
@@ -841,11 +1103,12 @@ export class FactionBrain {
     return best;
   }
 
-  /** Our hero as army strength (alive and near the point), else 0. */
+  /** Our heroes (the faction's and the player's) as army strength, when alive and near the point. */
   private heroStrengthNear(x: number, y: number, r: number): number {
-    const hero = this.f.heroId ? this.sim.get(this.f.heroId) : undefined;
-    if (!hero?.alive || Math.hypot(hero.mover.x - x, hero.mover.y - y) > r) return 0;
-    return heroStrength(hero);
+    let s = 0;
+    for (const hero of [this.f.heroId ? this.sim.get(this.f.heroId) : undefined, this.sim.heroes[this.f.slot]])
+      if (hero?.alive && hero.heroState && Math.hypot(hero.mover.x - x, hero.mover.y - y) <= r) s += heroStrength(hero);
+    return s;
   }
 
   // ---------- army ----------
@@ -957,7 +1220,24 @@ export class FactionBrain {
   }
 
   private attackNeed(): number {
-    return this.attacks === 0 ? this.rules.firstAttackArmySupply : this.rules.attackArmySupply;
+    const need = this.attacks === 0 ? this.rules.firstAttackArmySupply : this.rules.attackArmySupply;
+    return Math.round(need * this.personality.attackScale);
+  }
+
+  /**
+   * How strong the defense of an enemy base looks: its towers and the army units near its Town
+   * Hall (in army supply). The AI knows this like a player who scouted.
+   */
+  private defenseOf(hall: SimEntity): number {
+    let d = 0;
+    this.sim.grid.query(hall.mover.x, hall.mover.y, DEFENDERS_RADIUS, (o) => {
+      if (!o.alive || o.owner !== hall.owner || o.job) return;
+      if (o.building) {
+        if (o.building.done && o.building.def?.id === 'watchtower') d += TOWER_STRENGTH;
+      } else if (o.heroState) d += heroStrength(o);
+      else d += supplyOf(o);
+    });
+    return d;
   }
 
   /**
@@ -984,9 +1264,16 @@ export class FactionBrain {
     if (supply >= ARMY.roamAtSupply && this.startHunt(gather)) return;
     if (supply < need || !target) {
       this.readyAt = 0;
+      this.waitingSince = 0;
       if (AI.attack.creepCampsWhenIdle && supply >= ARMY.roamAtSupply && (!target || !this.lateGame()) && this.startCreep(gather, supply))
         return;
       if (supply > 0 && target) this.doing ||= `Army gathering (${supply} / ${need} supply)`;
+      return;
+    }
+    // Strong defense there: grow the army a bit more first (camps meanwhile).
+    if (!this.strongEnough(gather, target)) {
+      if (AI.attack.creepCampsWhenIdle && this.startCreep(gather, supply)) return;
+      this.doing ||= 'Army waiting: their defense is strong';
       return;
     }
     // Enough army: wait for stragglers, then go.
@@ -996,6 +1283,19 @@ export class FactionBrain {
       return;
     }
     this.launchAttack(gather, target);
+  }
+
+  /**
+   * Our group can take on the defense of the target base (towers and army at home there). A
+   * ready army that waited ATTACK_WAIT_MAX_SEC goes anyway, so equal games do not stall.
+   */
+  private strongEnough(g: ArmyGroup, target: SimEntity): boolean {
+    if (this.lateGame() || this.rules.targetChoice === 'closest' || this.groupStrength(g) >= this.defenseOf(target) * ATTACK_EDGE) {
+      this.waitingSince = 0;
+      return true;
+    }
+    if (!this.waitingSince) this.waitingSince = this.sim.tick;
+    return this.sim.tick - this.waitingSince >= ATTACK_WAIT_MAX_SEC * TICK_RATE;
   }
 
   /** The army (from home or from a cleared camp) goes for an enemy base. */
@@ -1125,7 +1425,7 @@ export class FactionBrain {
     // Strong enough now: attack straight from here (the army is together already).
     const target = this.pickEnemy();
     this.noEnemy = !target;
-    if (target && supply >= this.attackNeed()) return this.launchAttack(gather, target);
+    if (target && supply >= this.attackNeed() && this.strongEnough(gather, target)) return this.launchAttack(gather, target);
     // Healthy: on to the next camp, else home to heal and gather.
     if (!this.lateGame() && this.groupHealth(gather) * 100 >= ARMY.roamMinHpPct && this.startCreep(gather, supply)) return;
     this.backToRally(gather);
@@ -1210,7 +1510,7 @@ export class FactionBrain {
       // They are gone (dead, fled, out of sight): attack from here when strong enough, else on
       // to a camp, else home.
       const target = this.pickEnemy();
-      if (target && supply >= this.attackNeed()) return this.launchAttack(g, target);
+      if (target && supply >= this.attackNeed() && this.strongEnough(g, target)) return this.launchAttack(g, target);
       if (supply && this.groupHealth(g) * 100 >= ARMY.roamMinHpPct && this.startCreep(g, supply)) return;
       return this.backToRally(g);
     }
@@ -1370,7 +1670,7 @@ export class FactionBrain {
       let score = d;
       if (this.rules.targetChoice !== 'closest') {
         // Weaker factions (fewer buildings and army) are better targets.
-        score = d * 0.5 + (o.buildings.size * 4 + o.supplyUsed) * 2;
+        score = d * 0.5 + (o.buildings.size * 4 + o.supplyUsed) * 2 + this.defenseOf(hall) * 3;
       }
       if (this.rules.targetChoice === 'weakest_or_where_our_hero_fights' && hero?.alive) {
         const near = Math.hypot(hero.mover.x - hall.mover.x, hero.mover.y - hall.mover.y);
@@ -1396,7 +1696,8 @@ export class FactionBrain {
         const b = this.sim.get(id);
         if (!b?.alive) continue;
         // Town Halls first: a faction without one is out of the game.
-        const d = Math.hypot(b.mover.x - this.center.x, b.mover.y - this.center.y) - (isTownHall(b) ? HALL_BONUS : 0);
+        const bonus = isTownHall(b) ? (this.lateGame() ? HALL_BONUS_LATE : HALL_BONUS) : 0;
+        const d = Math.hypot(b.mover.x - this.center.x, b.mover.y - this.center.y) - bonus;
         if (d < bestD) {
           bestD = d;
           best = b;
@@ -1450,7 +1751,9 @@ export class FactionAI {
     const fs = sim.factions;
     if (fs) for (const f of fs.list) if (f) this.brains.push(new FactionBrain(sim, fs, f, this.army));
     for (const s of sim.setup.slots) if (s.bot) this.setHeroBot(s.index, true);
-    for (const b of this.brains)
+    for (const b of this.brains) {
+      // Team match: the second player's hero is played like a player's (setHeroBot), not here.
+      if (sim.setup.teams && sim.setup.slots.some((s) => s.index === FACTION_HERO_SLOT + b.f.slot)) continue;
       this.factionBots.push(
         new HeroBot(FACTION_HERO_SLOT + b.f.slot, b.f.difficulty, {
           armyTarget: () => b.armyTarget(),
@@ -1459,6 +1762,7 @@ export class FactionAI {
           withArmyFromLevel: HERO_RULES.followArmyFromLevel,
         }),
       );
+    }
   }
 
   /** A bot plays this slot's hero (a Bot slot, or a player who is away), or stops. */
@@ -1474,11 +1778,17 @@ export class FactionAI {
     if (at >= 0) return;
     const s = this.sim.setup.slots.find((x) => x.index === slot);
     if (!s) return;
-    const brain = this.brain(slot);
+    // The second player of a team match plays for the kingdom of slot - FACTION_HERO_SLOT.
+    const kingdom = slot >= FACTION_HERO_SLOT ? slot - FACTION_HERO_SLOT : slot;
+    const brain = this.brain(kingdom);
     this.bots.push(
       new HeroBot(slot, (s.ai ?? 'normal') as BotDifficulty, {
+        kingdom,
         armyTarget: () => brain?.armyTarget() ?? null,
         baseUnderAttack: () => brain?.threat ?? null,
+        // The player's hero levels with the army too: camps and fights with it, not alone.
+        withArmy: () => brain?.armyOut() ?? null,
+        withArmyFromLevel: HERO_RULES.followArmyFromLevel,
         hires: true,
       }),
     );

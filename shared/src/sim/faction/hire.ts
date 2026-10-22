@@ -37,9 +37,21 @@ export function tavernInRange(hero: SimEntity, unitId: string): { x: number; y: 
   return null;
 }
 
+/**
+ * The kingdom a hero hires for and buys upgrades for: a player's hero's own one (in a team match
+ * both players of a team share it). A faction's own Hero Shrine hero has none (it has the army).
+ */
+export function heroKingdom(sim: MatchSim, hero: SimEntity): FactionState | null {
+  const hs = hero.heroState;
+  // A Shrine hero's command slot is not its owner's (FACTION_HERO_SLOT + owner). No value import
+  // of match-sim here: it would make a module cycle.
+  if (!hs || (hs.slot !== hero.owner && !sim.setup.teams)) return null;
+  return sim.factions?.get(hero.owner) ?? null;
+}
+
 /** Supply of the soldiers this hero has now. */
 export function hiredSupply(sim: MatchSim, hero: SimEntity): number {
-  const f = hero.heroState ? sim.factions?.get(hero.heroState.slot) : null;
+  const f = heroKingdom(sim, hero);
   let s = 0;
   if (f)
     for (const id of f.hired) {
@@ -67,7 +79,7 @@ export function hireBuildingInRange(sim: MatchSim, hero: SimEntity, f: FactionSt
 export function hireProblem(sim: MatchSim, hero: SimEntity, unit: number): string | null {
   const price = hirePrice(unit);
   // Only player heroes hire (the faction's own hero has its own army).
-  const f = hero.heroState ? sim.factions?.get(hero.heroState.slot) : null;
+  const f = heroKingdom(sim, hero);
   if (price === null || !f || f.defeated) return 'unit';
   if (!hero.alive) return 'dead';
   const def = gameData.units[unit]!;
@@ -85,7 +97,7 @@ export function hireProblem(sim: MatchSim, hero: SimEntity, unit: number): strin
 /** Pays and spawns the soldier next to the building (already checked with hireProblem). */
 export function hire(sim: MatchSim, hero: SimEntity, unit: number): SimEntity {
   const def = gameData.units[unit]!;
-  const f = sim.factions!.get(hero.heroState!.slot)!;
+  const f = heroKingdom(sim, hero)!;
   // One of the faction's buildings, or a tavern (mercenaries).
   const b = def.group === 'mercenary' ? null : hireBuildingInRange(sim, hero, f, def.id);
   const at = b ? { x: b.mover.x, y: b.mover.y } : tavernInRange(hero, def.id)!;

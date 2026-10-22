@@ -3,7 +3,12 @@ import type { MatchSummary, PlayerSummary } from '../sim/summary';
 
 import { z } from 'zod';
 
+/** slots of a free-for-all room (one hero per kingdom) */
 export const SLOT_COUNT = 4;
+/** slots of a team room: 4 kingdoms × 2 heroes (slot k and slot 4 + k share kingdom k) */
+export const TEAM_SLOT_COUNT = 8;
+export const ROOM_MODES = ['ffa', 'teams'] as const;
+export type RoomMode = (typeof ROOM_MODES)[number];
 export const SLOT_KINDS = ['open', 'human', 'bot', 'closed'] as const;
 export type SlotKind = (typeof SLOT_KINDS)[number];
 export const AI_LEVELS = ['easy', 'normal', 'hard'] as const;
@@ -37,6 +42,8 @@ export interface RoomState {
   code: string;
   hostId: string;
   phase: RoomPhase;
+  /** 'ffa': 4 slots, a kingdom each; 'teams': 8 slots, two heroes per kingdom */
+  mode: RoomMode;
   slots: SlotState[];
 }
 
@@ -83,7 +90,7 @@ const slotIndex = z
   .number()
   .int()
   .min(0)
-  .max(SLOT_COUNT - 1);
+  .max(TEAM_SLOT_COUNT - 1);
 
 export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
   z.object({
@@ -101,6 +108,7 @@ export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('joinRoom'), code: z.string().max(8) }),
   z.object({ type: z.literal('leaveRoom') }),
   z.object({ type: z.literal('setSlotKind'), slot: slotIndex, kind: z.enum(['open', 'bot', 'closed']) }),
+  z.object({ type: z.literal('setMode'), mode: z.enum(ROOM_MODES) }),
   z.object({ type: z.literal('kick'), slot: slotIndex }),
   z.object({
     type: z.literal('updateSlot'),

@@ -3,9 +3,13 @@
 
 import {
   entityTypeIndex,
+  FACTION_HERO_SLOT,
   gameData,
   RANDOM_HERO,
   Rng,
+  SLOT_COUNT,
+  TEAM_SLOT_COUNT,
+  type RoomMode,
   type ClientLobbyMessage,
   type ErrorCode,
   type MatchSetup,
@@ -157,6 +161,8 @@ export class Lobby {
         return this.leave(p, 'left');
       case 'setSlotKind':
         return this.setSlotKind(p, msg.slot, msg.kind);
+      case 'setMode':
+        return this.setMode(p, msg.mode);
       case 'kick':
         return this.kick(p, msg.slot);
       case 'updateSlot':
@@ -237,7 +243,13 @@ export class Lobby {
 
   private seat(room: Room, slot: SlotState, p: Player): void {
     Object.assign(slot, emptySlot(slot.index), { kind: 'human', playerId: p.id, name: p.name, online: !!p.conn });
-    // Keep colors unique: take the first free one if the slot's own color is used.
+    // Keep colors unique: take the first free one if the slot's own color is used. (In a team
+    // room a slot's color is its kingdom's.)
+    if (room.mode === 'teams') {
+      room.members.add(p);
+      p.room = room;
+      return;
+    }
     const used = new Set(room.slots.filter((s) => s !== slot && s.kind !== 'open' && s.kind !== 'closed').map((s) => s.color));
     if (used.has(slot.color)) slot.color = [0, 1, 2, 3].find((c) => !used.has(c)) ?? slot.color;
     room.members.add(p);
@@ -293,7 +305,8 @@ export class Lobby {
   private setSlotKind(p: Player, index: number, kind: 'open' | 'bot' | 'closed'): void {
     const room = this.hostRoom(p);
     if (!room) return;
-    const slot = room.slots[index]!;
+    const slot = room.slots[index];
+    if (!slot) return this.error(p, 'not_allowed');
     if (slot.playerId === p.id) return this.error(p, 'not_allowed');
     if (slot.kind === 'human') {
       const other = this.players.get(slot.playerId!);
@@ -306,7 +319,7 @@ export class Lobby {
         name: `Bot ${index + 1}`,
         ready: true,
         load: 100,
-        color: used.has(index) ? ([0, 1, 2, 3].find((c) => !used.has(c)) ?? index) : index,
+        color: room.mode === 'teams' ? slot.color : used.has(index) ? ([0, 1, 2, 3].find((c) => !used.has(c)) ?? index) : index,
       });
     }
     this.broadcastRoom(room);
@@ -315,8 +328,8 @@ export class Lobby {
   private kick(p: Player, index: number): void {
     const room = this.hostRoom(p);
     if (!room) return;
-    const slot = room.slots[index]!;
-    if (slot.kind !== 'human' || slot.playerId === p.id) return this.error(p, 'not_allowed');
+    const slot = room.slots[index];
+    if (!slot || slot.kind !== 'human' || slot.playerId === p.id) return this.error(p, 'not_allowed');
     const other = this.players.get(slot.playerId!);
     if (other) this.leave(other, 'kicked');
   }
@@ -324,10 +337,16 @@ export class Lobby {
   private updateSlot(p: Player, msg: Extract<ClientLobbyMessage, { type: 'updateSlot' }>): void {
     const room = p.room;
     if (!room || room.phase !== 'lobby') return;
-    const slot = room.slots[msg.slot]!;
+    const slot = room.slots[msg.slot];
+    if (!slot) return this.error(p, 'not_allowed');
     const own = slot.playerId === p.id;
     const hostBot = room.hostId === p.id && slot.kind === 'bot';
     if (!own && !hostBot) return this.error(p, 'not_allowed');
+    // Team room: team and color belong to the kingdom (the slot), not to the player.
+    if (room.mode === 'teams') {
+      delete msg.color;
+      delete msg.team;
+    }
     if (msg.color !== undefined && msg.color !== slot.color) {
       if (room.slots.some((s) => s !== slot && s.kind !== 'open' && s.kind !== 'closed' && s.color === msg.color))
         return this.error(p, 'color_taken');
@@ -336,6 +355,46 @@ export class Lobby {
     if (msg.team !== undefined) slot.team = msg.team;
     if (msg.hero !== undefined && (msg.hero === RANDOM_HERO || HERO_IDS.has(msg.hero))) slot.hero = msg.hero;
     if (msg.ai !== undefined && hostBot) slot.ai = msg.ai;
+    this.broadcastRoom(room);
+  }
+
+  /**
+   * Team room at match start: a kingdom with a player in either of its two slots plays; its
+   * other slot gets a bot when it is open (a closed second slot stays empty: one hero only).
+   * The first slot always plays, since it owns the kingdom.
+   */
+  private fillTeams(room: Room): void {
+    const plays = (s: SlotState | undefined) => s?.kind === 'human' || s?.kind === 'bot';
+    for (let k = 0; k < SLOT_COUNT; k++) {
+      const first = room.slots[k]!,
+        second = room.slots[FACTION_HERO_SLOT + k];
+      if (!plays(first) && !plays(second)) continue;
+      for (const s of [first, second])
+        if (s && !plays(s) && (s === first || s.kind === 'open'))
+          Object.assign(s, { kind: 'bot', name: `Bot ${s.index + 1}`, ready: true, load: 100 });
+    }
+  }
+
+  /**
+   * Free for all (4 slots) or teams (8 slots: slot k and 4 + k share kingdom k). Going back to
+   * free for all moves the players of slots 4-7 to free slots, or refuses when there is no room.
+   */
+  private setMode(p: Player, mode: RoomMode): void {
+    const room = this.hostRoom(p);
+    if (!room || room.mode === mode) return;
+    if (mode === 'teams') {
+      for (let i = SLOT_COUNT; i < TEAM_SLOT_COUNT; i++) room.slots.push(emptySlot(i));
+      // Team and color come from the kingdom now.
+      for (const s of room.slots) Object.assign(s, { team: (s.index % SLOT_COUNT) + 1, color: s.index % SLOT_COUNT });
+    } else {
+      const extra = room.slots.slice(SLOT_COUNT).filter((s) => s.kind === 'human');
+      const free = room.slots.slice(0, SLOT_COUNT).filter((s) => s.kind === 'open' || s.kind === 'closed' || s.kind === 'bot');
+      if (extra.length > free.length) return this.error(p, 'room_full');
+      extra.forEach((s, i) => Object.assign(free[i]!, { ...s, index: free[i]!.index, team: free[i]!.team, color: free[i]!.color }));
+      room.slots.length = SLOT_COUNT;
+    }
+    room.mode = mode;
+    this.chat(room, mode === 'teams' ? 'Teams: two heroes for each kingdom.' : 'Free for all: one hero for each kingdom.');
     this.broadcastRoom(room);
   }
 
@@ -367,8 +426,14 @@ export class Lobby {
 
     const seed = (Math.random() * 2 ** 31) | 0;
     const rng = new Rng(seed);
+    const teams = room.mode === 'teams';
+    if (teams) this.fillTeams(room);
     const playing = room.slots.filter((s) => s.kind === 'human' || s.kind === 'bot');
-    const starts = rng.shuffle([0, 1, 2, 3]);
+    // One start spot per kingdom: the second player of a team shares the first one's.
+    const kingdomStarts = rng.shuffle([0, 1, 2, 3]);
+    const kingdoms = teams ? [...new Set(playing.map((s) => s.index % SLOT_COUNT))] : playing.map((s) => s.index);
+    const startOf = (s: SlotState) => kingdomStarts[kingdoms.indexOf(teams ? s.index % SLOT_COUNT : s.index)]!;
+    const starts = playing.map(startOf);
     const taken = new Set(playing.map((s) => s.hero).filter((h) => h !== RANDOM_HERO));
     const heroes = playing.map((s) => {
       if (s.hero !== RANDOM_HERO) return s.hero;
@@ -379,6 +444,7 @@ export class Lobby {
     });
     const setup: MatchSetup = {
       seed,
+      ...(teams ? { teams: true } : {}),
       slots: playing.map((s, i) => ({
         index: s.index,
         heroType: entityTypeIndex(heroes[i]!),

@@ -237,6 +237,12 @@ function factionHero(sim: MatchSim, f: FactionState): string {
 /** Per faction at the end: its own hero, camps cleared, field fights. */
 export interface FactionTotals {
   slot: number;
+  /** the AI's character this match (personality.ts) */
+  style: string;
+  /** the player's hero level at the end */
+  heroLevel: number;
+  /** watchtowers standing at the end */
+  towers: number;
   factionHero: string;
   campsCleared: number;
   fieldFights: number;
@@ -273,7 +279,8 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
     map,
   );
   // The full AI: faction brains and hero bots (o.attach can add more).
-  if (!o.noAi) sim.ai = new FactionAI(sim);
+  const ai = o.noAi ? null : new FactionAI(sim);
+  sim.ai = ai;
   const attached = o.attach?.(sim);
   const controller = attached || undefined;
   const maxTicks = Math.ceil(maxMinutes * TICKS_PER_MINUTE);
@@ -346,6 +353,9 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
       .factions!.list.filter((f) => !!f)
       .map((f) => ({
         slot: f.slot,
+        style: ai?.brain(f.slot)?.personality.style ?? '',
+        heroLevel: sim.heroes[f.slot]?.heroState?.level ?? 0,
+        towers: sim.entities.filter((e) => e.alive && e.owner === f.slot && e.building?.done && e.building.def?.id === 'watchtower').length,
         factionHero: factionHero(sim, f),
         campsCleared: f.campsCleared,
         fieldFights: f.fieldFights,

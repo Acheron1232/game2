@@ -1,7 +1,17 @@
-// The game lobby: 4 slots, chat, loading, ready and start. The server owns the room state;
-// this screen only shows it and sends what the player changes.
+// The game lobby: 4 slots (free for all) or 8 (teams: two heroes for each kingdom), chat,
+// loading, ready and start. The server owns the room state; this screen only shows it and sends
+// what the player changes.
 
-import { AI_LEVELS, gameData, RANDOM_HERO, type ClientLobbyMessage, type RoomState, type SlotState } from '@game/shared';
+import {
+  AI_LEVELS,
+  gameData,
+  RANDOM_HERO,
+  SLOT_COUNT,
+  type ClientLobbyMessage,
+  type RoomMode,
+  type RoomState,
+  type SlotState,
+} from '@game/shared';
 import type { LoadState } from '../loader/loader';
 import type { NetState } from '../net/socket';
 import { el, setText } from './dom';
@@ -33,6 +43,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
   const title = el('h2', {}, S.lobbyTitle);
   const net = el('span', { class: 'net' });
   const copyBtn = el('button', { class: 'btn small' }, S.copyLink);
+  const modeBox = el('span', { class: 'lobby-mode' });
   const tbody = el('tbody');
   const chatLog = el('div', { class: 'chat-log' });
   const chatInput = el('input', { class: 'field', placeholder: S.typeHere, maxlength: '200' });
@@ -70,6 +81,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
   startBtn.addEventListener('click', () => send({ type: 'start' }));
 
   const row = (s: SlotState): HTMLTableRowElement => {
+    const teams = room!.mode === 'teams';
     const isHost = room!.hostId === me;
     const own = s.playerId === me;
     const editBot = isHost && s.kind === 'bot';
@@ -109,9 +121,10 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
           : kindSel;
     }
     const used = s.kind === 'human' || s.kind === 'bot';
+    // Team room: team and color are the kingdom's, nobody changes them.
     const team = !used
       ? '—'
-      : canEdit
+      : canEdit && !teams
         ? select(
             [1, 2, 3, 4].map((t) => [String(t), String(t)]),
             String(s.team),
@@ -120,7 +133,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
         : String(s.team);
     const color = !used
       ? '—'
-      : canEdit
+      : canEdit && !teams
         ? select(
             COLOR_NAMES.map((n, i): [string, string] => [String(i), taken.has(i) ? `${n} ✕` : n]),
             String(s.color),
@@ -145,17 +158,27 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
         : s.kind === 'bot'
           ? '✔'
           : '—';
-    return el(
-      'tr',
-      { class: own ? 'own' : '' },
-      ...[String(s.index + 1), who, type, team, color, hero, ai, load].map((c) => el('td', {}, c)),
-    );
+    const label = teams ? S.teamSlot((s.index % SLOT_COUNT) + 1, s.index < SLOT_COUNT ? 0 : 1) : String(s.index + 1);
+    const cls = [own ? 'own' : '', teams && s.index >= SLOT_COUNT ? 'second' : ''].filter(Boolean).join(' ');
+    return el('tr', { class: cls }, ...[label, who, type, team, color, hero, ai, load].map((c) => el('td', {}, c)));
   };
+
+  const modeNames: Record<RoomMode, string> = { ffa: S.modeFfa, teams: S.modeTeams };
 
   const render = () => {
     if (!room) return;
     setText(title, `${S.lobbyTitle} — ${room.code}`);
-    tbody.replaceChildren(...room.slots.map(row));
+    const teams = room.mode === 'teams';
+    // Team room: the two slots of a kingdom one under the other (1·I, 1·II, 2·I, ...).
+    const order = teams ? [...room.slots].sort((a, b) => (a.index % SLOT_COUNT) - (b.index % SLOT_COUNT) || a.index - b.index) : room.slots;
+    tbody.replaceChildren(...order.map(row));
+    root.classList.toggle('teams', teams);
+    const hostNow = room.hostId === me && room.phase === 'lobby';
+    modeBox.replaceChildren(
+      `${S.mode}: `,
+      hostNow ? select(Object.entries(modeNames), room.mode, (v) => send({ type: 'setMode', mode: v as RoomMode })) : modeNames[room.mode],
+    );
+    modeBox.title = teams ? S.modeTeamsHint : '';
     const own = room.slots.find((s) => s.playerId === me);
     const isHost = room.hostId === me;
     readyBtn.hidden = isHost;
@@ -175,7 +198,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
     el(
       'div',
       { class: 'panel ornate lobby-panel' },
-      el('header', { class: 'lobby-head' }, title, net, copyBtn),
+      el('header', { class: 'lobby-head' }, title, modeBox, net, copyBtn),
       el('div', { class: 'divider' }),
       el(
         'table',

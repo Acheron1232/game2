@@ -59,7 +59,7 @@ Rules:
 
 - Shops are neutral and can not be attacked.
 - Buy: right click the item in the shop panel, or click and press the hotkey. Sell: drag an item onto the shop panel.
-- The shop panel opens by itself when your hero is within 6 units, or when you click the shop. Buying and selling need the hero within 6 units.
+- The shop panel opens when you click the shop while your hero is within 6 units (it does not open by itself). It closes when the hero walks away. Buying and selling need the hero within 6 units.
 
 ## Neutral camps
 

@@ -39,6 +39,7 @@ import {
   DamageKind,
   ENTITY_TYPES,
   EventType,
+  FACTION_HERO_SLOT,
   isFlyingType,
   isHeroType,
   isPredicted,
@@ -215,6 +216,14 @@ export class MatchClient {
 
   get slot(): number {
     return this.info.yourSlot;
+  }
+
+  /**
+   * The kingdom whose units and buildings are ours (their owner). In a team match the second
+   * player of a team (slot FACTION_HERO_SLOT + k) shares kingdom k with the first.
+   */
+  get owner(): number {
+    return this.slot >= FACTION_HERO_SLOT ? this.slot - FACTION_HERO_SLOT : this.slot;
   }
 
   /** watch mode: no own hero, sees everything */
@@ -430,9 +439,19 @@ export class MatchClient {
    * made when the match starts, before anything else, so theirs is the lowest id.
    */
   playerHero(slot: number): NetEntity | null {
-    let best: NetEntity | null = null;
-    for (const e of this.entities.values()) if (e.owner === slot && isHeroType(e.type) && (!best || e.id < best.id)) best = e;
-    return best;
+    // The second player of a team match: the next hero of the same kingdom (made right after).
+    const second = slot >= FACTION_HERO_SLOT;
+    const owner = second ? slot - FACTION_HERO_SLOT : slot;
+    let best: NetEntity | null = null,
+      next: NetEntity | null = null;
+    for (const e of this.entities.values()) {
+      if (e.owner !== owner || !isHeroType(e.type)) continue;
+      if (!best || e.id < best.id) {
+        next = best;
+        best = e;
+      } else if (!next || e.id < next.id) next = e;
+    }
+    return second ? next : best;
   }
 
   // ---------- snapshots ----------
@@ -458,7 +477,7 @@ export class MatchClient {
       const f = s.factions[k]!;
       const copy = { ...f, upgrades: [...f.upgrades], upgradeReady: [...f.upgradeReady], tech: [...f.tech] };
       this.factions.set(f.slot, copy);
-      if (f.slot === this.slot) {
+      if (f.slot === this.owner) {
         Object.assign(this.faction, copy);
         this.hasFaction = true;
       }
@@ -649,7 +668,7 @@ export class MatchClient {
         }
         this.playHitSound(ea, src, kind, u.x, u.y);
         if (!this.floating) break;
-        const mine = (x: NetEntity | undefined) => !!x && x.owner === this.slot;
+        const mine = (x: NetEntity | undefined) => !!x && x.owner === this.owner;
         const up = u.flyHeight + u.height + 0.3;
         // Only numbers that matter to this player: what we deal and what we take.
         if (kind === DamageKind.Miss) {
@@ -689,7 +708,7 @@ export class MatchClient {
         const h = this.world.terrain.heightAt(x, y);
         this.fx.burst(x, h + 1, -y, look.frames, look.color, look.color2, 30, 0.7, 2);
         if (item.id === 'scroll_of_return' || item.id === 'ward') this.fx.ring(x, h, -y, 1.6, look.color, 0.6);
-        if (item.active?.gainXp && ea?.unit && ea.owner === this.slot)
+        if (item.active?.gainXp && ea?.unit && ea.id === this.player.heroId)
           this.floating?.show(`+${item.active.gainXp} XP`, 'level', ea.unit.x, ea.unit.y, ea.unit.height + 1);
         break;
       }
@@ -710,8 +729,8 @@ export class MatchClient {
       case EventType.LevelUp: {
         const u = ea?.unit;
         if (u) this.world.combat.levelUp(u.x, this.world.unitHeight(u), -u.y, Math.max(1.2, u.height * 0.6));
-        if (ea?.owner === this.slot) this.sound?.play('level_up', 'ui');
-        if (u && this.floating && ea.owner === this.slot) this.floating.show(`Level ${value}!`, 'level', u.x, u.y, u.height + 1.2);
+        if (ea && ea.id === this.player.heroId) this.sound?.play('level_up', 'ui');
+        if (u && this.floating && ea.id === this.player.heroId) this.floating.show(`Level ${value}!`, 'level', u.x, u.y, u.height + 1.2);
         break;
       }
     }
@@ -838,7 +857,8 @@ export class MatchClient {
       this.blocked.set(e.id, r);
     }
     // The faction's own hero has our owner too: the player block names our hero.
-    if (hero && e.owner === this.slot && (!this.player.heroId || e.id === this.player.heroId)) {
+    // (In a team match our teammate's hero has our owner too: only the player block's hero.)
+    if (hero && e.owner === this.owner && (e.id === this.player.heroId || (!this.player.heroId && this.slot < FACTION_HERO_SLOT))) {
       this.ownHero = e;
       this.predictor = new HeroPredictor(k.x, k.y, k.facing, moveSpeedOf(e.type), this.world.nav, isFlyingType(e.type));
       // A rejoined walking hero has no local path history. Draw server motion until the next
@@ -962,7 +982,7 @@ export class MatchClient {
       const team = this.teamOf(e);
       // Own: green, neutral: yellow, enemy: red, ally: its team color.
       b.color =
-        e.owner === this.slot
+        e.owner === this.owner
           ? OWN_BAR
           : team === 0
             ? NEUTRAL_BAR

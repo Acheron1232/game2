@@ -1,5 +1,17 @@
 # Progress
 
+- **Team mode: 8 players, two heroes per kingdom** (2026-10-22, not committed yet), asked by the user. Lobby "Mode: Teams of two (8)": 4 kingdoms × 2 heroes; open second slots get bots at the start. The second hero plays for the same AI kingdom (no Hero Shrine then), hires, buys upgrades. Bot heroes in a team walk with their army and help an allied hero that is fighting (also a human teammate). Details: [design/FACTION.md](design/FACTION.md) "Team match", [design/UI.md](design/UI.md) lobby. Protocol 13 (room mode). Checks: 277 tests (new: an 8-bot team match in the sim, a team room in the lobby), ESLint + Prettier, build; in the browser a team room fits 1024 × 768 and a match with a bot teammate started with no console errors. Not checked (the user asked for a light test): a real 8-human game, bot-only team matches in `sim:matches` (the headless tool has no team option yet), balance of 2 heroes vs 1 when a slot is closed.
+
+- **Smarter, different bots; building menus on click; lobby 0% fix** (2026-10-22, not committed yet), asked by the user. Details in [design/FACTION.md](design/FACTION.md) ("AI personality", "Building prices rise", "How the AI thinks").
+  - **Lobby bug:** a player who had loaded everything showed 0% in a new room (or after leaving one), so the host could not start. The client only re-sent its progress when the number changed; now it compares with what the server shows for its slot. Checked in the browser: create room → leave → new room shows 100%.
+  - **Menus on click:** shop, tavern, Town Hall upgrades and hiring at own buildings open only when the player clicks the building while the hero stands near it (never by themselves), and close when the hero walks away. Clicking from far away says "Go closer…". Checked in the browser (Temple Market, own Town Hall).
+  - **AI personality** (`shared/src/sim/faction/personality.ts`): each faction AI gets a style per match (balanced, turtle, rusher, boomer) and random layout choices from the seed: base grows toward a random side, houses often behind the hall, spacing, tower line angle and gap, attack size, expansion time, unit mix, small build order changes. The base keeps growing past its build area (up to +18, only on open ground). Picture: [design/ai-bases-preview.png](design/ai-bases-preview.png).
+  - **Building prices rise** (user's wish, like classic RTS upkeep, instead of a tower limit): `rules.json economy.buildingPriceRise` — Watchtower 4 free then +25% each, Barracks / Archery Range 2 free then +35%, Chapel / Workshop / Hawk Roost 1 free then +35%. The AI pays for towers up to its personality's price limit; turtles end with 8–14 towers, rushers ~4.
+  - **Heroes walk with the army:** the Bot slot's own hero now joins the army whenever it is out (like the faction hero), and both heroes count as army strength for camps. Bot heroes reach level 8–10 by minute 40 (before: 3–9 at the end). A bot hero keeps 30% of its income as upgrade savings and walks home to buy Town Hall upgrades when they pay for one (before it bought them only when passing by).
+  - **Smarter faction AI:** repairs hurt buildings (towers first); waits for a stronger army (camps meanwhile, at most 75 s) when the target base has strong defense, and prefers weakly defended targets; more catapults against bases with 6+ towers; in the late game walks past towers to the Town Hall; a rich faction (1,500+ gold) in the late game is not called back to clear an expansion; `roamAtSupply` 10 → 6; `lateGameMinute` 40 → 34.
+  - **Checks:** data:check, 275 tests (new: personality, price rise, bot hero with the army), ESLint + Prettier, build. Bot matches (`sim:matches`, 4 bots, normal): 10 matches, 8 with a winner in 28–55 min (median ~44; before: 6 matches, 32–53 min, median ~36), 2 still going at 75 min (two equal factions with empty mines; in one the last enemy had no army left at minute 74), 0 stuck reports, tick avg 0.2–0.3 ms. The match report now shows each AI's style, towers and the player hero's level.
+  - Not checked by a human player: how the new AI feels to play against.
+
 - **Live release `release-2db6f50`** (2026-10-22): baked army animation, faction AI (Hero Shrine, roaming armies, hiring at own buildings), taverns with mercenaries. Same VPS, Caddy + Cloudflare Quick Tunnel, URL unchanged: https://render-telecom-pending-elizabeth.trycloudflare.com/ . Before: data:check, 272 tests, ESLint and build passed (Prettier warns only on untracked `media/` trailer JSON). After: `/health` reports the release, server container healthy, `tavern`/`ember_wisp` models in the live manifest, a real lobby → bot match ran 20 s over WSS (ping 48 ms) with no console errors. Previous release `release-6c70c36` kept for rollback. Trailer videos in `media/` (658 MB) are not in git.
 - **Taverns with mercenaries + model-first textures** (2026-10-21), asked by the user. Two taverns on the map (Mossy Tankard, Ember Kettle; new `tavern` model from our building textures), each halfway between two neighbor bases and mirrored through the center (map rebuilt: only 12 trees and the ground around the taverns changed; the terrain test now checks a half turn everywhere and a quarter turn outside the taverns). Any hero hires their mercenaries with hero gold (same 12-supply limit and follow/fight behaviour as kingdom soldiers): Ratling Cutthroat 210, Toadfolk Mystic 260 (heals with Mend), Shellback Beetle 520 (ground slam), Ember Wisp 380 (flying). Bot heroes hire at taverns too. **New art pipeline** (5 Codex images in total): 1 concept sheet → 4 Blender models with their own 8-cell skins → a guide picture of each model's UV layout → Codex painted each texture from the guide + concept (`-i` input images, new `images` and `fit` sheet fields, `tools/art/uv-guide.ts`). Result: the paint lands on the right parts (faces on heads, belts on waists, tails, horns); portraits made from the model renders. Also fixed: Clerics (and the Toadfolk) heal now — unit skills used to run only for neutral monsters. Checks: 279 tests (new: tavern hiring, Cleric heal, symmetry), build, data check, ESLint pass; Prettier fails only on the other session's `media/` files. Browser (`?play`, cheat gold): both taverns visible in their clearings, both "Hire at …" panels, 4 Mossy Tankard mercenaries and a Beetle hired and following the hero with their textures, limit greys out the Wisp at 12/12. Not checked: a fight with mercenaries in the browser, bots hiring at taverns in a long match (no 10-match simulation, as asked).
 
@@ -49,6 +61,21 @@
 The AI updates this file at the end of every phase. Newest notes go on top of each section.
 
 ## Current state
+
+### 2026-10-22 — U02 / U06 model study (awaiting art feedback)
+
+- Built Pike Warden and Frost Adept in Blender with a shared painted 512px material atlas,
+  local-space padded UVs, team masks, packed editable Blender files and eight clips each.
+- Added both to the model index and manifest, so the existing model viewer lists them.
+- Pike attacks now aim the spear forward before a thrust and recovery. Caster attacks
+  keep the staff mostly upright and use the free hand. Walking stabilizes both weapons.
+- Added `/dev/unit-study.html`: side-by-side comparison on the actual map and three
+  300-unit crowd cases (mixed, existing units, new units), using the real baked army renderer.
+- Fixed black unlit glow surfaces by giving the shared glow material a white emissive term.
+- Review geometry: Pike Warden 2,651 triangles; Frost Adept 3,278. These exceed the army
+  budget and need lower-detail versions if approved. No gameplay roster/stats were added.
+- Validation: Blender export and source saves; model previews; browser checks of UVs,
+  culling, team colors, spell glow and animations; tools/client type checks and client build.
 
 - The latest deployed controls release fixes the selected-unit panel and camera issues noted in the historical Phase 9 entries below. The 120 FPS cap and High/native resolution are unchanged; weak-laptop and thermal qualification remain open.
 
@@ -310,6 +337,10 @@ How it was checked:
 
 ## Decisions
 
+- 2026-10-22 — Team match: the second player of a team uses the command slot of the kingdom's Shrine hero (4 + k). Units and buildings keep one owner per kingdom, so the AI, vision and snapshots stay as they were; only "is this mine" checks on the client moved to the kingdom (`MatchClient.owner`).
+- 2026-10-22 — No fixed tower limit: building prices rise after a free count (user's choice, like classic RTS upkeep). The rule is in `rules.json`, so it is the same for every faction.
+- 2026-10-22 — AI personality comes from the match seed + slot (not `Math.random`), so the same seed still gives the same match in tests and replays.
+- 2026-10-22 — Shop, tavern, Town Hall and hire panels open only on a click with the hero near (user's wish); a far click shows "Go closer…" instead of a far-away view of the shop.
 - 2026-10-21 — Every faction gets one hero of its own from a new Hero Shrine (user's request). The user chose a new model (not a reused Chapel) and that the AI may pick any of the 8 heroes except the one its player plays.
 - 2026-10-21 — The faction hero has its own command slot (4 + player slot) and the same owner, team and color as its player; it gets its own kill gold. It does not buy Town Hall upgrades (that stays the player's job).
 - 2026-10-21 — Camp monsters no longer chase only the first one who pulled them (usually the hero). When their target is out of reach, they hit any player unit next to them, and they hit back at a close attacker (user's feedback: hired soldiers were ignored). Test: `combat.test.ts` "monsters fight the soldiers next to them".
@@ -332,7 +363,7 @@ How it was checked:
 - 2026-10-20 — ItemUse events go only to the user's team, so a ward's place stays secret. Potion puffs are team-only too.
 - 2026-10-20 — Uphill miss: target ground level at least 0.5 above the attacker's (levels from the terrain file; ramps are in between). Ground units only. The same 25% for melee and ranged.
 - 2026-10-20 — Invisible own hero: a marker ring, not a see-through model (a transparent material could compile a new shader in the match). Final look in Phase 9.
-- 2026-10-20 — Shop panel: left click buys too (UI.md said right click); it opens by itself near a shop.
+- 2026-10-20 — Shop panel: left click buys too (UI.md said right click). (2026-10-22: it no longer opens by itself; a click on the building with the hero near opens it.)
 - 2026-10-20 — Dev cheat message is one object (`xp`, `gold`, `item`, `pos`) through the lobby, the worker and the runner.
 
 - 2026-10-20 — Casts are checked twice: when ordered (refused at once) and when the effect fires (mana or stun may have changed). Mana and cooldown are paid when the effect fires, not when the cast starts (classic RTS rule).
@@ -419,7 +450,8 @@ Decisions made by the AI in Phase 1. The user can change any of them.
 
 - Once (in a browser tab reloaded many times) the main menu stopped drawing (FPS 0, the render loop did not call the scene); a clean reload fixed it and it did not come back. Cause unknown — watch for it.
 
-- Bot matches: 3 of 10 last 46–50 minutes (target 20–45). The headless stuck check counts a maxed-out faction (100 supply) with gold as "idle". After the faction AI pass (2026-10-21): median ~47 min, 3 of 10 over 55 min.
+- Bot matches: with bigger AI bases and more towers games are a bit longer (2026-10-22: 2 of 10 over 75 min, two equal factions with empty mines trading armies). Ideas: more gold on the map late, or the late game AI going for the weakest Town Hall.
+- Bot matches (older note): 3 of 10 last 46–50 minutes (target 20–45). The headless stuck check counts a maxed-out faction (100 supply) with gold as "idle". After the faction AI pass (2026-10-21): median ~47 min, 3 of 10 over 55 min.
 - Glow parts on skinned building models (Chapel window, Hero Shrine crystal if made glow) draw black in the game and the model viewer.
 - Phase 8 leftovers: no scouting, no army formations (only push-apart), defeated players do not become spectators yet.
 - Rare tick spikes of 15–190 ms from garbage collection in long matches (paths and short step arrays are created per order). Pool them in Phase 10.

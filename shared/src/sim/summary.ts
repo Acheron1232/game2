@@ -36,7 +36,8 @@ export function matchSummary(sim: MatchSim): MatchSummary {
   for (const s of sim.setup.slots) {
     const hero = sim.heroes[s.index];
     const hs = hero?.heroState;
-    const f = sim.factions?.get(s.index);
+    // The second player of a team match shares the first one's kingdom (army, tier, upgrades).
+    const f = hero ? sim.factions?.get(hero.owner) : null;
     let upgrades = 0,
       army = 0;
     if (f) {

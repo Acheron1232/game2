@@ -14,7 +14,7 @@ const UPGRADE_IDS = gameData.upgrades.upgrades.map((u) => u.id);
 const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
 import { hiredSupply } from '../sim/faction/hire';
 import { itemReadyAt } from '../sim/items';
-import { TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
+import { FACTION_HERO_SLOT, TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { Vision } from '../sim/vision';
 import type { BinaryWriter } from './binary';
 import {
@@ -142,13 +142,17 @@ export class ClientView {
   private readonly factionKey = new Map<number, string>();
   /** False while the player is offline: nothing is written. */
   active = true;
+  /** the kingdom (faction slot) of this player: in a team match slot FACTION_HERO_SLOT + k plays for k */
+  readonly kingdom: number;
 
   constructor(
     readonly slot: number,
     readonly team: number,
     /** a spectator (watch mode): sees the whole map and every faction */
     readonly seeAll = false,
-  ) {}
+  ) {
+    this.kingdom = slot >= FACTION_HERO_SLOT ? slot - FACTION_HERO_SLOT : slot;
+  }
 
   /** The next snapshot is a full one (after a rejoin). */
   reset(): void {
@@ -354,7 +358,7 @@ export class ClientView {
   private writeFaction(sim: MatchSim, sw: SnapshotWriter): void {
     const list = sim.factions?.list;
     if (!list) return;
-    for (const fs of list) if (fs && (this.seeAll || fs.slot === this.slot)) this.writeOneFaction(sim, sw, fs);
+    for (const fs of list) if (fs && (this.seeAll || fs.slot === this.kingdom)) this.writeOneFaction(sim, sw, fs);
   }
 
   private writeOneFaction(sim: MatchSim, sw: SnapshotWriter, fs: FactionState): void {
@@ -409,7 +413,10 @@ export class ClientView {
         continue;
       }
       if (e.type === EventType.Notice) {
-        if (sim.get(e.a)?.owner === this.slot) sw.event(e.type, e.a, e.b, e.value, e.kind);
+        // A hero's notice goes to its own player only (two players share a kingdom in a team match).
+        const about = sim.get(e.a);
+        if (about && (about.heroState ? about.heroState.slot === this.slot : about.owner === this.kingdom))
+          sw.event(e.type, e.a, e.b, e.value, e.kind);
         continue;
       }
       // Item use shows where a ward went: only for the hero's own team.

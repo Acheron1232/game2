@@ -11,7 +11,7 @@ import { factionTech, hallInRange, UPGRADE_IDS, upgradeProblem } from './faction
 import { HIRE, hirePrice, hiredSupply, hireProblem } from './faction/hire';
 import { upgradeStatus, type UpgradeId } from './faction/upgrades';
 import { ITEMS, canStore, itemIndex, itemReadyAt, newCharges, shopInRange } from './items';
-import { TICK_RATE, type MatchSim, type SimEntity } from './match-sim';
+import { NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from './match-sim';
 import { canLearn, rectDistance } from './stats';
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
@@ -27,6 +27,8 @@ export interface HeroBotHooks {
   withArmyFromLevel?: number;
   /** hire soldiers at the faction's production buildings (player heroes played by a bot) */
   hires?: boolean;
+  /** the kingdom (faction slot) the hero buys upgrades and hires for; default: its own slot */
+  kingdom?: number;
 }
 
 interface DifficultySettings {
@@ -53,6 +55,9 @@ const PLAN_SHOP = 5;
 const PLAN_UPGRADES = 6;
 const PLAN_ARMY = 7;
 const PLAN_HIRE = 8;
+const PLAN_HELP = 9;
+/** an ally hero in a fight this close gets help (when we are not busy with the army or the base) */
+const HELP_ALLY_RANGE = 35;
 const HIRING = gameData.ai.heroBot.hiring;
 /** a bot that hires at a tavern walks this close to its center */
 const TAVERN_STAND = 4;
@@ -67,6 +72,8 @@ const HALL_NEAR = 30;
 const ITEM_GOLD_BUFFER = 100;
 const UPGRADE_GOLD_BUFFER = 300;
 const UPGRADE_SPEND_SHARE = 0.3;
+/** the upgrade savings stop growing here (the dearest upgrade level costs 375) */
+const UPGRADE_BUDGET_MAX = 400;
 const UPGRADE_ORDER: readonly UpgradeId[] = ['iron_plates', 'sharper_blades', 'better_arrows', 'rich_veins', 'stone_walls'];
 const HERO_BUILDS = gameData.ai.heroBot.heroBuild as unknown as Record<string, readonly string[]>;
 const HEALS = new Set(['radiant_touch', 'sanctuary', 'dawn_shield']);
@@ -196,6 +203,7 @@ export class HeroBot {
       this.retreating = false;
     }
 
+    this.trackUpgradeBudget(hero);
     let commands = 0;
     if (hero.heroState.skillPoints > 0 && this.learn(sim, hero)) commands++;
 
@@ -263,6 +271,23 @@ export class HeroBot {
         if (buildShopping >= 0) return;
       }
       if (this.hireSoldiers(sim, hero, MAX_COMMANDS_PER_THINK - commands) >= 0) return;
+    }
+
+    const ally = this.allyInFight(sim, hero);
+    if (ally) {
+      this.campIndex = -1;
+      this.stateText = 'Helping an ally';
+      const x = ally.mover.x,
+        y = ally.mover.y;
+      if (
+        commands < MAX_COMMANDS_PER_THINK &&
+        !hero.targetId &&
+        (this.plan !== PLAN_HELP || Math.hypot(this.planX - x, this.planY - y) > 4)
+      ) {
+        this.send(sim, { type: CommandType.AttackMove, x, y });
+        this.setPointPlan(PLAN_HELP, x, y);
+      }
+      return;
     }
 
     const group = hero.heroState.level >= (this.hooks.withArmyFromLevel ?? 1) ? (this.hooks.withArmy?.() ?? null) : null;
@@ -360,6 +385,27 @@ export class HeroBot {
     return !!a && canLearn(slot, level, a.maxLevel, hs.level);
   }
 
+  /**
+   * An allied hero (a teammate, human or bot) fighting enemy units or heroes, not monsters,
+   * within HELP_ALLY_RANGE. Two heroes together win fights one alone loses.
+   */
+  private allyInFight(sim: MatchSim, hero: SimEntity): SimEntity | null {
+    let best: SimEntity | null = null,
+      bestD = HELP_ALLY_RANGE;
+    for (const ally of sim.heroes) {
+      if (!ally?.alive || ally === hero || ally.team !== hero.team) continue;
+      const d = distance(hero, ally.mover.x, ally.mover.y);
+      if (d >= bestD) continue;
+      const t = ally.targetId ? sim.get(ally.targetId) : undefined;
+      const hitBy = ally.lastHitBy ? sim.get(ally.lastHitBy) : undefined;
+      const foe = (e: SimEntity | undefined) => !!e?.alive && e.team !== hero.team && e.team !== NEUTRAL_TEAM && !e.building;
+      if (!foe(t) && !(foe(hitBy) && distance(ally, hitBy!.mover.x, hitBy!.mover.y) < 12)) continue;
+      best = ally;
+      bestD = d;
+    }
+    return best;
+  }
+
   private enemyNear(sim: MatchSim, hero: SimEntity, radius: number): boolean {
     let found = false;
     sim.grid.query(hero.mover.x, hero.mover.y, radius, (e, d2) => {
@@ -442,7 +488,7 @@ export class HeroBot {
       const item = itemIndex(id);
       if (item < 0 || this.hasItem(hero, item)) continue;
       const cost = ITEMS[item]!.cost;
-      if (cost === null || hero.heroState!.gold < cost + ITEM_GOLD_BUFFER) return -1;
+      if (cost === null || hero.heroState!.gold < cost + Math.max(ITEM_GOLD_BUFFER, this.upgradeReserve(sim, hero))) return -1;
       if (!canStore(hero.heroState!.inventory, item, newCharges(item))) continue;
       const shop = this.nearestShop(hero, item, Infinity, null, null);
       if (!shop) return -1;
@@ -462,21 +508,35 @@ export class HeroBot {
     return -1;
   }
 
-  private buyUpgrades(sim: MatchSim, hero: SimEntity, routeX: number | null, routeY: number | null, availableCommands: number): number {
-    const faction = sim.factions?.get(this.slot);
-    if (!faction || faction.defeated || hero.heroState!.gold <= UPGRADE_GOLD_BUFFER) return -1;
-    const hall = this.nearHall(sim, hero, faction.buildings, routeX, routeY);
-    if (!hall) return -1;
-    if (this.upgradeBudget < 0) {
-      this.upgradeBudget = (hero.heroState!.gold - UPGRADE_GOLD_BUFFER) * UPGRADE_SPEND_SHARE;
-      this.upgradeGoldMark = hero.heroState!.gold;
-    } else if (hero.heroState!.gold > this.upgradeGoldMark) {
-      this.upgradeBudget += (hero.heroState!.gold - this.upgradeGoldMark) * UPGRADE_SPEND_SHARE;
-      this.upgradeGoldMark = hero.heroState!.gold;
-    } else if (hero.heroState!.gold < this.upgradeGoldMark) {
-      this.upgradeBudget = Math.min(this.upgradeBudget, Math.max(0, (hero.heroState!.gold - UPGRADE_GOLD_BUFFER) * UPGRADE_SPEND_SHARE));
-      this.upgradeGoldMark = hero.heroState!.gold;
+  /**
+   * Town Hall upgrade savings: UPGRADE_SPEND_SHARE of all gold the hero earns, kept apart from
+   * items and hiring (they leave it alone, see upgradeReserve), so the hero buys upgrades even
+   * while it spends the rest.
+   */
+  private trackUpgradeBudget(hero: SimEntity): void {
+    const gold = hero.heroState!.gold;
+    if (this.difficulty === 'easy') this.upgradeBudget = 0;
+    else if (this.upgradeBudget < 0) this.upgradeBudget = Math.max(0, gold - UPGRADE_GOLD_BUFFER) * UPGRADE_SPEND_SHARE;
+    else if (gold > this.upgradeGoldMark) this.upgradeBudget += (gold - this.upgradeGoldMark) * UPGRADE_SPEND_SHARE;
+    this.upgradeBudget = Math.min(this.upgradeBudget, UPGRADE_BUDGET_MAX, Math.max(0, gold - UPGRADE_GOLD_BUFFER));
+    this.upgradeGoldMark = gold;
+  }
+
+  /** Gold items and hiring must leave: the savings, while an upgrade can be bought soon. */
+  private upgradeReserve(sim: MatchSim, hero: SimEntity): number {
+    const faction = sim.factions?.get(this.hooks.kingdom ?? this.slot);
+    if (!faction || faction.defeated || this.upgradeBudget <= 0) return 0;
+    const tech = factionTech(sim, faction);
+    for (const id of UPGRADE_ORDER) {
+      const status = upgradeStatus(id, tech, hero.heroState!.gold, sim.tick);
+      if (status.cost !== null && (status.ok || status.problem === 'gold')) return Math.min(this.upgradeBudget, status.cost);
     }
+    return 0;
+  }
+
+  private buyUpgrades(sim: MatchSim, hero: SimEntity, routeX: number | null, routeY: number | null, availableCommands: number): number {
+    const faction = sim.factions?.get(this.hooks.kingdom ?? this.slot);
+    if (!faction || faction.defeated || hero.heroState!.gold <= UPGRADE_GOLD_BUFFER) return -1;
     const tech = factionTech(sim, faction);
     let upgrade = -1;
     let cost = 0;
@@ -491,6 +551,9 @@ export class HeroBot {
       if (this.plan === PLAN_UPGRADES) this.plan = PLAN_NONE;
       return -1;
     }
+    // The savings are ready: the hero walks home from anywhere (from the army too).
+    const hall = this.nearHall(sim, hero, faction.buildings, routeX, routeY, Infinity);
+    if (!hall) return -1;
     this.stateText = 'Buying upgrades';
     this.campIndex = -1;
     if (!hallInRange(sim, hero, faction)) {
@@ -504,7 +567,6 @@ export class HeroBot {
     }
     if (availableCommands > 0 && upgradeProblem(sim, hero, upgrade) === null && this.send(sim, { type: CommandType.BuyUpgrade, upgrade })) {
       this.upgradeBudget -= cost;
-      this.upgradeGoldMark -= cost;
       this.plan = PLAN_UPGRADES;
       this.planTarget = hall.id;
       return 1;
@@ -519,10 +581,12 @@ export class HeroBot {
   private hireSoldiers(sim: MatchSim, hero: SimEntity, availableCommands: number): number {
     const hs = hero.heroState!;
     if (!this.hooks.hires || hs.level < HIRING.fromLevel || hs.gold < HIRING.goldBuffer) return -1;
-    const f = sim.factions?.get(this.slot);
+    const f = sim.factions?.get(this.hooks.kingdom ?? this.slot);
     if (!f || f.defeated) return -1;
     const room = HIRE.maxSupply - hiredSupply(sim, hero);
     if (room <= 0) return -1;
+    // The upgrade savings are part of the gold buffer (not on top of it), so hiring goes on.
+    const spare = hs.gold - Math.max(HIRING.goldBuffer, this.upgradeReserve(sim, hero) + 100);
     let building: SimEntity | null = null;
     let unit = -1;
     let best = 0;
@@ -535,7 +599,7 @@ export class HeroBot {
         const index = gameData.units.findIndex((u) => u.id === unitId);
         const price = hirePrice(index);
         const def = gameData.units[index];
-        if (price === null || !def || price <= best || price > hs.gold - HIRING.goldBuffer || (def.supply ?? 0) > room) continue;
+        if (price === null || !def || price <= best || price > spare || (def.supply ?? 0) > room) continue;
         if (sim.factions!.missing(f, def.requires).length) continue;
         building = b;
         unit = index;
@@ -551,7 +615,7 @@ export class HeroBot {
         const index = gameData.units.findIndex((u) => u.id === unitId);
         const price = hirePrice(index);
         const def = gameData.units[index];
-        if (price === null || !def || price <= best || price > hs.gold - HIRING.goldBuffer || (def.supply ?? 0) > room) continue;
+        if (price === null || !def || price <= best || price > spare || (def.supply ?? 0) > room) continue;
         building = null;
         tavern = { x: t.pos[0], y: t.pos[1] };
         unit = index;
@@ -618,6 +682,7 @@ export class HeroBot {
     buildings: ReadonlySet<number>,
     routeX: number | null,
     routeY: number | null,
+    maxDistance = HALL_NEAR,
   ): SimEntity | null {
     let best: SimEntity | null = null;
     let bestDistance = Infinity;
@@ -633,7 +698,7 @@ export class HeroBot {
         routeY !== null &&
         this.pointSegmentDistance(hall.mover.x, hall.mover.y, hero, routeX, routeY) <=
           HALL_NEAR + Math.hypot(hall.building.w, hall.building.h) * 0.5 + hero.stats.radius;
-      if ((d > HALL_NEAR && !onRoute) || d >= bestDistance) continue;
+      if ((d > maxDistance && !onRoute) || d >= bestDistance) continue;
       bestDistance = d;
       best = hall;
     }

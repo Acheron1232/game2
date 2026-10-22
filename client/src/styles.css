@@ -385,6 +385,31 @@ td .btn.tiny {
 .slots tr.own td {
   background: rgba(201, 162, 74, 0.08);
 }
+/* Team room: 8 rows, a kingdom's two slots together; a smaller chat and only the load bar, so
+   the room still fits a 768 px high window. */
+.lobby.teams .slots {
+  margin: 8px 0;
+}
+.lobby.teams .chat {
+  min-height: 140px;
+}
+.lobby.teams .chat-log {
+  max-height: 90px;
+}
+.lobby.teams .load-groups {
+  display: none;
+}
+.lobby.teams .slots td {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+.lobby.teams .slots tr.second td {
+  border-bottom-color: rgba(201, 162, 74, 0.45);
+}
+.lobby-mode {
+  font-size: 14px;
+  color: var(--muted);
+}
 .slots .ok {
   color: var(--ok);
 }

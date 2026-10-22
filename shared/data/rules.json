@@ -109,7 +109,16 @@
     "chopTimeSec": 4.0,
     "maxWorkersPerMine": 5,
     "supplyCap": 100,
-    "playerAndFactionMoneyAreSeparate": true
+    "playerAndFactionMoneyAreSeparate": true,
+    "buildingPriceRise": {
+      "notes": "Like upkeep in classic RTS games: after freeCount buildings of one type (sites too), every next one costs pctPerExtra % more gold and wood, adding up. A lost building makes the next one cheaper again. Types not listed (Town Halls, houses, forge, shrine) never rise.",
+      "watchtower": { "freeCount": 4, "pctPerExtra": 25 },
+      "barracks": { "freeCount": 2, "pctPerExtra": 35 },
+      "archery_range": { "freeCount": 2, "pctPerExtra": 35 },
+      "chapel": { "freeCount": 1, "pctPerExtra": 35 },
+      "workshop": { "freeCount": 1, "pctPerExtra": 35 },
+      "hawk_roost": { "freeCount": 1, "pctPerExtra": 35 }
+    }
   },
 
   "neutrals": {

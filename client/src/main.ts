@@ -116,7 +116,6 @@ async function main(): Promise<void> {
   let matchGoing = false;
   let loadPct = 0;
   let sceneReady = false;
-  let sentLoad = -1;
   let joinCode = params.get('join')?.trim().toUpperCase() || null;
   // Dev shortcut: ?play makes a room and starts a match alone as soon as loading is done.
   // ?watch=5 (dev): bots play all four slots, we watch at 5x speed. ?fps=30 caps the frame rate.
@@ -162,7 +161,7 @@ async function main(): Promise<void> {
     chat: (text) => net.send({ type: 'chat', text }),
     captureMouse: () => capturedCursor.toggle(),
     showBase: () => {
-      const hall = match && [...match.entities.values()].find((e) => e.owner === match!.slot && HALL_TYPES.has(e.type) && e.unit);
+      const hall = match && [...match.entities.values()].find((e) => e.owner === match!.owner && HALL_TYPES.has(e.type) && e.unit);
       if (hall?.unit) {
         w.camera.follow = null;
         w.camera.lookAt(hall.unit.x, hall.unit.y);
@@ -210,10 +209,12 @@ async function main(): Promise<void> {
     }
   });
 
+  // Compare with what the server shows for our slot, not with the last value we sent:
+  // a new room (or a new slot) starts at 0% on the server even when we are long done loading.
   const sendLoad = () => {
-    if (!room || room.phase !== 'lobby' || loadPct === sentLoad) return;
-    sentLoad = loadPct;
-    net.send({ type: 'load', pct: loadPct });
+    if (!room || room.phase !== 'lobby') return;
+    const shown = room.slots.find((s) => s.playerId === myId)?.load;
+    if (shown !== undefined && shown !== loadPct) net.send({ type: 'load', pct: loadPct });
   };
   const maybeAutoStart = () => {
     if (!autoPlay || !room || room.phase !== 'lobby' || room.hostId !== myId) return;
@@ -276,7 +277,6 @@ async function main(): Promise<void> {
     switch (msg.type) {
       case 'welcome':
         myId = msg.playerId;
-        sentLoad = -1;
         // We were in a room but the server does not know us any more (it restarted): back to the menu.
         if (room) {
           if (roomCheck) clearTimeout(roomCheck);
@@ -489,10 +489,12 @@ async function main(): Promise<void> {
     ].filter(Boolean);
     return [`${d.name}${slot >= 0 ? ` (${slot + 1})` : ''} — ${S.itemTiers[d.tier] ?? d.tier}`, d.text, numbers.join(' · ')];
   };
-  /** Shop on the map (index in map shops) the panel shows; pinned = opened by a click. */
-  let shop: { index: number; pinned: boolean } | null = null;
-  /** The player closed the panel of this shop while standing near it: do not open it again. */
-  let shopClosedNear = -1;
+  /**
+   * What the shop panel shows. It opens only when the player clicks the building while the own
+   * hero stands near it, and closes when the hero walks away: a map shop or tavern (index in
+   * map shops), the own Town Hall (upgrades) or an own production building (hiring).
+   */
+  let panel: { kind: 'shop'; index: number } | { kind: 'hall'; id: number } | { kind: 'hire'; id: number } | null = null;
   let selectedItem = 0;
   const shopDefOf = (index: number) => gameData.shops.find((d) => d.id === gameData.map.shops[index]?.type);
   /** Map shop index the own hero stands near, or -1. */
@@ -506,48 +508,22 @@ async function main(): Promise<void> {
       return !!def && Math.hypot(s.pos[0] - u.x, s.pos[1] - u.y) <= def.useRange - 0.2;
     });
   };
-  // ---- Town Hall upgrades: the same panel, when the hero stands at its own finished Town Hall.
-  /** the panel shows the Town Hall upgrades (not a shop) */
-  let hallShown = false;
-  /** closed by the player while standing there: do not open again until the hero leaves */
-  let hallClosed = false;
+  // ---- Town Hall upgrades and hiring soldiers use the same panel, at own finished buildings.
   const HALL_TYPES = new Set(['town_hall', 'stronghold', 'citadel'].map((id) => ENTITY_TYPES.indexOf(id)));
-  const hallNear = (): boolean => {
+  /** An own finished building that trains soldiers the hero can hire. */
+  const canHireAt = (e: NetEntity): boolean =>
+    !!buildingDefOf(e.type)?.trains.some((id) => hirePrice(gameData.units.findIndex((x) => x.id === id)) !== null);
+  /** The own hero is alive and within `range` of this own finished building. */
+  const heroAtBuilding = (e: NetEntity | undefined, range: number): e is NetEntity => {
     const u = match?.ownHero?.unit;
-    if (!match || !u || u.dead) return false;
-    for (const e of match.entities.values()) {
-      if (e.owner !== match.slot || !HALL_TYPES.has(e.type) || e.state & (UnitState.Constructing | UnitState.Dead) || !e.unit) continue;
-      const [w, h] = footprintOf(e.type);
-      if (rectDistance(u.x, u.y, e.unit.x, e.unit.y, w, h) <= gameData.upgrades.useRange - 0.2) return true;
-    }
-    return false;
+    if (!match || !u || u.dead || !e?.unit || e.owner !== match.owner) return false;
+    if (e.state & (UnitState.Constructing | UnitState.Dead)) return false;
+    const [w, h] = footprintOf(e.type);
+    // A little inside the server's range, so a click near the edge is not refused.
+    return rectDistance(u.x, u.y, e.unit.x, e.unit.y, w, h) <= range - 0.2;
   };
+  const panelBuilding = (): NetEntity | undefined => (panel && panel.kind !== 'shop' ? match?.entities.get(panel.id) : undefined);
   const buildingName = (id: string) => gameData.buildings.buildings.find((b) => b.id === id)?.name ?? id;
-
-  // ---- Hiring soldiers: the same panel, when the hero stands at its own production building.
-  /** the building whose units the panel shows (entity id), 0 = none */
-  let hireShownAt = 0;
-  /** closed by the player while standing there: do not open again until the hero leaves */
-  let hireClosedAt = 0;
-  /** The nearest own finished building that trains soldiers, in hire range of the hero. */
-  const hireNear = (): NetEntity | null => {
-    const u = match?.ownHero?.unit;
-    if (!match || !u || u.dead) return null;
-    let best: NetEntity | null = null,
-      bestD = Infinity;
-    for (const e of match.entities.values()) {
-      if (e.owner !== match.slot || e.state & (UnitState.Constructing | UnitState.Dead) || !e.unit) continue;
-      const def = buildingDefOf(e.type);
-      if (!def?.trains.some((id) => hirePrice(gameData.units.findIndex((x) => x.id === id)) !== null)) continue;
-      const [w, h] = footprintOf(e.type);
-      const d = rectDistance(u.x, u.y, e.unit.x, e.unit.y, w, h);
-      if (d <= gameData.rules.hire.useRange - 0.2 && d < bestD) {
-        bestD = d;
-        best = e;
-      }
-    }
-    return best;
-  };
   /** The faction has this building ('stronghold' = tier 2+, 'citadel' = tier 3), like the server. */
   const factionHas = (id: string): boolean => {
     const f = match!.faction;
@@ -638,36 +614,31 @@ async function main(): Promise<void> {
       }),
     };
   };
+  const closePanel = () => {
+    panel = null;
+    game.setShop(null);
+  };
   const updateShop = () => {
-    const near = shopNear();
-    // No map shop open: the Town Hall panel when the hero is at its own hall, else the hire
-    // panel when it is at one of its own production buildings.
-    if (!shop && near < 0 && match?.hasFaction) {
-      const atHall = hallNear();
-      if (!atHall) hallClosed = false;
-      hallShown = atHall && !hallClosed;
-      if (hallShown) {
-        hireShownAt = 0;
-        return game.setShop(hallView());
-      }
-      const at = hireNear();
-      if (!at || at.id !== hireClosedAt) hireClosedAt = 0;
-      hireShownAt = at && at.id !== hireClosedAt ? at.id : 0;
-      if (at && hireShownAt) return game.setShop(hireView(at));
-    } else hallShown = false;
-    hireShownAt = 0;
-    if (near < 0) shopClosedNear = -1;
-    if (near >= 0 && !shop && near !== shopClosedNear) shop = { index: near, pinned: false };
-    if (shop && !shop.pinned && near !== shop.index) shop = null;
-    const def = shop ? shopDefOf(shop.index) : undefined;
-    if (!shop || !def || !match) return game.setShop(null);
+    const open = panel;
+    if (!open || !match) return closePanel();
+    if (open.kind === 'hall') {
+      if (!heroAtBuilding(panelBuilding(), gameData.upgrades.useRange)) return closePanel();
+      return game.setShop(hallView());
+    }
+    if (open.kind === 'hire') {
+      const at = panelBuilding();
+      if (!heroAtBuilding(at, gameData.rules.hire.useRange)) return closePanel();
+      return game.setShop(hireView(at));
+    }
+    const def = shopDefOf(open.index);
+    if (!def || shopNear() !== open.index) return closePanel();
     // A tavern: its mercenaries instead of items.
     const mercenaries = (def as { mercenaries?: string[] }).mercenaries;
-    if (mercenaries?.length) return game.setShop({ ...hireView(null, { name: def.name, mercenaries }), inRange: near === shop.index });
+    if (mercenaries?.length) return game.setShop(hireView(null, { name: def.name, mercenaries }));
     const gold = match.player.gold;
     game.setShop({
       name: def.name,
-      inRange: near === shop.index,
+      inRange: true,
       items: def.items.map((id) => {
         const d = ITEMS[itemIndex(id)]!;
         return {
@@ -680,20 +651,23 @@ async function main(): Promise<void> {
       }),
     });
   };
-  closeShop = () => {
-    if (hireShownAt) {
-      hireClosedAt = hireShownAt;
-      hireShownAt = 0;
-      return game.setShop(null);
+  closeShop = closePanel;
+  /** A left click on a building: open its panel when the own hero stands near it. */
+  const openPanelAt = (hit: NetEntity | null, shopIndex: number): void => {
+    if (shopIndex >= 0) {
+      if (shopNear() !== shopIndex) return game.alert(S.goToShop);
+      panel = { kind: 'shop', index: shopIndex };
+      return updateShop();
     }
-    if (hallShown) {
-      hallClosed = true;
-      hallShown = false;
-      return game.setShop(null);
-    }
-    if (shop && shopNear() === shop.index) shopClosedNear = shop.index;
-    shop = null;
-    game.setShop(null);
+    if (!hit || !match?.hasFaction || hit.owner !== match.owner || hit.state & (UnitState.Constructing | UnitState.Dead)) return;
+    if (HALL_TYPES.has(hit.type)) {
+      if (!heroAtBuilding(hit, gameData.upgrades.useRange)) return game.alert(S.goToHall);
+      panel = { kind: 'hall', id: hit.id };
+    } else if (canHireAt(hit)) {
+      if (!heroAtBuilding(hit, gameData.rules.hire.useRange)) return game.alert(S.goToBuilding);
+      panel = { kind: 'hire', id: hit.id };
+    } else return;
+    updateShop();
   };
   /** The inventory as the client knows it (for "is there room?" before asking the server). */
   const myInventory = (): (ItemStack | null)[] =>
@@ -702,21 +676,22 @@ async function main(): Promise<void> {
       return info ? { item: info.index, charges: info.charges } : null;
     });
   buyItem = (item) => {
-    if (hireShownAt && match) {
-      const at = hireNear();
-      if (!at) return game.alert(S.goToBuilding);
+    if (panel?.kind === 'hire' && match) {
+      const at = panelBuilding();
+      if (!heroAtBuilding(at, gameData.rules.hire.useRange)) return game.alert(S.goToBuilding);
       const view = hireView(at).items.find((v) => v.item === item);
       if (view && !view.canAfford) return game.alert(view.tooltip[view.tooltip.length - 1] ?? S.noGold);
       return match.hire(item);
     }
-    if (hallShown && match) {
-      if (!hallNear()) return game.alert(S.goToHall);
+    if (panel?.kind === 'hall' && match) {
+      if (!heroAtBuilding(panelBuilding(), gameData.upgrades.useRange)) return game.alert(S.goToHall);
       const view = hallView().items[item];
       if (view && !view.canAfford) return game.alert(view.tooltip[view.tooltip.length - 1] ?? S.noGold);
       // (the last tooltip line is the reason: needs, cooldown, gold, done)
       return match.buyUpgrade(item);
     }
-    if (!match?.ownHero || !shop) return;
+    if (!match?.ownHero || panel?.kind !== 'shop') return;
+    const shop = panel;
     const tavern = shopDefOf(shop.index) as { name: string; mercenaries?: string[] } | undefined;
     if (tavern?.mercenaries?.length) {
       if (shopNear() !== shop.index) return game.alert(S.goToShop);
@@ -957,7 +932,7 @@ async function main(): Promise<void> {
     if (!info) return;
     if (to.kind === 'slot') return match.swapItems(slot, to.slot);
     if (to.kind === 'shop') {
-      if (!shop || shopNear() !== shop.index) return game.alert(S.goToShop);
+      if (panel?.kind !== 'shop' || shopNear() !== panel.index) return game.alert(S.goToShop);
       const gold = sellValue({ item: info.index, charges: info.charges });
       return game.confirm(S.sellFor(info.def.name, gold), () => match?.sell(slot));
     }
@@ -1100,12 +1075,8 @@ async function main(): Promise<void> {
           selectedItem = item.id;
           return select(null);
         }
-        const s = pickShop(e.offsetX, e.offsetY);
-        if (s >= 0) {
-          shop = { index: s, pinned: true };
-          updateShop();
-        }
       }
+      openPanelAt(hit, hit ? -1 : pickShop(e.offsetX, e.offsetY));
       select(hit);
     }
   });

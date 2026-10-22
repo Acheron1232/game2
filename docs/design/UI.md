@@ -56,6 +56,7 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 - "AI" column = faction AI difficulty. For a Bot slot the Hero column is the bot's hero and the bot uses the same difficulty.
 - Hero picker: a grid of 8 portraits with name and role; taken heroes are greyed out.
 - Start Game is grey until everyone is ready and at 100%. Hover text says why: "Waiting for Max to load (64%)".
+- **Mode** (host, next to the title): "Free for all (4)" or "Teams of two (8)". In a team room there are 8 rows, two per kingdom (1 · I, 1 · II, 2 · I, ...). Both players of a kingdom share its team, color, Town Hall, army and start spot, so team and color can not be changed. At the start an open second slot of a playing kingdom gets a bot; a closed one stays empty (that kingdom has one hero). To save height the team room shows a smaller chat and only the load bar.
 
 ## 3. Match HUD
 
@@ -106,7 +107,7 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 
 ## 5. Shop panel
 
-Grid of item icons with price under each. Hover = tooltip. Left or right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?" (Yes / No). The panel opens by itself when your hero walks next to a shop, or when you click a shop building; ✕ or Esc closes it.
+Grid of item icons with price under each. Hover = tooltip. Left or right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?" (Yes / No). The panel opens when you click a shop building while your hero stands next to it (never by itself); it closes when the hero walks away, or with ✕ / Esc. The Town Hall (upgrades), own production buildings (hiring) and taverns work the same way.
 
 ## 6. Tooltips (parchment box)
 

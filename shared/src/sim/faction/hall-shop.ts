@@ -6,6 +6,7 @@ import { gameData } from '../../data/index';
 import { rectDistance } from '../stats';
 import { TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
 import { isTownHall, type FactionState } from './faction';
+import { heroKingdom } from './hire';
 import { upgradeStatus, type FactionTech, type UpgradeId } from './upgrades';
 
 export const UPGRADES = gameData.upgrades.upgrades;
@@ -38,7 +39,7 @@ export function hallInRange(sim: MatchSim, hero: SimEntity, f: FactionState): Si
 /** Why the server refuses to sell this upgrade now (null = fine). */
 export function upgradeProblem(sim: MatchSim, hero: SimEntity, index: number): string | null {
   const id = UPGRADE_IDS[index];
-  const f = hero.heroState ? sim.factions?.get(hero.heroState.slot) : null;
+  const f = heroKingdom(sim, hero);
   if (!id || !f || f.defeated) return 'upgrade';
   if (!hero.alive) return 'dead';
   if (!hallInRange(sim, hero, f)) return 'range';
@@ -50,7 +51,7 @@ export function upgradeProblem(sim: MatchSim, hero: SimEntity, index: number): s
 export function buyUpgrade(sim: MatchSim, hero: SimEntity, index: number): void {
   const id = UPGRADE_IDS[index]!;
   const def = UPGRADES[index]!;
-  const f = sim.factions!.get(hero.heroState!.slot)!;
+  const f = heroKingdom(sim, hero)!;
   const level = f.upgrades[id] ?? 0;
   const cost = def.repeatable ? (def.cost[0] ?? 0) : (def.cost[level] ?? 0);
   hero.heroState!.gold -= cost;

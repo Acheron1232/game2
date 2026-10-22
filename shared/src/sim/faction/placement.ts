@@ -30,6 +30,10 @@ export interface PlacementQuery {
   spacing?: number;
   minFromTownHall?: number;
   preferToward?: [number, number];
+  /** Walkable ground needed all around the footprint (open field, not a narrow path). */
+  clearance?: number;
+  /** Lower is better; when set it replaces the distance rules (ties: lowest y, then x). */
+  score?: (x: number, y: number) => number;
 }
 
 const EPSILON = 1e-9;
@@ -160,7 +164,16 @@ export function canPlace(terrain: TerrainGrid, nav: NavGrid, q: PlacementQuery, 
     if (touchesCorridor(x, y, w, h, q.corridors[i]!)) return false;
   }
 
-  return cellsAreFree(terrain, nav, x, y, w, h);
+  if (!cellsAreFree(terrain, nav, x, y, w, h)) return false;
+  return !q.clearance || ringIsOpen(nav, x, y, w + q.clearance * 2, h + q.clearance * 2);
+}
+
+/** Every walk cell of a w × h box (around a footprint) is walkable. */
+function ringIsOpen(nav: NavGrid, x: number, y: number, w: number, h: number): boolean {
+  const cs = nav.cellSize;
+  for (let cy = y - h * 0.5 + cs * 0.5; cy < y + h * 0.5; cy += cs)
+    for (let cx = x - w * 0.5 + cs * 0.5; cx < x + w * 0.5; cx += cs) if (!isWalkable(nav, cx, cy)) return false;
+  return true;
 }
 
 export function findBuildSpot(terrain: TerrainGrid, nav: NavGrid, q: PlacementQuery): { x: number; y: number } | null {
@@ -178,6 +191,21 @@ export function findBuildSpot(terrain: TerrainGrid, nav: NavGrid, q: PlacementQu
   let bestSide = 2;
   let bestDistance = q.preferToward ? -Infinity : Infinity;
   let found = false;
+
+  if (q.score) {
+    let bestScore = Infinity;
+    for (let y = minY; y <= maxY; y += 1)
+      for (let x = minX; x <= maxX; x += 1) {
+        // The score is cheap, the placement check is not: test only spots that would win.
+        const s = q.score(x, y);
+        if (s >= bestScore - EPSILON || !canPlace(terrain, nav, q, x, y)) continue;
+        found = true;
+        bestScore = s;
+        bestX = x;
+        bestY = y;
+      }
+    return found ? { x: bestX, y: bestY } : null;
+  }
 
   for (let y = minY; y <= maxY; y += 1) {
     for (let x = minX; x <= maxX; x += 1) {

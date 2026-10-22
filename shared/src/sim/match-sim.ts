@@ -127,6 +127,12 @@ export interface MatchSetup {
   noCamps?: boolean;
   /** Watch mode (dev): bots in every slot, spectators see all, this many steps per network tick. */
   watch?: number;
+  /**
+   * Team match (up to 8 players): two heroes share one kingdom. Slots 0-3 own a kingdom each;
+   * slot FACTION_HERO_SLOT + k is the second player of kingdom k (same owner, team and color).
+   * That second hero takes the place of the kingdom's Hero Shrine hero.
+   */
+  teams?: boolean;
 }
 
 export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'follow' | 'hold' | 'cast' | 'item';
@@ -365,8 +371,10 @@ export class MatchSim {
     this.rng = new Rng(setup.seed);
     this.grid = new SpatialGrid(this.size, 4);
     for (const s of setup.slots) {
-      const [x, y] = gameData.map.starts[s.start]!.heroSpawn;
-      this.spawnHero(s.index, s.heroType, s.index, s.team, s.color, s.start, x, y);
+      let [x, y] = gameData.map.starts[s.start]!.heroSpawn;
+      const second = !!setup.teams && s.index >= FACTION_HERO_SLOT;
+      if (second) [x, y] = nearestWalkable(nav, x + 2, y, 6) ?? [x, y];
+      this.spawnHero(s.index, s.heroType, second ? s.index - FACTION_HERO_SLOT : s.index, s.team, s.color, s.start, x, y);
     }
     this.camps = setup.noCamps ? [] : createCamps(this);
     this.factions = world ? new Factions(this, world.terrain, world.trees) : null;
