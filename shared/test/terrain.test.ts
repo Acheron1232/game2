@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { gameData, parseTerrain, TerrainFlag, terrainCellAt, treesSchema } from '../src/index';
+import { buildMatchNav } from '../src/nav/match-nav';
 
 const DATA = join(import.meta.dirname, '..', 'data');
 const terrain = parseTerrain(readFileSync(join(DATA, 'map-terrain.bin')));
@@ -66,6 +67,21 @@ describe('baked terrain', () => {
       return !(f & TerrainFlag.Passable) || (f & (TerrainFlag.Forest | TerrainFlag.Water | TerrainFlag.Cliff)) !== 0;
     });
     expect(blocked.map(([name]) => name)).toEqual([]);
+  });
+
+  // Forest pockets can cut a clearing off from the rest of the map (the old lake shore once was
+  // the only link to a camp), so check that walking can reach every camp and expansion.
+  it('lets ground units walk from every base to every camp and expansion', () => {
+    const nav = buildMatchNav(terrain, gameData.map);
+    const regionAt = ([x, y]: [number, number]) => nav.region![Math.floor(y / nav.cellSize) * nav.cols + Math.floor(x / nav.cellSize)];
+    const home = regionAt(gameData.map.starts[0]!.heroSpawn);
+    expect(home).toBeGreaterThan(0);
+    const points: [string, [number, number]][] = [
+      ...gameData.map.starts.map((s) => [`hero spawn ${s.id}`, s.heroSpawn] as [string, [number, number]]),
+      ...gameData.map.camps.map((c) => [c.id, c.pos] as [string, [number, number]]),
+      ...gameData.map.goldMines.flatMap((g) => (g.townHallSpot ? [[g.id, g.townHallSpot] as [string, [number, number]]] : [])),
+    ];
+    expect(points.filter(([, p]) => regionAt(p) !== home).map(([name]) => name)).toEqual([]);
   });
 
   it('has trees only on forest cells', () => {

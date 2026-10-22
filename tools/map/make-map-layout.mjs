@@ -36,6 +36,12 @@ const SECTOR = {
     { tag: 'camp', center: [-46, 78], radius: 5, ground: 'grass' },
     { tag: 'camp', center: [10, 64], radius: 5, ground: 'grass' },
     { tag: 'camp', center: [-26, 52], radius: 6, ground: 'rough_dirt' },
+    // Where the old lake was: a wide grass hollow on the trail, home of the spider brood.
+    { tag: 'glade', center: [-60, 64], radius: 10, ground: 'grass' },
+    // Clearings cut into the forest pockets for the extra leveling camps.
+    { tag: 'camp', center: [23, 67], radius: 6, ground: 'grass' },
+    { tag: 'camp', center: [-51, 41], radius: 6, ground: 'rough_dirt' },
+    { tag: 'camp', center: [-62, 82], radius: 6, ground: 'grass' },
     // Battle field: the open meadow between the base and the temple ring, where armies meet.
     { tag: 'field', center: [6, 60], radius: 11, ground: 'grass' },
     // Wide dirt spots where roads meet the ring, like the open junctions on classic maps.
@@ -106,8 +112,31 @@ const SECTOR = {
         [-78, 40],
       ],
     },
+    // Short forest paths to the camps in the forest pockets.
+    {
+      tag: 'trail',
+      width: 4,
+      points: [
+        [-38, 43],
+        [-45, 42],
+        [-50, 41],
+      ],
+    },
+    // Shop road → Green Wolves → Spider Nest. The old lake shore used to link the wolves to the shop.
+    {
+      tag: 'trail',
+      width: 4,
+      points: [
+        [-35, 67],
+        [-41, 73],
+        [-47, 79],
+        [-54, 81],
+        [-59, 82],
+      ],
+    },
   ],
-  water: [{ tag: 'lake', center: [-59, 62], radii: [13, 11], rotationDeg: 43 }],
+  // No lakes (the old ones became the glades); only the temple pools hold water.
+  water: [],
   // Soft hills (walkable). level is in terrain levels (1 = temple top). Roads and open areas cut
   // through them; forests on top of hills look like real wooded hills.
   hills: [
@@ -118,7 +147,7 @@ const SECTOR = {
     { tag: 'ridge', center: [62, 95], radius: 11, level: 0.75 },
     { tag: 'ridge', center: [64, 62], radius: 13, level: 0.8 },
     { tag: 'forest_hill', center: [-6, 110], radius: 12, level: 0.9 },
-    { tag: 'low', center: [-59, 62], radius: 20, level: -0.25 },
+    { tag: 'hollow', center: [-59, 62], radius: 20, level: -0.25 },
   ],
   ramps: [{ tag: 'temple_ramp', from: [0, 45], to: [0, 34], width: 10 }],
   camps: [
@@ -128,6 +157,10 @@ const SECTOR = {
     { type: 'orange_trolls', pos: [38, 78], guards: 'natural' },
     { type: 'red_ogres', pos: [82, 82], guards: 'corner' },
     { type: 'red_sentinels', pos: [11, 25] },
+    { type: 'green_spiders', pos: [23, 67] },
+    { type: 'orange_wolf_pack', pos: [-51, 41] },
+    { type: 'orange_spider_nest', pos: [-62, 82] },
+    { type: 'red_spider_brood', pos: [-60, 64] },
   ],
   shops: [{ type: 'side_shop', pos: [-40, 62] }],
   fountains: [{ type: 'fountain_of_life', pos: [37, 37], radius: 4 }],

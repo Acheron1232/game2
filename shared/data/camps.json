@@ -11,6 +11,10 @@
     { "id": "orange_harpies", "tier": "orange", "respawnSec": 240, "monsters": [["harpy", 2], ["harpy_matron", 1]], "dropTable": "orange" },
     { "id": "orange_trolls", "tier": "orange", "respawnSec": 240, "monsters": [["forest_troll", 2], ["troll_shaman", 1], ["alpha_wolf", 1]], "dropTable": "orange" },
     { "id": "red_ogres", "tier": "red", "respawnSec": 300, "monsters": [["ogre_brute", 2], ["ogre_warlord", 1]], "dropTable": "red" },
+    { "id": "green_spiders", "tier": "green", "respawnSec": 180, "monsters": [["rock_spider", 2]], "dropTable": "green" },
+    { "id": "orange_wolf_pack", "tier": "orange", "respawnSec": 240, "monsters": [["alpha_wolf", 2], ["grey_wolf", 3]], "dropTable": "orange" },
+    { "id": "orange_spider_nest", "tier": "orange", "respawnSec": 240, "monsters": [["spider_queen", 1], ["rock_spider", 2]], "dropTable": "orange" },
+    { "id": "red_spider_brood", "tier": "red", "respawnSec": 300, "monsters": [["spider_queen", 2], ["rock_spider", 3]], "dropTable": "red" },
     { "id": "red_sentinels", "tier": "red", "respawnSec": 300, "monsters": [["stone_sentinel", 2], ["rock_spider", 2]], "dropTable": "temple" }
   ],
   "dropTables": {

@@ -71,16 +71,26 @@ Rules:
 | orange_harpies | orange | 2× Harpy, 1× Harpy Matron | 1250 | 84 | 205 | 240 s | 60% (orange) | 4 |
 | orange_trolls | orange | 2× Forest Troll, 1× Troll Shaman, 1× Alpha Wolf | 1270 | 86 | 200 | 240 s | 60% (orange) | 4 |
 | red_ogres | red | 2× Ogre Brute, 1× Ogre Warlord | 3600 | 180 | 420 | 300 s | 100% (red) | 4 |
+| green_spiders | green | 2× Rock Spider | 640 | 36 | 80 | 180 s | 25% (green) | 4 |
+| orange_wolf_pack | orange | 2× Alpha Wolf, 3× Grey Wolf | 1500 | 92 | 195 | 240 s | 60% (orange) | 4 |
+| orange_spider_nest | orange | 1× Spider Queen, 2× Rock Spider | 1540 | 81 | 195 | 240 s | 60% (orange) | 4 |
+| red_spider_brood | red | 2× Spider Queen, 3× Rock Spider | 2760 | 144 | 350 | 300 s | 100% (red) | 4 |
 | red_sentinels | red | 2× Stone Sentinel, 2× Rock Spider | 3440 | 171 | 380 | 300 s | 100% (temple) | 4 |
 <!-- /table -->
 
-Placement (see [MAP.md](MAP.md)) — every sector has the same set:
-- **Green Wolves** — west of the base, toward the lake.
-- **Green Bandits** — south-east of the base, by the road to the natural expansion.
+Placement (see [MAP.md](MAP.md)) — every sector has the same set of 10 camps (3 green, 4 orange, 3 red), 40 on the map:
+- **Green Wolves** — west of the base, on the forest path from the shop road.
+- **Green Bandits** — south-east of the base, in the open field.
+- **Green Spiders** — in a forest clearing between the field and the road to the natural expansion.
 - **Orange Harpies** — on the way from the base to the temple ring.
 - **Orange Trolls** — standing on the natural expansion's Town Hall spot. Must be cleared to expand.
+- **Orange Wolf Pack** — at the end of a short forest path from the ring road junction near the shop.
+- **Orange Spider Nest** — in the north-west forest, at the end of the path past the Green Wolves.
 - **Red Ogres** — standing on the corner expansion's Town Hall spot.
+- **Red Spider Brood** — in the middle of the Spider Hollow (the wide glade where the lake used to be), on the flank trail.
 - **Red Sentinels** — on the temple plateau, next to the ramp. They guard the center but do not block the way to the Temple Market.
+
+Orange camps have a total monster level of 9–10 and red ones 16–17, so a solo bot hero (it takes camps up to 4 + 2 × its level) starts on orange camps at level 3 and on red camps at level 6–7. The two spider camps and the wolf pack have no flyers, so melee heroes can farm them too (they skip the harpies).
 
 ### Monsters
 

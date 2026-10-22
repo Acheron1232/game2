@@ -48,7 +48,7 @@ Inspired by the classic 4-player temple map. Put the reference picture in `docs/
 - Each base has a gold mine and trees close by. Each base has a **natural expansion** (second gold mine) a short walk away.
 - A raised **temple plateau** in the center with 4 ramps. Strong (red) neutral camps guard it, and the Temple Market shop stands in the middle.
 - Roads between bases, plus narrow paths through the forest.
-- Water: small lakes / rivers that block ground units (not flying ones).
+- Water: only the 4 small temple pools (they block ground units, not flying ones). The first map had a lake in each sector; it became a glade with camps, so there is more room to level up.
 - **Neutral camps** in three tiers:
   - Green (weak) — near bases.
   - Orange (medium) — between bases and at expansions.

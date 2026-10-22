@@ -2,10 +2,10 @@
 
 Reference picture: `docs/reference/map.png` (the classic 4-player temple map layout).
 Our map data (all generated, edit the scripts, not the files). `pnpm map:build` runs both scripts:
-- `shared/data/map-layout.json` — points and shapes (bases, mines, camps, shops, roads, lakes, hills, temple). Made by `tools/map/make-map-layout.mjs`.
+- `shared/data/map-layout.json` — points and shapes (bases, mines, camps, shops, roads, glades, hills, temple). Made by `tools/map/make-map-layout.mjs`.
 - `shared/data/map-terrain.bin` — the real terrain grid, 512 × 512 cells of 0.5 units. Made by `tools/map/bake-terrain.mjs`.
-- `shared/data/map-trees.json` — every tree (7,451 trees). Same script.
-- `shared/data/map-decor.json` — small props and plants (6,735 items). Same script.
+- `shared/data/map-trees.json` — every tree (6,371 trees). Same script.
+- `shared/data/map-decor.json` — small props and plants (7,883 items). Same script.
 - [map-preview.png](map-preview.png) — top-down picture of the baked map. Same script.
 
 ![Map preview](map-preview.png)
@@ -28,7 +28,7 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 | Own natural expansion | 77 | ~26 s |
 | Fountain of Life (north-east) | 89 | ~30 s |
 | Temple Market (center) | 99 | ~33 s |
-| West neighbour's natural (lake trail) | 104 | ~35 s |
+| West neighbour's natural (glade trail) | 96 | ~32 s |
 | Own corner expansion | 143 | ~48 s |
 | Next base (east or west) | 151 | ~50 s |
 | Opposite base (south) | 199 | ~66 s |
@@ -42,14 +42,37 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 | Main gold mine | (91, 244) | 20,000 gold. |
 | Natural expansion | mine (181, 243), open area (179, 233) r 15 | 14,000 gold. Guarded by Orange Trolls. |
 | Corner expansion | mine (247, 247), open area (236, 236) r 13 | 16,000 gold. Guarded by Red Ogres. Only reachable along the road from the natural. |
-| Trader's Tent (side shop) | (75, 211) | Between the base and the lake. |
-| Lake | ellipse at (49, 211), 17 × 15 | Blocks ground units. Flying units cross it. Sits in a low dip. |
-| Green Wolves | (67, 232) | West of the base. |
+| Trader's Tent (side shop) | (75, 211) | Between the base and the Spider Hollow. |
+| Spider Hollow (glade) | (48, 213), r 13 | Wide open grass hollow where the lake used to be. The trail runs through it. |
+| Green Wolves | (67, 232) | West of the base, on the forest path from the shop road. |
 | Green Bandits | (141, 213) | In the open **field** between the base and the ring road. |
+| Green Spiders | (159, 217) | Forest clearing between the field and the natural → ring road. |
 | Orange Harpies | (93, 197) | On the **watch hill**, above the base → ring road. |
+| Orange Wolf Pack | (60, 183) | End of a short forest path from the ring junction below the shop. |
+| Orange Spider Nest | (45, 237) | North-west forest, at the end of the path past the Green Wolves. |
+| Red Spider Brood | (48, 213) | In the middle of the Spider Hollow. |
 | Red Sentinels | (143, 161) | On the temple plateau near the north ramp. |
 | Temple ramp | from (128, 188) up to (128, 173), width 13 | One per side, 4 in total. |
 | Fountain of Life | (177, 177) | On the ring road, between north and east. 4 in total. |
+
+### Camps for leveling
+
+10 camps per sector (3 green, 4 orange, 3 red), 40 on the map. Walk from the north hero spawn (nav grid, hero speed 3):
+
+| Camp | Tier | Path | Time |
+|---|---|---|---|
+| Green Wolves | green | 44 | ~15 s |
+| Green Bandits | green | 51 | ~17 s |
+| Green Spiders | green | 64 | ~21 s |
+| Orange Harpies | orange | 51 | ~17 s |
+| Orange Wolf Pack | orange | 65 | ~22 s |
+| Orange Spider Nest | orange | 65 | ~22 s |
+| Orange Trolls (natural) | orange | 73 | ~24 s |
+| Red Spider Brood | red | 63 | ~21 s |
+| Red Sentinels (temple) | red | 73 | ~24 s |
+| Red Ogres (corner) | red | 132 | ~44 s |
+
+Straight from the Town Hall, all green camps, the three orange camps off the natural and the Red Spider Brood are 34–67 away, inside the tier 1 roam radius of the faction army (70, `ai.json`). The natural trolls and the temple sentinels (~78) open at tier 2 (100), the corner ogres (136) at tier 3 (140). The four camp types added with the glades (Green Spiders, Orange Wolf Pack, Orange Spider Nest, Red Spider Brood) use only existing monsters (no new models).
 
 ## The center
 
@@ -72,13 +95,14 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 | Natural → ring | 7 | Natural → ring (near the fountain) |
 | Base → shop | 7 | Base west side → Trader's Tent |
 | Shop → ring | 7 | Trader's Tent → ring |
-| Trail | 4.6 | Shop → past the lake → the next sector's natural expansion (narrow forest path, rough dirt) |
+| Trail | 4.6 | Shop → through the Spider Hollow → the next sector's natural expansion (narrow forest path, rough dirt) |
+| Wolf path | 4.6 | Base → shop road → Green Wolves → Orange Spider Nest (dead end) |
+| Wolf Pack path | 4.6 | Ring junction below the shop → Orange Wolf Pack (dead end) |
 
 ## Relief and ground
 
-- **Hills** (`layout.hills`): soft round bumps, added to the height of all ground that is not temple or ramp. Per sector: `base_rise` under the base (0.35 level), `watch_hill` with the harpies (0.55), `forest_hill` ×3 and `ridge` ×2 inside the big forests (0.7–0.9), and one `low` dip around the lake (−0.25). Forests get extra small bumps; roads stay smooth.
+- **Hills** (`layout.hills`): soft round bumps, added to the height of all ground that is not temple or ramp. Per sector: `base_rise` under the base (0.35 level), `watch_hill` with the harpies (0.55), `forest_hill` ×3 and `ridge` ×2 inside the big forests (0.7–0.9), and one `hollow` dip under the Spider Hollow glade (−0.25). Forests get extra small bumps; roads stay smooth.
 - **Forest is forest, open is open.** Forest fills everything that is not open ground, with a thin uneven grass edge. Open ground uses three grass types in big calm patches (normal, lush near water and clearing edges, dry in a few patches). Roads are dirt with rough edges.
-- Lakes have a sand shore and get deeper toward the middle.
 
 ## Fight zones and tactics
 
@@ -88,19 +112,20 @@ This is the plan for where fights happen. The AI and the camp/creep rules in lat
 2. **Watch hill.** The harpy camp stands on high ground right above the base → ring road. Who holds it sees the road and the field. Later: high ground gives sight over low ground and a small miss chance for attacks from below (Phase 7 decision).
 3. **Temple ramps.** The only 4 ways up to the market. 13 units wide: a real choke point. A small army can hold a ramp top, and an area spell on the ramp hits a lot. The ramp-top pillars give a bit of cover to hide behind (visual only for now).
 4. **Ring road and fountains.** The ring joins all four sectors. Fountains sit between two neighbours, so each one is shared and is a natural place to meet the neighbour. Fights after a heal at the fountain are common.
-5. **Natural expansion.** About 26 s from the base, but only ~35 s from the neighbour through the lake trail. Taking it early is greedy and easy to raid.
-6. **Lake trail (flank).** Narrow (4.6) forest path from your shop past the lake to the neighbour's natural. Good for a hero raid or a backstab; bad for a big army (one-by-one line, easy to block). Its far end is the neighbour's weak spot.
+5. **Natural expansion.** About 26 s from the base, but only ~32 s from the neighbour through the glade trail. Taking it early is greedy and easy to raid.
+6. **Glade trail (flank).** Narrow (4.6) forest path from your shop through the Spider Hollow to the neighbour's natural. Good for a hero raid or a backstab; bad for a big army (one-by-one line, easy to block). Its far end is the neighbour's weak spot. The Red Spider Brood in the hollow makes the raid road risky until it is cleared.
 7. **Corner expansion.** Dead end, only reachable through the natural. Safe to hold if the natural is yours; a trap if the enemy closes the road behind you.
-8. **Forests.** Block walking until trees are cut (Phase 7+). Hills inside forests are not reachable by ground, so they only change the view and the look. Flying heroes (Sky Dragon) can cross forest and lakes and use this for surprise attacks.
+8. **Forests.** Block walking until trees are cut (Phase 7+). Hills inside forests are not reachable by ground, so they only change the view and the look. Flying heroes (Sky Dragon) can cross forest and use this for surprise attacks.
 
-Distances to keep in balance: base → shop (12 s) < base → natural (26 s) < base → center (33 s) ≈ neighbour → your natural (35 s) < base → next base (50 s). Any layout change should keep this order.
+Distances to keep in balance: base → shop (12 s) < base → natural (26 s) < base → center (33 s) ≈ neighbour → your natural (32 s) < base → next base (50 s). Any layout change should keep this order.
 
 ## Terrain data (baked)
 
 `tools/map/bake-terrain.mjs` turns the simple shapes of the layout into a natural-looking map:
-- Edges of lakes, roads, open areas and forest are bent with noise, so nothing looks like a perfect circle or line. Roads are smooth curves.
+- Edges of roads, open areas and forest are bent with noise, so nothing looks like a perfect circle or line. Roads are smooth curves.
 - The noise is rotation-safe (same result after turning the map by 90°), so the grid stays exactly 4-way symmetric.
 - Temple: high ground (level 1) with a cliff edge, stone cross paving, 4 pools, 4 ramps.
+- The bake still supports lakes (`layout.water` without the `temple_pool` tag), but the map has none now: the 4 lakes became the Spider Hollow glades in October 2026.
 
 ### `map-terrain.bin` format (little endian)
 
@@ -133,6 +158,7 @@ The client draws trees and decor as thin instances split into 48-unit chunks (`c
 - Every base has one tavern about 80 away (the two taverns are mirrored through the center).
 - No start spot can see another start spot.
 - The corner expansion can only be reached by ground through the natural expansion road.
+- Ground units can walk from every base to every camp and expansion (`shared/test/terrain.test.ts` checks the nav regions).
 - Flying units can reach every point except the mountain wall.
 
 ## Differences from the reference map (on purpose)

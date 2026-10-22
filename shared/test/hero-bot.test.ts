@@ -17,7 +17,7 @@ function slot(index: number, hero: string, start = index) {
 }
 
 describe('hero bots', () => {
-  // Solo, with only two weak camps near each base, about 400-600 XP in 8 minutes is what a good
+  // Solo, with only three weak camps near each base, about 400-600 XP in 8 minutes is what a good
   // player gets too (level 3 is 500 XP). In real matches the faction army helps creep (8b).
   it('farms, learns, casts, and stays alive on four heroes', () => {
     let commands = 0;
