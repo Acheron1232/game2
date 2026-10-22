@@ -15,6 +15,7 @@ describe('art sheets', () => {
     const cells = loadSheets()
       .filter((s) => s.id !== 'ui_kit_a' && !s.id.startsWith('skin_'))
       .reduce((n, s) => n + s.cells.length, 0);
-    expect(cells).toBe(324);
+    // 324 + 8 for the tavern mercenaries' concept sheet
+    expect(cells).toBe(332);
   });
 });

@@ -13,18 +13,37 @@ describe('baked terrain', () => {
     expect(terrain.rows * terrain.cellSize).toBe(gameData.map.size.height);
   });
 
-  it('is exactly the same after turning by 90 degrees (fair for all 4 spots)', () => {
+  // The two taverns sit between two bases each, mirrored through the center: the map is the same
+  // after a half turn everywhere, and after a quarter turn everywhere but around the taverns.
+  const taverns = gameData.map.shops.filter((s) => s.type.startsWith('tavern')).map((s) => s.pos);
+  const nearTavern = (r: number, c: number) => {
+    const size = gameData.map.size.width / terrain.cols;
+    const x = (c + 0.5) * size,
+      y = (r + 0.5) * size;
+    return taverns.some(([tx, ty]) => Math.hypot(tx - x, ty - y) < 8);
+  };
+  const differentAfterTurn = (turn: (r: number, c: number, n: number) => number, skipTaverns: boolean) => {
     const n = terrain.cols;
     let different = 0;
     for (let r = 0; r < n; r++) {
       for (let c = 0; c < n; c++) {
         const i = r * n + c;
-        const j = (n - 1 - c) * n + r;
+        const j = turn(r, c, n);
+        if (skipTaverns && (nearTavern(r, c) || nearTavern(Math.floor(j / n), j % n))) continue;
         if (terrain.ground[i] !== terrain.ground[j] || terrain.flags[i] !== terrain.flags[j] || terrain.height[i] !== terrain.height[j])
           different++;
       }
     }
-    expect(different).toBe(0);
+    return different;
+  };
+
+  it('is exactly the same after turning by 90 degrees, but for the taverns (fair for all 4 spots)', () => {
+    expect(taverns).toHaveLength(2);
+    expect(differentAfterTurn((r, c, n) => (n - 1 - c) * n + r, true)).toBe(0);
+  });
+
+  it('is exactly the same after turning by 180 degrees, taverns too', () => {
+    expect(differentAfterTurn((r, c, n) => (n - 1 - r) * n + (n - 1 - c), false)).toBe(0);
   });
 
   it('puts every start, mine, camp, shop and fountain on open ground', () => {

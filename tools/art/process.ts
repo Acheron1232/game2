@@ -65,7 +65,7 @@ async function processCell(cell: Cell, raw: Rgba, transparentSheet: boolean): Pr
       break;
     case 'icon':
     case 'skin':
-      img = await resizeRgba(img, cell.size, cell.size, 'cover');
+      img = await resizeRgba(img, cell.size, cell.size, cell.fit ?? 'cover');
       break;
     case 'additive':
       img = await resizeRgba(alphaFromBrightness(clearBorderLines(img)), cell.size, cell.size, 'inside');

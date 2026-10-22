@@ -98,6 +98,12 @@ export function validateGameData(d: GameData): string[] {
   if (d.items.length > 255) fail('items: more than 255 (the network sends an item index as u8)');
 
   for (const s of d.shops) {
+    for (const uid of (s as { mercenaries?: string[] }).mercenaries ?? []) {
+      const u = unitById.get(uid);
+      if (!u) fail(`shop ${s.id}: unknown mercenary ${uid}`);
+      else if (u.group !== 'mercenary' || !u.cost || u.supply === undefined)
+        fail(`shop ${s.id}: ${uid} is not a mercenary with cost and supply`);
+    }
     for (const iid of s.items) {
       const it = itemById.get(iid);
       if (!it) fail(`shop ${s.id}: unknown item ${iid}`);

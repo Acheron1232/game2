@@ -682,11 +682,15 @@ export function monsterPassives(sim: MatchSim, e: SimEntity): void {
   }
 }
 
-/** A fighting monster uses its skill when it is ready and useful. */
+/**
+ * A unit (monster, army unit, hired soldier) uses its skill when it is ready and useful. Heals
+ * (Mend) also work after a fight; the other skills only while the unit fights.
+ */
 export function monsterCast(sim: MatchSim, m: SimEntity): void {
-  if (!m.targetId || (sim.tick + m.id) % 10 !== 0 || sim.isStunned(m) || sim.isSilenced(m)) return;
+  if ((sim.tick + m.id) % 10 !== 0 || sim.isStunned(m) || sim.isSilenced(m)) return;
   for (const s of monsterSkills(m)) {
     if (s.passive || (m.skillReady[s.id] ?? 0) > sim.tick) continue;
+    if (!m.targetId && s.id !== 'mend') continue;
     if (!useSkill(sim, m, s)) continue;
     m.skillReady[s.id] = sim.tick + secs(s.cooldown ?? 10);
     sim.events.push(EventType.Cast, m.id, 0, 0, 255);

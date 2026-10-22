@@ -15,7 +15,13 @@ export const BUILDING_FOOTPRINT: Record<string, [number, number]> = {
   side_shop: [3, 3],
   temple_market: [3.4, 3.4],
   fountain_of_life: [3, 3],
+  tavern: [3.6, 3.2],
 };
+
+/** The model (and footprint) of a map shop: the temple market, a tavern, or a trader's tent. */
+export function shopModel(type: string): string {
+  return type === 'temple_market' ? 'temple_market' : type.startsWith('tavern') ? 'tavern' : 'side_shop';
+}
 
 export interface MapBuilding {
   id: string;
@@ -28,7 +34,7 @@ export interface MapBuilding {
 export function mapBuildings(layout: MapLayout): MapBuilding[] {
   return [
     ...layout.goldMines.map((m) => ({ id: 'gold_mine', x: m.pos[0], y: m.pos[1], start: -1 })),
-    ...layout.shops.map((s) => ({ id: s.type === 'temple_market' ? 'temple_market' : 'side_shop', x: s.pos[0], y: s.pos[1], start: -1 })),
+    ...layout.shops.map((s) => ({ id: shopModel(s.type), x: s.pos[0], y: s.pos[1], start: -1 })),
     ...layout.fountains.map((f) => ({ id: 'fountain_of_life', x: f.pos[0], y: f.pos[1], start: -1 })),
   ];
 }

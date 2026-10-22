@@ -94,7 +94,20 @@ The player's hero can hire soldiers for itself, with **hero gold** (rules.json `
 - Price = (unit gold + unit wood) × `priceFactor` (1.5): Swordsman 180, Archer 225, Cleric 285, Catapult 420, Lancer 450, Hawk Rider 525.
 - Up to `maxSupply` (12) supply of soldiers per hero. They use no kingdom supply and are not part of the kingdom's army; Town Hall upgrades work on them.
 - The player does not give them orders. They follow the hero (a spot near it), choose their own targets, and stay in their fight when the hero takes a few steps. They leave a fight only when it is more than `leash` (14) from the hero. They fight neutral camps only when the hero fights. When the hero is dead they walk to its respawn point and wait.
-- Bot heroes (Bot slots) hire too (ai.json `heroBot.hiring`): from level 3, the most expensive unit they can pay while keeping 350 gold, at an own building within 90. The faction's own hero does not hire (it has the whole army).
+- Bot heroes (Bot slots) hire too (ai.json `heroBot.hiring`): from level 3, the most expensive unit they can pay while keeping 350 gold, at an own building or a tavern within 90. The faction's own hero does not hire (it has the whole army).
+
+### Taverns (mercenaries)
+
+Two neutral **taverns** on the map hire special mercenaries to any hero (same 12-supply limit, same follow-and-fight behaviour, no kingdom tech needed, their own price in hero gold):
+
+| Tavern | Mercenary | Price | Supply | Role |
+|---|---|---|---|---|
+| Mossy Tankard | Ratling Cutthroat | 210 | 2 | fast melee rat-man with two daggers |
+| Mossy Tankard | Toadfolk Mystic | 260 | 2 | ranged magic toad shaman, heals allies (Mend) |
+| Ember Kettle | Shellback Beetle | 520 | 4 | slow armored tank beetle, ground slam (stun) |
+| Ember Kettle | Ember Wisp | 380 | 3 | flying fire spirit, ranged magic |
+
+Stats: `units.json` (group `mercenary`), lists: `shops.json` (`mercenaries`). Art: a concept sheet first, then each model, then Codex painted each model's 8-cell texture on top of a guide picture of that model's UV layout (`tools/art/uv-guide.ts`).
 
 ## Town Hall upgrades
 

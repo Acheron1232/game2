@@ -60,6 +60,7 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 - Ruins, the same in all four quarters: two pillars as a "gate" at each ramp top, a broken pillar ring around the market, a statue on each diagonal, stone blocks around the pools. They never stand on the paved cross or block a path.
 - 4 Red Sentinel camps, one near the top of each ramp, off to the side so the way to the market stays open.
 - **Ring road** around the plateau, radius 64, width 8. All base roads join it.
+- **Two taverns** (mercenaries for any hero): Mossy Tankard (166.7, 194) and Ember Kettle (89.3, 62), each next to a road junction halfway between two neighbor bases (about 80 from each), mirrored through the center. So every base has one tavern at the same distance; the map is the same after a half turn everywhere and after a quarter turn everywhere but around the taverns.
 
 ## Roads and paths (per sector)
 
@@ -128,7 +129,8 @@ The client draws trees and decor as thin instances split into 48-unit chunks (`c
 
 ## Fairness checks
 
-- Same walk distance base → natural, base → shop, base → temple for all 4 spots (true by symmetry; `shared/test/terrain.test.ts` checks the grid symmetry).
+- Same walk distance base → natural, base → shop, base → temple for all 4 spots (true by symmetry; `shared/test/terrain.test.ts` checks the grid symmetry: quarter turn except around the two taverns, half turn everywhere).
+- Every base has one tavern about 80 away (the two taverns are mirrored through the center).
 - No start spot can see another start spot.
 - The corner expansion can only be reached by ground through the natural expansion road.
 - Flying units can reach every point except the mountain wall.

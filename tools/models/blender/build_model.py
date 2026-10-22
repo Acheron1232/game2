@@ -49,6 +49,19 @@ src_dir = os.path.join(kit.ROOT, "art", "source", "models")
 os.makedirs(src_dir, exist_ok=True)
 with open(os.path.join(src_dir, f"{model_id}.json"), "w") as fh:
     json.dump(info, fh, indent=2)
+if "--uv" in args:
+    # The UV layout over the whole texture (all parts), for tools/art/uv-guide.ts: Codex paints
+    # each skin cell on top of the outlines of the parts that use it.
+    body = model.body
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    uv_path = os.path.join(kit.ROOT, "art", "source", "models", f"{model_id}_uv.svg")
+    bpy.ops.uv.export_layout(filepath=uv_path, export_all=True, modified=False, mode="SVG", size=(1024, 512), opacity=0.0)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    print(f"UV {uv_path}")
 print(f"FLIPPED {len(kit.FLIPPED)} parts: {sorted(set(kit.FLIPPED))}")
 print(f"MODEL {model_id}: {info['triangles']} triangles, {info['bones']} bones, {len(info['clips'])} clips, height {info['height']} m")
 

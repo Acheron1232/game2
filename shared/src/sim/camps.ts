@@ -88,7 +88,14 @@ function think(sim: MatchSim, camp: CampState, m: SimEntity): void {
   if (home > N.leashRange) return goHome(sim, m);
   const t = m.targetId ? sim.get(m.targetId) : undefined;
   if (t && (!t.alive || Math.hypot(t.mover.x - m.homeX, t.mover.y - m.homeY) > N.leashRange + 2)) m.targetId = 0;
-  if (m.targetId) return;
+  if (m.targetId) {
+    // Hit what stands next to you: do not walk past soldiers to reach the hero behind them.
+    if ((sim.tick + m.id) % 5 === 0 && t && m.swing !== 1 && !inReach(m, t)) {
+      const near = nearestIntruder(sim, camp, m, m.stats.attackRange + m.stats.radius + REACH_SLACK + 1);
+      if (near && inReach(m, near)) switchTarget(m, near);
+    }
+    return;
+  }
   // Someone still fights the camp? Take the nearest of them. Else look around (every 5 ticks).
   if ((sim.tick + m.id) % 5 !== 0 && home < 0.5) return;
   const found = nearestIntruder(sim, camp, m, home > 0.5 ? N.leashRange : N.aggroRange);
@@ -109,6 +116,19 @@ function nearestIntruder(sim: MatchSim, camp: CampState, m: SimEntity, range: nu
     }
   });
   return best;
+}
+
+/** Extra gap (tiles) that still counts as "next to me" when a monster looks for a closer target. */
+const REACH_SLACK = 0.5;
+
+function inReach(m: SimEntity, o: SimEntity): boolean {
+  return Math.hypot(o.mover.x - m.mover.x, o.mover.y - m.mover.y) - m.stats.radius - o.stats.radius <= m.stats.attackRange + REACH_SLACK;
+}
+
+function switchTarget(m: SimEntity, o: SimEntity): void {
+  m.targetId = o.id;
+  m.swing = 0;
+  m.repathAt = 0;
 }
 
 /** The whole camp fights: every monster without a target takes this one. */
@@ -132,7 +152,19 @@ export function onCampMemberAttacked(sim: MatchSim, m: SimEntity, source: Damage
   if (m.returning || source.team === NEUTRAL_TEAM) return;
   const camp = sim.camps[m.camp];
   const attacker = sim.get(source.id);
-  if (camp && attacker?.alive) aggro(sim, camp, attacker);
+  if (!camp || !attacker?.alive) return;
+  aggro(sim, camp, attacker);
+  // Hit by someone close while the own target is out of reach: fight back.
+  const t = m.targetId ? sim.get(m.targetId) : undefined;
+  if (
+    t &&
+    t !== attacker &&
+    m.swing !== 1 &&
+    !inReach(m, t) &&
+    inReach(m, attacker) &&
+    canAttackLayer(m.stats.canHitAir, attacker.stats.layer)
+  )
+    switchTarget(m, attacker);
 }
 
 export function onCampMemberDied(sim: MatchSim, m: SimEntity, killer?: DamageSource): void {

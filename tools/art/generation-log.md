@@ -122,3 +122,27 @@ Every `pnpm art:gen` call. Failed calls that made no image (and cost nothing) ar
 - Process: `pnpm --filter @game/tools exec tsx art/terrain-meadow.ts`, then `pnpm --filter @game/tools art:manifest`.
 - Six 256 × 256 WebP files with `_meadow_v2` names; original terrain assets retained.
 - Four-by-four repeat preview inspected: `art/source/terrain-meadow-v2/_contact.png`.
+
+## 2026-10-21 14:04 UTC — mercs_concept
+- Output: `art/raw/mercs_concept.png` (2593 KB, 71 s)
+- Prompt file: `tools/art/prompts/mercs_concept.md`
+
+## 2026-10-21 14:08 UTC — skin_ratling_cutthroat
+- Output: `art/raw/skin_ratling_cutthroat.png` (2908 KB, 84 s)
+- Prompt file: `tools/art/prompts/skin_ratling_cutthroat.md`
+- Input images: `art/source/uv/ratling_cutthroat_guide.png`, `art/raw/mercs_concept.png`
+
+## 2026-10-21 14:10 UTC — skin_toadfolk_mystic
+- Output: `art/raw/skin_toadfolk_mystic.png` (2935 KB, 99 s)
+- Prompt file: `tools/art/prompts/skin_toadfolk_mystic.md`
+- Input images: `art/source/uv/toadfolk_mystic_guide.png`, `art/raw/mercs_concept.png`
+
+## 2026-10-21 14:12 UTC — skin_shellback_beetle
+- Output: `art/raw/skin_shellback_beetle.png` (2712 KB, 75 s)
+- Prompt file: `tools/art/prompts/skin_shellback_beetle.md`
+- Input images: `art/source/uv/shellback_beetle_guide.png`, `art/raw/mercs_concept.png`
+
+## 2026-10-21 14:13 UTC — skin_ember_wisp
+- Output: `art/raw/skin_ember_wisp.png` (2404 KB, 65 s)
+- Prompt file: `tools/art/prompts/skin_ember_wisp.md`
+- Input images: `art/source/uv/ember_wisp_guide.png`, `art/raw/mercs_concept.png`

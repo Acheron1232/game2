@@ -155,6 +155,29 @@ describe('combat in the simulation', () => {
     expect(wolf.hp).toBe(wolf.stats.maxHp);
   });
 
+  it('monsters fight the soldiers next to them, not only the hero behind', () => {
+    const s = sim(['arcane_huntress'], true);
+    const hero = s.heroes[0]!;
+    const camp = s.camps.find((c) => c.id === 'north_green_wolves')!;
+    hero.mover.x = camp.x + 7;
+    hero.mover.y = camp.y;
+    s.queueCommand(0, 1, { type: CommandType.Attack, target: camp.members[0]!.id });
+    run(s, 1);
+    expect(camp.members.every((m) => m.targetId === hero.id)).toBe(true);
+    // A soldier steps in between and hits the wolves.
+    const soldier = s.spawn(entityTypeIndex('swordsman'), 0, hero.team, 0, camp.x + 3, camp.y);
+    soldier.targetId = camp.members[0]!.id;
+    let soldierHit = false;
+    run(s, 4, () => {
+      for (let i = 0; i < s.events.count; i++) {
+        const e = s.events.items[i]!;
+        if (e.type === EventType.Damage && e.b === soldier.id) soldierHit = true;
+      }
+    });
+    expect(soldierHit).toBe(true);
+    expect(camp.members.some((m) => m.alive && m.targetId === soldier.id)).toBe(true);
+  });
+
   it('a dead hero loses gold and comes back at its start after 5 + 3 x level seconds', () => {
     const s = sim(['blood_witch', 'stone_golem']);
     const [a, b] = [s.heroes[0]!, s.heroes[1]!];

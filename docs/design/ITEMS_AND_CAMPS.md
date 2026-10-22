@@ -53,6 +53,8 @@ Rules:
 |---|---|---|
 | Trader's Tent | 4 on the map | Healing Potion, Mana Potion, Scroll of Return, Watcher Ward, Smoke Bomb, Boots of Haste, Iron Claws, Guard Ring, Swift Gloves, Sage Cloak, Giant Belt, Thief Band, Life Pendant, Mana Stone |
 | Temple Market | 1 on the map | Healing Potion, Scroll of Return, Watcher Ward, Ironwood Shield, Warblade, Royal Circlet |
+| Mossy Tankard | 1 on the map |  |
+| Ember Kettle | 1 on the map |  |
 <!-- /table -->
 
 - Shops are neutral and can not be attacked.

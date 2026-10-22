@@ -1722,6 +1722,172 @@
           ]
         }
       ]
+    },
+    {
+      "id": "mercs_concept",
+      "grid": [
+        4,
+        2
+      ],
+      "aspect": "landscape",
+      "prompt": "mercs_concept.md",
+      "groups": [
+        {
+          "kind": "concept",
+          "size": 320,
+          "out": "concept",
+          "cells": [
+            "ratling_cutthroat_front",
+            "toadfolk_mystic_front",
+            "shellback_beetle_front",
+            "ember_wisp_front",
+            "ratling_cutthroat_side",
+            "toadfolk_mystic_side",
+            "shellback_beetle_side",
+            "ember_wisp_side"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_ratling_cutthroat",
+      "grid": [
+        4,
+        2
+      ],
+      "aspect": "landscape",
+      "prompt": "skin_ratling_cutthroat.md",
+      "images": [
+        "art/source/uv/ratling_cutthroat_guide.png",
+        "art/raw/mercs_concept.png"
+      ],
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "ratling_cutthroat_skin",
+          "fit": "fill",
+          "cells": [
+            "ratling_cutthroat__face",
+            "ratling_cutthroat__body",
+            "ratling_cutthroat__arm",
+            "ratling_cutthroat__legs",
+            "ratling_cutthroat__foot_hand",
+            {
+              "name": "ratling_cutthroat__team",
+              "teamColor": true
+            },
+            "ratling_cutthroat__weapon_a",
+            "ratling_cutthroat__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_toadfolk_mystic",
+      "grid": [
+        4,
+        2
+      ],
+      "aspect": "landscape",
+      "prompt": "skin_toadfolk_mystic.md",
+      "images": [
+        "art/source/uv/toadfolk_mystic_guide.png",
+        "art/raw/mercs_concept.png"
+      ],
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "toadfolk_mystic_skin",
+          "fit": "fill",
+          "cells": [
+            "toadfolk_mystic__face",
+            "toadfolk_mystic__body",
+            "toadfolk_mystic__arm",
+            "toadfolk_mystic__legs",
+            "toadfolk_mystic__foot_hand",
+            {
+              "name": "toadfolk_mystic__team",
+              "teamColor": true
+            },
+            "toadfolk_mystic__weapon_a",
+            "toadfolk_mystic__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_shellback_beetle",
+      "grid": [
+        4,
+        2
+      ],
+      "aspect": "landscape",
+      "prompt": "skin_shellback_beetle.md",
+      "images": [
+        "art/source/uv/shellback_beetle_guide.png",
+        "art/raw/mercs_concept.png"
+      ],
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "shellback_beetle_skin",
+          "fit": "fill",
+          "cells": [
+            "shellback_beetle__face",
+            "shellback_beetle__body",
+            "shellback_beetle__arm",
+            "shellback_beetle__legs",
+            "shellback_beetle__foot_hand",
+            {
+              "name": "shellback_beetle__team",
+              "teamColor": true
+            },
+            "shellback_beetle__weapon_a",
+            "shellback_beetle__weapon_b"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "skin_ember_wisp",
+      "grid": [
+        4,
+        2
+      ],
+      "aspect": "landscape",
+      "prompt": "skin_ember_wisp.md",
+      "images": [
+        "art/source/uv/ember_wisp_guide.png",
+        "art/raw/mercs_concept.png"
+      ],
+      "groups": [
+        {
+          "kind": "skin",
+          "size": 256,
+          "out": "models",
+          "atlas": "ember_wisp_skin",
+          "fit": "fill",
+          "cells": [
+            "ember_wisp__face",
+            "ember_wisp__body",
+            "ember_wisp__arm",
+            "ember_wisp__legs",
+            "ember_wisp__foot_hand",
+            {
+              "name": "ember_wisp__team",
+              "teamColor": true
+            },
+            "ember_wisp__weapon_a",
+            "ember_wisp__weapon_b"
+          ]
+        }
+      ]
     }
   ]
 }

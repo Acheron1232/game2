@@ -20,7 +20,7 @@ import '@babylonjs/core/Culling/ray';
 import { Scene } from '@babylonjs/core/scene';
 import { ImageProcessingConfiguration } from '@babylonjs/core/Materials/imageProcessingConfiguration';
 import { ColorCurves } from '@babylonjs/core/Materials/colorCurves';
-import { buildMatchNav, gameData, SIGHT_CELL, type NavGrid, type TerrainGrid } from '@game/shared';
+import { buildMatchNav, gameData, shopModel, SIGHT_CELL, type NavGrid, type TerrainGrid } from '@game/shared';
 import selectionRingUrl from '../assets/ui/selection_ring.webp?url';
 import type { GameAssets } from '../loader/assets';
 import { bakedClock, bakedPose } from './baked-animation';
@@ -280,7 +280,7 @@ export class GameWorld {
     const menuBase: ModelInstance[] = [];
     layout.starts.forEach((s, i) => menuBase.push(put('town_hall', s.townHall[0], s.townHall[1], TEAMS[i % TEAMS.length]!)));
     for (const m of layout.goldMines) menuBase.push(put('gold_mine', m.pos[0], m.pos[1], 'red'));
-    for (const s of layout.shops) put(s.type === 'temple_market' ? 'temple_market' : 'side_shop', s.pos[0], s.pos[1], 'red');
+    for (const s of layout.shops) put(shopModel(s.type), s.pos[0], s.pos[1], 'red');
     for (const f of layout.fountains) put('fountain_of_life', f.pos[0], f.pos[1], 'red');
 
     for (const mesh of terrain.chunks) mesh.receiveShadows = true;

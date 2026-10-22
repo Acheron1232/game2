@@ -99,7 +99,8 @@ codex exec -m gpt-5.6-sol --skip-git-repo-check -s workspace-write -C "$PWD" \
   - Log every call (prompt, date, output file) in `tools/art/generation-log.md`.
 - Team color: in every sheet with heroes, units or buildings, paint the team-color parts (shoulders, armor trim, banners, cloth) in **pure magenta #FF00FF**. Our tool turns magenta into a team-color mask, and the shader paints it in the player's color.
 - Background of sprite/card/icon sheets: one flat color that is not used in the art (pure green #00FF00), so the tool can cut it out.
-- Image models cannot paint a texture that fits a 3D model's UV layout. So for heroes and units, the image sheets are **concept sheets** (front / side / back views + color palette) plus small tileable material swatches (metal, leather, cloth, skin, scales). The 3D model uses these swatches through a small palette atlas.
+- Image models cannot paint a texture that fits a 3D model's UV layout on their own. So for heroes and units, the image sheets are **concept sheets** (front / side / back views + color palette) plus small tileable material swatches (metal, leather, cloth, skin, scales). The 3D model uses these swatches through a small palette atlas.
+- Model-first textures (tested with the tavern mercenaries, works well): concept sheet → model with an 8-cell skin (`uv-guide.ts init`, `models:build <id> --uv`) → guide picture of the model's UV layout (`uv-guide.ts guide`) → a skin sheet whose `images` are the guide and the concept (Codex gets them with `-i`) and whose cells use `"fit": "fill"` → `art:process`, rebuild, `uv-guide.ts portrait`.
 
 ## Folders (target layout)
 
@@ -136,6 +137,7 @@ Keep this section current. Node 24+, pnpm 10+.
 | `pnpm --filter @game/tools art:manifest` | Rewrite `client/public/assets/manifest.json` |
 | `pnpm --filter @game/tools models:build [ids] [--preview]` | Blender scripts → GLB (quantized) + `models.json` + manifest; `--preview` renders `art/source/models/<id>.png` |
 | `pnpm --filter @game/tools models:palette` | Rebuild the shared model palette atlas |
+| `pnpm --filter @game/tools exec tsx art/uv-guide.ts init\|guide\|portrait <model>` | Model-first textures: placeholder 8-cell skin, UV guide picture for Codex (`art/source/uv/`), 128 px portrait from the model's front preview |
 | `pnpm --filter @game/server sim:matches [--matches 10 --minutes 60 --slots 4 --difficulty normal --verbose]` | Headless bot-only matches (no browser): winner, stuck reports, tick times; JSON report in `server/logs/` |
 
 Notes:

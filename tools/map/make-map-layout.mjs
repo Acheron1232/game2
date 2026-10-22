@@ -147,6 +147,12 @@ const CENTER = {
   },
   ringRoad: { center: [0, 0], radius: 48, width: 7, ground: 'dirt' },
   shops: [{ type: 'temple_market', pos: [0, 0] }],
+  // Two taverns (mercenaries for any hero), each next to a road junction halfway between two
+  // neighbor bases, mirrored through the center: every base has one at about the same distance.
+  taverns: [
+    { type: 'tavern_mossy', pos: [29, 49.5] },
+    { type: 'tavern_ember', pos: [-29, -49.5] },
+  ],
   pools: [
     [22, 22],
     [22, -22],
@@ -215,7 +221,10 @@ const layout = {
   hills: [],
   ramps: [],
   camps: [],
-  shops: CENTER.shops.map((s, i) => ({ id: `${s.type}_${i + 1}`, type: s.type, pos: rel(s.pos) })),
+  shops: [
+    ...CENTER.shops.map((s, i) => ({ id: `${s.type}_${i + 1}`, type: s.type, pos: rel(s.pos) })),
+    ...CENTER.taverns.map((s) => ({ id: s.type, type: s.type, pos: rel(s.pos) })),
+  ],
   fountains: [],
 };
 

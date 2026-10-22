@@ -17,6 +17,8 @@ export interface Cell {
   /** Cells with the same atlas name go into one atlas image. */
   atlas?: string;
   teamColor?: boolean;
+  /** how a cell is scaled to its size: crop to fill (default) or stretch (UV-guided skins keep their layout) */
+  fit?: 'cover' | 'fill';
 }
 
 export interface Sheet {
@@ -26,6 +28,8 @@ export interface Sheet {
   aspect: 'square' | 'landscape';
   prompt: string;
   promptVars?: Record<string, string>;
+  /** images sent to Codex with the prompt (repo paths), e.g. a model's UV guide and its concept */
+  images?: string[];
   cells: Cell[];
 }
 
@@ -58,7 +62,7 @@ export function loadSheets(): Sheet[] {
       if (names.has(key)) throw new Error(`Sheet ${s.id}: two cells write ${key}`);
       names.add(key);
     }
-    return { id: s.id, grid: s.grid, aspect: s.aspect, prompt: s.prompt, ...(s.promptVars && { promptVars: s.promptVars }), cells };
+    return { id: s.id, grid: s.grid, aspect: s.aspect, prompt: s.prompt, ...(s.promptVars && { promptVars: s.promptVars }), ...(s.images && { images: s.images }), cells };
   });
 }
 

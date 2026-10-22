@@ -117,7 +117,7 @@ const skillSchema = z.looseObject({ id });
 export const unitSchema = z.looseObject({
   id,
   name: z.string(),
-  group: z.enum(['faction', 'neutral', 'summon']),
+  group: z.enum(['faction', 'neutral', 'summon', 'mercenary']),
   level: num,
   hp: num,
   mana: num,
@@ -237,7 +237,7 @@ export const itemsSchema = z.looseObject({ version: num, items: z.array(itemSche
 
 export const shopsSchema = z.looseObject({
   version: num,
-  shops: z.array(z.looseObject({ id, name: z.string(), useRange: num, items: z.array(id) })),
+  shops: z.array(z.looseObject({ id, name: z.string(), useRange: num, items: z.array(id), mercenaries: z.array(id).optional() })),
 });
 
 export const campsSchema = z.looseObject({

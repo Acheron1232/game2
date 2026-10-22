@@ -222,6 +222,22 @@
       "idle"
     ]
   },
+  "ember_wisp": {
+    "skin": "ember_wisp_skin",
+    "height": 1.952,
+    "triangles": 414,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "fence": {
     "skin": null,
     "height": 1,
@@ -469,6 +485,22 @@
       "victory"
     ]
   },
+  "ratling_cutthroat": {
+    "skin": "ratling_cutthroat_skin",
+    "height": 1.515,
+    "triangles": 1320,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "rock_big": {
     "skin": null,
     "height": 1.7,
@@ -519,6 +551,22 @@
     "sockets": [],
     "clips": [
       "idle"
+    ]
+  },
+  "shellback_beetle": {
+    "skin": "shellback_beetle_skin",
+    "height": 2.493,
+    "triangles": 460,
+    "sockets": [],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
     ]
   },
   "side_shop": {
@@ -669,6 +717,17 @@
       "victory"
     ]
   },
+  "tavern": {
+    "skin": "buildings_1_skin",
+    "height": 4.9,
+    "triangles": 624,
+    "sockets": [
+      "smoke"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "temple_market": {
     "skin": "buildings_3_skin",
     "height": 3.3,
@@ -679,6 +738,22 @@
     ],
     "clips": [
       "idle"
+    ]
+  },
+  "toadfolk_mystic": {
+    "skin": "toadfolk_mystic_skin",
+    "height": 1.913,
+    "triangles": 1120,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
     ]
   },
   "town_hall": {

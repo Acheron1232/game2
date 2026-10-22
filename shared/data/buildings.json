@@ -104,6 +104,8 @@
     { "id": "gold_mine", "name": "Gold Mine", "hp": null, "footprint": [3, 3], "look": "Cave in a rock with wooden beams and glittering gold." },
     { "id": "side_shop", "name": "Trader's Tent", "hp": null, "footprint": [3, 3], "look": "Colorful tent with crates, a scale and a short bearded merchant." },
     { "id": "temple_market", "name": "Temple Market", "hp": null, "footprint": [4, 4], "look": "Old stone altar with lanterns and a hooded trader." },
-    { "id": "fountain_of_life", "name": "Fountain of Life", "hp": null, "footprint": [3, 3], "look": "Round stone fountain with glowing blue-green water." }
+    { "id": "fountain_of_life", "name": "Fountain of Life", "hp": null, "footprint": [3, 3], "look": "Round stone fountain with glowing blue-green water." },
+    { "id": "tavern_mossy", "name": "Mossy Tankard", "hp": null, "footprint": [4, 4], "look": "Crooked timber tavern with a mossy thatch roof. Hires Ratling Cutthroats and Toadfolk Mystics." },
+    { "id": "tavern_ember", "name": "Ember Kettle", "hp": null, "footprint": [4, 4], "look": "Stone tavern with a big chimney. Hires Shellback Beetles and Ember Wisps." }
   ]
 }

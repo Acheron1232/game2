@@ -11,6 +11,15 @@
     {
       "id": "temple_market", "name": "Temple Market", "useRange": 6,
       "items": ["healing_potion", "scroll_of_return", "ward", "ironwood_shield", "warblade", "royal_circlet"]
+    },
+    {
+      "id": "tavern_mossy", "name": "Mossy Tankard", "useRange": 6, "items": [],
+      "mercenaries": ["ratling_cutthroat", "toadfolk_mystic"],
+      "notes": "A tavern: any hero hires mercenaries here with hero gold (rules.json hire limit). Its own model, not a shop tent."
+    },
+    {
+      "id": "tavern_ember", "name": "Ember Kettle", "useRange": 6, "items": [],
+      "mercenaries": ["shellback_beetle", "ember_wisp"]
     }
   ]
 }

@@ -1,0 +1,50 @@
+{
+  "id": "ratling_cutthroat",
+  "triangles": 1320,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 53,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 25,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 25,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 25,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 32,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 11,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 35,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 42,
+      "loop": false
+    }
+  ],
+  "height": 1.515,
+  "sockets": [],
+  "skin": "ratling_cutthroat_skin"
+}

@@ -54,6 +54,8 @@ const PLAN_UPGRADES = 6;
 const PLAN_ARMY = 7;
 const PLAN_HIRE = 8;
 const HIRING = gameData.ai.heroBot.hiring;
+/** a bot that hires at a tavern walks this close to its center */
+const TAVERN_STAND = 4;
 /** With the army: a new walk order only when the army moved this far from the last one. */
 const ARMY_REORDER = 6;
 const MAX_COMMANDS_PER_THINK = 3;
@@ -540,24 +542,47 @@ export class HeroBot {
         best = price;
       }
     }
-    if (!building) {
+    // Tavern mercenaries count too (a tavern is a map shop, not an entity: target id 0).
+    let tavern: { x: number; y: number } | null = null;
+    for (const t of gameData.map.shops) {
+      const shop = gameData.shops.find((d) => d.id === t.type) as { mercenaries?: string[] } | undefined;
+      if (!shop?.mercenaries || distance(hero, t.pos[0], t.pos[1]) > HIRING.maxTravel) continue;
+      for (const unitId of shop.mercenaries) {
+        const index = gameData.units.findIndex((u) => u.id === unitId);
+        const price = hirePrice(index);
+        const def = gameData.units[index];
+        if (price === null || !def || price <= best || price > hs.gold - HIRING.goldBuffer || (def.supply ?? 0) > room) continue;
+        building = null;
+        tavern = { x: t.pos[0], y: t.pos[1] };
+        unit = index;
+        best = price;
+      }
+    }
+    if (!building && !tavern) {
       if (this.plan === PLAN_HIRE) this.plan = PLAN_NONE;
       return -1;
     }
     this.stateText = 'Hiring soldiers';
     this.campIndex = -1;
+    const targetId = building?.id ?? 0;
     if (hireProblem(sim, hero, unit) === 'range') {
-      this.setHallApproach(hero, building);
-      if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_HIRE, building.id, this.planX, this.planY)) {
+      if (building) this.setHallApproach(hero, building);
+      else {
+        // A few steps in front of the tavern, on the hero's side.
+        const d = Math.max(0.001, distance(hero, tavern!.x, tavern!.y));
+        this.planX = tavern!.x + ((hero.mover.x - tavern!.x) / d) * TAVERN_STAND;
+        this.planY = tavern!.y + ((hero.mover.y - tavern!.y) / d) * TAVERN_STAND;
+      }
+      if (availableCommands > 0 && this.needsMoveOrder(hero, PLAN_HIRE, targetId, this.planX, this.planY)) {
         this.send(sim, { type: CommandType.Move, x: this.planX, y: this.planY, queue: false });
-        this.setItemPlan(PLAN_HIRE, building.id, this.planX, this.planY);
+        this.setItemPlan(PLAN_HIRE, targetId, this.planX, this.planY);
         return 1;
       }
       return 0;
     }
     if (availableCommands > 0 && hireProblem(sim, hero, unit) === null && this.send(sim, { type: CommandType.Hire, unit })) {
       this.plan = PLAN_HIRE;
-      this.planTarget = building.id;
+      this.planTarget = targetId;
       return 1;
     }
     return -1;

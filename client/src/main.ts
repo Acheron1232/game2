@@ -555,20 +555,23 @@ async function main(): Promise<void> {
     if (id === 'citadel') return f.tier >= 3;
     return f.tech.some((t) => ENTITY_TYPES[t] === id);
   };
-  const hireView = (at: NetEntity): ShopView => {
-    const def = buildingDefOf(at.type)!;
+  /** Hire panel of an own production building, or of a tavern (`at` = null, its mercenaries). */
+  const hireView = (at: NetEntity | null, tavern?: { name: string; mercenaries: string[] }): ShopView => {
+    const def = at ? buildingDefOf(at.type)! : null;
     const gold = match!.player.gold;
     const used = match!.player.hiredSupply;
     const max = gameData.rules.hire.maxSupply;
-    const units = def.trains.map((id) => gameData.units.findIndex((x) => x.id === id)).filter((i) => hirePrice(i) !== null);
+    const units = (def?.trains ?? tavern?.mercenaries ?? [])
+      .map((id) => gameData.units.findIndex((x) => x.id === id))
+      .filter((i) => hirePrice(i) !== null);
     return {
-      name: S.hireAt(def.name),
+      name: S.hireAt(def?.name ?? tavern?.name ?? ''),
       hint: `${S.hireHint} ${S.hireCount(used, max)}`,
       inRange: true,
       items: units.map((i) => {
         const u = gameData.units[i]!;
         const price = hirePrice(i)!;
-        const needs = (u.requires ?? []).filter((r) => !factionHas(r));
+        const needs = u.group === 'mercenary' ? [] : (u.requires ?? []).filter((r) => !factionHas(r));
         const why = needs.length
           ? S.upgradeNeeds(needs.map(buildingName).join(', '))
           : used + (u.supply ?? 0) > max
@@ -582,7 +585,13 @@ async function main(): Promise<void> {
           cost: price,
           canAfford: !why,
           // The reason it can not be hired comes last: the alert shows it.
-          tooltip: [u.name, `${S.gold}: ${price}`, S.hireSupply(u.supply ?? 0), why].filter(Boolean),
+          tooltip: [
+            u.name,
+            u.group === 'mercenary' ? ((u as { look?: string }).look ?? '') : '',
+            `${S.gold}: ${price}`,
+            S.hireSupply(u.supply ?? 0),
+            why,
+          ].filter(Boolean),
         };
       }),
     };
@@ -652,6 +661,9 @@ async function main(): Promise<void> {
     if (shop && !shop.pinned && near !== shop.index) shop = null;
     const def = shop ? shopDefOf(shop.index) : undefined;
     if (!shop || !def || !match) return game.setShop(null);
+    // A tavern: its mercenaries instead of items.
+    const mercenaries = (def as { mercenaries?: string[] }).mercenaries;
+    if (mercenaries?.length) return game.setShop({ ...hireView(null, { name: def.name, mercenaries }), inRange: near === shop.index });
     const gold = match.player.gold;
     game.setShop({
       name: def.name,
@@ -705,6 +717,13 @@ async function main(): Promise<void> {
       return match.buyUpgrade(item);
     }
     if (!match?.ownHero || !shop) return;
+    const tavern = shopDefOf(shop.index) as { name: string; mercenaries?: string[] } | undefined;
+    if (tavern?.mercenaries?.length) {
+      if (shopNear() !== shop.index) return game.alert(S.goToShop);
+      const view = hireView(null, { name: tavern.name, mercenaries: tavern.mercenaries }).items.find((v) => v.item === item);
+      if (view && !view.canAfford) return game.alert(view.tooltip[view.tooltip.length - 1] ?? S.noGold);
+      return match.hire(item);
+    }
     const d = ITEMS[item]!;
     if (shopNear() !== shop.index) return game.alert(S.goToShop);
     if (match.player.gold < (d.cost ?? Infinity)) return game.alert(S.noGold);

@@ -58,14 +58,33 @@ const started = Date.now();
 // This one works with Codex CLI 0.149. Override with CODEX_MODEL=... if needed.
 const model = process.env['CODEX_MODEL'] ?? 'gpt-5.6-sol';
 
+const images = (sheet.images ?? []).map((p) => join(ROOT, p));
+for (const p of images) if (!existsSync(p)) throw new Error(`Input image ${p} is missing`);
+const attached = images.length
+  ? ` The prompt refers to the ${images.length} attached image(s) in this order: ${sheet.images!.join(', ')}. Use them as described in the prompt.`
+  : '';
 const instruction =
-  `Use your image generation tool to create exactly one image from the prompt below. Do not change the prompt. ` +
+  `Use your image generation tool to create exactly one image from the prompt below. Do not change the prompt.${attached} ` +
   `Do not write any code. When the image is ready, save it as a PNG file at ${relative(ROOT, target)} and stop.\n\nPROMPT:\n${prompt}`;
 
 console.log(`Generating ${sheet.id} with Codex (this can take a few minutes)...`);
 const run = spawnSync(
   'codex',
-  ['exec', '-m', model, '--skip-git-repo-check', '-s', 'workspace-write', '-C', ROOT, '-o', join(ART_DIR, 'logs', `${sheet.id}.txt`), instruction],
+  [
+    'exec',
+    '-m',
+    model,
+    '--skip-git-repo-check',
+    '-s',
+    'workspace-write',
+    '-C',
+    ROOT,
+    '-o',
+    join(ART_DIR, 'logs', `${sheet.id}.txt`),
+    ...images.flatMap((p) => ['-i', p]),
+    '--',
+    instruction,
+  ],
   { stdio: ['ignore', 'inherit', 'inherit'], timeout: 15 * 60 * 1000 },
 );
 if (run.status !== 0) console.warn(`codex exited with status ${run.status}`);
@@ -92,6 +111,6 @@ if (!existsSync(target) || statSync(target).mtimeMs < started) {
 const seconds = Math.round((Date.now() - started) / 1000);
 appendFileSync(
   join(ART_DIR, 'generation-log.md'),
-  `\n## ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC — ${sheet.id}\n- Output: \`${relative(ROOT, target)}\` (${Math.round(statSync(target).size / 1024)} KB, ${seconds} s)\n- Prompt file: \`tools/art/prompts/${sheet.prompt}\`${sheet.promptVars ? ` with ${JSON.stringify(sheet.promptVars)}` : ''}\n`,
+  `\n## ${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC — ${sheet.id}\n- Output: \`${relative(ROOT, target)}\` (${Math.round(statSync(target).size / 1024)} KB, ${seconds} s)\n- Prompt file: \`tools/art/prompts/${sheet.prompt}\`${sheet.promptVars ? ` with ${JSON.stringify(sheet.promptVars)}` : ''}${sheet.images ? `\n- Input images: ${sheet.images.map((p) => `\`${p}\``).join(', ')}` : ''}\n`,
 );
 console.log(`Saved ${relative(ROOT, target)} in ${seconds} s. Next: pnpm art:process ${sheet.id}`);

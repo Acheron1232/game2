@@ -1,0 +1,50 @@
+{
+  "id": "shellback_beetle",
+  "triangles": 460,
+  "bones": 15,
+  "clips": [
+    {
+      "name": "walk",
+      "frames": 24,
+      "loop": true
+    },
+    {
+      "name": "idle",
+      "frames": 50,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 22,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 22,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 24,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 30,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 30,
+      "loop": false
+    }
+  ],
+  "height": 2.493,
+  "sockets": [],
+  "skin": "shellback_beetle_skin"
+}

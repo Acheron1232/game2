@@ -1,4 +1,5 @@
-// The hero hires soldiers with hero gold at its own production buildings (rules.json hire).
+// The hero hires soldiers with hero gold at its own production buildings, and mercenaries at the
+// map's taverns (rules.json hire, shops.json mercenaries).
 // They belong to the hero's faction (team color, Town Hall upgrades) but not to its army: no
 // supply, the faction brain never moves them. MatchSim.followHired makes them follow the hero.
 
@@ -11,12 +12,29 @@ import type { MatchSim, SimEntity } from '../match-sim';
 import type { FactionState } from './faction';
 
 export const HIRE = gameData.rules.hire;
+/** mercenaries step out this far from the tavern's center */
+const TAVERN_EXIT = 3;
 
-/** Hero gold for one soldier of this unit type (index in units.json), null = can not be hired. */
+/**
+ * Hero gold for one soldier of this unit type (index in units.json), null = can not be hired.
+ * Army units cost priceFactor x their kingdom cost; tavern mercenaries have their own price.
+ */
 export function hirePrice(unit: number): number | null {
   const def = gameData.units[unit];
-  if (!def || def.group !== 'faction' || def.id === 'worker' || !def.cost) return null;
+  if (!def?.cost || def.id === 'worker') return null;
+  if (def.group === 'mercenary') return def.cost.gold;
+  if (def.group !== 'faction') return null;
   return Math.round((def.cost.gold + def.cost.wood) * HIRE.priceFactor);
+}
+
+/** A map tavern that hires this mercenary, with the hero in its use range, or null. */
+export function tavernInRange(hero: SimEntity, unitId: string): { x: number; y: number } | null {
+  for (const s of gameData.map.shops) {
+    const shop = gameData.shops.find((d) => d.id === s.type) as { useRange: number; mercenaries?: string[] } | undefined;
+    if (!shop?.mercenaries?.includes(unitId)) continue;
+    if (Math.hypot(s.pos[0] - hero.mover.x, s.pos[1] - hero.mover.y) <= shop.useRange) return { x: s.pos[0], y: s.pos[1] };
+  }
+  return null;
 }
 
 /** Supply of the soldiers this hero has now. */
@@ -53,8 +71,12 @@ export function hireProblem(sim: MatchSim, hero: SimEntity, unit: number): strin
   if (price === null || !f || f.defeated) return 'unit';
   if (!hero.alive) return 'dead';
   const def = gameData.units[unit]!;
-  if (!hireBuildingInRange(sim, hero, f, def.id)) return 'range';
-  if (sim.factions!.missing(f, def.requires).length) return 'needs';
+  if (def.group === 'mercenary') {
+    if (!tavernInRange(hero, def.id)) return 'range';
+  } else {
+    if (!hireBuildingInRange(sim, hero, f, def.id)) return 'range';
+    if (sim.factions!.missing(f, def.requires).length) return 'needs';
+  }
   if (hiredSupply(sim, hero) + (def.supply ?? 0) > HIRE.maxSupply) return 'limit';
   if (hero.heroState!.gold < price) return 'gold';
   return null;
@@ -64,23 +86,21 @@ export function hireProblem(sim: MatchSim, hero: SimEntity, unit: number): strin
 export function hire(sim: MatchSim, hero: SimEntity, unit: number): SimEntity {
   const def = gameData.units[unit]!;
   const f = sim.factions!.get(hero.heroState!.slot)!;
-  const b = hireBuildingInRange(sim, hero, f, def.id)!;
+  // One of the faction's buildings, or a tavern (mercenaries).
+  const b = def.group === 'mercenary' ? null : hireBuildingInRange(sim, hero, f, def.id);
+  const at = b ? { x: b.mover.x, y: b.mover.y } : tavernInRange(hero, def.id)!;
+  const half = b ? b.building!.w / 2 + 1 : TAVERN_EXIT;
   hero.heroState!.gold -= hirePrice(unit)!;
   // Out on the hero's side of the building.
-  const dx = hero.mover.x - b.mover.x,
-    dy = hero.mover.y - b.mover.y;
+  const dx = hero.mover.x - at.x,
+    dy = hero.mover.y - at.y;
   const d = Math.hypot(dx, dy) || 1;
-  const p = nearestWalkable(
-    sim.nav,
-    b.mover.x + (dx / d) * (b.building!.w / 2 + 1),
-    b.mover.y + (dy / d) * (b.building!.h / 2 + 1),
-    10,
-  ) ?? [hero.mover.x, hero.mover.y];
+  const p = nearestWalkable(sim.nav, at.x + (dx / d) * half, at.y + (dy / d) * half, 10) ?? [hero.mover.x, hero.mover.y];
   const u = sim.spawn(entityTypeIndex(def.id), f.slot, f.team, f.color, p[0], p[1]);
   u.leaderId = hero.id;
   u.hired = true;
   f.hired.add(u.id);
   sim.applyFactionStats(u);
-  sim.events.push(EventType.Trained, u.id, b.id);
+  if (b) sim.events.push(EventType.Trained, u.id, b.id);
   return u;
 }

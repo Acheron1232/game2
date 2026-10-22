@@ -135,4 +135,34 @@ describe('hiring soldiers', () => {
     const upgrades = [0, 1].reduce((n, slot) => n + Object.keys(sim.factions!.get(slot)!.upgrades).length, 0);
     expect(upgrades, 'Town Hall upgrades bought by bots').toBeGreaterThan(0);
   }, 60_000);
+
+  it('a Cleric (army or hired) heals hurt allies, also after a fight', () => {
+    const { sim, f, hero, run } = setup();
+    const cleric = sim.spawn(entityTypeIndex('cleric'), 0, f.team, f.color, hero.mover.x + 1, hero.mover.y);
+    cleric.leaderId = hero.id;
+    cleric.hired = true;
+    f.hired.add(cleric.id);
+    const hurt = sim.spawn(entityTypeIndex('swordsman'), 0, f.team, f.color, hero.mover.x + 2, hero.mover.y + 1);
+    f.units.add(hurt.id);
+    hurt.hp = 100;
+    run(4);
+    expect(hurt.hp).toBeGreaterThan(130);
+  });
+
+  it('any hero hires mercenaries at a tavern: its own list, its own price, no kingdom tech', () => {
+    const { sim, f, hero, send, run } = setup();
+    const mossy = gameData.map.shops.find((s) => s.type === 'tavern_mossy')!;
+    hero.mover.x = mossy.pos[0] + 4;
+    hero.mover.y = mossy.pos[1];
+    const ratling = unit('ratling_cutthroat');
+    expect(hirePrice(ratling)).toBe(gameData.units[ratling]!.cost!.gold);
+    expect(hireProblem(sim, hero, unit('ember_wisp'))).toBe('range'); // the other tavern hires wisps
+    expect(hireProblem(sim, hero, SWORDSMAN)).toBe('range'); // no Barracks here
+    expect(send({ type: CommandType.Hire, unit: ratling })).toBe(true);
+    run(0.5);
+    const s = sim.get([...f.hired][0]!)!;
+    expect(s.type).toBe(entityTypeIndex('ratling_cutthroat'));
+    expect(s.leaderId).toBe(hero.id);
+    expect(near(s, mossy.pos[0], mossy.pos[1])).toBeLessThan(6);
+  });
 });

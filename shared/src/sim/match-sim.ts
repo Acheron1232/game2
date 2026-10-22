@@ -725,6 +725,8 @@ export class MatchSim {
         // A worker with a job only fights when it was ordered to (the brain decides).
         if (e.job && e.job.kind !== 'idle' && e.order === 'idle') continue;
         this.think(e);
+        // Army units and hired soldiers use their skills too (the Cleric's Mend).
+        if (!e.hero) monsterCast(this, e);
       } else monsterCast(this, e);
       if (e.targetId) this.engage(e);
     }

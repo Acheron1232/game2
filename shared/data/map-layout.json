@@ -1312,6 +1312,16 @@
       "pos": [128, 128]
     },
     {
+      "id": "tavern_mossy",
+      "type": "tavern_mossy",
+      "pos": [166.7, 194]
+    },
+    {
+      "id": "tavern_ember",
+      "type": "tavern_ember",
+      "pos": [89.3, 62]
+    },
+    {
       "id": "north_side_shop",
       "type": "side_shop",
       "sector": "north",

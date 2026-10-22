@@ -126,7 +126,7 @@
     "campChoice": "Pick the closest camp whose total monster level is at most 4 + 2 x hero level (4 + 3 x hero level when the hero has an ally hero near). Each base has only weak camps close by, so a stricter rule makes bots walk across the map. A hero that can not hit air (melee) skips camps with flying monsters (harpies).",
     "skills": "Learn the ultimate when allowed, then the main damage or control skill, then the least learned of the other two (so the third skill is not empty until level 8). Cast Q/W/E/R when they fit: damage and control on enemies, heals on hurt allies, self buffs when hit, Mana Mark on enemy heroes.",
     "shopping": "Buy healing potions when below 2. Then follow the hero's item list (heroBuild below) at the nearest shop when gold allows.",
-    "hiring": { "fromLevel": 3, "goldBuffer": 350, "maxTravel": 90, "notes": "Bot-slot heroes hire soldiers (rules.json hire) from level fromLevel when they keep goldBuffer gold after paying: the most expensive unit an own production building within maxTravel has, while the hire limit allows." },
+    "hiring": { "fromLevel": 3, "goldBuffer": 350, "maxTravel": 90, "notes": "Bot-slot heroes hire soldiers (rules.json hire) from level fromLevel when they keep goldBuffer gold after paying: the most expensive unit an own production building or a tavern within maxTravel has, while the hire limit allows." },
     "upgrades": "Spend 30% of gold above 300 on Town Hall upgrades, in this order: iron_plates, sharper_blades, better_arrows, rich_veins, stone_walls.",
     "heroBuild": {
       "blood_witch": ["sage_cloak", "mana_stone", "boots_of_haste", "royal_circlet"],
