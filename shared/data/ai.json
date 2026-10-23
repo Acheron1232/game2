@@ -331,6 +331,18 @@
         "build_up": 75
       }
     },
+    "defenses": {
+      "notes": [
+        "Free play: from startMinute (Stronghold needed) one more defense structure every everyMin minutes, plus the personality's extra ones.",
+        "Each AI builds them in its own order (personality defenseOrder); the type with the fewest copies comes next. A copy that costs more than maxPriceFactor x its first price (rules.json buildingPriceRise) is skipped.",
+        "front: placed at the base edge toward the map center like towers; the rest stand among the other buildings."
+      ],
+      "list": ["chain_spire", "frost_obelisk", "bell_ward", "pitch_basin", "wind_totem", "shield_pylon", "rally_bastion", "repair_post"],
+      "front": ["chain_spire", "frost_obelisk", "bell_ward", "pitch_basin", "wind_totem"],
+      "startMinute": 12,
+      "everyMin": 5,
+      "maxPriceFactor": 2
+    },
     "fortifications": {
       "startMinute": 6,
       "everySec": 20,

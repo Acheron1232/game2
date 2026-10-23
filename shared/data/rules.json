@@ -129,7 +129,15 @@
       "archery_range": { "freeCount": 2, "pctPerExtra": 35 },
       "chapel": { "freeCount": 1, "pctPerExtra": 35 },
       "workshop": { "freeCount": 1, "pctPerExtra": 35 },
-      "hawk_roost": { "freeCount": 1, "pctPerExtra": 35 }
+      "hawk_roost": { "freeCount": 1, "pctPerExtra": 35 },
+      "chain_spire": { "freeCount": 1, "pctPerExtra": 40 },
+      "frost_obelisk": { "freeCount": 1, "pctPerExtra": 40 },
+      "bell_ward": { "freeCount": 1, "pctPerExtra": 40 },
+      "pitch_basin": { "freeCount": 2, "pctPerExtra": 40 },
+      "wind_totem": { "freeCount": 1, "pctPerExtra": 40 },
+      "shield_pylon": { "freeCount": 1, "pctPerExtra": 40 },
+      "rally_bastion": { "freeCount": 1, "pctPerExtra": 40 },
+      "repair_post": { "freeCount": 1, "pctPerExtra": 40 }
     }
   },
 

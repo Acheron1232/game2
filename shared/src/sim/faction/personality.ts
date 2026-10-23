@@ -51,6 +51,10 @@ export interface Personality {
   secondExpandMinute: number | null;
   /** multiplies the unit mix shares, by unit id */
   mixScale: Record<string, number>;
+  /** the order this AI builds defense structures in (ai.json defenses.list, shuffled) */
+  defenseOrder: string[];
+  /** defense structures on top of the timed ones */
+  extraDefenses: number;
   buildOrder: BuildStep[];
 }
 
@@ -82,6 +86,8 @@ export function makePersonality(seed: number, slot: number, buildOrder: readonly
     expandShift: rng.int(-1, 2),
     secondExpandMinute: rng.next() < 0.3 ? rng.int(18, 24) : null,
     mixScale: {},
+    defenseOrder: [],
+    extraDefenses: 0,
     buildOrder: buildOrder.map((s) => ({ ...s })),
   };
   for (const u of gameData.units) p.mixScale[u.id] = range(0.75, 1.3);
@@ -119,6 +125,9 @@ export function makePersonality(seed: number, slot: number, buildOrder: readonly
   // Small changes for everyone: forge or tower first, an early second house.
   if (rng.next() < 0.5) swap(p.buildOrder, 'watchtower', 'forge');
   if (rng.next() < 0.3) after(p.buildOrder, 'barracks', { do: 'build', what: 'house' });
+  // Defense structures (drawn last, so the numbers above stay the same for a seed).
+  p.defenseOrder = rng.shuffle([...(gameData.ai.faction as unknown as { defenses: { list: string[] } }).defenses.list]);
+  p.extraDefenses = style === 'turtle' ? rng.int(2, 3) : style === 'rusher' ? 0 : rng.int(0, 1);
   return p;
 }
 

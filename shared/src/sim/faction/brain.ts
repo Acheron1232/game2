@@ -21,6 +21,14 @@ import { factionRules, type ArmyRules, type DifficultyRules, type MixTier, type 
 
 type Step = BuildStep;
 
+interface DefenseRules {
+  list: string[];
+  front: string[];
+  startMinute: number;
+  everyMin: number;
+  maxPriceFactor: number;
+}
+
 const AI = gameData.ai.faction as unknown as {
   buildOrder: Step[];
   attack: { gatherPointDistance: number; waitForStragglersSec: number; retargetEverySec: number; creepCampsWhenIdle: boolean };
@@ -29,6 +37,11 @@ const HERO_RULES = gameData.ai.faction.factionHero;
 const ORDERS = gameData.ai.faction.orders;
 
 const COLOR_NAMES = ['Red', 'Blue', 'Teal', 'Purple'];
+/** a unit this much over its mix share is not trained (once the army has MIX_FREE_SUPPLY) */
+const OVER_SHARE = 0.03;
+const MIX_FREE_SUPPLY = 12;
+const DEFENSES = (gameData.ai.faction as unknown as { defenses: DefenseRules }).defenses;
+const FRONT_DEFENSES = new Set(DEFENSES.front);
 const PRODUCTION = new Set(gameData.buildings.buildings.filter((b) => b.trains.some((id) => id !== 'worker')).map((b) => b.id));
 const WOOD_SHARE = 0.3;
 /** wood is plenty above this (and more than gold): fewer woodcutters */
@@ -498,7 +511,7 @@ export class FactionBrain {
     const hx = hall?.alive ? hall.mover.x : start.townHall[0],
       hy = hall?.alive ? hall.mover.y : start.townHall[1];
     // Towers search from the build area each time: they stand at its edge, not far out.
-    const tower = def.id === 'watchtower';
+    const tower = def.id === 'watchtower' || FRONT_DEFENSES.has(def.id);
     for (let grow = tower ? 0 : this.baseGrow; grow <= BASE_GROW_MAX; grow += BASE_GROW_STEP) {
       const [cx, cy] = start.buildArea.center;
       const spot = this.spotAround(def, hx, hy, cx, cy, start.buildArea.radius + grow, grow > 0);
@@ -524,7 +537,8 @@ export class FactionBrain {
     const p = this.personality;
     const mine = this.fs.nearestMine(hx, hy);
     const c = this.sim.size / 2;
-    const tower = def.id === 'watchtower';
+    // Towers and front defenses (spires, obelisks, bells...) stand at the edge toward the center.
+    const tower = def.id === 'watchtower' || FRONT_DEFENSES.has(def.id);
     let score: (x: number, y: number) => number;
     if (tower) {
       // Toward the map center (turned a little by the personality), at the edge, apart.
@@ -752,11 +766,40 @@ export class FactionBrain {
       if (this.towersOf(h) >= p.towersPerExpansion) continue;
       if (this.buildTowerAt(h)) return;
     }
+    const defense = this.nextDefense(minute);
+    if (defense && this.tryBuild(defense, undefined, false)) return;
     // More production when money piles up.
     if (this.productionCount() < this.rules.maxProductionBuildings + p.extraProduction && f.gold > 500) {
       const next = this.nextProduction();
       if (next) this.tryBuild(next);
     }
+  }
+
+  /**
+   * The defense structure to build next (ai.json defenses): one more every everyMin minutes from
+   * startMinute, in this AI's own order, the type with the fewest copies first. Null when there
+   * are enough, or the next copy got too expensive (prices rise per copy).
+   */
+  private nextDefense(minute: number): string | null {
+    const f = this.f;
+    if (f.tier < 2 || minute < DEFENSES.startMinute) return null;
+    const want = 1 + Math.floor((minute - DEFENSES.startMinute) / DEFENSES.everyMin) + this.personality.extraDefenses;
+    let have = 0;
+    for (const id of DEFENSES.list) have += this.count(id);
+    if (have >= want) return null;
+    let best: string | null = null,
+      fewest = Infinity;
+    for (const id of this.personality.defenseOrder) {
+      const def = buildingDef(id);
+      if (!def || this.fs.missing(f, def.requires).length) continue;
+      if (this.fs.buildCost(f, def).gold > def.cost.gold * DEFENSES.maxPriceFactor) continue;
+      const n = this.count(id);
+      if (n < fewest) {
+        fewest = n;
+        best = id;
+      }
+    }
+    return best;
   }
 
   /** The next tower's price is within this personality's limit (and affordable when it has risen). */
@@ -926,33 +969,60 @@ export class FactionBrain {
         total += s;
       }
     }
+    // Every unit our idle production buildings can train, most wanted first (the share of the
+    // mix it misses). One pass for all buildings, so an Archery Range does not keep adding
+    // archers the army has enough of while the money for a golem or a hawk rider never comes.
+    const picks: { b: SimEntity; id: string; gap: number }[] = [];
     for (const bid of f.buildings) {
       const b = this.sim.get(bid);
       const bs = b?.building;
       if (!b?.alive || !bs?.done || !bs.def || bs.queue.length >= 2 || !PRODUCTION.has(bs.def.id)) continue;
-      // The unit the mix misses most that we can pay now (do not spend what a waiting build step needs).
-      let pick = '',
-        bestGap = -Infinity;
       for (const id of bs.def.trains) {
         const def = unitDef(id);
         if (!def || !(mix[id] ?? 0) || this.fs.missing(f, def.requires).length) continue;
-        const g = def.cost?.gold ?? 0,
-          w = def.cost?.wood ?? 0;
-        if ((g > 0 && f.gold - f.earmarkedGold - g < this.reserveGold) || (w > 0 && f.wood - w < this.reserveWood)) continue;
-        const gap = (mix[id] ?? 0) - (total ? (have.get(id) ?? 0) / total : 0);
-        if (gap > bestGap) {
-          bestGap = gap;
-          pick = id;
+        picks.push({ b, id, gap: (mix[id] ?? 0) - (total ? (have.get(id) ?? 0) / total : 0) });
+      }
+    }
+    picks.sort((a, b) => b.gap - a.gap);
+    let reserveGold = this.reserveGold,
+      reserveWood = this.reserveWood;
+    let saved = false,
+      trainedNow = 0;
+    const tryTrain = (p: { b: SimEntity; id: string }, strict: boolean): void => {
+      if (p.b.building!.queue.length >= 2) return;
+      // Over its share: only while the army is still small (any soldier helps then).
+      const gap = (mix[p.id] ?? 0) - (total ? (have.get(p.id) ?? 0) / total : 0);
+      if (strict && gap < -OVER_SHARE && total >= MIX_FREE_SUPPLY) return;
+      const def = unitDef(p.id)!;
+      const g = def.cost?.gold ?? 0,
+        w = def.cost?.wood ?? 0;
+      const noGold = g > 0 && f.gold - f.earmarkedGold - g < reserveGold,
+        noWood = w > 0 && f.wood - w < reserveWood;
+      if (noGold || noWood) {
+        // The most wanted unit we can not pay yet: keep what it lacks (only that), so cheaper
+        // units with a smaller gap do not spend it.
+        if (strict && !saved && gap > 0) {
+          saved = true;
+          if (noGold) reserveGold += g;
+          if (noWood) reserveWood += w;
         }
+        return;
       }
-      if (!pick) continue;
-      const def = unitDef(pick)!;
-      if (this.fs.train(f, b, pick)) {
-        this.trained.set(pick, (this.trained.get(pick) ?? 0) + 1);
-        const s = def.supply ?? 0;
-        have.set(pick, (have.get(pick) ?? 0) + s);
-        total += s;
+      if (this.fs.train(f, p.b, p.id)) {
+        trainedNow++;
+        this.trained.set(p.id, (this.trained.get(p.id) ?? 0) + 1);
+        const sup = def.supply ?? 0;
+        have.set(p.id, (have.get(p.id) ?? 0) + sup);
+        total += sup;
       }
+    };
+    for (const p of picks) tryTrain(p, true);
+    // Nothing fit the mix but money lies around (for example plenty of gold and no wood for the
+    // wanted units): train what we can pay, so the army never stops.
+    if (!trainedNow && f.gold - f.earmarkedGold > RICH_GOLD + this.reserveGold) {
+      reserveGold = this.reserveGold;
+      reserveWood = this.reserveWood;
+      for (const p of picks) tryTrain(p, false);
     }
   }
 
