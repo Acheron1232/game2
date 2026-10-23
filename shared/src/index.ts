@@ -30,6 +30,8 @@ export * from './sim/faction/army';
 export * from './sim/faction/brain';
 export * from './sim/faction/hall-shop';
 export * from './sim/faction/hire';
+export * from './sim/faction/orders';
+export * from './sim/faction/tuning';
 export * from './sim/sight';
 export * from './sim/summary';
 export * from './sim/hero-bot';

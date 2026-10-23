@@ -24,7 +24,7 @@ export const EventType = {
   ChannelEnd: 10,
   /** a = caster, b/value = end point (quantized), kind = ability index; speed is in the data */
   LineShot: 11,
-  /** A paid, completed cast. Same target as Cast; kind packs index (5 bits), level-1 (2), point (1). */
+  /** A paid, completed cast. Same target as Cast; kind packs index (7 bits), level-1 (2), point (1). */
   AbilityEffect: 12,
   /** a = tree index: it fell (its walk cells open) */
   TreeGone: 13,
@@ -47,8 +47,11 @@ export const EventType = {
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
-/** All 32 current hero abilities fit in five bits; levels use the next two bits. */
-export const abilityFxKind = (index: number, level: number, point = false) => index | ((level - 1) << 5) | (point ? 128 : 0);
+/** Keep ability indices separate from levels as the roster grows. Sent as u16. */
+export const abilityFxKind = (index: number, level: number, point = false) => index | ((level - 1) << 7) | (point ? 512 : 0);
+export const abilityFxIndex = (kind: number) => kind & 127;
+export const abilityFxLevel = (kind: number) => ((kind >> 7) & 3) + 1;
+export const abilityFxPoint = (kind: number) => (kind & 512) !== 0;
 
 export const DamageKind = {
   Attack: 0,

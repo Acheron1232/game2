@@ -8,11 +8,16 @@ import {
   ABILITIES,
   abilityIndex,
   buildMatchNav,
+  canLearn,
   CommandType,
   entityTypeIndex,
   gameData,
   EventType,
+  lv,
   abilityFxKind,
+  abilityFxIndex,
+  abilityFxLevel,
+  abilityFxPoint,
   abilityTargetAllowed,
   MatchSim,
   NEUTRAL,
@@ -22,6 +27,7 @@ import {
   TICK_RATE,
   UnitState,
   unitStateOf,
+  xpForLevel,
   type CastTarget,
   type SimEntity,
 } from '../src/index';
@@ -29,7 +35,7 @@ import {
 const nav = buildMatchNav(parseTerrain(readFileSync(join(__dirname, '..', 'data', 'map-terrain.bin'))), gameData.map);
 const ab = (id: string) => ABILITIES[abilityIndex(id)]!;
 
-/** A hero at level 10 with every ability learned, on open ground, plus helpers. */
+/** A max-level hero with every ability learned, on open ground, plus helpers. */
 function setup(heroId: string, enemyHero = false) {
   const slots = [{ index: 0, heroType: entityTypeIndex(heroId), team: 1, color: 0, start: 0 }];
   if (enemyHero) slots.push({ index: 1, heroType: entityTypeIndex('stone_golem'), team: 2, color: 1, start: 1 });
@@ -40,7 +46,7 @@ function setup(heroId: string, enemyHero = false) {
   hero.mover.y = 222;
   hero.mover.facing = 0;
   sim.addXp(hero, 99999);
-  for (let s = 0; s < 4; s++) for (let i = 0; i < 3; i++) sim.queueCommand(0, 100 + s * 3 + i, { type: CommandType.Learn, slot: s });
+  for (let s = 0; s < 4; s++) for (let i = 0; i < 4; i++) sim.queueCommand(0, 100 + s * 4 + i, { type: CommandType.Learn, slot: s });
   sim.step();
   hero.mana = hero.stats.maxMana;
   let seq = 1000;
@@ -118,10 +124,39 @@ describe('learning', () => {
     expect(hero.heroState!.abilityLevels).toEqual([1, 1, 0, 0]);
   });
 
-  it('level 10 gives everything', () => {
+  it('max level gives everything, with one point left over', () => {
     const { hero } = setup('forest_elf');
-    expect(hero.heroState!.abilityLevels).toEqual([3, 3, 3, 1]);
-    expect(hero.heroState!.skillPoints).toBe(0);
+    expect(hero.heroState!.level).toBe(15);
+    expect(hero.heroState!.abilityLevels).toEqual([4, 4, 4, 2]);
+    expect(hero.heroState!.skillPoints).toBe(1);
+  });
+
+  it('basic level 4 needs hero level 7, ultimate level 2 needs hero level 11', () => {
+    const sim = new MatchSim(
+      { seed: 1, noCamps: true, slots: [{ index: 0, heroType: entityTypeIndex('staff_warrior'), team: 1, color: 0, start: 0 }] },
+      nav,
+    );
+    const hero = sim.heroes[0]!;
+    const hs = hero.heroState!;
+    let seq = 0;
+    const learn = (slot: number, times = 1) => {
+      for (let i = 0; i < times; i++) sim.queueCommand(0, ++seq, { type: CommandType.Learn, slot });
+      sim.step();
+    };
+    sim.addXp(hero, xpForLevel(6));
+    learn(0, 4);
+    learn(3, 2);
+    expect(hs.abilityLevels).toEqual([3, 0, 0, 1]);
+    sim.addXp(hero, xpForLevel(7) - hs.xp);
+    learn(0);
+    expect(hs.abilityLevels[0]).toBe(4);
+    sim.addXp(hero, xpForLevel(10) - hs.xp);
+    learn(3);
+    expect(hs.abilityLevels[3]).toBe(1);
+    sim.addXp(hero, xpForLevel(11) - hs.xp);
+    learn(3, 2);
+    expect(hs.abilityLevels[3]).toBe(2);
+    expect(canLearn(3, 2, 2, 15)).toBe(false);
   });
 });
 
@@ -159,14 +194,14 @@ describe('server refuses casts that should not happen', () => {
   });
 
   it('packs every current ability and learned level without losing its point flag', () => {
-    expect(ABILITIES.length).toBeLessThanOrEqual(32);
+    expect(ABILITIES.length).toBeLessThanOrEqual(127);
     for (const [index, ability] of ABILITIES.entries()) {
       for (let level = 1; level <= ability.maxLevel; level++) {
         for (const point of [false, true]) {
           const kind = abilityFxKind(index, level, point);
-          expect(kind & 31).toBe(index);
-          expect(((kind >> 5) & 3) + 1).toBe(level);
-          expect(!!(kind & 128)).toBe(point);
+          expect(abilityFxIndex(kind)).toBe(index);
+          expect(abilityFxLevel(kind)).toBe(level);
+          expect(abilityFxPoint(kind)).toBe(point);
         }
       }
     }
@@ -196,7 +231,7 @@ describe('server refuses casts that should not happen', () => {
   it('Blood Bolt can not kill the witch', () => {
     const { sim, hero, dummy, unit } = setup('blood_witch');
     const ogre = dummy(4, 0);
-    hero.hp = param(ab('blood_bolt'), 'healthCost', 3);
+    hero.hp = param(ab('blood_bolt'), 'healthCost', 4);
     expect(sim.castCheck(0, 0, unit(ogre))).toBe('health');
   });
 
@@ -207,7 +242,7 @@ describe('server refuses casts that should not happen', () => {
     run(0.6);
     expect(lost(ogre)).toBe(0);
     run(4);
-    expect(lost(ogre)).toBe(param(ab('boulder_toss'), 'damage', 3));
+    expect(lost(ogre)).toBe(param(ab('boulder_toss'), 'damage', 4));
     expect(Math.hypot(hero.mover.x - ogre.mover.x, hero.mover.y - ogre.mover.y)).toBeLessThan(7 + 2);
   });
 
@@ -226,21 +261,21 @@ describe('ability numbers', () => {
     const hp0 = hero.hp;
     cast(0, unit(o1));
     run(1.5);
-    expect(lost(o1)).toBe(param(ab('blood_bolt'), 'damage', 3));
+    expect(lost(o1)).toBe(param(ab('blood_bolt'), 'damage', 4));
     // A little regen comes back during the cast.
-    expect(hp0 - hero.hp).toBeCloseTo(param(ab('blood_bolt'), 'healthCost', 3), -1);
+    expect(hp0 - hero.hp).toBeCloseTo(param(ab('blood_bolt'), 'healthCost', 4), -1);
     const o2 = dummy(-5, 0);
     const speed = o2.stats.moveSpeed;
     cast(1, unit(o2));
     run(0.5);
-    expect(o2.stats.moveSpeed).toBeCloseTo(speed * (1 - param(ab('bleed'), 'slowPct', 3) / 100), 5);
+    expect(o2.stats.moveSpeed).toBeCloseTo(speed * (1 - param(ab('bleed'), 'slowPct', 4) / 100), 5);
     run(6);
-    expect(lost(o2)).toBeCloseTo(param(ab('bleed'), 'damagePerSec', 3) * param(ab('bleed'), 'duration', 3), -1);
+    expect(lost(o2)).toBeCloseTo(param(ab('bleed'), 'damagePerSec', 4) * param(ab('bleed'), 'duration', 4), -1);
     const o3 = dummy(0, -6);
     hero.hp = 200;
     cast(3, at(0, -6));
     run(6);
-    expect(lost(o3)).toBeCloseTo(60 * 5, -1);
+    expect(lost(o3)).toBeCloseTo(param(ab('blood_moon'), 'damagePerSec', 2) * param(ab('blood_moon'), 'duration', 2), -1);
     expect(hero.hp).toBeGreaterThan(200 + 100);
   });
 
@@ -250,19 +285,19 @@ describe('ability numbers', () => {
     const x0 = o.mover.x;
     cast(0, none);
     run(1);
-    expect(lost(o)).toBe(param(ab('sweep'), 'damage', 3));
+    expect(lost(o)).toBe(param(ab('sweep'), 'damage', 4));
     expect(o.mover.x - x0).toBeGreaterThan(1.5);
     cast(1, none);
     run(0.2);
     const before = hero.hp;
     sim.damage(hero, 100, { id: o.id, owner: NEUTRAL, team: 0 }, 0);
-    expect(before - hero.hp).toBeCloseTo(100 * (1 - param(ab('iron_stance'), 'damageBlockPct', 3) / 100), 3);
+    expect(before - hero.hp).toBeCloseTo(100 * (1 - param(ab('iron_stance'), 'damageBlockPct', 4) / 100), 3);
     run(4);
     const far = dummy(7, 0);
     const spot = at(7, 0);
     cast(3, spot);
     run(1.2);
-    expect(lost(far)).toBe(200);
+    expect(lost(far)).toBe(param(ab('sky_pillar'), 'damage', 2));
     expect(far.buffs.some((b) => b.stun)).toBe(true);
     expect(Math.hypot(hero.mover.x - spot.x, hero.mover.y - spot.y)).toBeLessThan(0.5);
     run(2.5);
@@ -276,19 +311,23 @@ describe('ability numbers', () => {
       back = dummy(0, -4);
     cast(0, at(0, 5));
     run(1);
-    expect(lost(front)).toBe(param(ab('fire_breath'), 'damage', 3));
+    expect(lost(front)).toBe(param(ab('fire_breath'), 'damage', 4));
     expect(lost(back)).toBe(0);
     // Dragon Scales: +6 armor at level 3, less spell damage.
-    expect(hero.stats.armor - hero.base.armor).toBeCloseTo(param(ab('dragon_scales'), 'bonusArmor', 3), 5);
+    expect(hero.stats.armor - hero.base.armor).toBeCloseTo(param(ab('dragon_scales'), 'bonusArmor', 4), 5);
     const near = dummy(2, 0);
     cast(1, none);
     run(0.5);
-    expect(lost(near)).toBe(param(ab('wing_gust'), 'damage', 3));
+    expect(lost(near)).toBe(param(ab('wing_gust'), 'damage', 4));
     run(3);
     const d = dummy(9, 0);
     cast(3, at(9, 0));
     run(6);
-    expect(lost(d)).toBeCloseTo(120 + 40 * 4, -1);
+    expect(lost(d)).toBeCloseTo(
+      param(ab('inferno_dive'), 'impactDamage', 2) +
+        param(ab('inferno_dive'), 'burnDamagePerSec', 2) * param(ab('inferno_dive'), 'burnDuration', 2),
+      -1,
+    );
     void sim;
   });
 
@@ -297,25 +336,25 @@ describe('ability numbers', () => {
     const o = dummy(4, 0);
     cast(0, unit(o));
     run(1.2);
-    expect(lost(o)).toBe(175);
+    expect(lost(o)).toBe(param(ab('boulder_toss'), 'damage', 4));
     const stun = o.buffs.find((b) => b.stun)!;
     expect(stun).toBeTruthy();
     cast(1, none);
     run(0.2);
     const before = hero.hp;
     sim.damage(hero, 100, { id: o.id, owner: NEUTRAL, team: 0 }, 0);
-    expect(before - hero.hp).toBeCloseTo(60, 3);
+    expect(before - hero.hp).toBeCloseTo(100 * (1 - param(ab('stone_skin'), 'damageReductionPct', 4) / 100), 3);
     const t = dummy(-2, 0);
     const sp = t.stats.moveSpeed;
     cast(2, none);
     run(0.6);
-    expect(lost(t)).toBe(70);
-    expect(t.stats.moveSpeed).toBeCloseTo(sp * 0.5, 5);
+    expect(lost(t)).toBe(param(ab('tremor'), 'damage', 4));
+    expect(t.stats.moveSpeed).toBeCloseTo(sp * (1 - param(ab('tremor'), 'slowPct', 4) / 100), 5);
     const hp1 = hero.stats.maxHp;
     hero.mana = hero.stats.maxMana;
     cast(3, none);
     run(1);
-    expect(hero.stats.maxHp).toBeCloseTo(hp1 * 1.5, 3);
+    expect(hero.stats.maxHp).toBeCloseTo(hp1 * (1 + param(ab('mountain_form'), 'bonusMaxHpPct', 2) / 100), 3);
     expect(t.buffs.some((b) => b.tauntId === hero.id)).toBe(true);
   });
 
@@ -324,10 +363,10 @@ describe('ability numbers', () => {
     hero.hp = 100;
     cast(0, unit(hero));
     run(0.6);
-    expect(hero.hp).toBeCloseTo(100 + 280, -1);
+    expect(hero.hp).toBeCloseTo(100 + param(ab('radiant_touch'), 'heal', 4), -1);
     cast(1, unit(hero));
     run(0.5);
-    expect(hero.stats.armor - hero.base.armor).toBeCloseTo(8, 5);
+    expect(hero.stats.armor - hero.base.armor).toBeCloseTo(param(ab('blessing'), 'bonusArmor', 4), 5);
     expect(hero.stats.moveSpeed).toBeCloseTo(hero.base.moveSpeed * 1.15, 5);
     hero.hp = 100;
     cast(2, at(0, 0));
@@ -340,7 +379,7 @@ describe('ability numbers', () => {
     sim.damage(hero, 99999, { id: o.id, owner: NEUTRAL, team: 0 }, 0);
     expect(hero.alive).toBe(true);
     expect(hero.hp).toBe(1);
-    run(4.5);
+    run(param(ab('dawn_shield'), 'duration', 2) + 0.5);
     expect(hero.hp).toBeGreaterThan(290);
   });
 
@@ -350,23 +389,23 @@ describe('ability numbers', () => {
       second = dummy(7, 0);
     cast(0, at(10, 0));
     run(1.2);
-    expect(lost(first)).toBe(210);
+    expect(lost(first)).toBe(param(ab('arcane_arrow'), 'damage', 4));
     expect(lost(second)).toBe(0);
     const x0 = hero.mover.x;
     cast(1, at(-30, 0));
     run(0.3);
-    expect(x0 - hero.mover.x).toBeCloseTo(12, 0);
+    expect(x0 - hero.mover.x).toBeCloseTo(lv(ab('blink').castRange, 4), 0);
     const m = dummy(3, 0);
     cast(2, unit(m));
     run(0.5);
     expect(m.buffs.some((b) => b.reveal)).toBe(true);
-    // Marked: spell damage +24%.
+    // Marked: more spell damage taken.
     sim.spellHit(m, 100, hero);
-    expect(lost(m)).toBeCloseTo(124, 3);
+    expect(lost(m)).toBeCloseTo(100 + param(ab('mana_mark'), 'bonusSpellDamagePct', 4), 3);
     const s = dummy(-2, 0);
     cast(3, at(-2, 0));
     run(5);
-    expect(lost(s)).toBeCloseTo(8 * 40, 0);
+    expect(lost(s)).toBeCloseTo(param(ab('arcane_storm'), 'waves', 2) * param(ab('arcane_storm'), 'damagePerWave', 2), 0);
   });
 
   it('Centaur Raider', () => {
@@ -375,23 +414,23 @@ describe('ability numbers', () => {
       b = dummy(6, 0);
     cast(0, at(9, 0));
     run(1);
-    expect(lost(a)).toBe(180);
-    expect(lost(b)).toBe(180);
+    expect(lost(a)).toBe(param(ab('spear_throw'), 'damage', 4));
+    expect(lost(b)).toBe(param(ab('spear_throw'), 'damage', 4));
     const c = dummy(-2, 0);
     cast(1, none);
     run(0.5);
-    expect(lost(c)).toBe(110);
+    expect(lost(c)).toBe(param(ab('trample'), 'damage', 4));
     expect(c.buffs.some((x) => x.stun)).toBe(true);
     // Herd Call aura on itself: faster.
     run(1);
-    expect(hero.stats.moveSpeed).toBeCloseTo(hero.base.moveSpeed * 1.12, 5);
+    expect(hero.stats.moveSpeed).toBeCloseTo(hero.base.moveSpeed * (1 + param(ab('herd_call'), 'moveSpeedPct', 4) / 100), 5);
     const d = dummy(0, 8);
     const y0 = hero.mover.y;
     hero.mana = hero.stats.maxMana;
     cast(3, at(0, 14));
     run(2.5);
     expect(hero.mover.y - y0).toBeGreaterThan(10);
-    expect(lost(d)).toBe(150);
+    expect(lost(d)).toBe(param(ab('great_charge'), 'damage', 2));
     void sim;
   });
 
@@ -402,19 +441,19 @@ describe('ability numbers', () => {
     run(0.5);
     expect(o.buffs.some((b) => b.root)).toBe(true);
     run(3.5);
-    expect(lost(o)).toBeCloseTo(15 * 3, -1);
+    expect(lost(o)).toBeCloseTo(15 * Math.ceil(param(ab('vine_snare'), 'rootDuration', 4)), -1);
     const n = sim.entities.length;
     cast(1, at(2, 2));
     run(1);
     const spirits = sim.entities.slice(n).filter((e) => e.leaderId === hero.id);
     expect(spirits.length).toBe(2);
-    expect(spirits[0]!.stats.maxHp).toBe(800);
-    expect(spirits[0]!.stats.damageMin).toBe(35);
-    expect(hero.stats.hpRegen - hero.base.hpRegen).toBeCloseTo(4.5, 5);
+    expect(spirits[0]!.stats.maxHp).toBe(param(ab('forest_spirit'), 'summonHp', 4));
+    expect(spirits[0]!.stats.damageMin).toBe(param(ab('forest_spirit'), 'summonDamage', 4));
+    expect(hero.stats.hpRegen - hero.base.hpRegen).toBeCloseTo(param(ab('natures_gift'), 'bonusHpRegen', 4), 5);
     const far = dummy(-8, 0);
     cast(3, none);
     run(1);
-    expect(lost(far)).toBe(150);
+    expect(lost(far)).toBe(param(ab('wrath_of_the_grove'), 'damage', 2));
     expect(far.buffs.some((b) => b.root)).toBe(true);
   });
 

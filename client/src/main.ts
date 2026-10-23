@@ -7,6 +7,7 @@ import './styles.css';
 import './ui-skin.css';
 import {
   BuffFlag,
+  abilityMechanic,
   canStore,
   ENTITY_TYPES,
   footprintOf,
@@ -21,9 +22,11 @@ import {
   isHeroType,
   itemIndex,
   ITEMS,
+  buyPlan,
+  canStoreAfter,
+  heroLevelForAbility,
   lv,
   MAX_LEVEL,
-  newCharges,
   NoticeCode,
   parseTerrain,
   sellValue,
@@ -42,6 +45,9 @@ import {
   hirePrice,
   itemBonus,
   type HeroDef,
+  FACTION_HERO_SLOT,
+  KINGDOM_ORDERS,
+  ORDER_NAMES,
 } from '@game/shared';
 import { AimIndicators, type AimShape } from './render/aim-indicators';
 import terrainUrl from '@game/shared/data/map-terrain.bin?url';
@@ -72,11 +78,13 @@ import {
   showFatalError,
   toggleFullScreen,
   type ItemDrop,
+  type OrderEnemy,
   type ShopView,
   type TeamHeroView,
 } from './ui/screens';
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
+import { inspectAbilities } from './ui/inspect';
 import { isTextEntry } from './render/rts-camera';
 import { abilityBlockReason } from './ui/ability-feedback';
 import { createGpuHint } from './ui/gpu-hint';
@@ -131,11 +139,17 @@ async function main(): Promise<void> {
   let scoresShown = false;
   let showScores = () => {};
   let lastBaseAlert = 0;
+  // Kingdom orders: kingdoms out of the game, and the last order seen (to tell who changed it).
+  const defeatedKingdoms = new Set<number>();
+  let lastOrderKey = '';
   const settings = loadSettings();
   if (params.has('fps')) settings.fpsLimit = normalizeFps(Number(params.get('fps')), settings.fpsLimit);
   /** Set once the engine and the world exist (applies graphics, camera and HUD settings). */
   let applySettings = () => {};
   let selected: NetEntity | null = null;
+  /** the mouse over the game view (client px), for the hover card */
+  const pointer = { x: 0, y: 0, inCanvas: false };
+  let hoverLines: string[] | null = null;
   const menu = createMenuScreen({
     getName: () => playerName,
     setName: (n) => {
@@ -150,6 +164,7 @@ async function main(): Promise<void> {
   const lobby = createLobbyScreen((msg) => net.send(msg));
   // Set up below, once the 3D world exists.
   let useAbility: (slot: number) => void = () => {};
+  let useUnitSkill: (index: number) => void = () => {};
   let useItem: (slot: number) => void = () => {};
   let buyItem: (item: number) => void = () => {};
   let dragItem: (slot: number, to: ItemDrop) => void = () => {};
@@ -160,6 +175,8 @@ async function main(): Promise<void> {
     settings: () => openSettings(),
     chat: (text) => net.send({ type: 'chat', text }),
     captureMouse: () => capturedCursor.toggle(),
+    kingdomOrder: (order, target) => match?.kingdomOrder(order, target),
+    useUnitSkill: (index) => useUnitSkill(index),
     showBase: () => {
       const hall = match && [...match.entities.values()].find((e) => e.owner === match!.owner && HALL_TYPES.has(e.type) && e.unit);
       if (hall?.unit) {
@@ -242,8 +259,12 @@ async function main(): Promise<void> {
     m.onNotice = (code) => game.alert(code === NoticeCode.AllyFull ? S.allyFull : S.inventoryFull);
     game.setResult(null);
     game.setFaction(null);
+    game.setOrders(null);
+    defeatedKingdoms.clear();
+    lastOrderKey = '';
     const nameOf = (slot: number) => m.info.slots.find((s) => s.index === slot)?.name ?? '';
     m.onDefeated = (slot) => {
+      defeatedKingdoms.add(slot);
       if (slot === m.slot) game.setResult(S.defeat, S.youLose);
       else game.alert(S.playerLost(nameOf(slot)));
     };
@@ -480,14 +501,23 @@ async function main(): Promise<void> {
 
   // ---- items and shops
   const itemIcon = (d: ItemDef) => (assets.has(`icons/${d.id}.webp`) ? assets.url(`icons/${d.id}.webp`) : null);
-  const itemTooltip = (d: ItemDef, st: ItemStack | null, slot = -1): string[] => {
+  const itemTooltip = (d: ItemDef, st: ItemStack | null, slot = -1, price = d.cost ?? 0): string[] => {
     const numbers = [
       st?.charges ? `${S.charges} ${st.charges}` : '',
       d.active?.cooldown ? `${S.cooldown} ${d.active.cooldown} s` : '',
       d.active?.castRange ? `${S.range} ${d.active.castRange}` : '',
-      st ? `${S.sellPrice} ${sellValue(st)}` : d.cost === null ? S.dropOnlyItem : `${S.gold} ${d.cost}`,
+      st ? `${S.sellPrice} ${sellValue(st)}` : d.cost === null ? S.dropOnlyItem : `${S.gold} ${price}`,
     ].filter(Boolean);
-    return [`${d.name}${slot >= 0 ? ` (${slot + 1})` : ''} — ${S.itemTiers[d.tier] ?? d.tier}`, d.text, numbers.join(' · ')];
+    const recipe = d.recipe ? S.madeFrom(d.recipe.components.map((c) => ITEMS[itemIndex(c)]?.name ?? c).join(' + '), d.recipe.fee) : '';
+    // In a shop: the parts the hero carries make it cheaper.
+    const saved = !st && d.cost !== null && price < d.cost ? S.partsUsed(d.cost - price) : '';
+    return [
+      `${d.name}${slot >= 0 ? ` (${slot + 1})` : ''} — ${S.itemTiers[d.tier] ?? d.tier}${d.role ? ` · ${S.itemRoles[d.role] ?? d.role}` : ''}`,
+      d.text,
+      recipe,
+      saved,
+      numbers.join(' · '),
+    ].filter(Boolean);
   };
   /**
    * What the shop panel shows. It opens only when the player clicks the building while the own
@@ -548,13 +578,16 @@ async function main(): Promise<void> {
         const u = gameData.units[i]!;
         const price = hirePrice(i)!;
         const needs = u.group === 'mercenary' ? [] : (u.requires ?? []).filter((r) => !factionHas(r));
+        const stock = u.group === 'mercenary' ? match!.hireStockInfo(i) : null;
         const why = needs.length
           ? S.upgradeNeeds(needs.map(buildingName).join(', '))
           : used + (u.supply ?? 0) > max
             ? S.hireFull
-            : gold < price
-              ? S.noGold
-              : '';
+            : stock?.count === 0
+              ? `Restocking · ${Math.ceil(stock.restockSeconds)}s`
+              : gold < price
+                ? S.noGold
+                : '';
         return {
           item: i,
           icon: assets.has(`portraits/${u.id}.webp`) ? assets.url(`portraits/${u.id}.webp`) : null,
@@ -566,6 +599,9 @@ async function main(): Promise<void> {
             u.group === 'mercenary' ? ((u as { look?: string }).look ?? '') : '',
             `${S.gold}: ${price}`,
             S.hireSupply(u.supply ?? 0),
+            stock
+              ? `Available: ${stock.count}${stock.restockSeconds ? ' · Next recruit in ' + Math.ceil(stock.restockSeconds) + 's' : ''}`
+              : '',
             why,
           ].filter(Boolean),
         };
@@ -636,17 +672,19 @@ async function main(): Promise<void> {
     const mercenaries = (def as { mercenaries?: string[] }).mercenaries;
     if (mercenaries?.length) return game.setShop(hireView(null, { name: def.name, mercenaries }));
     const gold = match.player.gold;
+    const inv = myInventory();
     game.setShop({
       name: def.name,
       inRange: true,
       items: def.items.map((id) => {
         const d = ITEMS[itemIndex(id)]!;
+        const price = buyPlan(inv, itemIndex(id)).price;
         return {
           item: itemIndex(id),
           icon: itemIcon(d),
-          cost: d.cost ?? 0,
-          canAfford: gold >= (d.cost ?? 0),
-          tooltip: itemTooltip(d, null),
+          cost: price,
+          canAfford: gold >= price,
+          tooltip: itemTooltip(d, null, -1, price),
         };
       }),
     });
@@ -701,8 +739,11 @@ async function main(): Promise<void> {
     }
     const d = ITEMS[item]!;
     if (shopNear() !== shop.index) return game.alert(S.goToShop);
-    if (match.player.gold < (d.cost ?? Infinity)) return game.alert(S.noGold);
-    if (!canStore(myInventory(), item, newCharges(item))) return game.alert(S.inventoryFull);
+    if (d.cost === null) return;
+    const inv = myInventory();
+    const plan = buyPlan(inv, item);
+    if (match.player.gold < plan.price) return game.alert(S.noGold);
+    if (!canStoreAfter(inv, plan, item)) return game.alert(S.inventoryFull);
     match.buy(item);
   };
 
@@ -725,6 +766,51 @@ async function main(): Promise<void> {
       ? `${hero.name}${owner ? ` (${owner})` : ''}`
       : (gameData.units.find((u) => u.id === id)?.name ?? buildingDefOf(e.type)?.name ?? (isMineType(e.type) ? 'Gold Mine' : id));
   };
+  /** A unit's skill: its numbers (units.json) and its info (skills.json). */
+  const unitSkillOf = (e: NetEntity, index: number) => {
+    const skill = gameData.units[e.type - gameData.heroes.length]?.skills[index];
+    const info = skill && gameData.skills.find((s) => s.id === skill.id);
+    return skill && info ? { skill, info } : null;
+  };
+  const radiusOf = (type: number) => (isHeroType(type) ? gameData.rules.heroBase.collisionRadius : statsOf(type).radius);
+  /** "Enemy · Anna · Red", "Ally", "Neutral" */
+  const relationLine = (e: NetEntity) => {
+    const relation = e.owner === 255 ? 'Neutral' : match!.isEnemy(e) ? 'Enemy' : 'Ally';
+    const owner = match!.info.slots.find((slot) => slot.index === e.owner);
+    return `${relation}${owner ? ` · ${owner.name} · ${COLOR_NAMES[owner.color]}` : ''}`;
+  };
+  const hoverCardLines = (e: NetEntity): string[] => {
+    const abilities = inspectAbilities(e.type);
+    return [
+      `${unitName(e)} · ${S.level} ${e.level}`,
+      relationLine(e),
+      ...abilities.map((a) => `${a.key ? `${a.key} ` : ''}${a.name}${a.summary ? ` — ${a.summary}` : ''}`),
+      abilities.length ? S.hoverMore : S.noAbilities,
+    ];
+  };
+  /** The kingdom order panel, and a short note when the order changes (a teammate's order too). */
+  function showOrders(): void {
+    if (!match?.hasFaction) return game.setOrders(null);
+    const m = match;
+    const f = m.faction;
+    const myTeam = m.info.slots.find((x) => x.index === m.slot)?.team;
+    const enemies: OrderEnemy[] = [];
+    for (const s of m.info.slots)
+      if (s.index < FACTION_HERO_SLOT && s.team !== myTeam && !defeatedKingdoms.has(s.index))
+        enemies.push({ slot: s.index, name: COLOR_NAMES[s.color] ?? String(s.index), color: TEAM_HEX[s.color] ?? '#fff' });
+    game.setOrders({ order: f.order, target: f.orderTarget, enemies });
+    const key = `${f.order}/${f.orderTarget}/${f.orderBy}`;
+    if (lastOrderKey && key !== lastOrderKey && f.orderBy !== 255) {
+      const id = KINGDOM_ORDERS[f.order] ?? 'auto';
+      const target = m.info.slots.find((x) => x.index === f.orderTarget);
+      const label = id === 'attack' ? `${ORDER_NAMES.attack} ${COLOR_NAMES[target?.color ?? -1] ?? ''}` : ORDER_NAMES[id];
+      game.alert(
+        f.orderBy === m.slot ? S.orderGivenByYou(label) : S.orderGiven(m.info.slots.find((x) => x.index === f.orderBy)?.name ?? '', label),
+      );
+    }
+    lastOrderKey = key;
+  }
+
   setInterval(() => {
     if (router.screen !== 'game' || !match) return;
     const own = match.ownHero;
@@ -742,6 +828,7 @@ async function main(): Promise<void> {
       game.setStatus(lines.join('\n'));
     } else {
       game.setFaction(match.hasFaction ? match.faction : null);
+      showOrders();
       // "Your base is under attack!" when the AI starts defending (not more than every 20 s).
       const now = performance.now();
       if (match.faction.status.startsWith('Defending') && now - lastBaseAlert > 20_000) {
@@ -787,11 +874,14 @@ async function main(): Promise<void> {
       });
     }
     game.setAbilities(
-      [0, 1, 2, 3].map((slot) => {
+      [0, 1, 2, 3, 4, 5].map((slot) => {
         const info = match!.ability(slot);
         if (!info) return null;
         const a = info.def;
         const level = Math.max(1, info.level);
+        // Hero level the next ability level needs (rules.json heroBase), if it is still too low.
+        const nextAt = info.level < a.maxLevel ? heroLevelForAbility(slot, info.level + 1) : 0;
+        const tooLow = nextAt > p.level;
         const numbers = [
           lv(a.manaCost, level) ? `${S.mana} ${lv(a.manaCost, level)}` : '',
           lv(a.params['healthCost'], level) ? `${S.healthCost} ${lv(a.params['healthCost'], level)}` : '',
@@ -799,7 +889,11 @@ async function main(): Promise<void> {
           lv(a.castRange, level) ? `${S.range} ${lv(a.castRange, level)}` : '',
         ].filter(Boolean);
         return {
-          icon: assets.has(`icons/${a.id}.webp`) ? assets.url(`icons/${a.id}.webp`) : null,
+          icon: assets.has(`icons/${a.id}.webp`)
+            ? assets.url(`icons/${a.id}.webp`)
+            : assets.has(`icons/${abilityMechanic(a)}.webp`)
+              ? assets.url(`icons/${abilityMechanic(a)}.webp`)
+              : null,
           name: a.name,
           level: info.level,
           maxLevel: a.maxLevel,
@@ -809,18 +903,20 @@ async function main(): Promise<void> {
           passive: a.kind !== 'active',
           canLearn: info.canLearn,
           stateLabel:
-            info.level === 0
-              ? info.canLearn
-                ? 'Learn +'
-                : slot === 3 && p.level < 6
-                  ? 'Level 6'
-                  : 'Not learned'
-              : a.kind !== 'active'
-                ? 'Passive'
-                : '',
+            info.charges !== undefined
+              ? `${info.charges} stones${info.rechargeLeft ? ` · ${Math.ceil(info.rechargeLeft)}s` : ''}`
+              : info.level === 0
+                ? info.canLearn
+                  ? 'Learn +'
+                  : tooLow
+                    ? S.levelNeeded(nextAt)
+                    : 'Not learned'
+                : a.kind !== 'active'
+                  ? 'Passive'
+                  : '',
           blocked: abilityBlockReason(info, own?.state ?? 0, own?.buffs ?? 0),
           tooltip: [
-            `${a.name} (${'QWER'[slot]}) — ${S.abilityKinds[a.kind] ?? a.kind} [${info.level}/${a.maxLevel}]`,
+            `${a.name} (${'QWERDF'[slot]}) — ${S.abilityKinds[a.kind] ?? a.kind} [${info.level}/${a.maxLevel}]`,
             a.text,
             info.level === 0
               ? info.canLearn
@@ -829,9 +925,10 @@ async function main(): Promise<void> {
               : a.kind !== 'active'
                 ? 'Works automatically. No cast needed.'
                 : 'Press the key or click the icon, then choose a target.',
+            tooLow ? S.nextLevelAt(info.level + 1, nextAt) : '',
             ...abilityDetails(a, info.level),
             numbers.join(' · '),
-          ],
+          ].filter(Boolean),
         };
       }),
     );
@@ -862,10 +959,8 @@ async function main(): Promise<void> {
       sel && sel !== own
         ? (() => {
             const st = isHeroType(sel.type) ? heroStats(gameData.heroes[sel.type]!, sel.level) : statsOf(sel.type);
-            const relation = sel.owner === 255 ? 'Neutral' : match.isEnemy(sel) ? 'Enemy' : 'Ally';
-            const owner = match.info.slots.find((slot) => slot.index === sel.owner);
             return [
-              `${relation}${owner ? ` · ${owner.name} · ${COLOR_NAMES[owner.color]}` : ''} · ${st.layer === 'ground' ? 'Ground' : 'Flying'}`,
+              `${relationLine(sel)} · ${st.layer === 'ground' ? 'Ground' : 'Flying'}`,
               `Health ${Math.ceil(sel.hp)}/${sel.maxHp}${sel.maxMana ? ` · Mana ${Math.floor(sel.mana)}/${sel.maxMana}` : ''}`,
               `Base damage ${st.damageMin}–${st.damageMax} · Base armor ${st.armor.toFixed(1)} · Range ${st.attackRange} · Speed ${st.moveSpeed}`,
               match.isEnemy(sel)
@@ -875,14 +970,43 @@ async function main(): Promise<void> {
           })()
         : undefined,
       sel && assets.has(`portraits/${ENTITY_TYPES[sel.type]}.webp`) ? assets.url(`portraits/${ENTITY_TYPES[sel.type]}.webp`) : undefined,
+      sel && sel !== own
+        ? inspectAbilities(sel.type).map((a, index) => {
+            const icon = a.iconIds.find((id) => assets.has(`icons/${id}.webp`));
+            // Active skills of own units are buttons with a cooldown.
+            const usable = !a.passive && match!.isOwnUnit(sel);
+            const skill = usable ? unitSkillOf(sel, index)?.skill : undefined;
+            const left = skill ? match!.unitSkillCooldown(sel, index) : 0;
+            return {
+              icon: icon ? assets.url(`icons/${icon}.webp`) : null,
+              key: a.key,
+              letter: a.name.charAt(0),
+              passive: a.passive,
+              tooltip: a.tooltip,
+              usable,
+              cooldownLeft: left,
+              cooldownFrac: left / ((skill?.['cooldown'] as number | undefined) || 1),
+              noMana: !!skill && sel.mana < ((skill['manaCost'] as number | undefined) ?? 0),
+            };
+          })
+        : undefined,
     );
+    // The card next to the mouse: any unit or hero under it, except the own hero and the selected one.
+    const hov = pointer.inCanvas && !aim && !w.camera.dragging ? match.pick(cursor.x, cursor.y) : null;
+    hoverLines = hov && hov !== own && hov !== sel && !isBuildingType(hov.type) && !isMineType(hov.type) ? hoverCardLines(hov) : null;
+    game.setHoverCard(hoverLines, pointer.x, pointer.y);
   }, 125);
 
   // ---- mouse and keys: right click = move or attack, A + left click = attack-move,
   // Q W E R = abilities (then left click the target), Ctrl + Q W E R = learn,
   // left click = select, S = stop, H = hold, Space = center on the hero.
   let lastSpace = 0;
-  type Aim = { kind: 'attack' } | { kind: 'ability'; slot: number } | { kind: 'item'; slot: number } | null;
+  type Aim =
+    | { kind: 'attack' }
+    | { kind: 'ability'; slot: number }
+    | { kind: 'item'; slot: number }
+    | { kind: 'unitSkill'; unit: number; skill: number }
+    | null;
   let aim: Aim = null;
   const cursor = { x: 0, y: 0 };
   const indicators = new AimIndicators(w.scene);
@@ -894,6 +1018,25 @@ async function main(): Promise<void> {
   const select = (e: NetEntity | null) => {
     selected = e;
     w.select(e?.unit ?? match?.ownHero?.unit ?? null);
+  };
+  /** Why the own unit can not use its skill now (null = it can). The server checks the same. */
+  const unitSkillBlock = (e: NetEntity, index: number): string | null => {
+    const d = unitSkillOf(e, index);
+    if (!d || d.info.kind !== 'active') return S.unitCantCast;
+    if (e.state & UnitState.Dead || e.buffs & (BuffFlag.Stun | BuffFlag.Silence)) return S.unitCantCast;
+    if (match!.unitSkillCooldown(e, index) > 0) return S.unitSkillCooldown;
+    if (e.mana < ((d.skill['manaCost'] as number | undefined) ?? 0)) return S.unitNoMana;
+    return null;
+  };
+  /** A skill button of the selected own unit: at once, or choose a target first. */
+  useUnitSkill = (index) => {
+    const e = selected;
+    if (!e || !match?.isOwnUnit(e)) return;
+    const blocked = unitSkillBlock(e, index);
+    if (blocked) return game.alert(blocked);
+    if (unitSkillOf(e, index)!.info.target !== 'unit') return match.unitCast(e.id, index, 0);
+    setAim({ kind: 'unitSkill', unit: e.id, skill: index });
+    game.alert(S.chooseUnitTarget);
   };
   /** Client-side check first, so the player gets a message at once. */
   useAbility = (slot) => {
@@ -1014,6 +1157,23 @@ async function main(): Promise<void> {
       if (p) match.useItem(a.slot, { kind: 2, id: 0, x: p.x, y: p.y });
       return;
     }
+    if (a?.kind === 'unitSkill') {
+      const u = match.entities.get(a.unit);
+      const d = u && unitSkillOf(u, a.skill);
+      if (!u?.unit || !d) return setAim(null);
+      const blocked = unitSkillBlock(u, a.skill);
+      if (blocked) {
+        setAim(null);
+        return game.alert(blocked);
+      }
+      if (!hit?.unit || isBuildingType(hit.type) || isMineType(hit.type)) return game.alert(S.pickTarget);
+      const ok = d.info.targets === 'enemy' ? match.isEnemy(hit) : !match.isEnemy(hit) && hit.owner !== 255;
+      if (!ok) return game.alert(d.info.targets === 'enemy' ? S.pickEnemy : S.pickAlly);
+      const reach = ((d.skill['range'] as number | undefined) ?? 5) + radiusOf(u.type) + radiusOf(hit.type);
+      if (Math.hypot(hit.unit.x - u.unit.x, hit.unit.y - u.unit.y) > reach) return game.alert(S.unitTooFar);
+      setAim(null);
+      return match.unitCast(u.id, a.skill, hit.id);
+    }
     if (a?.kind === 'attack') {
       setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
@@ -1047,6 +1207,16 @@ async function main(): Promise<void> {
   canvas.addEventListener('pointermove', (e) => {
     cursor.x = e.offsetX;
     cursor.y = e.offsetY;
+    pointer.x = e.clientX;
+    pointer.y = e.clientY;
+    pointer.inCanvas = true;
+    // Content changes a few times per second (HUD timer); the card follows the mouse at once.
+    if (hoverLines) game.setHoverCard(hoverLines, pointer.x, pointer.y);
+  });
+  canvas.addEventListener('pointerleave', () => {
+    pointer.inCanvas = false;
+    hoverLines = null;
+    game.setHoverCard(null);
   });
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
@@ -1098,7 +1268,7 @@ async function main(): Promise<void> {
       lastSpace = now;
       w.camera.lookAt(h.x, h.y, true);
     }
-    const slot = action ? ['ability1', 'ability2', 'ability3', 'ability4'].indexOf(action) : -1;
+    const slot = action ? ['ability1', 'ability2', 'ability3', 'ability4', 'ability5', 'ability6'].indexOf(action) : -1;
     if (slot >= 0) {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) match.learn(slot);
@@ -1123,8 +1293,8 @@ async function main(): Promise<void> {
     }
     if (import.meta.env.DEV && e.key === 'F6') {
       e.preventDefault();
-      net.send({ type: 'cheat', xp: 6000 });
-      game.alert('Test: level 10, health, mana and cooldowns restored.');
+      net.send({ type: 'cheat', xp: xpForLevel(MAX_LEVEL) });
+      game.alert(`Test: level ${MAX_LEVEL}, health, mana and cooldowns restored.`);
     }
   });
 

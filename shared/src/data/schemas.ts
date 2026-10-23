@@ -36,6 +36,10 @@ export const rulesSchema = z.looseObject({
     hpRegen: num,
     manaRegen: num,
     maxLevel: num,
+    /** hero level needed for each level of a basic ability (Q, W, E) */
+    basicAbilityHeroLevels: z.array(num).min(1),
+    /** hero level needed for each level of the ultimate (R) */
+    ultimateHeroLevels: z.array(num).min(1),
     itemSlots: num,
     sightRange: num,
     collisionRadius: num,
@@ -68,10 +72,19 @@ export const rulesSchema = z.looseObject({
     chopTimeSec: num,
     maxWorkersPerMine: num,
     supplyCap: num,
+    upkeep: z.looseObject({ steps: z.array(z.strictObject({ fromSupply: num, goldPct: num, name: z.string() })).min(1) }),
     buildingPriceRise: z.record(z.string(), z.union([z.string(), z.strictObject({ freeCount: num, pctPerExtra: num })])),
   }),
   neutrals: z.looseObject({ aggroRange: num, leashRange: num, returnHealPctPerSec: num, respawnNeedsNoHeroInRange: num }),
-  items: z.looseObject({ groundItemSec: num, pickUpRange: num, giveRange: num }),
+  items: z.looseObject({
+    groundItemSec: num,
+    pickUpRange: num,
+    giveRange: num,
+    /** highest total of an item stat a hero can have */
+    caps: z.partialRecord(z.enum(['cooldownReductionPct', 'spellResistPct', 'critChancePct', 'spellDamagePct', 'healPowerPct']), num),
+    /** damage of a critical hit = normal damage x this */
+    critMultiplier: num,
+  }),
   fountain: z.looseObject({ hpPctPerSec: num, manaPctPerSec: num }),
 });
 
@@ -91,7 +104,7 @@ export const heroSchema = z.looseObject({
   moveSpeed: num,
   movementLayer,
   hpBonus: num,
-  abilities: z.tuple([id, id, id, id]),
+  abilities: z.array(id).min(4).max(6),
   look: z.looseObject({ silhouette: z.string(), palette: z.string(), teamColorParts: z.string(), scale: num }),
 });
 export const heroesSchema = z.looseObject({ version: num, heroes: z.array(heroSchema) });
@@ -99,7 +112,7 @@ export const heroesSchema = z.looseObject({ version: num, heroes: z.array(heroSc
 export const abilitySchema = z.looseObject({
   id,
   hero: id,
-  slot: z.enum(['Q', 'W', 'E', 'R']),
+  slot: z.enum(['Q', 'W', 'E', 'R', 'D', 'F']),
   name: z.string(),
   text: z.string(),
   kind: z.enum(['active', 'passive', 'aura']),
@@ -115,6 +128,19 @@ export const abilitySchema = z.looseObject({
 export const abilitiesSchema = z.looseObject({ version: num, abilities: z.array(abilitySchema) });
 
 const skillSchema = z.looseObject({ id });
+/** Name and text of a unit skill (shared/data/skills.json); the numbers are on the unit. */
+export const skillInfoSchema = z.looseObject({
+  id,
+  name: z.string(),
+  kind: z.enum(['active', 'passive', 'work']),
+  text: z.string(),
+  /** active skills: none = around the unit, unit = one target */
+  target: z.enum(['none', 'unit']).optional(),
+  targets: z.enum(['enemy', 'ally']).optional(),
+  /** the code that runs (abilities.ts useSkill); default: the id */
+  effect: z.string().optional(),
+});
+export const skillsSchema = z.looseObject({ version: num, skills: z.array(skillInfoSchema) });
 export const unitSchema = z.looseObject({
   id,
   name: z.string(),
@@ -141,6 +167,8 @@ export const unitSchema = z.looseObject({
   requires: z.array(id).optional(),
   bounty: pair,
   skills: z.array(skillSchema),
+  buildingsOnly: z.boolean().optional(),
+  mechanical: z.boolean().optional(),
 });
 export const unitsSchema = z.looseObject({ version: num, units: z.array(unitSchema) });
 
@@ -160,6 +188,8 @@ export const buildingSchema = z.looseObject({
   upgradesTo: id.nullable(),
   sight: num,
   bounty: num,
+  skills: z.array(skillSchema).optional(),
+  fixedFacing: num.optional(),
   attack: z
     .looseObject({
       attackType,
@@ -192,13 +222,39 @@ export const itemStatKeys = [
   'moveSpeed',
   'attackSpeedPct',
   'lifeStealPct',
+  'maxMana',
+  /** more spell damage dealt, percent */
+  'spellDamagePct',
+  /** shorter hero ability cooldowns, percent */
+  'cooldownReductionPct',
+  /** less spell damage taken, percent */
+  'spellResistPct',
+  /** stronger heals given, percent */
+  'healPowerPct',
+  /** chance of a critical hit, percent */
+  'critChancePct',
 ] as const;
 export type ItemStatKey = (typeof itemStatKeys)[number];
 
 export const itemSchema = z.looseObject({
   id,
   name: z.string(),
-  tier: z.enum(['consumable', 'basic', 'advanced', 'rare']),
+  tier: z.enum(['consumable', 'basic', 'advanced', 'rare', 'legendary']),
+  /** who it is for (shop tabs, bots): mage, warrior, tank, support, damage */
+  role: z.enum(['mage', 'warrior', 'tank', 'support', 'damage']).optional(),
+  /** made from these items plus a fee (cost = components + fee) */
+  recipe: z.object({ components: z.array(id).min(1), fee: num }).optional(),
+  /** allies within radius get these bonuses */
+  aura: z
+    .looseObject({
+      radius: num,
+      bonusArmor: num.optional(),
+      hpRegen: num.optional(),
+      attackSpeedPct: num.optional(),
+      moveSpeedPct: num.optional(),
+      damagePct: num.optional(),
+    })
+    .optional(),
   cost: num.nullable(),
   value: num,
   text: z.string(),
@@ -238,7 +294,16 @@ export const itemsSchema = z.looseObject({ version: num, items: z.array(itemSche
 
 export const shopsSchema = z.looseObject({
   version: num,
-  shops: z.array(z.looseObject({ id, name: z.string(), useRange: num, items: z.array(id), mercenaries: z.array(id).optional() })),
+  shops: z.array(
+    z.looseObject({
+      id,
+      name: z.string(),
+      useRange: num,
+      items: z.array(id),
+      mercenaries: z.array(id).optional(),
+      mercenaryStock: z.record(id, z.object({ max: num.int().min(1).max(255), restockSec: num.positive() })).optional(),
+    }),
+  ),
 });
 
 export const campsSchema = z.looseObject({
@@ -271,6 +336,19 @@ const difficultyNames = z.enum(['easy', 'normal', 'hard']);
 export const aiSchema = z.looseObject({
   version: num,
   faction: z.looseObject({
+    fortifications: z.object({
+      startMinute: num,
+      everySec: num.positive(),
+      maxSegments: num.int().positive().max(12).multipleOf(2),
+      gap: num.min(6).multipleOf(2),
+      frontDistance: num.positive(),
+      rowStep: num.positive(),
+      rows: num.int().positive(),
+      minGold: num,
+      minWood: num,
+      upgradeReserveGold: num,
+      upgradeReserveWood: num,
+    }),
     difficulties: z.record(difficultyNames, z.looseObject({ thinkDelaySec: num, workerTarget: num, maxProductionBuildings: num })),
     buildOrder: z.array(
       z.looseObject({ do: z.enum(['build', 'train', 'upgrade', 'expand', 'summon']), what: z.string(), count: num.optional() }),
@@ -296,6 +374,17 @@ export const aiSchema = z.looseObject({
       groupSpread: z.record(z.enum(['melee', 'ranged', 'siege']), num),
       fieldFightMinFromBase: num,
       lateGameMinute: num,
+      reinforceSupply: num,
+      attackAtSupplyUsed: num,
+      trainUpToSupply: num,
+      pushAfterWinPct: num,
+    }),
+    orders: z.looseObject({
+      attackMinSupply: num,
+      stayHomeRange: num,
+      defendExtraTowers: num,
+      farmRoamRadius: num,
+      heroCampRange: z.looseObject({ defend: num, build_up: num }),
     }),
   }),
   heroBot: z.looseObject({

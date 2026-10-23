@@ -108,6 +108,7 @@ describe('match messages', () => {
       { type: CommandType.PickUp, id: 65535 },
       { type: CommandType.GiveItem, slot: 0, target: 1234 },
       { type: CommandType.SwapItems, from: 0, to: 5 },
+      { type: CommandType.KingdomOrder, order: 1, target: 3 },
     ] as const;
     for (const c of cmds) {
       const r = new BinaryReader(writeCommand(w, 9, c));
@@ -145,8 +146,10 @@ describe('match messages', () => {
       respawnTicks: 60,
       moveSpeed: 310,
       hiredSupply: 6,
-      abilityLevels: [1, 0, 2, 0],
-      cooldownEnds: [0, 1300, 0, 0],
+      hireStock: [{ shop: 2, unit: 41, count: 0, readyAt: 1560 }],
+      abilityLevels: [1, 0, 2, 0, 1, 1],
+      abilityCharges: [0, 0, 0, 0, 6, 0],
+      cooldownEnds: [0, 1300, 0, 0, 1500, 0],
       items: [1, 0, 0, 0, 0, 23],
       charges: [3, 0, 0, 0, 0, 0],
       itemCooldownEnds: [1400, 0, 0, 0, 0, 0],
@@ -174,12 +177,15 @@ describe('match messages', () => {
       slot: 3,
       gold: 1234,
       wood: 456,
-      supplyUsed: 17,
-      supplyCap: 28,
+      supplyUsed: 270,
+      supplyCap: 280,
       tier: 2,
       workers: 9,
-      army: 8,
+      army: 261,
       status: 'Building a House',
+      order: 1,
+      orderTarget: 2,
+      orderBy: 5,
       upgrades: [1, 0, 2],
       upgradeReady: [0, 9000, 0],
       tech: [30, 33],
@@ -206,7 +212,9 @@ describe('match messages', () => {
     });
     sw.remove(33);
     sw.event(EventType.Damage, 9, 5, 26, DamageKind.Attack);
+    sw.event(EventType.AbilityEffect, 5, 900, 700, 52 | (2 << 7) | 512);
     const s = readSnapshot(sw.finish(new BinaryWriter()), new SnapshotData());
+    expect(s.events[1]?.kind).toBe(52 | (2 << 7) | 512);
     expect([s.tick, s.ackSeq, s.predictionSeq, s.ticksSinceAck, s.hasPlayer, s.flags & SnapshotFlag.Full]).toEqual([
       1234,
       9,
@@ -224,8 +232,10 @@ describe('match messages', () => {
       respawnTicks: 60,
       moveSpeed: 310,
       hiredSupply: 6,
-      abilityLevels: [1, 0, 2, 0],
-      cooldownEnds: [0, 1300, 0, 0],
+      hireStock: [{ shop: 2, unit: 41, count: 0, readyAt: 1560 }],
+      abilityLevels: [1, 0, 2, 0, 1, 1],
+      abilityCharges: [0, 0, 0, 0, 6, 0],
+      cooldownEnds: [0, 1300, 0, 0, 1500, 0],
       items: [1, 0, 0, 0, 0, 23],
       charges: [3, 0, 0, 0, 0, 0],
       itemCooldownEnds: [1400, 0, 0, 0, 0, 0],
@@ -236,12 +246,15 @@ describe('match messages', () => {
       slot: 3,
       gold: 1234,
       wood: 456,
-      supplyUsed: 17,
-      supplyCap: 28,
+      supplyUsed: 270,
+      supplyCap: 280,
       tier: 2,
       workers: 9,
-      army: 8,
+      army: 261,
       status: 'Building a House',
+      order: 1,
+      orderTarget: 2,
+      orderBy: 5,
       upgrades: [1, 0, 2],
       upgradeReady: [0, 9000, 0],
       tech: [30, 33],

@@ -80,6 +80,7 @@ export function targetScore(sim: MatchSim, e: SimEntity, o: SimEntity, d2: numbe
     o.invulnerable ||
     o.hidden ||
     (o.building && !o.building.def) ||
+    (e.stats.buildingsOnly && !o.building) ||
     !canAttackLayer(e.stats.canHitAir, o.stats.layer) ||
     hiddenFrom(o, e.team) ||
     !sim.canSee(e.team, o)

@@ -9,6 +9,10 @@
 
 import {
   ABILITIES,
+  abilityMechanic,
+  abilityFxIndex,
+  abilityFxLevel,
+  abilityFxPoint,
   abilityIndex,
   abilityTargetAllowed,
   BinaryWriter,
@@ -28,6 +32,7 @@ import {
   CommandType,
   footprintOf,
   isBuildingType,
+  isMineType,
   labelRegions,
   statsOf,
   TeamSight,
@@ -107,6 +112,8 @@ const ITEM_FX: Record<string, { frames: 'heal' | 'arcane' | 'smoke' | 'spark'; c
 };
 
 export interface AbilityInfo {
+  charges?: number;
+  rechargeLeft?: number;
   def: AbilityDef;
   level: number;
   cooldownLeft: number;
@@ -173,6 +180,8 @@ export class MatchClient {
   readonly fx: AbilityFx;
   private readonly deadSince = new Map<number, number>();
   private readonly blinkOrigins = new Map<number, { x: number; y: number; valid: boolean }>();
+  /** Unit skills on cooldown, from their cast events: entity id → tick each skill (units.json index) is ready. */
+  private readonly unitSkillReady = new Map<number, number[]>();
   private readonly pt = { x: 0, y: 0 };
   private readonly teams: number[] = [];
   private readonly projectText = (x: number, y: number, up: number, out: { x: number; y: number }) => this.world.screenPoint(x, y, up, out);
@@ -196,7 +205,7 @@ export class MatchClient {
 
   constructor(
     readonly world: GameWorld,
-    private readonly net: GameSocket,
+    private readonly net: Pick<GameSocket, 'onSnapshot' | 'sendBinary'>,
     readonly info: MatchStartInfo,
     private readonly floating: FloatingText | null = null,
   ) {
@@ -282,7 +291,9 @@ export class MatchClient {
   /** Use ability Q W E R (slot 0..3). */
   cast(slot: number, target: CastTarget): void {
     if (target.kind === 2) [target.x, target.y] = quantizePoint(target.x, target.y);
-    this.send({ type: CommandType.Cast, slot, target: target.kind, id: target.id, x: target.x, y: target.y });
+    const command: GameCommand = { type: CommandType.Cast, slot, target: target.kind, id: target.id, x: target.x, y: target.y };
+    if (this.ability(slot)?.def.id === 'stone_remnant') this.sendSide(command);
+    else this.send(command);
   }
 
   /** Spend a skill point (works while dead too). */
@@ -312,6 +323,32 @@ export class MatchClient {
   /** Hire a soldier (index in units.json) with hero gold at an own production building. */
   hire(unit: number): void {
     this.sendSide({ type: CommandType.Hire, unit });
+  }
+
+  hireStockInfo(unit: number): { count: number; restockSeconds: number } | null {
+    const s = this.player.hireStock.find((s) => s.unit === unit);
+    return s ? { count: s.count, restockSeconds: s.readyAt ? Math.max(0, (s.readyAt - this.clock.serverTick()) / TICK_RATE) : 0 } : null;
+  }
+
+  /** An order to our kingdom's AI (orders.ts; target = kingdom slot for an attack). */
+  kingdomOrder(order: number, target: number): void {
+    this.sendSide({ type: CommandType.KingdomOrder, order, target });
+  }
+
+  /** Use the skill (index in its units.json list) of an own unit; target = unit id or 0. */
+  unitCast(unit: number, skill: number, target: number): void {
+    this.sendSide({ type: CommandType.UnitCast, unit, skill, target });
+  }
+
+  /** Seconds until a unit's skill is ready again (0 = ready). */
+  unitSkillCooldown(e: NetEntity, skill: number): number {
+    const end = this.unitSkillReady.get(e.id)?.[skill] ?? 0;
+    return end ? Math.max(0, (end - this.clock.serverTick()) / TICK_RATE) : 0;
+  }
+
+  /** A unit of the player's kingdom (army or hired), not a hero or a building. */
+  isOwnUnit(e: NetEntity): boolean {
+    return e.owner === this.owner && !isHeroType(e.type) && !isBuildingType(e.type) && !isMineType(e.type);
   }
 
   sell(slot: number): void {
@@ -378,17 +415,20 @@ export class MatchClient {
     if (!own || !a) return null;
     const level = this.player.abilityLevels[slot] ?? 0;
     const end = this.player.cooldownEnds[slot] ?? 0;
-    const left = end ? Math.max(0, (end - this.clock.serverTick()) / TICK_RATE) : 0;
-    const total = lv(a.cooldown, Math.max(1, level));
+    const rechargeLeft = end ? Math.max(0, (end - this.clock.serverTick()) / TICK_RATE) : 0;
+    const charges = a.id === 'stone_remnant' ? this.player.abilityCharges?.[slot] : undefined;
+    const left = charges !== undefined && charges > 0 ? 0 : rechargeLeft;
+    const total = a.id === 'stone_remnant' ? lv(a.params['rechargeSec'], 1) : lv(a.cooldown, Math.max(1, level));
     const cost = lv(a.manaCost, Math.max(1, level));
     const hpCost = lv(a.params['healthCost'], Math.max(1, level));
     return {
       def: a,
+      ...(charges !== undefined ? { charges, rechargeLeft } : {}),
       level,
       cooldownLeft: left,
       cooldownFrac: total > 0 ? Math.min(1, left / total) : 0,
       enoughMana: own.mana >= cost && (!hpCost || own.hp > hpCost),
-      canLearn: this.player.skillPoints > 0 && canLearn(slot, level, a.maxLevel, this.player.level),
+      canLearn: !a.params['innate'] && this.player.skillPoints > 0 && canLearn(slot, level, a.maxLevel, this.player.level),
     };
   }
 
@@ -465,7 +505,9 @@ export class MatchClient {
     const full = (s.flags & SnapshotFlag.Full) !== 0;
     if (s.hasPlayer) {
       Object.assign(this.player, s.player, {
+        hireStock: s.player.hireStock.map((row) => ({ ...row })),
         abilityLevels: [...s.player.abilityLevels],
+        ...(s.player.abilityCharges ? { abilityCharges: [...s.player.abilityCharges] } : {}),
         items: [...s.player.items],
         charges: [...s.player.charges],
         itemCooldownEnds: [...s.player.itemCooldownEnds],
@@ -539,6 +581,17 @@ export class MatchClient {
       if (ev.type === EventType.Defeated) {
         this.onDefeated?.(ev.a);
         continue;
+      }
+      if (ev.type === EventType.Cast && ev.kind === 255) {
+        // A unit skill: b = its index in the unit's list. Its cooldown is in the data.
+        const caster = this.entities.get(ev.a);
+        const skill =
+          caster && (buildingDefOf(caster.type)?.skills?.[ev.b] ?? gameData.units[caster.type - gameData.heroes.length]?.skills[ev.b]);
+        if (skill) {
+          const ready = this.unitSkillReady.get(ev.a) ?? [];
+          ready[ev.b] = s.tick + Math.round(((skill['cooldown'] as number | undefined) ?? 10) * TICK_RATE);
+          this.unitSkillReady.set(ev.a, ready);
+        }
       }
       if (ev.type === EventType.Cast && ev.kind !== 255 && ABILITIES[ev.kind & 127]?.id === 'blink') {
         const caster = this.entities.get(ev.a);
@@ -623,21 +676,21 @@ export class MatchClient {
         if (ea?.unit) this.sound?.play('chop', 'sfx', ea.unit.x, ea.unit.y, 0.6);
         break;
       case EventType.AbilityEffect:
-        this.onCast(ea, a, b, value, (kind & 31) | (kind & 128), true, ((kind >> 5) & 3) + 1);
+        this.onCast(ea, a, b, value, abilityFxIndex(kind) | (abilityFxPoint(kind) ? 128 : 0), true, abilityFxLevel(kind));
         break;
       case EventType.Impact: {
-        const sp = ABILITIES[kind & 31];
+        const sp = ABILITIES[abilityFxIndex(kind)];
         if (!sp) break;
         const x = dqPos(b),
           y = dqPos(value);
         const look = this.heroFx(sp.hero);
         const h = this.world.terrain.heightAt(x, y);
         this.sound?.play('spell_hit', 'sfx', x, y);
-        const level = ((kind >> 5) & 3) + 1;
+        const level = abilityFxLevel(kind);
         const r = lv(sp.params['radius'], level) || 1.2;
         this.fx.ring(x, h, -y, r, look.color, 0.6);
         this.fx.burst(x, h + 0.5, -y, look.frames, look.color, look.color2, 45, r * 0.5, 3);
-        if (sp.id === 'inferno_dive') this.fx.disc(x, h, -y, r, look.color, lv(sp.params['burnDuration'], 1));
+        if (abilityMechanic(sp) === 'inferno_dive') this.fx.disc(x, h, -y, r, look.color, lv(sp.params['burnDuration'], 1));
         break;
       }
       case EventType.LineShot: {
@@ -757,10 +810,29 @@ export class MatchClient {
     const u = ea?.unit;
     if (!ea || !u) return;
     if (kind === 255) {
-      // A monster skill: a puff on the monster.
+      const skill = buildingDefOf(ea.type)?.skills?.[b] ?? gameData.units[ea.type - gameData.heroes.length]?.skills[b];
+      const info = gameData.skills.find((s) => s.id === skill?.id);
+      const effect = info?.effect ?? skill?.id;
+      const color = effect === 'mend' ? '#b4e6a2' : info?.targets === 'ally' ? '#a4e4ff' : '#bca1ed';
       this.world.playOnce(u, 'cast', 0.8);
       const h = this.world.terrain.heightAt(u.x, u.y);
-      this.fx.ring(u.x, h, -u.y, 3.5, HERO_FX['monster']!.color, 0.5);
+      this.fx.ring(u.x, h, -u.y, (skill?.['radius'] as number | undefined) ?? 1.2, color, 0.5);
+      const target = value ? this.entities.get(value)?.unit : undefined;
+      if (target) {
+        if (effect === 'pierce_line') this.fx.bolt(u.x, u.y, h, target.x, target.y, 30, '#e8d6a4');
+        else if (effect === 'bomb_line') {
+          const dx = target.x - u.x,
+            dy = target.y - u.y,
+            d = Math.hypot(dx, dy) || 1;
+          const range = (skill?.['range'] as number | undefined) ?? d;
+          for (let i = 1; i <= 3; i++) {
+            const x = u.x + ((dx / d) * range * i) / 3,
+              y = u.y + ((dy / d) * range * i) / 3;
+            this.fx.ring(x, this.world.terrain.heightAt(x, y), -y, 1.1, '#edaf67', 0.6);
+          }
+        } else if (effect === 'bolt') this.fx.bolt(u.x, u.y, h, target.x, target.y, 25, color);
+        else this.fx.ring(target.x, this.world.terrain.heightAt(target.x, target.y), -target.y, 1, color, 0.6);
+      }
       return;
     }
     const a = ABILITIES[kind & 127];
@@ -778,7 +850,18 @@ export class MatchClient {
     // The server sends this only after the cast succeeds. No wall-clock timers or phantom
     // effects after a cancelled wind-up; this event already shares the pose's render tick.
     const radius = lv(a.params['radius'], level) || lv(a.params['tauntRadius'], level);
-    switch (a.id) {
+    switch (abilityMechanic(a)) {
+      case 'stone_remnant':
+        this.fx.ring(px, gh(px, py), -py, 0.8, look.color, 0.5);
+        this.fx.burst(px, gh(px, py) + 0.3, -py, 'dust', '#aaa18a', look.color2, 18, 0.4, 1);
+        break;
+      case 'enchant_remnant':
+        if (target) this.fx.ring(target.x, gh(target.x, target.y), -target.y, 1, look.color, 0.6);
+        break;
+      case 'magnetize':
+        this.fx.ring(u.x, gh(u.x, u.y), -u.y, radius, look.color, 0.65);
+        this.fx.burst(u.x, gh(u.x, u.y) + 0.6, -u.y, 'lightning', look.color, look.color2, 45, radius * 0.6, 2);
+        break;
       case 'sky_pillar':
       case 'inferno_dive': {
         // Start the leap arc when the completed cast reaches the render timeline.
@@ -802,7 +885,7 @@ export class MatchClient {
           const d = (i / 3) * lv(a.params['length'], 1) * 0.8;
           const x = u.x + Math.cos(dir) * d,
             y = u.y + Math.sin(dir) * d;
-          this.fx.burst(x, gh(x, y) + 1, -y, 'fire', '#ffd060', '#ff3a00', 20, 0.5 + i * 0.3, 2);
+          this.fx.burst(x, gh(x, y) + 1, -y, look.frames, look.color, look.color2, 20, 0.5 + i * 0.3, 2);
         }
         break;
       }
@@ -837,7 +920,7 @@ export class MatchClient {
     const k = e.last;
     // Neutral monsters have no team color: their masks are black anyway.
     const team = e.owner === NEUTRAL ? 'red' : (TEAMS[e.color] ?? 'red');
-    const facing = building ? this.world.buildingFacing(k.x, k.y) : k.facing;
+    const facing = building ? (buildingDefOf(e.type)?.fixedFacing ?? this.world.buildingFacing(k.x, k.y)) : k.facing;
     e.unit = this.world.addUnit(modelId, team, k.x, k.y, facing, moveSpeedOf(e.type), hero, isFlyingType(e.type), building);
     e.unit.markerTeam = e.owner === NEUTRAL ? 'neutral' : team;
     if (scale !== 1) {
@@ -880,6 +963,7 @@ export class MatchClient {
     this.entities.delete(id);
     this.deadSince.delete(id);
     this.blinkOrigins.delete(id);
+    this.unitSkillReady.delete(id);
     if (e === this.ownHero) {
       this.ownHero = null;
       this.predictor = null;
@@ -942,9 +1026,13 @@ export class MatchClient {
       }
       if (inMine) continue;
       if (isBuildingType(e.type)) {
-        u.facing = this.world.buildingFacing(u.x, u.y);
+        u.facing = buildingDefOf(e.type)?.fixedFacing ?? this.world.buildingFacing(u.x, u.y);
         u.moving = false;
         u.rise = state & UnitState.Constructing ? 0.15 + 0.85 * (e.progress / 255) : 1;
+      }
+      if (e.buffs & BuffFlag.Rolling) {
+        this.world.play(u, 'roll');
+        u.actionUntil = now + 100;
       }
       const dead = (state & UnitState.Dead) !== 0;
       if (dead !== u.dead) {

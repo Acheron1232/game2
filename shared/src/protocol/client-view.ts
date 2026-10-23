@@ -1,3 +1,4 @@
+import { earthCharges } from '../sim/earth-spirit';
 // Server side, but plain logic (here so client tests can run the whole path).
 // What one player has been told. Each tick it compares the simulation with what the player's
 // client can work out by itself (last sent position + velocity), and writes only the changes,
@@ -12,7 +13,8 @@ import { ENTITY_TYPES } from '../sim/entity-types';
 const UPGRADE_IDS = gameData.upgrades.upgrades.map((u) => u.id);
 /** supply per entity type (0 for heroes and buildings) */
 const SUPPLY = ENTITY_TYPES.map((id) => gameData.units.find((u) => u.id === id)?.supply ?? 0);
-import { hiredSupply } from '../sim/faction/hire';
+import { hiredSupply, writeHireStockView } from '../sim/faction/hire';
+import { KINGDOM_ORDERS } from '../sim/faction/orders';
 import { itemReadyAt } from '../sim/items';
 import { FACTION_HERO_SLOT, TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { Vision } from '../sim/vision';
@@ -251,8 +253,8 @@ export class ClientView {
       if (state !== s.state) mask |= Field.State;
       if (hp !== s.hp) mask |= Field.Hp;
       if (maxHp !== s.maxHp) mask |= Field.MaxHp;
-      // Mana only matters for heroes (bars); a whole point of change is enough.
-      if (e.hero && (mana !== s.mana || maxMana !== s.maxMana)) mask |= Field.Mana;
+      // Mana matters for heroes (bars) and casters (their skill buttons); a whole point of change is enough.
+      if ((e.hero || maxMana > 0) && (mana !== s.mana || maxMana !== s.maxMana)) mask |= Field.Mana;
       if (level !== s.level) mask |= Field.Level;
       if (buffs !== s.buffs) mask |= Field.Buffs;
       if (progress !== s.progress && (Math.abs(progress - s.progress) >= PROGRESS_STEP || progress === 0 || progress === 255))
@@ -337,10 +339,17 @@ export class ClientView {
     p.respawnTicks = hs.respawnAt ? Math.max(0, hs.respawnAt - sim.tick) : 0;
     p.moveSpeed = Math.round(hero.stats.moveSpeed * 100);
     p.hiredSupply = hiredSupply(sim, hero);
-    for (let i = 0; i < 4; i++) {
+    writeHireStockView(sim, p.hireStock);
+    p.abilityLevels.length = p.cooldownEnds.length = hs.def.abilities.length;
+    for (let i = 0; i < hs.def.abilities.length; i++) {
       p.abilityLevels[i] = hs.abilityLevels[i] ?? 0;
       p.cooldownEnds[i] = (hero.cooldowns[i] ?? 0) > sim.tick ? hero.cooldowns[i]! : 0;
     }
+    const stones = earthCharges(sim, hero);
+    if (stones) {
+      p.abilityCharges = [0, 0, 0, 0, stones.count, 0];
+      p.cooldownEnds[4] = stones.next;
+    } else delete p.abilityCharges;
     for (let i = 0; i < hs.inventory.length; i++) {
       const st = hs.inventory[i];
       p.items[i] = st ? st.item + 1 : 0;
@@ -348,9 +357,10 @@ export class ClientView {
       p.itemCooldownEnds[i] = itemReadyAt(hs, i, sim.tick);
     }
     // Respawn time counts down every tick: send it in whole seconds only.
-    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.hiredSupply},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')},${p.items.join(',')},${p.charges.join(',')},${p.itemCooldownEnds.join(',')}`;
-    if (key === this.playerKey) return;
-    this.playerKey = key;
+    const key = `${p.heroId},${p.gold},${p.xp},${p.level},${p.skillPoints},${Math.ceil(p.respawnTicks / 20)},${p.moveSpeed},${p.hiredSupply},${p.abilityLevels.join(',')},${p.cooldownEnds.join(',')},${p.abilityCharges?.join(',') ?? ''},${p.items.join(',')},${p.charges.join(',')},${p.itemCooldownEnds.join(',')}`;
+    const withStock = key + p.hireStock.map((s) => `;${s.shop}:${s.unit}:${s.count}:${s.readyAt}`).join('');
+    if (withStock === this.playerKey) return;
+    this.playerKey = withStock;
     sw.playerState(p);
   }
 
@@ -367,8 +377,8 @@ export class ClientView {
     f.slot = fs.slot;
     f.gold = Math.floor(fs.gold);
     f.wood = Math.floor(fs.wood);
-    f.supplyUsed = Math.min(255, fs.supplyUsed);
-    f.supplyCap = Math.min(255, fs.supplyCap);
+    f.supplyUsed = Math.min(0xffff, fs.supplyUsed);
+    f.supplyCap = Math.min(0xffff, fs.supplyCap);
     f.tier = fs.tier;
     let workers = 0,
       army = 0;
@@ -379,8 +389,11 @@ export class ClientView {
       else army += SUPPLY[u.type] ?? 0;
     }
     f.workers = Math.min(255, workers);
-    f.army = Math.min(255, army);
+    f.army = Math.min(0xffff, army);
     f.status = fs.status;
+    f.order = Math.max(0, KINGDOM_ORDERS.indexOf(fs.order));
+    f.orderTarget = fs.orderTarget >= 0 ? fs.orderTarget : 255;
+    f.orderBy = fs.orderBy >= 0 ? fs.orderBy : 255;
     for (let i = 0; i < UPGRADE_IDS.length; i++) {
       const id = UPGRADE_IDS[i]!;
       f.upgrades[i] = fs.upgrades[id] ?? 0;
@@ -392,7 +405,7 @@ export class ClientView {
       const b = sim.get(id);
       if (b?.alive && b.building?.done && !f.tech.includes(b.type)) f.tech.push(b.type);
     }
-    const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status},${f.upgrades.join('.')},${f.upgradeReady.join('.')},${f.tech.join('.')}`;
+    const key = `${f.gold},${f.wood},${f.supplyUsed},${f.supplyCap},${f.tier},${f.workers},${f.army},${f.status},${f.order},${f.orderTarget},${f.orderBy},${f.upgrades.join('.')},${f.upgradeReady.join('.')},${f.tech.join('.')}`;
     if (key === this.factionKey.get(fs.slot)) return;
     this.factionKey.set(fs.slot, key);
     sw.factionState(f);

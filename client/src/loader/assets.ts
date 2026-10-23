@@ -1,5 +1,6 @@
 // The game asset list (client/public/assets/manifest.json) -> lobby loading groups -> blob URLs.
 
+import { gameData } from '@game/shared';
 import type { LoadGroup, LoadItem, Loader } from './loader';
 
 interface ManifestFile {
@@ -32,16 +33,7 @@ export async function loadGameAssets(loader: Loader, extra: LoadItem[] = []): Pr
   const files = manifest.files.filter((f) => !SKIP.test(f.path));
   const groupOf = (f: ManifestFile): LoadGroup => {
     if (f.path.startsWith('models/')) {
-      const heroIds = [
-        'staff_warrior',
-        'blood_witch',
-        'sky_dragon',
-        'stone_golem',
-        'light_healer',
-        'arcane_huntress',
-        'centaur_raider',
-        'forest_elf',
-      ];
+      const heroIds = gameData.heroes.map((h) => h.id);
       return heroIds.some((h) => f.path.startsWith(`models/${h}`)) ? 'Heroes' : 'Units';
     }
     return (['Interface', 'Map', 'Units', 'Heroes', 'Effects', 'Sounds'].includes(f.group) ? f.group : 'Interface') as LoadGroup;

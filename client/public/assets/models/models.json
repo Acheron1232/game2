@@ -60,6 +60,22 @@
       "idle"
     ]
   },
+  "badger_mercenary": {
+    "skin": "badger_mercenary_skin",
+    "height": 1.784,
+    "triangles": 1590,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "bandit": {
     "skin": "monsters_1_skin",
     "height": 1.788,
@@ -92,6 +108,24 @@
       "victory"
     ]
   },
+  "banner_captain": {
+    "skin": "banner_captain_skin",
+    "height": 2.18,
+    "triangles": 1282,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "barracks": {
     "skin": "buildings_2_skin",
     "height": 3.49,
@@ -106,6 +140,17 @@
     "height": 0.85,
     "triangles": 172,
     "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "bell_ward": {
+    "skin": "golem_foundry_skin",
+    "height": 2.95,
+    "triangles": 308,
+    "sockets": [
+      "effect"
+    ],
     "clips": [
       "idle"
     ]
@@ -128,6 +173,70 @@
       "hit",
       "death",
       "victory"
+    ]
+  },
+  "boar_lancer": {
+    "skin": "boar_lancer_skin",
+    "height": 1.94,
+    "triangles": 1774,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
+  "bolt_cart": {
+    "skin": "bolt_cart_skin",
+    "height": 1.85,
+    "triangles": 568,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "bulwark_golem": {
+    "skin": "bulwark_golem_skin",
+    "height": 1.866,
+    "triangles": 1554,
+    "sockets": [
+      "core",
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "bulwark_hall": {
+    "skin": "golem_foundry_skin",
+    "height": 2.67,
+    "triangles": 764,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
     ]
   },
   "bush": {
@@ -175,6 +284,35 @@
       "victory"
     ]
   },
+  "chain_spire": {
+    "skin": "golem_foundry_skin",
+    "height": 2.8,
+    "triangles": 340,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "chainbreaker": {
+    "skin": "chainbreaker_skin",
+    "height": 1.759,
+    "triangles": 1570,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "chapel": {
     "skin": "buildings_2_skin",
     "height": 5.85,
@@ -182,6 +320,15 @@
     "sockets": [
       "window"
     ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "cinder_inn": {
+    "skin": "golem_foundry_skin",
+    "height": 3.715,
+    "triangles": 1164,
+    "sockets": [],
     "clips": [
       "idle"
     ]
@@ -213,6 +360,40 @@
       "victory"
     ]
   },
+  "coalback_porter": {
+    "skin": "coalback_porter_skin",
+    "height": 1.79,
+    "triangles": 1838,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
+  "covered_ram": {
+    "skin": "covered_ram_skin",
+    "height": 1.878,
+    "triangles": 996,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "crate": {
     "skin": null,
     "height": 1.25,
@@ -220,6 +401,35 @@
     "sockets": [],
     "clips": [
       "idle"
+    ]
+  },
+  "earth_remnant": {
+    "skin": "earth_spirit_skin",
+    "height": 1.285,
+    "triangles": 440,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "earth_spirit": {
+    "skin": "earth_spirit_skin",
+    "height": 2.373,
+    "triangles": 5168,
+    "sockets": [
+      "weapon",
+      "core"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory",
+      "roll"
     ]
   },
   "ember_wisp": {
@@ -295,6 +505,24 @@
       "idle"
     ]
   },
+  "foundry_golem": {
+    "skin": "foundry_golem_skin",
+    "height": 1.866,
+    "triangles": 1378,
+    "sockets": [
+      "core"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "fountain_of_life": {
     "skin": "buildings_3_skin",
     "height": 1.89,
@@ -306,12 +534,88 @@
       "idle"
     ]
   },
+  "fox_trailshot": {
+    "skin": "fox_trailshot_skin",
+    "height": 1.849,
+    "triangles": 1446,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
+  "frost_adept": {
+    "skin": "frost_adept_skin",
+    "height": 2.022,
+    "triangles": 1280,
+    "sockets": [
+      "staff"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
+  "frost_obelisk": {
+    "skin": "golem_foundry_skin",
+    "height": 2.8,
+    "triangles": 280,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "gold_mine": {
     "skin": null,
     "height": 2.1,
     "triangles": 796,
     "sockets": [],
     "clips": []
+  },
+  "golem_foundry": {
+    "skin": "golem_foundry_skin",
+    "height": 3.845,
+    "triangles": 1964,
+    "sockets": [
+      "furnace",
+      "core"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "grave_bellkeeper": {
+    "skin": "grave_bellkeeper_skin",
+    "height": 2.365,
+    "triangles": 4080,
+    "sockets": [
+      "weapon",
+      "core"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
   },
   "grey_wolf": {
     "skin": "monsters_1_skin",
@@ -386,6 +690,17 @@
       "idle"
     ]
   },
+  "healing_lantern": {
+    "skin": "lantern_novice_skin",
+    "height": 0.9,
+    "triangles": 352,
+    "sockets": [
+      "light"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "hero_shrine": {
     "skin": "buildings_1_skin",
     "height": 2.56,
@@ -408,11 +723,66 @@
       "idle"
     ]
   },
+  "kite_bomber": {
+    "skin": "kite_bomber_skin",
+    "height": 1.759,
+    "triangles": 1514,
+    "sockets": [
+      "bomb"
+    ],
+    "clips": [
+      "hit",
+      "death",
+      "victory",
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "lancer": {
     "skin": "units_3_skin",
     "height": 2.539,
     "triangles": 1340,
     "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "lantern_monk": {
+    "skin": "lantern_monk_skin",
+    "height": 2.14,
+    "triangles": 4536,
+    "sockets": [
+      "weapon",
+      "lantern"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "lantern_novice": {
+    "skin": "lantern_novice_skin",
+    "height": 1.812,
+    "triangles": 1282,
+    "sockets": [
+      "weapon"
+    ],
     "clips": [
       "idle",
       "walk",
@@ -453,6 +823,43 @@
       "idle"
     ]
   },
+  "null_warden": {
+    "skin": "null_warden_skin",
+    "height": 2.012,
+    "triangles": 1274,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "obsidian_heart": {
+    "skin": "obsidian_heart_skin",
+    "height": 2.373,
+    "triangles": 4324,
+    "sockets": [
+      "weapon",
+      "core"
+    ],
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory",
+      "idle",
+      "walk"
+    ]
+  },
   "ogre_brute": {
     "skin": "monsters_3_skin",
     "height": 2.781,
@@ -485,6 +892,62 @@
       "victory"
     ]
   },
+  "pike_warden": {
+    "skin": "pike_warden_skin",
+    "height": 2.352,
+    "triangles": 1206,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "cast",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2"
+    ]
+  },
+  "pitch_basin": {
+    "skin": "golem_foundry_skin",
+    "height": 0.43,
+    "triangles": 308,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "rally_bastion": {
+    "skin": "golem_foundry_skin",
+    "height": 2.6,
+    "triangles": 412,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "ram_drummer": {
+    "skin": "ram_drummer_skin",
+    "height": 2.15,
+    "triangles": 2970,
+    "sockets": [],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "ratling_cutthroat": {
     "skin": "ratling_cutthroat_skin",
     "height": 1.515,
@@ -499,6 +962,46 @@
       "hit",
       "death",
       "victory"
+    ]
+  },
+  "reinforced_wall": {
+    "skin": "golem_foundry_skin",
+    "height": 1.925,
+    "triangles": 528,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "reliquary_guard": {
+    "skin": "reliquary_guard_skin",
+    "height": 1.759,
+    "triangles": 1470,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
+  "repair_post": {
+    "skin": "golem_foundry_skin",
+    "height": 2.6,
+    "triangles": 588,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
     ]
   },
   "rock_big": {
@@ -553,6 +1056,24 @@
       "idle"
     ]
   },
+  "rune_gunner": {
+    "skin": "rune_gunner_skin",
+    "height": 1.759,
+    "triangles": 1310,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
+    ]
+  },
   "shellback_beetle": {
     "skin": "shellback_beetle_skin",
     "height": 2.493,
@@ -569,6 +1090,17 @@
       "victory"
     ]
   },
+  "shield_pylon": {
+    "skin": "golem_foundry_skin",
+    "height": 2.32,
+    "triangles": 220,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "side_shop": {
     "skin": "buildings_3_skin",
     "height": 3.7,
@@ -576,6 +1108,25 @@
     "sockets": [],
     "clips": [
       "idle"
+    ]
+  },
+  "siege_golem": {
+    "skin": "siege_golem_skin",
+    "height": 1.866,
+    "triangles": 1850,
+    "sockets": [
+      "core",
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2",
+      "cast"
     ]
   },
   "sky_dragon": {
@@ -681,6 +1232,17 @@
       "victory"
     ]
   },
+  "stone_wall": {
+    "skin": "golem_foundry_skin",
+    "height": 1.925,
+    "triangles": 308,
+    "sockets": [
+      "effect"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
   "stronghold": {
     "skin": "buildings_1_skin",
     "height": 7.59,
@@ -735,6 +1297,53 @@
     "sockets": [
       "lantern",
       "lantern2"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "thorn_marshal": {
+    "skin": "thorn_marshal_skin",
+    "height": 2.94,
+    "triangles": 4000,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "cast",
+      "hit",
+      "death",
+      "victory",
+      "attack",
+      "attack2"
+    ]
+  },
+  "tidebreaker": {
+    "skin": "tidebreaker_skin",
+    "height": 2.133,
+    "triangles": 3912,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
+  "timber_wall": {
+    "skin": "golem_foundry_skin",
+    "height": 1.88,
+    "triangles": 496,
+    "sockets": [
+      "effect"
     ],
     "clips": [
       "idle"
@@ -822,12 +1431,59 @@
       "victory"
     ]
   },
+  "tusk_lodge": {
+    "skin": "golem_foundry_skin",
+    "height": 2.95,
+    "triangles": 796,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "veil_sister": {
+    "skin": "veil_sister_skin",
+    "height": 1.86,
+    "triangles": 1202,
+    "sockets": [
+      "weapon"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "watchtower": {
     "skin": "buildings_3_skin",
     "height": 7.49,
     "triangles": 308,
     "sockets": [
       "lookout"
+    ],
+    "clips": [
+      "idle"
+    ]
+  },
+  "wayfarer_inn": {
+    "skin": "golem_foundry_skin",
+    "height": 3.715,
+    "triangles": 864,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
+  "wind_totem": {
+    "skin": "golem_foundry_skin",
+    "height": 2.2,
+    "triangles": 352,
+    "sockets": [
+      "effect"
     ],
     "clips": [
       "idle"

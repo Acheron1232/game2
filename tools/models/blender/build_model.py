@@ -136,5 +136,20 @@ def render_previews():
     print(f"PREVIEW art/source/models/{model_id}.png")
 
 
+if "--blend" in args:
+    # Keep editable geometry, UVs, packed source texture and all animation clips for review.
+    if model.armature:
+        model.armature.animation_data.action = None
+        for track in model.armature.animation_data.nla_tracks:
+            track.mute = True
+        for bone in model.armature.pose.bones:
+            bone.rotation_euler = (0, 0, 0)
+            bone.location = (0, 0, 0)
+    bpy.context.scene.frame_set(1)
+    blend_dir = os.path.join(kit.ROOT, "art", "source", "blender")
+    os.makedirs(blend_dir, exist_ok=True)
+    bpy.ops.file.pack_all()
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(blend_dir, f"{model_id}.blend"))
+
 if want_preview:
     render_previews()

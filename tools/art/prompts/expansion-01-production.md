@@ -1,0 +1,21 @@
+Use case: stylized-concept.
+Create ONE landscape fantasy RTS concept selection sheet, exact 4 columns x 3 rows, TWELVE equal bordered cells. Crisp high-detail hand-painted chunky game art, classic readable strategy-game proportions, broad silhouettes, rich painted bronze highlights, colored cloth, wood, stone, fur. Match the approved hero reference especially H07/H08/H10/H11/H12, and the building reference. ORIGINAL designs only, no franchise assets or recognizable copied characters. Muted cream parchment background, restrained dark-gold frame, soft daylight from upper left, soft contact shadows. Every object or unit isolated inside its cell, no scenery spilling into neighbors, no collage overlap, complete figure/base visible. Team-color cloth is vivid MAGENTA #FF00FF; fixed colors remain distinct. NO photorealism, no black sci-fi, no UI icons, no tiny microtext. All 12 designs must be clearly different in silhouette, weapon and function. No extra full characters outside the requested subjects. Carefully readable English labels.
+Layout: one thin title band above the grid; each cell reserves a clean caption strip UNDER the artwork, exactly TWO lines. First line is the provided code and name, second line the provided short caption. Do not put labels on the objects themselves. No paragraphs. Grid order is left to right, top to bottom.
+
+Title EXACT: "TEMPLE WARS / PRODUCTION AND TAVERNS"
+Buildings: elevated three-quarter isometric view; make a plausible compact buildable structure, not a whole town. Training function must be readable from equipment and architecture.
+
+1. Artwork: A broad stone training hall, giant shield over entrance, shield racks and a bronze-banded practice gate. Caption first line EXACT: "B13 Bulwark Hall". Second line EXACT: "ARMORED INFANTRY | U13 + U14".
+2. Artwork: A timber lodge with a boar-head entrance, tusks, fenced boar pen, saddle racks and leather roof. Caption first line EXACT: "B14 Tusk Lodge". Second line EXACT: "BEAST CAVALRY | U15 + U16".
+3. Artwork: A compact bronze-and-stone armory with a glowing blue rune anvil, thick gun barrels, metal vents and crystal tools. Caption first line EXACT: "B15 Rune Works". Second line EXACT: "MAGIC WEAPONS | U17 + U18".
+4. Artwork: A squat mushroom nursery grown around a timber hut, giant green-purple caps, spore baskets and round wooden doors. Caption first line EXACT: "B16 Mycelium House". Second line EXACT: "LIVING SUPPORT | U19 + U20".
+5. Artwork: A land-placeable coastal barracks on a stone base, walrus-face beam, shell armor racks, rope winch and coral roof, no water scene. Caption first line EXACT: "B17 Tide Dock". Second line EXACT: "AMPHIBIOUS TROOPS | U21 + U22".
+6. Artwork: A low gothic stone training sanctuary with one huge bronze bell, teal soul lanterns, small reliquary niches and a cloth awning. Caption first line EXACT: "B18 Bell Sanctum". Second line EXACT: "SPIRIT INFANTRY | U23 + U24".
+7. Artwork: An open timber assembly yard, wheeled ram frame, long ballista limbs, pulley crane, stacked beams and reinforced shed. Caption first line EXACT: "B19 Siege Yard". Second line EXACT: "SIEGE MACHINES | U25 + U26".
+8. Artwork: A tall timber aviary with moth cocoon frames, a broad crane-bird nest, landing poles, pale sail awnings and ladders. Caption first line EXACT: "B20 Wind Aviary". Second line EXACT: "FLYING TROOPS | U27 + U28".
+9. Artwork: A low forest lodge with branching antler lintel, thorn fence, leaf roof, snare racks and amber sap lanterns. Caption first line EXACT: "B21 Briar Lodge". Second line EXACT: "AMBUSH AND CONTROL | U29 + U30".
+10. Artwork: A stout plaster and timber laboratory with two brass vats, green glass pipes, pitch barrels and a work awning. Caption first line EXACT: "B22 Apothecary Yard". Second line EXACT: "ALCHEMICAL WARFARE | U31 + U32".
+11. Artwork: A welcoming crooked stone-and-timber roadside tavern, badger shield sign, fox-tail weather vane, travel packs and bench. Caption first line EXACT: "B23 Wayfarer Inn". Second line EXACT: "MERCENARY TAVERN | U33 + U34".
+12. Artwork: A black basalt tavern with orange forge windows, kettle chimney, salamander sign, coal baskets and warm copper trim. Caption first line EXACT: "B24 Cinder Inn". Second line EXACT: "MERCENARY TAVERN | U35 + U36".
+
+Check all twelve codes and both caption lines before finishing.

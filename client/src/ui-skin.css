@@ -461,8 +461,48 @@ body.aiming .game-cursor {
 .hud-kingdom p {
   margin: 0;
 }
-.hud-kingdom > p:last-child {
+.hud-kingdom > p:last-of-type {
   color: #e4c88e;
+}
+.kingdom-orders {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.kingdom-orders[hidden] {
+  display: none;
+}
+.orders-label {
+  margin-right: 4px;
+  color: #efcf88;
+  font-family: var(--title-font);
+  font-size: 12px;
+}
+.order-btn {
+  border: 1px solid #a9873c88;
+  border-radius: 3px;
+  background: rgba(20, 14, 8, 0.75);
+  padding: 2px 8px;
+  color: #e9dcc0;
+  font-family: var(--body-font);
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+.order-btn:hover {
+  border-color: var(--gold);
+  color: #fff;
+}
+.order-btn.on {
+  border-color: #f2c94c;
+  background: rgba(127, 96, 30, 0.85);
+  color: #fff3c8;
+  box-shadow: 0 0 6px rgba(242, 201, 76, 0.6);
+}
+.order-btn .swatch-dot {
+  margin-right: 4px;
 }
 .kingdom-base {
   background: none;
@@ -473,8 +513,9 @@ body.aiming .game-cursor {
   font-family: var(--title-font);
   font-size: 12px;
 }
+/* Below the top bar with the kingdom line and the order buttons. */
 #debug {
-  top: 90px;
+  top: 112px;
 }
 .sel-info {
   bottom: 218px;
@@ -506,6 +547,89 @@ body.aiming .game-cursor {
 .selected-details p:last-child {
   color: #c4b396;
 }
+/* Abilities of the selected hero or unit: hover an icon for its text and numbers. */
+.sel-abilities {
+  grid-column: 2;
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  pointer-events: auto;
+}
+.sel-ability {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #937339;
+  background: radial-gradient(circle at 35% 30%, #3a2a1a, #0a0704);
+  cursor: help;
+}
+.sel-ability .ability-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--title-font);
+  font-size: 16px;
+  color: #efcf88;
+}
+.sel-ability.passive {
+  border-style: dashed;
+}
+/* An own unit's skill: a button with a cooldown sweep, like the hero's. */
+.sel-ability.usable {
+  cursor: pointer;
+  border-color: #e0b85a;
+}
+.sel-ability.usable:hover {
+  box-shadow: 0 0 6px #e0b85a;
+}
+.sel-ability .cooldown {
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(rgba(0, 0, 0, 0.72) calc(var(--cd, 0) * 360deg), transparent 0);
+  pointer-events: none;
+}
+.sel-ability .cooldown-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  text-shadow: 0 1px 3px #000;
+  pointer-events: none;
+}
+.sel-ability.no-mana .ability-icon {
+  filter: saturate(0.4) brightness(0.6) sepia(0.3) hue-rotate(190deg);
+}
+.sel-ability .key {
+  font-size: 10px;
+  left: 2px;
+  top: 0;
+  z-index: 1;
+}
+.hover-card {
+  position: fixed;
+  z-index: 7;
+  max-width: 320px;
+  padding: 6px 10px;
+  background: rgba(12, 8, 4, 0.92);
+  border: 1px solid #967638;
+  font-size: 13px;
+  pointer-events: none;
+}
+.hover-card b {
+  display: block;
+  color: #efcf88;
+  font-family: var(--title-font);
+  margin-bottom: 2px;
+}
+.hover-card p {
+  margin: 1px 0;
+}
+.hover-card p:last-child {
+  color: #a99878;
+}
 .tooltip {
   bottom: 218px;
   z-index: 6;
@@ -533,15 +657,15 @@ body.aiming .game-cursor {
     gap: 3px 12px;
     font-size: 12px;
   }
-  .hud-kingdom > p:last-child {
+  .hud-kingdom > p:last-of-type {
     grid-column: 1 / -1;
   }
   .hud-top {
-    min-height: 102px;
+    min-height: 128px;
     gap: 4px 10px;
   }
   #debug {
-    top: 112px;
+    top: 138px;
   }
   .sel-info,
   .tooltip {

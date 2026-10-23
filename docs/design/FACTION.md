@@ -27,7 +27,17 @@ Besides the player's hero, every faction gets **one hero of its own**, played by
 
 - Workers mine gold at the gold mine next to the Town Hall (10 gold per trip, max 5 workers in a mine at once) and chop trees (10 wood per trip).
 - Workers bring resources to the nearest Town Hall / Stronghold / Citadel.
-- Supply: each Town Hall gives 12, each House gives 8, max 100.
+- Supply: each Town Hall gives 12, each House gives 8. There is **no real army limit**. Instead a big army costs **upkeep** (rules.json `economy.upkeep`): the more supply a kingdom uses (workers too), the less gold every mining trip brings. Wood is not touched.
+
+| Supply used | Gold per trip | Name |
+|---|---|---|
+| 0–69 | 100% | No upkeep |
+| 70–99 | 80% | Low upkeep |
+| 100–129 | 60% | High upkeep |
+| 130–159 | 40% | Heavy upkeep |
+| 160+ | 25% | Crushing upkeep |
+
+  The top bar shows the step next to the supply. `supplyCap` (250) is only a safety ceiling for the server; with upkeep a kingdom does not get near it.
 - Gold mines run out: main 20,000, natural expansion 14,000, corner expansion 16,000 (guarded by ogres).
 - Trees are real: chopped trees are removed. This slowly opens the forest around bases, like in classic RTS games.
 
@@ -43,13 +53,30 @@ Besides the player's hero, every faction gets **one hero of its own**, played by
 | Lancer | 4 | 800 | 4 heavy | normal | 28-34 | 1.4 | ground | 3.5 | 240/60 | 4 | 35 | Barracks | Stronghold, Forge | 30-38 |
 | Catapult | 3 | 450 | 2 heavy | siege | 60-70 | 10 | ground | 2.2 | 220/60 | 3 | 30 | Workshop | Stronghold | 26-32 |
 | Hawk Rider | 4 | 700 | 1 light | normal | 30-36 | 2.5 | ground+air | 3.6 (air) | 280/70 | 4 | 40 | Hawk Roost | Citadel | 34-42 |
+| Pike Warden | 3 | 550 | 4 heavy | normal | 18-23 | 1.5 | ground | 2.6 | 150/30 | 3 | 25 | Barracks | Stronghold | 18-24 |
+| Frost Adept | 3 | 330 | 0 unarmored | magic | 14-18 | 6 | ground+air | 2.7 | 190/50 | 3 | 28 | Chapel | Stronghold | 18-24 |
+| Foundry Golem | 4 | 950 | 5 heavy | normal | 26-34 | 1.6 | ground | 2.2 | 260/90 | 5 | 38 | Golem Foundry | Stronghold, Forge | 18-24 |
+| Chainbreaker | 3 | 690 | 4 heavy | normal | 32-39 | 1.5 | ground | 2.45 | 190/40 | 3 | 31 | Bulwark Hall | Stronghold, Forge | 24-30 |
+| Rune Gunner | 3 | 380 | 1 unarmored | pierce | 30-38 | 7 | ground+air | 2.5 | 220/55 | 3 | 31 | Workshop | Stronghold, Forge | 24-30 |
+| Null Warden | 3 | 480 | 2 medium | magic | 12-16 | 5 | ground+air | 2.6 | 230/60 | 3 | 31 | Chapel | Stronghold | 24-30 |
+| Reliquary Guard | 4 | 850 | 5 heavy | normal | 20-27 | 1.3 | ground | 2.35 | 250/65 | 4 | 34 | Bulwark Hall | Stronghold, Forge | 32-40 |
+| Banner Captain | 3 | 580 | 3 heavy | normal | 16-21 | 1.2 | ground | 2.7 | 200/30 | 3 | 31 | Barracks | Stronghold | 24-30 |
+| Lantern Novice | 3 | 310 | 0 unarmored | magic | 9-12 | 5 | ground+air | 2.75 | 170/40 | 2 | 28 | Chapel | Stronghold | 16-20 |
+| Veil Sister | 3 | 350 | 1 unarmored | magic | 10-14 | 5.5 | ground+air | 2.7 | 210/55 | 3 | 31 | Chapel | Stronghold | 24-30 |
+| Bulwark Golem | 4 | 1250 | 7 heavy | normal | 22-28 | 1.5 | ground | 1.9 | 340/120 | 6 | 40 | Golem Foundry | Stronghold, Forge | 48-60 |
+| Siege Golem | 4 | 1100 | 5 heavy | siege | 75-95 | 1.8 | ground | 1.85 | 380/150 | 6 | 40 | Golem Foundry | Stronghold, Forge | 48-60 |
+| Boar Lancer | 4 | 850 | 4 heavy | normal | 30-37 | 1.5 | ground | 3.6 | 260/65 | 4 | 36 | Tusk Lodge | Stronghold | 32-44 |
+| Ram Drummer | 4 | 720 | 2 heavy | normal | 13-18 | 1.3 | ground | 3.1 | 240/60 | 4 | 36 | Tusk Lodge | Stronghold | 32-44 |
+| Covered Ram | 4 | 1050 | 4 heavy | siege | 80-100 | 1.4 | ground | 2 | 280/100 | 5 | 39 | Workshop | Stronghold | 40-55 |
+| Bolt Cart | 4 | 520 | 2 heavy | siege | 40-48 | 8 | ground | 2.15 | 240/90 | 4 | 36 | Workshop | Stronghold | 32-44 |
+| Kite Bomber | 4 | 500 | 1 light | siege | 32-40 | 5.5 | ground | 3.4 (air) | 280/100 | 4 | 36 | Hawk Roost | Citadel | 32-44 |
 <!-- /table -->
 
 Roles in one line:
 - **Worker** — gathers, builds, repairs.
 - **Swordsman** — cheap tough front line.
 - **Archer** — ranged damage, hits air.
-- **Cleric** — heals nearby units (auto-cast Mend).
+- **Cleric** — heals nearby units (Mend) and shields an ally in a fight (Faith Ward, +4 armor). Both work by themselves; the player can press them too.
 - **Lancer** — fast heavy rider, flanks and kills archers.
 - **Catapult** — long range siege, kills towers and buildings.
 - **Hawk Rider** — flying Tier 3 unit, hits air and ground.
@@ -63,14 +90,28 @@ Roles in one line:
 | Stronghold | 2 | 2500 | 5 | 300/150 | 90 | 5×5 | 12 | Worker | Town Hall |
 | Citadel | 3 | 3000 | 6 | 350/200 | 110 | 5×5 | 12 | Worker | Stronghold, Forge |
 | House | 1 | 500 | 3 | 80/20 | 30 | 2×2 | 8 | — | — |
-| Barracks | 1 | 1200 | 5 | 160/50 | 50 | 4×4 | — | Swordsman, Lancer | — |
+| Barracks | 1 | 1200 | 5 | 160/50 | 50 | 4×4 | — | Swordsman, Lancer, Pike Warden, Banner Captain | — |
 | Archery Range | 1 | 1100 | 5 | 150/60 | 50 | 4×3 | — | Archer | Barracks |
 | Forge | 1 | 1000 | 5 | 140/60 | 45 | 3×3 | — | — | — |
-| Chapel | 2 | 1000 | 5 | 180/80 | 55 | 3×4 | — | Cleric | Stronghold |
-| Workshop | 2 | 1100 | 5 | 160/100 | 55 | 4×4 | — | Catapult | Stronghold, Forge |
-| Hawk Roost | 3 | 1200 | 5 | 200/150 | 60 | 4×4 | — | Hawk Rider | Citadel |
+| Chapel | 2 | 1000 | 5 | 180/80 | 55 | 3×4 | — | Cleric, Frost Adept, Null Warden, Lantern Novice, Veil Sister | Stronghold |
+| Workshop | 2 | 1100 | 5 | 160/100 | 55 | 4×4 | — | Catapult, Rune Gunner, Covered Ram, Bolt Cart | Stronghold, Forge |
+| Hawk Roost | 3 | 1200 | 5 | 200/150 | 60 | 4×4 | — | Hawk Rider, Kite Bomber | Citadel |
 | Watchtower (attacks 22-26 pierce, range 7) | 1 | 550 | 5 | 110/60 | 35 | 2×2 | — | — | Barracks |
 | Hero Shrine | 1 | 900 | 5 | 180/60 | 45 | 3×3 | — | Faction hero (250/50, 30 s) | Barracks |
+| Golem Foundry | 2 | 1400 | 5 | 220/140 | 65 | 5×4 | — | Foundry Golem, Bulwark Golem, Siege Golem | Stronghold, Forge |
+| Bulwark Hall | 2 | 1450 | 5 | 210/100 | 55 | 4×4 | — | Chainbreaker, Reliquary Guard | Stronghold |
+| Timber Wall | 1 | 600 | 2 | 20/30 | 12 | 2×1 | — | — | — |
+| Stone Wall | 2 | 1100 | 5 | 35/45 | 20 | 2×1 | — | — | Stronghold |
+| Reinforced Wall | 2 | 1700 | 8 | 65/60 | 25 | 2×1 | — | — | Stronghold |
+| Repair Post | 2 | 650 | 3 | 100/75 | 30 | 3×2 | — | — | Stronghold |
+| Rally Bastion | 2 | 1050 | 5 | 150/90 | 40 | 3×3 | — | — | Stronghold |
+| Chain Spire | 2 | 700 | 4 | 190/80 | 45 | 2×2 | — | — | Stronghold |
+| Frost Obelisk | 2 | 850 | 5 | 150/75 | 40 | 2×2 | — | — | Stronghold |
+| Bell Ward | 2 | 750 | 4 | 170/80 | 40 | 2×2 | — | — | Stronghold |
+| Pitch Basin | 2 | 400 | 1 | 65/45 | 20 | 2×2 | — | — | Stronghold |
+| Wind Totem | 2 | 600 | 3 | 140/60 | 35 | 2×2 | — | — | Stronghold |
+| Shield Pylon | 2 | 700 | 5 | 180/90 | 45 | 2×2 | — | — | Stronghold |
+| Tusk Lodge | 2 | 1300 | 5 | 210/100 | 60 | 4×4 | — | Boar Lancer, Ram Drummer | Stronghold |
 <!-- /table -->
 
 ## Tech tree
@@ -139,16 +180,16 @@ Bought by **your hero** with **hero gold** at your own Town Hall. They help only
 
 The faction AI runs on the server, 2–4 times per second (not every tick). It has these parts:
 
-1. **Economy manager** — keeps workers busy, trains workers up to `workerTarget`, sends 70% to gold and 30% to wood (changes with what the next build needs), builds Houses before supply runs out (when free supply drops below the personality's `houseAhead`, 5–9). Workers **repair** hurt buildings for free (below 70% health, towers below 85%; up to 3 repairers; while the base is under attack only towers).
+1. **Economy manager** — keeps workers busy, trains workers up to `workerTarget`, sends 70% to gold and 30% to wood (changes with what the next build needs), builds Houses before supply runs out (when free supply drops below the personality's `houseAhead`, 5–9; no more Houses past what it trains, see below). Workers **repair** hurt buildings for free (below 70% health, towers below 85%; up to 3 repairers; while the base is under attack only towers).
 2. **Build manager** — follows the build order (changed a little by the personality), then free play. Picks building spots from the base build area (a grid around the Town Hall), never blocks the mine path or the exit toward the map center. Where a building goes depends on the personality (see "AI personality"). When the build area is full the base **grows** (6, 12, 18 units past it; outside the area only on open ground with 2 units of walkable space around, so a building never closes a narrow path). Free play never ends: tier ups, more Watchtowers over time (main base, then 1–3 at every expansion), more production buildings for the unit mix.
-3. **Production manager** — keeps production buildings busy with the unit mix for its tier.
+3. **Production manager** — keeps production buildings busy with the unit mix for its tier. Above `trainUpToSupply` (130 used supply, ai.json `army`) it trains no more army unless its base is attacked: the upkeep would eat more gold than the soldiers are worth.
 4. **Army manager** — groups units into a **defense group** (at least 4 supply at home after the first attack) and an **attack army**. Gathers the army at a rally point, waits for stragglers, then attacks. Between attacks the army **roams** (see "A living map" below).
 5. **Target picker** — picks which enemy to attack (by difficulty: closest, weakest, or where our hero is fighting). Re-checks every 5 seconds. At the enemy base the army walks to the Town Hall first when it is close.
 6. **Defense** — see "Coming home to defend" below. Workers fight only if the Town Hall is below 30% health, and then only the half nearest the fight (the other half keeps gathering).
-7. **Expansion** — takes the natural expansion when it is safe (camp cleared, no enemy army near). Clears the camp with the army first if needed (but never pulls the army out of a siege for it).
-8. **Retreat** — if the army drops below `retreatAtArmyPct` of its starting supply, it goes home. Not when the faction is maxed out (100 supply) and rich: then its losses come back at once.
+7. **Expansion** — takes the natural expansion when it is safe (camp cleared, no enemy army near). Clears the camp with the army first if needed (but never pulls the army out of a siege for it). It keeps the Town Hall money only once the spot is free: before 2026-10-23 it kept 385 gold from the moment the expansion was due, and while the army was busy elsewhere that froze the kingdom's gold (and its army) for 10–25 minutes.
+8. **Retreat** — if the army drops below `retreatAtArmyPct` of its starting supply, it goes home. Not when the faction is near `trainUpToSupply` and rich: then its losses come back at once.
 9. **Faction hero** — builds the Hero Shrine and summons the hero (see above).
-10. **Attack timing** — before an attack the AI compares its army (and heroes with it) with the defense of the target base: towers (3 supply each) and units near its Town Hall. It attacks when it is at least 1.15 × stronger; until then it clears camps. After 75 s of waiting it goes anyway, and in the late game it never waits. Weakly defended factions are better targets. Against an enemy with 6+ towers it trains more catapults (+15% of the mix). In the late game the army walks past towers to the Town Hall.
+10. **Attack timing** — before an attack the AI compares its army (and heroes with it) with the defense of the target base: towers (3 supply each) and units near its Town Hall. It attacks when it is at least 1.15 × stronger; until then it clears camps. After 75 s of waiting it goes anyway, and in the late game it never waits. From `attackAtSupplyUsed` (100 used supply) it goes with what it has (at least half the attack size): under upkeep an army that waits only costs. Weakly defended factions are better targets: few buildings, a small army, and few defenders at home (an army that is out does not defend). A kingdom another AI attacks now is a better target too (it fights on two sides), and the AI sticks to its last target unless another one is clearly better. **After a won fight in the field** the army pushes on to that enemy's base when it still has `pushAfterWinPct` (60%) of the attack size and half its health. Against an enemy with 6+ towers it trains more catapults (+15% of the mix). In the late game the army walks past towers to the Town Hall.
 
 ### Building prices rise (rules.json `economy.buildingPriceRise`)
 
@@ -172,7 +213,7 @@ For everyone, picked at random: the side the base grows toward and how strongly,
 - **Heroes walk with the army.** Both heroes of a Bot slot (the player's hero and the faction's hero) join the army whenever it is out (camps, enemy armies, attacks) and share the XP of its kills; they count as army strength (2 + level each) when they are near it. When the army is at home they farm camps near the base, hire soldiers and shop. A bot hero walks home for Town Hall upgrades when its upgrade savings (30% of the gold it earns, kept apart from items and hiring) pay for one.
 - **Roaming.** From `roamAtSupply` army supply (6), while the next attack is not ready, the army clears neutral camps it can beat (total monster level ≤ `campLevelPerSupply` × army supply, our hero counts too; flying monsters only with enough archers or other units that hit air), up to `roamRadius` from home (bigger at higher tiers), never right next to an enemy base. After a camp it goes on to the nearest next camp while its health is above `roamMinHpPct`, else home. When it is strong enough for an attack it attacks straight from where it is.
 - **Meeting other armies.** An enemy army (at least 4 supply of units; heroes alone do not count) seen within `huntRange` of our army, away from its own base, is attacked when our strength is at least `huntStrengthRatio` × theirs (supply, a hero counts as 2 + level). A much stronger army that is close: our army goes home. An attack army on its way also fights an enemy army it meets, then walks on.
-- **Reinforcements** walk to the attack army as one wave and join it when they reach it.
+- **Reinforcements** walk to the attack army as one wave (at least `reinforceSupply`, 10) and join it when they reach it.
 
 ### Coming home to defend
 
@@ -196,8 +237,8 @@ When enemies (not workers passing by) are within 24 of one of our Town Halls:
 | Think delay | 1.0 s | 0.5 s | 0.3 s |
 | Workers | 12 | 16 | 20 |
 | Production buildings | 2 | 3 | 5 |
-| First attack at army supply | 20 | 24 | 22 (early pressure) |
-| Later attacks at | 22 | 28 | 34 |
+| First attack at army supply | 22 | 30 | 28 (early pressure) |
+| Later attacks at | 28 | 40 | 46 |
 | Expands at | never | 10 min | 7 min |
 | Focus fire | no | yes | yes |
 | Pulls wounded units back | no | no | yes |
@@ -239,6 +280,22 @@ After this: free play — keep supply ahead, keep production busy, rebuild lost 
 | 2 | 25% | 25% | 25% | 15% | 10% | |
 | 3 | 15% | 20% | 25% | 10% | 10% | 20% |
 
+### Self-play tuning (tools/ai/tune.ts)
+
+The AI does not learn while it plays. Instead a tool tunes its numbers with many bot matches (an evolutionary search, no neural network): `pnpm --filter @game/tools ai:tune`.
+
+- **What it changes:** ai.json `faction.difficulties.normal` (firstAttackArmySupply, attackArmySupply, retreatAtArmyPct, expandAtMinute), `faction.army` (roamAtSupply, huntStrengthRatio, reinforceSupply, attackAtSupplyUsed, trainUpToSupply, pushAfterWinPct, campLevelPerSupply) and the `unitMix` shares of every tier (each unit keeps at least 3%; shares always add up to 1). Ranges are in `tools/ai/lib/genes.ts`.
+- **How a candidate is tested:** a headless 4-player bot match (normal) where the candidate plays 2 slots and the current ai.json numbers play the other 2, each its own team. Every seed is played twice with the sides swapped (the **mirror**: candidate in slots 1+3, then in 2+4, and so on over all corner pairs), so the start spots, heroes and personalities that come from the seed help both sides the same. Score: 1 if a candidate slot wins, 0 if a current one wins, no winner in time: the candidates' share of the kingdoms still alive. 0.5 means equal.
+- **The search:** generation 1 is the current numbers with random changes. Every generation all candidates play the same new seeds; the best half lives on (its score keeps adding up), and children of two of them (each number from one parent, then small random changes) fill the rest.
+- **Ladder (`--ladder`):** the opponent starts as the ai.json numbers. When the leader has two generations of matches and a score of at least `--promote-from` (0.6), it gets its own check on new seeds (`--promote-matches`, 32). Clearly better there (score minus 2 standard errors above 0.5): it becomes the new opponent (a "champion") for everybody, and all scores start again. So the AI gets better step by step, not only against the old version. The final check is always against ai.json.
+- **Long runs:** the report is saved after every generation and holds the whole search state; `--resume <report>` goes on from the last saved generation. `--until <time>` (or `--hours`) stops starting new generations so that the final check still ends before that time. `tools/ai/run-long.sh <report> [options]` runs it at nice 15 and resumes by itself after an error (up to 5 times). The tool only lowers its CPU priority, never raises it.
+- **The check:** the best candidate plays `--validate` (48) matches on seeds it never saw (24 seeds, both sides). Better only when the score minus two standard errors is above 0.5. `--check-only <report>` runs only the check for the best candidate of an earlier report (a new `--seed` gives new seeds).
+- **Why the check matters:** the search score is too high by design: a candidate is kept *because* it won, and its lucky early matches stay in its average.
+- **How the numbers reach one faction:** `MatchSetup.aiTuning` (tools only, never from the lobby or the protocol) holds changed numbers per faction slot; `tuning.ts` `factionRules()` puts them over ai.json, and the brain reads all these numbers from there. The game itself always plays the ai.json numbers.
+- The tool never writes ai.json. A person reads the report (`server/logs/ai-tune-*.json`: every generation, the best candidate, the old → new numbers, the check) and decides.
+- **First run (2026-10-23):** 5 generations × 10 candidates × 8 matches (400 matches, 23 min with 8 processes; this search did not have the mirror yet). Best candidate c15: search score 0.81 over 32 matches. Check 1 (48 seeds, no mirror): 0.40. Check 2 (`--check-only`, 24 new seeds × both sides): 0.60. Together about 0.50: **not shown to be better**, ai.json unchanged. In 13 of the 24 mirrored seeds each side won once: the seed and the start spots decide more than these numbers do. So a real gain needs many more matches per candidate (a night on the server).
+- Limits: it only tunes Normal; it learns to beat the current AI, not humans (a candidate that beats the AI may still be easy for a player); personalities still add their own random changes on top.
+
 ### Reactions to the hero
 
 | When | The AI does |
@@ -249,9 +306,27 @@ After this: free play — keep supply ahead, keep production busy, rebuild lost 
 | Enemy has many air units | +15% Archer share |
 | Our hero is fighting near an enemy base (Hard) | Sends the army to that base |
 
+### Kingdom orders (orders.ts, ai.json `orders`)
+
+The players can tell their kingdom's AI what to do next. The **Orders** row sits under the kingdom line in the top bar:
+
+| Button | What the AI does |
+|---|---|
+| **Auto** | Decides alone (all of the above). The start order. |
+| **Attack [color]** | One button per enemy kingdom still in the game. The army goes for that kingdom's nearest Town Hall now with what it has (at least `attackMinSupply`, 6), without waiting for a stronger army; new soldiers follow as waves. An army that is out turns to the new target. Back to Auto when that kingdom is out of the game. |
+| **Defend** | The army stays home and fights only within `stayHomeRange` (40) of the Town Hall. `defendExtraTowers` (2) more towers. |
+| **Build up** | Like Defend without the extra towers: the army stays home and grows, all money goes to soldiers. |
+| **Farm** | No attacks: the army clears camps up to `farmRoamRadius` (160) from home, camp after camp (XP and gold for the heroes). |
+| **Expand** | Take the nearest free gold mine now: the army clears it first (an attack army is called back), then a worker builds the Town Hall. Back to Auto once the Town Hall is started (or when no mine is free). |
+
+- An order stays until a player changes it (or it is done, see above). The status line starts with it: "Order: Attack Blue · …".
+- **One order per kingdom.** In a team match both heroes of a kingdom see the same row and can change it; the last order counts. When a teammate changes it, the other player sees "Name: Attack Blue".
+- **Bot heroes follow it.** They walk with the army when it is out (attack, farm, clearing the expansion). With Defend they farm only camps within `heroCampRange.defend` (45) of home, with Build up within 75, and wait at the base when there is none. This is true for a bot teammate in a team match and for the shrine hero.
+- Technical: command `KingdomOrder` (18) with the order index and the target kingdom slot; the hero may be dead. The snapshot's faction block carries the order, its target and who gave it (protocol 15).
+
 ### The AI status panel
 
-The player can not give orders, but always sees what the AI is doing. The AI writes one short status line, for example:
+The players see what the AI is doing (and steer it with the orders above). The AI writes one short status line, for example:
 - "Building Barracks"
 - "Saving for Stronghold (240 / 300 gold)"
 - "Army gathering (18 / 24 supply)"
@@ -263,3 +338,5 @@ The player can not give orders, but always sees what the AI is doing. The AI wri
 - "Taking the expansion"
 - "Retreating"
 - "No enemy left to attack" (a solo match, or the last faction standing)
+- "Pushing on to Blue after a won fight"
+- "Order: Defend · Army guards the base", "Order: Build up · Building up the army (34 supply)", "Order: Farm · Army clearing camps"

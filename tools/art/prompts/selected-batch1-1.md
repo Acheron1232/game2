@@ -1,0 +1,8 @@
+Use case: stylized-concept
+Asset type: production hand-painted UV color texture atlas for chunky RTS units.
+Input 1 is the exact UV guide. Preserve a strict 4-column grid, 4 equal rows, no margins. Each unit uses 4x2 cells. No text, no yellow wireframe, no labels, no rendered figures, no background. Paint filled material panels all the way to cell edges. Old-school painted fantasy RTS, broad contrast and crisp brush edges, no photorealism. Pure magenta #FF00FF only on team cloth. Readable at small size.
+Rows 1–2: Stocky human heavy infantry in leather apron and bronze armor, a huge two-handed hooked maul, broken chain belt.
+Rows 3–4: Short stout dwarflike original artisan soldier, oversized single bronze rune gun, blue crystal chamber, leather hood and cartridge belt.
+Each two-row block must be EXACTLY:
+First row c1 FACE: left HALF is FRONT portrait (eyes in upper third, nose center), right HALF is BACK of head (NO eyes). c2 BODY: left HALF FRONT chest and belt, right HALF BACK armor or robe (NO face, no eyes). c3 ARM: left HALF FRONT full arm shoulder TOP, elbow middle, wrist BOTTOM; right HALF BACK same. c4 LEGS: left HALF FRONT hip TOP knee middle ankle BOTTOM, right HALF BACK same.
+Second row c1 FOOT_HAND: left half boots, right half gloves. c2 TEAM: uninterrupted magenta cloth/paint with bronze edge trim. c3 WEAPON_A: left half neutral steel/wood shaft material, right half glowing blue rune or amber lantern material. c4 WEAPON_B: bronze and dark leather equipment material (for lantern novice reddish striped fur in bottom half). No faces or anatomy outside the FACE cell. Torso fronts only in left half BODY. KEEP each half-cell pattern exactly aligned. Match guide coordinates.

@@ -1,14 +1,16 @@
+import { castEarthSpirit, earthCastProblem, isEarthAbility } from './earth-spirit';
 // Hero abilities from abilities.json: checks, the cast (walk into range, cast time, then the
 // effect), channels, and the effect of every ability. Plus auras, passives and monster skills.
 // Numbers always come from the data; this file only says what each ability does with them.
 
-import { gameData, type AbilityDef } from '../data/index';
+import { abilityMechanic, gameData, type AbilityDef } from '../data/index';
 import { isWalkable, nearestWalkable } from '../nav/nav-grid';
 import { qPos } from '../protocol/game';
 import { BuffFlag, type Buff } from './buffs';
 import { entityTypeIndex } from './entity-types';
 import { abilityFxKind, EventType } from './events';
 import { TICK_RATE, type DamageSource, type MatchSim, type SimEntity } from './match-sim';
+import { ITEMS, itemStat } from './items';
 import { canAttackLayer, canLearn, unitStats, type Layer } from './stats';
 
 export const ABILITIES: readonly AbilityDef[] = gameData.abilities;
@@ -49,7 +51,8 @@ function healthCost(a: AbilityDef, level: number): number {
 
 /** Can this unit be the target of this ability? */
 export function targetAllowed(sim: MatchSim, caster: SimEntity, a: AbilityDef, t: SimEntity): boolean {
-  if (!t.alive) return false;
+  if (!t.alive || t.hidden) return false;
+  if (a.id === 'enchant_remnant' && t.building) return false;
   return abilityTargetAllowed(a, t === caster ? 'self' : t.team === caster.team ? 'ally' : 'enemy', t.stats.layer);
 }
 
@@ -71,8 +74,10 @@ export function castProblem(sim: MatchSim, e: SimEntity, slot: number, target: C
   const level = hs.abilityLevels[slot] ?? 0;
   if (level < 1) return 'not learned';
   if (a.kind !== 'active') return 'passive';
+  const earthProblem = earthCastProblem(sim, e, a, target);
+  if (earthProblem) return earthProblem;
   if (!e.alive) return 'dead';
-  if (sim.isStunned(e) || e.forced) return 'stunned';
+  if (sim.isStunned(e) || (e.forced && !(a.id === 'stone_remnant' && e.buffs.some((b) => b.flags & BuffFlag.Rolling)))) return 'stunned';
   if (sim.isSilenced(e)) return 'silenced';
   if ((e.cooldowns[slot] ?? 0) > sim.tick) return 'cooldown';
   if (e.mana < lv(a.manaCost, level)) return 'mana';
@@ -91,12 +96,20 @@ export function castProblem(sim: MatchSim, e: SimEntity, slot: number, target: C
 }
 
 /** Abilities that jump or move the hero use the range as the most they go; others walk closer. */
-const CLAMP_RANGE = new Set(['blink', 'sky_pillar', 'inferno_dive', 'great_charge']);
+const CLAMP_RANGE = new Set([
+  'blink',
+  'sky_pillar',
+  'inferno_dive',
+  'great_charge',
+  'boulder_smash',
+  'rolling_boulder',
+  'geomagnetic_grip',
+]);
 
 /** How far away the cast may start. Infinity = no need to walk (self, line, cone, jumps). */
 export function castReach(e: SimEntity, a: AbilityDef, level: number, t: SimEntity | undefined): number {
-  if (a.target === 'none' || a.target === 'line' || a.target === 'cone' || CLAMP_RANGE.has(a.id)) return Infinity;
-  const r = lv(a.castRange, level);
+  if (a.target === 'none' || a.target === 'line' || a.target === 'cone' || CLAMP_RANGE.has(abilityMechanic(a))) return Infinity;
+  const r = a.id === 'enchant_remnant' && t && t.team !== e.team ? param(a, 'enemyRange', level) : lv(a.castRange, level);
   return a.target === 'unit' && t ? r + e.stats.radius + t.stats.radius : r;
 }
 
@@ -104,6 +117,7 @@ export function learn(sim: MatchSim, e: SimEntity, slot: number): boolean {
   const hs = e.heroState;
   const a = heroAbility(e, slot);
   if (!hs || !a || hs.skillPoints <= 0) return false;
+  if (a.params['innate']) return false;
   const cur = hs.abilityLevels[slot] ?? 0;
   if (!canLearn(slot, cur, a.maxLevel, hs.level)) return false;
   hs.abilityLevels[slot] = cur + 1;
@@ -117,8 +131,9 @@ export function refreshPassives(sim: MatchSim, e: SimEntity): void {
   const hs = e.heroState!;
   hs.def.abilities.forEach((id, slot) => {
     const a = ABILITIES[abilityIndex(id)]!;
+    if (a.params['innate'] && hs.level >= Number(a.params['unlockLevel'] ?? 1)) hs.abilityLevels[slot] = 1;
     const level = hs.abilityLevels[slot] ?? 0;
-    if (a.kind !== 'passive' || level < 1 || a.id === 'flurry') return;
+    if (a.kind !== 'passive' || level < 1 || abilityMechanic(a) === 'flurry') return;
     sim.addBuff(e, {
       id: `passive:${a.id}`,
       sourceId: e.id,
@@ -142,6 +157,14 @@ export function extraHitChance(e: SimEntity): number {
 }
 
 // ---------- the cast ----------
+
+/** Stone placement is instant and never interrupts a roll, walk or another cast. */
+export function placeInstantStone(sim: MatchSim, e: SimEntity, slot: number, target: CastTarget): void {
+  const a = heroAbility(e, slot);
+  if (!a || a.id !== 'stone_remnant' || castProblem(sim, e, slot, target)) return;
+  castEarthSpirit(sim, e, a, 1, target);
+  sim.events.push(EventType.AbilityEffect, e.id, qPos(target.x), qPos(target.y), abilityFxKind(abilityIndex(a.id), 1, true));
+}
 
 /** A new cast order (already checked). The hero walks into range first if it needs to. */
 export function orderCast(sim: MatchSim, e: SimEntity, slot: number, target: CastTarget): void {
@@ -189,7 +212,8 @@ export function updateCast(sim: MatchSim, e: SimEntity): void {
   e.mana -= lv(a.manaCost, level);
   const hc = healthCost(a, level);
   if (hc) e.hp -= hc;
-  e.cooldowns[c.slot] = sim.tick + secs(lv(a.cooldown, level));
+  // Cooldown items (Timeworn Tome...) cut it.
+  e.cooldowns[c.slot] = sim.tick + secs(lv(a.cooldown, level) * (1 - itemStat(e.heroState!, 'cooldownReductionPct') / 100));
   const kind = abilityFxKind(abilityIndex(a.id), level, c.target.kind === 2);
   sim.events.push(
     EventType.AbilityEffect,
@@ -198,7 +222,9 @@ export function updateCast(sim: MatchSim, e: SimEntity): void {
     c.target.kind === 2 ? qPos(c.target.y) : 0,
     kind,
   );
-  const stay = EFFECTS[a.id]?.(sim, e, a, level, c.target, t);
+  const stay = isEarthAbility(a.id)
+    ? castEarthSpirit(sim, e, a, level, c.target, t)
+    : EFFECTS[abilityMechanic(a)]?.(sim, e, a, level, c.target, t);
   if (stay !== true) endCast(sim, e);
 }
 
@@ -617,14 +643,41 @@ const AURA_PARAMS: Record<string, (a: AbilityDef, level: number) => Partial<Buff
 /** Every half second: heroes with an aura give it to allies near (and themselves). */
 export function updateAuras(sim: MatchSim): void {
   if (sim.tick % 10 !== 0) return;
+  // Unit and defense auras use the same short-lived buffs as hero/item auras.
+  // sourceId 0 keeps equal support units from multiplying the same aura.
+  for (const e of sim.entities) {
+    if (!e.alive || e.hidden || (e.building && !e.building.done)) continue;
+    for (const s of monsterSkills(e)) {
+      if (!s.aura) continue;
+      forAllies(sim, e.team, e.mover.x, e.mover.y, s.radius ?? 5, (t) => {
+        if (s.rangedOnly && (t.building || t.stats.attackRange <= 2)) return;
+        if (s.unitsOnly && t.building) return;
+        if (s.outOfCombat && (t.building || t.targetId || (t.lastHitBy && sim.tick - t.lastHitAt < secs(5)))) return;
+        sim.addBuff(t, {
+          id: `unit-aura:${s.id}`,
+          sourceId: 0,
+          sourceOwner: e.owner,
+          sourceTeam: e.team,
+          until: sim.tick + 12,
+          flags: 0,
+          ...(s.bonusArmor ? { bonusArmor: s.bonusArmor } : {}),
+          ...(s.hpRegen ? { hpRegen: s.hpRegen } : {}),
+          ...(s.rangedReductionPct ? { rangedReductionPct: s.rangedReductionPct } : {}),
+          ...(s.repairSpeedPct ? { repairSpeedPct: s.repairSpeedPct } : {}),
+          ...(s.attackSpeedPct ? { attackSpeedPct: s.attackSpeedPct } : {}),
+        });
+      });
+    }
+    if (e.building) monsterCast(sim, e, true);
+  }
   for (const h of sim.heroes) {
     const hs = h?.heroState;
     if (!h || !hs || !h.alive) continue;
     hs.def.abilities.forEach((id, slot) => {
       const level = hs.abilityLevels[slot] ?? 0;
-      const make = AURA_PARAMS[id];
-      if (!make || level < 1) return;
       const a = ABILITIES[abilityIndex(id)]!;
+      const make = AURA_PARAMS[abilityMechanic(a)];
+      if (!make || level < 1) return;
       forAllies(sim, h.team, h.mover.x, h.mover.y, param(a, 'radius', level), (t) =>
         sim.addBuff(t, {
           id: `aura:${id}`,
@@ -637,10 +690,36 @@ export function updateAuras(sim: MatchSim): void {
         }),
       );
     });
+    // Item auras (Banner of Valor...). sourceId 0: the same item on two heroes does not stack.
+    const seen = new Set<number>();
+    for (const st of hs.inventory) {
+      const def = st && !seen.has(st.item) ? ITEMS[st.item] : undefined;
+      if (!def?.aura) continue;
+      seen.add(st!.item);
+      const { radius, bonusArmor, hpRegen, attackSpeedPct, moveSpeedPct, damagePct } = def.aura;
+      forAllies(sim, h.team, h.mover.x, h.mover.y, radius, (t) =>
+        sim.addBuff(t, {
+          id: `item-aura:${def.id}`,
+          sourceId: 0,
+          sourceOwner: h.owner,
+          sourceTeam: h.team,
+          until: sim.tick + 12,
+          flags: 0,
+          ...(bonusArmor ? { bonusArmor } : {}),
+          ...(hpRegen ? { hpRegen } : {}),
+          ...(attackSpeedPct ? { attackSpeedPct } : {}),
+          ...(moveSpeedPct ? { moveSpeedPct } : {}),
+          ...(damagePct ? { damagePct } : {}),
+        }),
+      );
+    }
   }
 }
 
-// ---------- monster skills (auto-cast in a fight) ----------
+// ---------- unit skills (monsters, army units, hired soldiers) ----------
+// Units use them by themselves in a fight. The player can also press an active skill of an own
+// unit (CommandType.UnitCast): then it goes off now, at the target the player chose.
+// Names, targets and the effect code are in skills.json, the numbers on the unit in units.json.
 
 interface SkillDef {
   id: string;
@@ -655,10 +734,31 @@ interface SkillDef {
   rootDuration?: number;
   stunDuration?: number;
   spellReductionPct?: number;
+  bonusArmor?: number;
+  bonusSpellDamagePct?: number;
+  hpRegen?: number;
   passive?: boolean;
+  manaCost?: number;
+  aura?: boolean;
+  rangedOnly?: boolean;
+  outOfCombat?: boolean;
+  buildingsOnly?: boolean;
+  groundOnly?: boolean;
+  rangedReductionPct?: number;
+  repairSpeedPct?: number;
+  sharePct?: number;
+  jumps?: number;
+  distance?: number;
+  attackSpeedPct?: number;
+  minRange?: number;
+  constructOnly?: boolean;
+  unitsOnly?: boolean;
+  summonUnit?: string;
+  healThreshold?: number;
 }
 
 export function monsterSkills(e: SimEntity): SkillDef[] {
+  if (e.building) return (e.building.def?.skills ?? []) as SkillDef[];
   return (gameData.units.find((u) => u.id === unitId(e))?.skills ?? []) as SkillDef[];
 }
 
@@ -666,10 +766,16 @@ function unitId(e: SimEntity): string {
   return gameData.units[e.type - gameData.heroes.length]?.id ?? '';
 }
 
-/** Passive monster skills at spawn (Stone Guard). */
+const SKILL_INFO = new Map(gameData.skills.map((s) => [s.id, s]));
+
+function skillEffect(s: SkillDef): string {
+  return SKILL_INFO.get(s.id)?.effect ?? s.id;
+}
+
+/** Passive unit skills at spawn (Stone Guard, Troll Blood). */
 export function monsterPassives(sim: MatchSim, e: SimEntity): void {
   for (const s of monsterSkills(e)) {
-    if (s.passive && s.spellReductionPct)
+    if (s.passive && !s.aura && (s.spellReductionPct || s.hpRegen || s.rangedReductionPct))
       sim.addBuff(e, {
         id: `passive:${s.id}`,
         sourceId: e.id,
@@ -677,58 +783,306 @@ export function monsterPassives(sim: MatchSim, e: SimEntity): void {
         sourceTeam: e.team,
         until: Infinity,
         flags: 0,
-        spellReductionPct: s.spellReductionPct,
+        ...(s.spellReductionPct ? { spellReductionPct: s.spellReductionPct } : {}),
+        ...(s.hpRegen ? { hpRegen: s.hpRegen } : {}),
+        ...(s.rangedReductionPct ? { rangedReductionPct: s.rangedReductionPct } : {}),
       });
   }
 }
 
 /**
- * A unit (monster, army unit, hired soldier) uses its skill when it is ready and useful. Heals
- * (Mend) also work after a fight; the other skills only while the unit fights.
+ * A unit uses its skills when they are ready and useful. Skills on allies (Mend, Faith Ward) also
+ * work when the unit itself is not fighting; the others only while it fights.
  */
-export function monsterCast(sim: MatchSim, m: SimEntity): void {
-  if ((sim.tick + m.id) % 10 !== 0 || sim.isStunned(m) || sim.isSilenced(m)) return;
-  for (const s of monsterSkills(m)) {
-    if (s.passive || (m.skillReady[s.id] ?? 0) > sim.tick) continue;
-    if (!m.targetId && s.id !== 'mend') continue;
-    if (!useSkill(sim, m, s)) continue;
-    m.skillReady[s.id] = sim.tick + secs(s.cooldown ?? 10);
-    sim.events.push(EventType.Cast, m.id, 0, 0, 255);
-  }
+export function monsterCast(sim: MatchSim, m: SimEntity, defensePulse = false): void {
+  if ((!defensePulse && (sim.tick + m.id) % 10 !== 0) || sim.isStunned(m) || sim.isSilenced(m)) return;
+  monsterSkills(m).forEach((s, index) => {
+    if (s.passive || (m.skillReady[s.id] ?? 0) > sim.tick) return;
+    if (m.mana < (s.manaCost ?? 0)) return;
+    if (!m.building && !m.targetId && SKILL_INFO.get(s.id)?.targets !== 'ally') return;
+    const target = useSkill(sim, m, s, null, false);
+    if (target === false) return;
+    paySkill(sim, m, s, index, target);
+  });
 }
 
-function useSkill(sim: MatchSim, m: SimEntity, s: SkillDef): boolean {
-  const target = sim.get(m.targetId);
-  switch (s.id) {
+function paySkill(sim: MatchSim, m: SimEntity, s: SkillDef, index: number, target: number): void {
+  m.mana -= s.manaCost ?? 0;
+  m.skillReady[s.id] = sim.tick + secs(s.cooldown ?? 10);
+  // kind 255 = a unit skill; b = its index in the unit's list, value = the target (client cooldowns).
+  sim.events.push(EventType.Cast, m.id, index, target, 255);
+}
+
+/** Why an own unit can not use its skill now (null = it can). The client checks the same things first. */
+export function unitSkillProblem(sim: MatchSim, hero: SimEntity, unitId: number, index: number, targetId: number): string | null {
+  const m = sim.get(unitId);
+  if (!m || !m.alive || m.hero || m.owner !== hero.owner || m.team !== hero.team) return 'not your unit';
+  const s = monsterSkills(m)[index];
+  const info = s && SKILL_INFO.get(s.id);
+  if (!s || !info || info.kind !== 'active') return 'no skill';
+  if (sim.isStunned(m) || sim.isSilenced(m)) return 'stunned';
+  if ((m.skillReady[s.id] ?? 0) > sim.tick) return 'cooldown';
+  if (m.mana < (s.manaCost ?? 0)) return 'mana';
+  if (info.target !== 'unit') return null;
+  const t = sim.get(targetId);
+  if (!t || !t.alive || t.building) return 'target';
+  if (info.targets === 'enemy' ? !sim.isEnemy(m, t) || !sim.canSee(m.team, t) : t.team !== m.team) return 'target';
+  const reach = (s.range ?? 5) + m.stats.radius + t.stats.radius;
+  if (Math.hypot(t.mover.x - m.mover.x, t.mover.y - m.mover.y) > reach) return 'range';
+  return null;
+}
+
+/** The player pressed an own unit's skill (checked with unitSkillProblem first). */
+export function unitCast(sim: MatchSim, unitId: number, index: number, targetId: number): void {
+  const m = sim.get(unitId)!;
+  const s = monsterSkills(m)[index]!;
+  const forced = SKILL_INFO.get(s.id)?.target === 'unit' ? sim.get(targetId) : undefined;
+  const target = useSkill(sim, m, s, forced ?? null, true);
+  if (target !== false) paySkill(sim, m, s, index, target);
+}
+
+function inReach(m: SimEntity, t: SimEntity, range: number): boolean {
+  return Math.hypot(t.mover.x - m.mover.x, t.mover.y - m.mover.y) <= range + m.stats.radius + t.stats.radius;
+}
+
+/**
+ * Runs the skill. `forced` = the player's target; `pressed` = the player pressed it, so it goes off
+ * (and costs) even if it hits nobody. Returns the target id (0 = none), or false if nothing happened.
+ */
+function useSkill(sim: MatchSim, m: SimEntity, s: SkillDef, forced: SimEntity | null, pressed: boolean): number | false {
+  const fighting = sim.get(m.targetId);
+  // Enemy-target skills hit the unit's own target, if it is in reach.
+  let enemy = forced ?? (fighting && fighting.alive && inReach(m, fighting, s.range ?? 5) ? fighting : null);
+  if (!enemy && m.building)
+    forEnemies(sim, m, m.mover.x, m.mover.y, s.range ?? s.radius ?? 5, (t) => {
+      if (!t.building) enemy ??= t;
+    });
+  switch (skillEffect(s)) {
+    case 'place_lantern': {
+      const type = entityTypeIndex(s.summonUnit ?? 'healing_lantern');
+      if (sim.entities.some((e) => e.alive && e.type === type && e.leaderId === m.id)) return false;
+      let needed = pressed;
+      forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 6, (t) => {
+        if (!t.building && t.hp < t.stats.maxHp - (s.healThreshold ?? 30)) needed = true;
+      });
+      if (!needed) return false;
+      const at = nearestWalkable(sim.nav, m.mover.x + 0.8, m.mover.y + 0.4, 3);
+      if (!at) return false;
+      const lantern = sim.spawn(type, m.owner, m.team, m.color, at[0], at[1]);
+      lantern.inert = true;
+      lantern.leaderId = m.id;
+      lantern.summonUntil = sim.tick + secs(s.duration ?? 24);
+      return lantern.id;
+    }
+    case 'charge': {
+      if (!enemy || enemy.building || enemy.stats.layer !== 'ground' || m.forced || sim.isRooted(m)) return false;
+      const target = enemy;
+      const dx = target.mover.x - m.mover.x,
+        dy = target.mover.y - m.mover.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance < (s.minRange ?? 3)) return false;
+      const travel = Math.max(0, distance - m.stats.radius - target.stats.radius);
+      const endX = m.mover.x + (dx / distance) * travel,
+        endY = m.mover.y + (dy / distance) * travel;
+      // Refuse a charge through a wall, cliff or tree; roots/stuns can stop it in flight too.
+      for (let n = 1; n <= Math.ceil(travel * 3); n++) {
+        const t = n / Math.ceil(travel * 3);
+        if (!isWalkable(sim.nav, m.mover.x + (endX - m.mover.x) * t, m.mover.y + (endY - m.mover.y) * t)) return false;
+      }
+      sim.forceMove(m, endX, endY, s.duration ?? 0.5, 'charge', () => {
+        if (!m.alive || !target.alive || !inReach(m, target, 2)) return;
+        sim.applyAttack(m, target, s.damage ?? 60, m.stats.attackType);
+        if (s.stunDuration) stun(sim, m, target, s.stunDuration);
+      });
+      return target.id;
+    }
+    case 'pierce_line':
+    case 'bomb_line': {
+      if (!enemy || (s.groundOnly && enemy.stats.layer !== 'ground')) return false;
+      const dx = enemy.mover.x - m.mover.x,
+        dy = enemy.mover.y - m.mover.y;
+      const length = Math.hypot(dx, dy) || 1;
+      const ux = dx / length,
+        uy = dy / length;
+      forEnemies(
+        sim,
+        m,
+        m.mover.x,
+        m.mover.y,
+        s.range ?? 8,
+        (t) => {
+          const tx = t.mover.x - m.mover.x,
+            ty = t.mover.y - m.mover.y;
+          const along = tx * ux + ty * uy;
+          if (along < 0 || along > (s.range ?? 8) + t.stats.radius || Math.abs(tx * uy - ty * ux) > (s.radius ?? 0.7) + t.stats.radius)
+            return;
+          sim.applyAttack(m, t, s.damage ?? 80, m.stats.attackType);
+        },
+        !s.groundOnly,
+      );
+      return enemy.id;
+    }
+    case 'mark_shot': {
+      if (!enemy) return false;
+      sim.applyAttack(m, enemy, s.damage ?? 40, m.stats.attackType);
+      if (enemy.alive)
+        debuff(sim, m, enemy, s.id, s.duration ?? 6, { bonusArmor: s.bonusArmor ?? -3, reveal: true, flags: BuffFlag.Marked });
+      return enemy.id;
+    }
+    case 'repair_construct': {
+      let best: SimEntity | null = null;
+      forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 5, (t) => {
+        if (forced && t.id !== forced.id) return;
+        if (t.building || !gameData.units[t.type - gameData.heroes.length]?.mechanical || t.hp >= t.stats.maxHp - (s.heal ?? 80)) return;
+        if (!best || t.hp / t.stats.maxHp < best.hp / best.stats.maxHp) best = t;
+      });
+      if (!best) return false;
+      const target: SimEntity = best;
+      sim.heal(target, s.heal ?? 80, src(m));
+      return target.id;
+    }
+    case 'armor_break': {
+      if (!enemy) return false;
+      debuff(sim, m, enemy, s.id, s.duration ?? 6, { bonusArmor: s.bonusArmor ?? -4, flags: BuffFlag.Marked });
+      return enemy.id;
+    }
+    case 'screen': {
+      let any = false;
+      forAllies(sim, m.team, m.mover.x, m.mover.y, s.radius ?? 5, (t) => {
+        if (s.buildingsOnly && !t.building) return;
+        if (!pressed && !t.targetId && !enemy && !(t.lastHitBy && sim.tick - t.lastHitAt < secs(4))) return;
+        if (t.buffs.some((b) => b.id === s.id)) return;
+        any = true;
+        debuff(sim, m, t, s.id, s.duration ?? 5, {
+          ...(s.spellReductionPct ? { spellReductionPct: s.spellReductionPct } : {}),
+          ...(s.rangedReductionPct ? { rangedReductionPct: s.rangedReductionPct } : {}),
+          flags: BuffFlag.Shield,
+        });
+      });
+      return any ? 0 : false;
+    }
+    case 'guard_link':
+    case 'cleanse': {
+      const cleanse = skillEffect(s) === 'cleanse';
+      const harmful = (b: Buff) => !!(b.stun || b.root || b.silence || b.slowPct || b.dps || (b.bonusArmor && b.bonusArmor < 0));
+      let best = forced;
+      if (!best)
+        forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 5, (t) => {
+          if (t.id === m.id || t.building || t.buffs.some((b) => b.id === s.id)) return;
+          if (cleanse ? !t.buffs.some(harmful) : !t.targetId) return;
+          if (!best || t.hp / t.stats.maxHp < best.hp / best.stats.maxHp) best = t;
+        });
+      if (!best) return false;
+      if (cleanse) {
+        const bad = best.buffs.find(harmful);
+        if (bad) sim.removeBuff(best, bad.id, bad.sourceId);
+      }
+      debuff(
+        sim,
+        m,
+        best,
+        s.id,
+        s.duration ?? 6,
+        cleanse
+          ? { spellReductionPct: s.spellReductionPct ?? 30, flags: BuffFlag.Shield }
+          : { guardId: m.id, guardSharePct: s.sharePct ?? 30, guardRange: s.range ?? 5, flags: BuffFlag.Shield },
+      );
+      return best.id;
+    }
+    case 'chain': {
+      if (!enemy) return false;
+      const hit = new Set<number>();
+      let next: SimEntity | null = enemy;
+      for (let i = 0; i < (s.jumps ?? 3) && next; i++) {
+        const current: SimEntity = next;
+        hit.add(current.id);
+        sim.spellHit(current, (s.damage ?? 50) * Math.pow(0.8, i), m);
+        next = null;
+        forEnemies(sim, m, current.mover.x, current.mover.y, s.radius ?? 3, (t) => {
+          if (!t.building && !hit.has(t.id) && !next) next = t;
+        });
+      }
+      return 0;
+    }
+    case 'silence_pulse':
+    case 'gust': {
+      let any = false;
+      forEnemies(sim, m, m.mover.x, m.mover.y, s.radius ?? 5, (t) => {
+        if (t.building || (skillEffect(s) === 'gust' && t.stats.layer !== 'air')) return;
+        any = true;
+        if (skillEffect(s) === 'gust') knockback(sim, t, m.mover.x, m.mover.y, s.distance ?? 2);
+        else {
+          debuff(sim, m, t, s.id, s.duration ?? 2, { silence: true, flags: BuffFlag.Silence });
+          if (t.cast) endCast(sim, t);
+        }
+      });
+      return any ? 0 : false;
+    }
     case 'howl': {
       forAllies(sim, m.team, m.mover.x, m.mover.y, s.radius ?? 8, (t) =>
         debuff(sim, m, t, 'howl', s.duration ?? 10, { damagePct: s.damagePct ?? 15, flags: BuffFlag.Blessed }),
       );
-      return true;
+      return 0;
     }
     case 'mend': {
-      let best: SimEntity | null = null;
-      forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 5, (t) => {
-        if (t.hp < t.stats.maxHp - (s.heal ?? 25) && (!best || t.hp / t.stats.maxHp < best.hp / best.stats.maxHp)) best = t;
-      });
+      let best: SimEntity | null = forced;
+      if (!best)
+        forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 5, (t) => {
+          if (t.hp < t.stats.maxHp - (s.heal ?? 25) && (!best || t.hp / t.stats.maxHp < best.hp / best.stats.maxHp)) best = t;
+        });
       if (!best) return false;
       sim.heal(best, s.heal ?? 25, src(m));
-      return true;
+      return best.id;
+    }
+    case 'ward': {
+      // Auto: an ally in a fight without the ward yet, the most hurt first.
+      let best: SimEntity | null = forced;
+      if (!best)
+        forAllies(sim, m.team, m.mover.x, m.mover.y, s.range ?? 6, (t) => {
+          if (!t.targetId || t.building || t.buffs.some((b) => b.id === s.id)) return;
+          if (!best || t.hp / t.stats.maxHp < best.hp / best.stats.maxHp) best = t;
+        });
+      if (!best) return false;
+      debuff(sim, m, best, s.id, s.duration ?? 10, { bonusArmor: s.bonusArmor ?? 3, flags: BuffFlag.Blessed });
+      return best.id;
     }
     case 'screech': {
       let any = false;
-      forEnemies(sim, m, m.mover.x, m.mover.y, s.radius ?? 5, (t) => {
-        any = true;
-        debuff(sim, m, t, 'screech', s.duration ?? 3, { slowPct: s.slowPct ?? 25, flags: BuffFlag.Slow });
-      });
-      return any;
+      forEnemies(
+        sim,
+        m,
+        m.mover.x,
+        m.mover.y,
+        s.radius ?? 5,
+        (t) => {
+          any = true;
+          debuff(sim, m, t, s.id, s.duration ?? 3, { slowPct: s.slowPct ?? 25, flags: BuffFlag.Slow });
+        },
+        !s.groundOnly,
+      );
+      return any || pressed ? 0 : false;
     }
     case 'web': {
-      if (!target || Math.hypot(target.mover.x - m.mover.x, target.mover.y - m.mover.y) > (s.range ?? 6)) return false;
-      debuff(sim, m, target, 'web', s.rootDuration ?? 2, { root: true, flags: BuffFlag.Root });
-      return true;
+      if (!enemy) return false;
+      debuff(sim, m, enemy, 'web', s.rootDuration ?? 2, { root: true, flags: BuffFlag.Root });
+      return enemy.id;
     }
-    case 'ground_slam': {
+    case 'bolt': {
+      if (!enemy) return false;
+      sim.spellHit(enemy, s.damage ?? 50, m);
+      if (s.slowPct) debuff(sim, m, enemy, s.id, s.duration ?? 2, { slowPct: s.slowPct, flags: BuffFlag.Slow });
+      return enemy.id;
+    }
+    case 'curse': {
+      if (!enemy) return false;
+      debuff(sim, m, enemy, s.id, s.duration ?? 4, {
+        slowPct: s.slowPct ?? 0,
+        spellDamageTakenPct: s.bonusSpellDamagePct ?? 0,
+        flags: BuffFlag.Slow | BuffFlag.Marked,
+      });
+      return enemy.id;
+    }
+    case 'slam': {
       let any = false;
       forEnemies(
         sim,
@@ -739,11 +1093,11 @@ function useSkill(sim: MatchSim, m: SimEntity, s: SkillDef): boolean {
         (t) => {
           any = true;
           sim.spellHit(t, s.damage ?? 80, m);
-          stun(sim, m, t, s.stunDuration ?? 1.5);
+          if (s.stunDuration) stun(sim, m, t, s.stunDuration);
         },
         false,
       );
-      return any;
+      return any || pressed ? 0 : false;
     }
   }
   return false;

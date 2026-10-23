@@ -1,0 +1,21 @@
+Use case: stylized-concept.
+Create ONE landscape fantasy RTS concept selection sheet, exact 4 columns x 3 rows, TWELVE equal bordered cells. Crisp high-detail hand-painted chunky game art, classic readable strategy-game proportions, broad silhouettes, rich painted bronze highlights, colored cloth, wood, stone, fur. Match the approved hero reference especially H07/H08/H10/H11/H12, and the building reference. ORIGINAL designs only, no franchise assets or recognizable copied characters. Muted cream parchment background, restrained dark-gold frame, soft daylight from upper left, soft contact shadows. Every object or unit isolated inside its cell, no scenery spilling into neighbors, no collage overlap, complete figure/base visible. Team-color cloth is vivid MAGENTA #FF00FF; fixed colors remain distinct. NO photorealism, no black sci-fi, no UI icons, no tiny microtext. All 12 designs must be clearly different in silhouette, weapon and function. No extra full characters outside the requested subjects. Carefully readable English labels.
+Layout: one thin title band above the grid; each cell reserves a clean caption strip UNDER the artwork, exactly TWO lines. First line is the provided code and name, second line the provided short caption. Do not put labels on the objects themselves. No paragraphs. Grid order is left to right, top to bottom.
+
+Title EXACT: "TEMPLE WARS / EXISTING BUILDING RECRUITS"
+Units: full-body three-quarter front view at roughly equal scale, with feet/wheels/wings completely visible. Characters have chunky silhouettes like the reference heroes but are regular army troops with simpler equipment. Machines remain machines, not humanoids. Mounts and riders form ONE unit.
+
+1. Artwork: Armored human gate defender, very long bronze-tipped pike, small back shield and fortified kettle helmet. Caption first line EXACT: "U37 Gate Pikeman". Second line EXACT: "BARRACKS".
+2. Artwork: Veteran stout human infantry captain with large vertical war banner, broad bronze shoulder armor, command sword and magenta sash. Caption first line EXACT: "U38 Banner Captain". Second line EXACT: "BARRACKS".
+3. Artwork: Badger humanoid crossbowman with a large pavise strapped to his back, crank crossbow and thick leather gloves. Caption first line EXACT: "U39 Pavise Arbalist". Second line EXACT: "ARCHERY RANGE".
+4. Artwork: Fox humanoid ranger with a small bow, trained falcon perched on a glove, hooded green cloak and magenta quiver cloth. Caption first line EXACT: "U40 Falcon Tracker". Second line EXACT: "ARCHERY RANGE".
+5. Artwork: Young red-panda monk with a small amber lantern staff, simple jade robe, prayer beads and magenta waist sash. Caption first line EXACT: "U41 Lantern Novice". Second line EXACT: "CHAPEL".
+6. Artwork: Masked human priestess in white and dark teal robes, bronze veil frame, crescent hand shield and magenta sleeve trim. Caption first line EXACT: "U42 Veil Sister". Second line EXACT: "CHAPEL".
+7. Artwork: Small reinforced two-wheel cart carrying a squat bronze mortar tube, bundled stone shells, rear stabilizer and magenta flag. Caption first line EXACT: "U43 Mortar Cart". Second line EXACT: "WORKSHOP".
+8. Artwork: Badger humanoid engineer with bronze goggles, oversized wrench, timber plank backpack, tool apron and magenta cap. Caption first line EXACT: "U44 Field Engineer". Second line EXACT: "WORKSHOP".
+9. Artwork: Small hooded ranger riding a broad-winged grey owl, huge readable owl eyes, bronze saddle fittings and magenta wing ribbons. Caption first line EXACT: "U45 Owl Rider". Second line EXACT: "HAWK ROOST".
+10. Artwork: Compact masked pilot in an original wooden bat-wing kite glider with two visible clay bombs, bronze braces and magenta sail panels. Caption first line EXACT: "U46 Kite Bomber". Second line EXACT: "HAWK ROOST".
+11. Artwork: Broad stone-and-bronze golem, huge rectangular forearm shield, small amber furnace core and magenta shoulder plates. Caption first line EXACT: "U47 Bulwark Golem". Second line EXACT: "GOLEM FOUNDRY".
+12. Artwork: Heavy stone construct with thick bronze bands, massive two-handed demolition hammer, glowing amber vents and magenta back pennant. Caption first line EXACT: "U48 Siege Golem". Second line EXACT: "GOLEM FOUNDRY".
+
+Check all twelve codes and both caption lines before finishing.

@@ -25,6 +25,8 @@ export const BuffFlag = {
   Channel: 1024,
   /** invisible to enemies (Smoke Bomb, wards) */
   Invisible: 2048,
+  Rolling: 4096,
+  Magnetized: 8192,
 } as const;
 
 export interface Buff {
@@ -49,6 +51,11 @@ export interface Buff {
   /** all damage taken is cut by this percent (Stone Skin), multiplies with block */
   damageReductionPct?: number;
   spellReductionPct?: number;
+  rangedReductionPct?: number;
+  repairSpeedPct?: number;
+  guardId?: number;
+  guardSharePct?: number;
+  guardRange?: number;
   /** more spell damage taken (Mana Mark) */
   spellDamageTakenPct?: number;
   /** heal for this percent of attack damage dealt */

@@ -14,7 +14,8 @@
     "art:manifest": "tsx art/manifest.ts",
     "models:palette": "tsx models/build-palette.ts",
     "models:build": "tsx models/build.ts",
-    "audio:build": "node audio/build-audio.mjs"
+    "audio:build": "node audio/build-audio.mjs",
+    "ai:tune": "tsx ai/tune.ts"
   },
   "dependencies": {
     "@game/shared": "workspace:*",

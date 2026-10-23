@@ -9,103 +9,920 @@
   ],
   "buildings": [
     {
-      "id": "town_hall", "name": "Town Hall", "tier": 1,
-      "hp": 2000, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 385, "wood": 185 }, "buildTime": 120, "footprint": [5, 5],
-      "supplyGiven": 12, "trains": ["worker"], "requires": [], "upgradesTo": "stronghold",
-      "dropOff": ["gold", "wood"], "sight": 12, "bounty": 150,
+      "id": "town_hall",
+      "name": "Town Hall",
+      "tier": 1,
+      "hp": 2000,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 385,
+        "wood": 185
+      },
+      "buildTime": 120,
+      "footprint": [
+        5,
+        5
+      ],
+      "supplyGiven": 12,
+      "trains": [
+        "worker"
+      ],
+      "requires": [],
+      "upgradesTo": "stronghold",
+      "dropOff": [
+        "gold",
+        "wood"
+      ],
+      "sight": 12,
+      "bounty": 150,
       "look": "Big timber and stone hall with a tall roof and a bell tower. Team color: roof flags and banners over the door."
     },
     {
-      "id": "stronghold", "name": "Stronghold", "tier": 2,
-      "hp": 2500, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 300, "wood": 150 }, "buildTime": 90, "footprint": [5, 5],
-      "supplyGiven": 12, "trains": ["worker"], "requires": ["town_hall"], "upgradesTo": "citadel",
-      "dropOff": ["gold", "wood"], "sight": 13, "bounty": 200,
+      "id": "stronghold",
+      "name": "Stronghold",
+      "tier": 2,
+      "hp": 2500,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 300,
+        "wood": 150
+      },
+      "buildTime": 90,
+      "footprint": [
+        5,
+        5
+      ],
+      "supplyGiven": 12,
+      "trains": [
+        "worker"
+      ],
+      "requires": [
+        "town_hall"
+      ],
+      "upgradesTo": "citadel",
+      "dropOff": [
+        "gold",
+        "wood"
+      ],
+      "sight": 13,
+      "bounty": 200,
       "look": "Town Hall with stone walls, a second floor and two small towers."
     },
     {
-      "id": "citadel", "name": "Citadel", "tier": 3,
-      "hp": 3000, "armor": 6, "armorType": "fortified",
-      "cost": { "gold": 350, "wood": 200 }, "buildTime": 110, "footprint": [5, 5],
-      "supplyGiven": 12, "trains": ["worker"], "requires": ["stronghold", "forge"], "upgradesTo": null,
-      "dropOff": ["gold", "wood"], "sight": 14, "bounty": 250,
+      "id": "citadel",
+      "name": "Citadel",
+      "tier": 3,
+      "hp": 3000,
+      "armor": 6,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 350,
+        "wood": 200
+      },
+      "buildTime": 110,
+      "footprint": [
+        5,
+        5
+      ],
+      "supplyGiven": 12,
+      "trains": [
+        "worker"
+      ],
+      "requires": [
+        "stronghold",
+        "forge"
+      ],
+      "upgradesTo": null,
+      "dropOff": [
+        "gold",
+        "wood"
+      ],
+      "sight": 14,
+      "bounty": 250,
       "look": "Small castle with a central tower, golden roof tips and big banners."
     },
     {
-      "id": "house", "name": "House", "tier": 1,
-      "hp": 500, "armor": 3, "armorType": "fortified",
-      "cost": { "gold": 80, "wood": 20 }, "buildTime": 30, "footprint": [2, 2],
-      "supplyGiven": 8, "trains": [], "requires": [], "upgradesTo": null, "sight": 8, "bounty": 20,
+      "id": "house",
+      "name": "House",
+      "tier": 1,
+      "hp": 500,
+      "armor": 3,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 80,
+        "wood": 20
+      },
+      "buildTime": 30,
+      "footprint": [
+        2,
+        2
+      ],
+      "supplyGiven": 8,
+      "trains": [],
+      "requires": [],
+      "upgradesTo": null,
+      "sight": 8,
+      "bounty": 20,
       "look": "Small cottage with a thatched roof and a chimney. Team color: door and window shutters."
     },
     {
-      "id": "barracks", "name": "Barracks", "tier": 1,
-      "hp": 1200, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 160, "wood": 50 }, "buildTime": 50, "footprint": [4, 4],
-      "supplyGiven": 0, "trains": ["swordsman", "lancer"], "requires": [], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "id": "barracks",
+      "name": "Barracks",
+      "tier": 1,
+      "hp": 1200,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 160,
+        "wood": 50
+      },
+      "buildTime": 50,
+      "footprint": [
+        4,
+        4
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "swordsman",
+        "lancer",
+        "pike_warden",
+        "banner_captain"
+      ],
+      "requires": [],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 60,
       "look": "Long wooden hall with crossed swords over the door and a training dummy. Team color: banners."
     },
     {
-      "id": "archery_range", "name": "Archery Range", "tier": 1,
-      "hp": 1100, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 150, "wood": 60 }, "buildTime": 50, "footprint": [4, 3],
-      "supplyGiven": 0, "trains": ["archer"], "requires": ["barracks"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "id": "archery_range",
+      "name": "Archery Range",
+      "tier": 1,
+      "hp": 1100,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 150,
+        "wood": 60
+      },
+      "buildTime": 50,
+      "footprint": [
+        4,
+        3
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "archer"
+      ],
+      "requires": [
+        "barracks"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 60,
       "look": "Open wooden shed with straw targets and a fence. Team color: awning cloth."
     },
     {
-      "id": "forge", "name": "Forge", "tier": 1,
-      "hp": 1000, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 140, "wood": 60 }, "buildTime": 45, "footprint": [3, 3],
-      "supplyGiven": 0, "trains": [], "requires": [], "upgradesTo": null, "sight": 10, "bounty": 50,
+      "id": "forge",
+      "name": "Forge",
+      "tier": 1,
+      "hp": 1000,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 140,
+        "wood": 60
+      },
+      "buildTime": 45,
+      "footprint": [
+        3,
+        3
+      ],
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 50,
       "notes": "Needed before the hero can buy weapon and armor upgrades at the Town Hall.",
       "look": "Stone smithy with a big chimney, glowing furnace and an anvil outside. Team color: roof cloth."
     },
     {
-      "id": "chapel", "name": "Chapel", "tier": 2,
-      "hp": 1000, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 180, "wood": 80 }, "buildTime": 55, "footprint": [3, 4],
-      "supplyGiven": 0, "trains": ["cleric"], "requires": ["stronghold"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "id": "chapel",
+      "name": "Chapel",
+      "tier": 2,
+      "hp": 1000,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 180,
+        "wood": 80
+      },
+      "buildTime": 55,
+      "footprint": [
+        3,
+        4
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "cleric",
+        "frost_adept",
+        "null_warden",
+        "lantern_novice",
+        "veil_sister"
+      ],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 60,
       "look": "White stone chapel with a round window and a small bell. Team color: stained glass and banner."
     },
     {
-      "id": "workshop", "name": "Workshop", "tier": 2,
-      "hp": 1100, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 160, "wood": 100 }, "buildTime": 55, "footprint": [4, 4],
-      "supplyGiven": 0, "trains": ["catapult"], "requires": ["stronghold", "forge"], "upgradesTo": null, "sight": 10, "bounty": 60,
+      "id": "workshop",
+      "name": "Workshop",
+      "tier": 2,
+      "hp": 1100,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 160,
+        "wood": 100
+      },
+      "buildTime": 55,
+      "footprint": [
+        4,
+        4
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "catapult",
+        "rune_gunner",
+        "covered_ram",
+        "bolt_cart"
+      ],
+      "requires": [
+        "stronghold",
+        "forge"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 60,
       "look": "Wooden workshop with a crane, gears and logs. Team color: roof cloth."
     },
     {
-      "id": "hawk_roost", "name": "Hawk Roost", "tier": 3,
-      "hp": 1200, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 200, "wood": 150 }, "buildTime": 60, "footprint": [4, 4],
-      "supplyGiven": 0, "trains": ["hawk_rider"], "requires": ["citadel"], "upgradesTo": null, "sight": 12, "bounty": 80,
+      "id": "hawk_roost",
+      "name": "Hawk Roost",
+      "tier": 3,
+      "hp": 1200,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 200,
+        "wood": 150
+      },
+      "buildTime": 60,
+      "footprint": [
+        4,
+        4
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "hawk_rider",
+        "kite_bomber"
+      ],
+      "requires": [
+        "citadel"
+      ],
+      "upgradesTo": null,
+      "sight": 12,
+      "bounty": 80,
       "look": "Tall stone tower with a big nest of branches on top. Team color: flags around the nest."
     },
     {
-      "id": "watchtower", "name": "Watchtower", "tier": 1,
-      "hp": 550, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 110, "wood": 60 }, "buildTime": 35, "footprint": [2, 2],
-      "supplyGiven": 0, "trains": [], "requires": ["barracks"], "upgradesTo": null, "sight": 16, "bounty": 40,
-      "attack": { "attackType": "pierce", "damage": [22, 26], "attackCooldown": 1.0, "attackRange": 7, "projectileSpeed": 20, "canHit": ["ground", "air"] },
+      "id": "watchtower",
+      "name": "Watchtower",
+      "tier": 1,
+      "hp": 550,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 110,
+        "wood": 60
+      },
+      "buildTime": 35,
+      "footprint": [
+        2,
+        2
+      ],
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "barracks"
+      ],
+      "upgradesTo": null,
+      "sight": 16,
+      "bounty": 40,
+      "attack": {
+        "attackType": "pierce",
+        "damage": [
+          22,
+          26
+        ],
+        "attackCooldown": 1.0,
+        "attackRange": 7,
+        "projectileSpeed": 20,
+        "canHit": [
+          "ground",
+          "air"
+        ]
+      },
       "look": "Thin wooden tower on a stone base with a roofed top. Team color: flag on top."
     },
     {
-      "id": "hero_shrine", "name": "Hero Shrine", "tier": 1,
-      "hp": 900, "armor": 5, "armorType": "fortified",
-      "cost": { "gold": 180, "wood": 60 }, "buildTime": 45, "footprint": [3, 3],
-      "supplyGiven": 0, "trains": [], "requires": ["barracks"], "upgradesTo": null, "sight": 12, "bounty": 60,
-      "heroSummon": { "cost": { "gold": 250, "wood": 50 }, "timeSec": 30 },
+      "id": "hero_shrine",
+      "name": "Hero Shrine",
+      "tier": 1,
+      "hp": 900,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 180,
+        "wood": 60
+      },
+      "buildTime": 45,
+      "footprint": [
+        3,
+        3
+      ],
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "barracks"
+      ],
+      "upgradesTo": null,
+      "sight": 12,
+      "bounty": 60,
+      "heroSummon": {
+        "cost": {
+          "gold": 250,
+          "wood": 50
+        },
+        "timeSec": 30
+      },
       "notes": "Summons the faction's own hero (one per faction, chosen by the AI). The hero comes back to life here, with the same wait as player heroes.",
       "look": "Round stone platform with four pillars and a glowing crystal in the middle. Team color: banners on the pillars."
+    },
+    {
+      "id": "golem_foundry",
+      "name": "Golem Foundry",
+      "tier": 2,
+      "hp": 1400,
+      "armor": 5,
+      "armorType": "fortified",
+      "cost": {
+        "gold": 220,
+        "wood": 140
+      },
+      "buildTime": 65,
+      "footprint": [
+        5,
+        4
+      ],
+      "supplyGiven": 0,
+      "trains": [
+        "foundry_golem",
+        "bulwark_golem",
+        "siege_golem"
+      ],
+      "requires": [
+        "stronghold",
+        "forge"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 80,
+      "look": "Stone golem assembly bay with a timber crane, furnace and team banners."
+    },
+    {
+      "id": "bulwark_hall",
+      "name": "Bulwark Hall",
+      "tier": 2,
+      "hp": 1450,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        4,
+        4
+      ],
+      "cost": {
+        "gold": 210,
+        "wood": 100
+      },
+      "buildTime": 55,
+      "supplyGiven": 0,
+      "trains": [
+        "chainbreaker",
+        "reliquary_guard"
+      ],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 70,
+      "skills": [],
+      "look": "Bulwark Hall; selected expansion model."
+    },
+    {
+      "id": "timber_wall",
+      "name": "Timber Wall",
+      "tier": 1,
+      "hp": 600,
+      "armor": 2,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        1
+      ],
+      "cost": {
+        "gold": 20,
+        "wood": 30
+      },
+      "buildTime": 12,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [],
+      "upgradesTo": "stone_wall",
+      "sight": 10,
+      "bounty": 10,
+      "skills": [],
+      "look": "Timber Wall; selected expansion model.",
+      "fixedFacing": 0
+    },
+    {
+      "id": "stone_wall",
+      "name": "Stone Wall",
+      "tier": 2,
+      "hp": 1100,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        1
+      ],
+      "cost": {
+        "gold": 35,
+        "wood": 45
+      },
+      "buildTime": 20,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": "reinforced_wall",
+      "sight": 10,
+      "bounty": 11,
+      "skills": [],
+      "look": "Stone Wall; selected expansion model.",
+      "fixedFacing": 0
+    },
+    {
+      "id": "reinforced_wall",
+      "name": "Reinforced Wall",
+      "tier": 2,
+      "hp": 1700,
+      "armor": 8,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        1
+      ],
+      "cost": {
+        "gold": 65,
+        "wood": 60
+      },
+      "buildTime": 25,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 21,
+      "skills": [],
+      "look": "Reinforced Wall; selected expansion model.",
+      "fixedFacing": 0
+    },
+    {
+      "id": "repair_post",
+      "name": "Repair Post",
+      "tier": 2,
+      "hp": 650,
+      "armor": 3,
+      "armorType": "fortified",
+      "footprint": [
+        3,
+        2
+      ],
+      "cost": {
+        "gold": 100,
+        "wood": 75
+      },
+      "buildTime": 30,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 33,
+      "skills": [
+        {
+          "id": "repair_aura",
+          "passive": true,
+          "aura": true,
+          "radius": 6,
+          "repairSpeedPct": 60
+        }
+      ],
+      "look": "Repair Post; selected expansion model."
+    },
+    {
+      "id": "rally_bastion",
+      "name": "Rally Bastion",
+      "tier": 2,
+      "hp": 1050,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        3,
+        3
+      ],
+      "cost": {
+        "gold": 150,
+        "wood": 90
+      },
+      "buildTime": 40,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 50,
+      "skills": [
+        {
+          "id": "rest_aura",
+          "passive": true,
+          "aura": true,
+          "radius": 6,
+          "hpRegen": 6,
+          "outOfCombat": true
+        }
+      ],
+      "look": "Rally Bastion; selected expansion model."
+    },
+    {
+      "id": "chain_spire",
+      "name": "Chain Spire",
+      "tier": 2,
+      "hp": 700,
+      "armor": 4,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 190,
+        "wood": 80
+      },
+      "buildTime": 45,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 63,
+      "skills": [
+        {
+          "id": "chain_arc",
+          "range": 7,
+          "radius": 3.5,
+          "damage": 50,
+          "jumps": 3,
+          "cooldown": 3
+        }
+      ],
+      "look": "Chain Spire; selected expansion model."
+    },
+    {
+      "id": "frost_obelisk",
+      "name": "Frost Obelisk",
+      "tier": 2,
+      "hp": 850,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 150,
+        "wood": 75
+      },
+      "buildTime": 40,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 50,
+      "skills": [
+        {
+          "id": "frost_pulse",
+          "radius": 5,
+          "slowPct": 30,
+          "duration": 3,
+          "cooldown": 4,
+          "groundOnly": true
+        }
+      ],
+      "look": "Frost Obelisk; selected expansion model."
+    },
+    {
+      "id": "bell_ward",
+      "name": "Bell Ward",
+      "tier": 2,
+      "hp": 750,
+      "armor": 4,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 170,
+        "wood": 80
+      },
+      "buildTime": 40,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 56,
+      "skills": [
+        {
+          "id": "bell_interrupt",
+          "radius": 5,
+          "duration": 2,
+          "cooldown": 12
+        }
+      ],
+      "look": "Bell Ward; selected expansion model."
+    },
+    {
+      "id": "pitch_basin",
+      "name": "Pitch Basin",
+      "tier": 2,
+      "hp": 400,
+      "armor": 1,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 65,
+        "wood": 45
+      },
+      "buildTime": 20,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 21,
+      "skills": [
+        {
+          "id": "sticky_pitch",
+          "radius": 2.5,
+          "slowPct": 45,
+          "duration": 2,
+          "cooldown": 2,
+          "groundOnly": true
+        }
+      ],
+      "look": "Pitch Basin; selected expansion model."
+    },
+    {
+      "id": "wind_totem",
+      "name": "Wind Totem",
+      "tier": 2,
+      "hp": 600,
+      "armor": 3,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 140,
+        "wood": 60
+      },
+      "buildTime": 35,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 46,
+      "skills": [
+        {
+          "id": "wind_gust",
+          "radius": 6,
+          "distance": 2.5,
+          "cooldown": 7
+        }
+      ],
+      "look": "Wind Totem; selected expansion model."
+    },
+    {
+      "id": "shield_pylon",
+      "name": "Shield Pylon",
+      "tier": 2,
+      "hp": 700,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        2,
+        2
+      ],
+      "cost": {
+        "gold": 180,
+        "wood": 90
+      },
+      "buildTime": 45,
+      "supplyGiven": 0,
+      "trains": [],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 60,
+      "skills": [
+        {
+          "id": "pylon_cover",
+          "radius": 6,
+          "duration": 4,
+          "cooldown": 12,
+          "buildingsOnly": true,
+          "rangedReductionPct": 40
+        }
+      ],
+      "look": "Shield Pylon; selected expansion model."
+    },
+    {
+      "id": "tusk_lodge",
+      "name": "Tusk Lodge",
+      "tier": 2,
+      "hp": 1300,
+      "armor": 5,
+      "armorType": "fortified",
+      "footprint": [
+        4,
+        4
+      ],
+      "cost": {
+        "gold": 210,
+        "wood": 100
+      },
+      "buildTime": 60,
+      "supplyGiven": 0,
+      "trains": [
+        "boar_lancer",
+        "ram_drummer"
+      ],
+      "requires": [
+        "stronghold"
+      ],
+      "upgradesTo": null,
+      "sight": 10,
+      "bounty": 70,
+      "skills": [],
+      "look": "Timber cavalry lodge with tusks and a boar pen."
     }
   ],
   "neutralBuildings": [
-    { "id": "gold_mine", "name": "Gold Mine", "hp": null, "footprint": [3, 3], "look": "Cave in a rock with wooden beams and glittering gold." },
-    { "id": "side_shop", "name": "Trader's Tent", "hp": null, "footprint": [3, 3], "look": "Colorful tent with crates, a scale and a short bearded merchant." },
-    { "id": "temple_market", "name": "Temple Market", "hp": null, "footprint": [4, 4], "look": "Old stone altar with lanterns and a hooded trader." },
-    { "id": "fountain_of_life", "name": "Fountain of Life", "hp": null, "footprint": [3, 3], "look": "Round stone fountain with glowing blue-green water." },
-    { "id": "tavern_mossy", "name": "Mossy Tankard", "hp": null, "footprint": [4, 4], "look": "Crooked timber tavern with a mossy thatch roof. Hires Ratling Cutthroats and Toadfolk Mystics." },
-    { "id": "tavern_ember", "name": "Ember Kettle", "hp": null, "footprint": [4, 4], "look": "Stone tavern with a big chimney. Hires Shellback Beetles and Ember Wisps." }
+    {
+      "id": "gold_mine",
+      "name": "Gold Mine",
+      "hp": null,
+      "footprint": [
+        3,
+        3
+      ],
+      "look": "Cave in a rock with wooden beams and glittering gold."
+    },
+    {
+      "id": "side_shop",
+      "name": "Trader's Tent",
+      "hp": null,
+      "footprint": [
+        3,
+        3
+      ],
+      "look": "Colorful tent with crates, a scale and a short bearded merchant."
+    },
+    {
+      "id": "temple_market",
+      "name": "Temple Market",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Old stone altar with lanterns and a hooded trader."
+    },
+    {
+      "id": "relic_hall",
+      "name": "Relic Hall",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Uses the Temple Market model for now: old stone altar with lanterns, a trader of strong relics."
+    },
+    {
+      "id": "fountain_of_life",
+      "name": "Fountain of Life",
+      "hp": null,
+      "footprint": [
+        3,
+        3
+      ],
+      "look": "Round stone fountain with glowing blue-green water."
+    },
+    {
+      "id": "tavern_mossy",
+      "name": "Wayfarer Inn",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Wayfarer Inn with a painted sign and expanded mercenary roster."
+    },
+    {
+      "id": "tavern_ember",
+      "name": "Cinder Inn",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Cinder Inn with a painted sign and expanded mercenary roster."
+    },
+    {
+      "id": "wayfarer_inn",
+      "name": "Wayfarer Inn",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Wayfarer Inn selected tavern model."
+    },
+    {
+      "id": "cinder_inn",
+      "name": "Cinder Inn",
+      "hp": null,
+      "footprint": [
+        4,
+        4
+      ],
+      "look": "Cinder Inn selected tavern model."
+    }
   ]
 }

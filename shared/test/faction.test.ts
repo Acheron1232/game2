@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { entityTypeIndex, ENTITY_TYPES } from '../src/sim/entity-types';
 import { EventType } from '../src/sim/events';
-import { isTownHall } from '../src/sim/faction/faction';
+import { blankBuilding, isTownHall } from '../src/sim/faction/faction';
 import { MatchSim, TICK_RATE, type SimEntity } from '../src/sim/match-sim';
 import { buildMatchNav } from '../src/nav/match-nav';
 import { isWalkable } from '../src/nav/nav-grid';
@@ -64,6 +64,37 @@ describe('faction start', () => {
 });
 
 describe('economy', () => {
+  it('the foundry checks tech, pays for a golem, reserves supply and finishes its real queue', () => {
+    const { sim, f, run } = match();
+    const a = f.get(0)!;
+    a.gold = 1000;
+    a.wood = 1000;
+    const def = gameData.buildings.buildings.find((b) => b.id === 'golem_foundry')!;
+    const foundry = sim.spawn(entityTypeIndex(def.id), 0, 1, 0, 128, 105);
+    foundry.building = blankBuilding(def, ...def.footprint);
+    foundry.building.done = true;
+    a.buildings.add(foundry.id);
+    expect(f.train(a, foundry, 'foundry_golem')).toBe(false);
+    a.tier = 2;
+    const forgeDef = gameData.buildings.buildings.find((b) => b.id === 'forge')!;
+    const forge = sim.spawn(entityTypeIndex('forge'), 0, 1, 0, 135, 105);
+    forge.building = blankBuilding(forgeDef, ...forgeDef.footprint);
+    forge.building.done = true;
+    a.buildings.add(forge.id);
+    const gold = a.gold,
+      wood = a.wood,
+      supply = a.supplyUsed;
+    expect(f.train(a, foundry, 'swordsman')).toBe(false);
+    expect(f.train(a, foundry, 'foundry_golem')).toBe(true);
+    expect(a.gold).toBe(gold - 260);
+    expect(a.wood).toBe(wood - 90);
+    expect(a.supplyUsed).toBe(supply + 5);
+    run(37);
+    expect(units(sim, 0, 'foundry_golem')).toHaveLength(0);
+    run(2);
+    expect(units(sim, 0, 'foundry_golem')).toHaveLength(1);
+    expect(foundry.building.queue).toHaveLength(0);
+  });
   it('workers bring gold: about 5 workers x 10 gold per trip', () => {
     const { f, run } = match();
     run(60);

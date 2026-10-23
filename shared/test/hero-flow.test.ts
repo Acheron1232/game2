@@ -1,5 +1,5 @@
 // The Phase 7 "done when" list, run in the simulation for every hero: farm a camp, reach
-// level 10, use all 4 abilities, buy and use items, die and come back.
+// max level, use all 4 abilities, buy and use items, die and come back.
 // (The same flow is checked by hand in the browser with two players; see docs/PROGRESS.md.)
 
 import { readFileSync } from 'node:fs';
@@ -15,6 +15,7 @@ import {
   gameData,
   itemIndex,
   ITEMS,
+  MAX_LEVEL,
   MatchSim,
   NEUTRAL,
   NEUTRAL_TEAM,
@@ -30,7 +31,7 @@ const SHOP = gameData.map.shops.find((s) => s.id === 'north_side_shop')!.pos;
 
 describe('every hero, the whole way', () => {
   for (const def of gameData.heroes) {
-    it(`${def.name}: farm, level 10, Q W E R, items, death and respawn`, () => {
+    it(`${def.name}: farm, max level, Q W E R, items, death and respawn`, () => {
       const sim = new MatchSim(
         {
           seed: 11,
@@ -69,15 +70,15 @@ describe('every hero, the whole way', () => {
       ).toBe(true);
       expect(hs.xp, 'XP from the camp').toBeGreaterThan(0);
 
-      // 2. Level 10 (the rest of the XP at once) and learn everything.
-      sim.addXp(hero, xpForLevel(10) - hs.xp);
-      expect(hs.level).toBe(10);
-      for (let i = 0; i < 12; i++) for (let s = 0; s < 4; s++) cmd({ type: CommandType.Learn, slot: s });
+      // 2. Max level (the rest of the XP at once) and learn everything.
+      sim.addXp(hero, xpForLevel(MAX_LEVEL) - hs.xp);
+      expect(hs.level).toBe(MAX_LEVEL);
+      for (let i = 0; i < 15; i++) for (let s = 0; s < 4; s++) cmd({ type: CommandType.Learn, slot: s });
       run(0.1);
       expect(hs.abilityLevels).toEqual(def.abilities.map((id) => ABILITIES[abilityIndex(id)]!.maxLevel));
-      if (!hero.alive) run(respawnSeconds(10) + 1);
+      if (!hero.alive) run(respawnSeconds(MAX_LEVEL) + 1);
 
-      // 3. All four abilities. Actives: the cast goes through (cooldown starts). Passives and
+      // 3. Every ability. Actives: the cast goes through (cooldown starts). Passives and
       // auras: their buff is on the hero.
       hero.mover.x = 110;
       hero.mover.y = 222;
@@ -95,6 +96,14 @@ describe('every hero, the whole way', () => {
           expect(hero.buffs.some((b) => b.id === `passive:${id}` || b.id === `aura:${id}`) || id === 'flurry', `${id} works`).toBe(true);
           return;
         }
+        if (def.id === 'earth_spirit') {
+          sim.teleport(hero, 110, 222);
+          sim.teleport(ogre, 113, 222);
+          if (id === 'boulder_smash' || id === 'geomagnetic_grip') {
+            cmd({ type: CommandType.Cast, slot: 4, target: 2, id: 0, x: id === 'boulder_smash' ? 111 : 113, y: 222 });
+            run(0.1);
+          }
+        }
         const enemyUnit = a.filter.includes('enemy');
         const target =
           a.target === 'none'
@@ -105,7 +114,12 @@ describe('every hero, the whole way', () => {
         expect(sim.castCheck(0, slot, target), `${id} allowed`).toBeNull();
         cmd({ type: CommandType.Cast, slot, target: target.kind, id: target.id, x: target.x, y: target.y });
         run(Math.max(1.5, a.castTime + 1) + (id === 'arcane_storm' ? 3 : 0));
-        expect(hero.cooldowns[slot]!, `${id} was cast`).toBeGreaterThan(sim.tick);
+        if (id === 'stone_remnant')
+          expect(
+            sim.entities.some((e) => e.alive && e.type === entityTypeIndex('earth_remnant')),
+            'stone was placed',
+          ).toBe(true);
+        else expect(hero.cooldowns[slot]!, `${id} was cast`).toBeGreaterThan(sim.tick);
       });
 
       // 4. Buy at the Trader's Tent, use a potion, carry boots.
@@ -127,13 +141,13 @@ describe('every hero, the whole way', () => {
       expect(hero.hp).toBeGreaterThan(hp0 + 200);
       expect(hs.inventory[0]).toBeNull();
 
-      // 5. Die to the enemy hero and come back at the base after 5 + 3 x 10 seconds.
+      // 5. Die to the enemy hero and come back at the base after 5 + 3 x level seconds.
       // (Wait for shields like Dawn Shield to end first: they keep the hero alive.)
       run(10);
       const enemy = sim.heroes[1]!;
       sim.damage(hero, 1e6, { id: enemy.id, owner: 1, team: 2 }, DamageKind.Spell);
       expect(hero.alive).toBe(false);
-      run(respawnSeconds(10) - 1);
+      run(respawnSeconds(MAX_LEVEL) - 1);
       expect(hero.alive).toBe(false);
       run(1.1);
       expect(hero.alive).toBe(true);

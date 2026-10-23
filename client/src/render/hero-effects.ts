@@ -58,6 +58,24 @@ const fx = (socket: string, frames: Frames, color1: string, color2: string, o: P
 });
 
 export const HERO_LOOKS: Record<string, HeroLook> = {
+  earth_spirit: {
+    effects: [fx('core', 'spark', '#b0fa67', '#477930', { rate: 3, size: [0.04, 0.08], spread: 0.07 })],
+    glowPulse: [1.6, 0.8, 1],
+  },
+  thorn_marshal: { effects: [] },
+  grave_bellkeeper: {
+    effects: [fx('core', 'arcane', '#63ebd3', '#397887', { rate: 4, size: [0.07, 0.13], spread: 0.08 })],
+    glowPulse: [1.7, 0.8, 1],
+  },
+  tidebreaker: { effects: [] },
+  lantern_monk: {
+    effects: [fx('lantern', 'heal', '#fff0bf', '#e6b05a', { rate: 3, size: [0.05, 0.1], spread: 0.06, lift: 0.1 })],
+    glowPulse: [1.3, 0.85, 1],
+  },
+  obsidian_heart: {
+    effects: [fx('core', 'fire', '#ffd16a', '#ef501a', { rate: 5, size: [0.08, 0.16], spread: 0.1, life: [0.5, 0.9] })],
+    glowPulse: [2, 0.75, 1],
+  },
   staff_warrior: {
     effects: [
       fx('ring', 'heal', '#ffd77a', '#ff9a3a', { rate: 6, size: [0.16, 0.3] }),

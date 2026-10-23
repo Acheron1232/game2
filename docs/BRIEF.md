@@ -60,7 +60,7 @@ Inspired by the classic 4-player temple map. Put the reference picture in `docs/
 
 ## 4. Heroes (8 to start)
 
-Every hero has: Strength / Agility / Intelligence, a main stat, health, mana, armor, attack damage, attack range, attack speed, move speed, 3 normal abilities + 1 ultimate, levels 1–10 (ultimate at level 6), and 6 item slots.
+Every hero has: Strength / Agility / Intelligence, a main stat, health, mana, armor, attack damage, attack range, attack speed, move speed, 3 normal abilities + 1 ultimate, levels 1–15 (ultimate at level 6, its second level at 11), and 6 item slots.
 
 Kits below are the short version. Full numbers: `docs/design/HEROES.md`. All names are ours.
 

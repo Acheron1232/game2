@@ -20,7 +20,8 @@ const units = load('units').units,
 const shops = load('shops').shops,
   camps = load('camps'),
   upgrades = load('upgrades').upgrades,
-  map = load('map-layout');
+  map = load('map-layout'),
+  skills = load('skills').skills;
 
 const abilityById = new Map(abilities.map((a) => [a.id, a]));
 const unitById = new Map(units.map((u) => [u.id, u]));
@@ -36,7 +37,7 @@ function heroStats() {
     at = rules.attributes;
   const rows = [];
   for (const h of heroes)
-    for (const lvl of [1, 10]) {
+    for (const lvl of [1, 10, hb.maxLevel]) {
       const st = Object.fromEntries(Object.entries(h.attributes).map(([k, [b, g]]) => [k, Math.floor(b + g * (lvl - 1))]));
       rows.push([
         lvl === 1 ? `**${h.name}**` : '',
@@ -134,8 +135,16 @@ function buildingTable() {
 
 function itemTable() {
   return table(
-    ['Item', 'Tier', 'Cost', 'Sell', 'Effect'],
-    items.map((i) => [i.name, i.tier, i.cost ?? 'drop only', Math.floor(i.value * rules.gold.sellFactor), i.text]),
+    ['Item', 'Tier', 'Role', 'Cost', 'Sell', 'Made from', 'Effect'],
+    items.map((i) => [
+      i.name,
+      i.tier,
+      i.role ?? '—',
+      i.cost ?? 'drop only',
+      Math.floor(i.value * rules.gold.sellFactor),
+      i.recipe ? `${i.recipe.components.map(nameOf).join(' + ')} + ${i.recipe.fee}` : '—',
+      i.text,
+    ]),
   );
 }
 
@@ -223,7 +232,25 @@ function damageTable() {
   );
 }
 
+/** Every unit with a skill: what it does, its numbers, and if the player can press it on an own unit. */
+function unitSkills() {
+  const rows = [];
+  for (const u of units)
+    for (const s of u.skills ?? []) {
+      const info = skills.find((x) => x.id === s.id);
+      if (!info || info.kind === 'work') continue;
+      const numbers = Object.entries(s)
+        .filter(([k, v]) => k !== 'id' && typeof v === 'number')
+        .map(([k, v]) => `${words(k)} ${v}`)
+        .join(', ');
+      const target = info.kind === 'passive' ? 'passive' : info.target === 'unit' ? `one ${info.targets}` : 'around it';
+      rows.push([u.name, u.group, info.name, target, info.text, numbers]);
+    }
+  return table(['Unit', 'Group', 'Skill', 'Target', 'What it does', 'Numbers'], rows);
+}
+
 const TABLES = {
+  'unit-skills': unitSkills,
   'hero-base': heroBase,
   'hero-stats': heroStats,
   'units-faction': () => unitTable('faction'),

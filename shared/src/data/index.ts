@@ -10,6 +10,7 @@ import itemsJson from '../../data/items.json';
 import mapLayoutJson from '../../data/map-layout.json';
 import rulesJson from '../../data/rules.json';
 import shopsJson from '../../data/shops.json';
+import skillsJson from '../../data/skills.json';
 import unitsJson from '../../data/units.json';
 import upgradesJson from '../../data/upgrades.json';
 import type { z } from 'zod';
@@ -23,11 +24,13 @@ import {
   mapLayoutSchema,
   rulesSchema,
   shopsSchema,
+  skillsSchema,
   unitsSchema,
   upgradesSchema,
 } from './schemas';
 
 export * from './schemas';
+export * from './ability-mechanic';
 export { validateGameData } from './validate';
 
 function parse<S extends z.ZodType>(name: string, schema: S, json: unknown): z.infer<S> {
@@ -45,6 +48,7 @@ export function loadGameData() {
     heroes: parse('heroes', heroesSchema, heroesJson).heroes,
     abilities: parse('abilities', abilitiesSchema, abilitiesJson).abilities,
     units: parse('units', unitsSchema, unitsJson).units,
+    skills: parse('skills', skillsSchema, skillsJson).skills,
     buildings: parse('buildings', buildingsSchema, buildingsJson),
     items: parse('items', itemsSchema, itemsJson).items,
     shops: parse('shops', shopsSchema, shopsJson).shops,

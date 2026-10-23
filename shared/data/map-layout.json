@@ -1598,6 +1598,16 @@
       "pos": [89.3, 62]
     },
     {
+      "id": "relic_hall_1",
+      "type": "relic_hall",
+      "pos": [194, 89.3]
+    },
+    {
+      "id": "relic_hall_2",
+      "type": "relic_hall",
+      "pos": [62, 166.7]
+    },
+    {
       "id": "north_side_shop",
       "type": "side_shop",
       "sector": "north",

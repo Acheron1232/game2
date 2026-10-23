@@ -88,6 +88,12 @@ export interface NetFactionState {
   army: number;
   /** one short line: what the AI does now */
   status: string;
+  /** the players' order to the AI: index in KINGDOM_ORDERS (orders.ts) */
+  order: number;
+  /** attack order: the kingdom slot, else 255 */
+  orderTarget: number;
+  /** hero slot that gave the order, else 255 */
+  orderBy: number;
   /** Town Hall upgrade levels, in upgrades.json order */
   upgrades: number[];
   /** tick when each upgrade can be bought again (repeatable ones), 0 = now */
@@ -107,6 +113,9 @@ export function blankFactionState(): NetFactionState {
     workers: 0,
     army: 0,
     status: '',
+    order: 0,
+    orderTarget: 255,
+    orderBy: 255,
     upgrades: [],
     upgradeReady: [],
     tech: [],
@@ -160,9 +169,11 @@ export interface NetPlayerState {
   moveSpeed: number;
   /** supply of the soldiers the hero hired (rules.json hire.maxSupply) */
   hiredSupply: number;
-  abilityLevels: [number, number, number, number];
+  hireStock: { shop: number; unit: number; count: number; readyAt: number }[];
+  abilityLevels: number[];
   /** server tick each ability is ready again (0 = ready) */
-  cooldownEnds: [number, number, number, number];
+  cooldownEnds: number[];
+  abilityCharges?: number[];
   /** per inventory slot: item index + 1 (0 = empty) */
   items: number[];
   /** per inventory slot: charges */
@@ -191,6 +202,7 @@ export function blankPlayerState(): NetPlayerState {
     skillPoints: 0,
     respawnTicks: 0,
     hiredSupply: 0,
+    hireStock: [],
     moveSpeed: 0,
     abilityLevels: [0, 0, 0, 0],
     cooldownEnds: [0, 0, 0, 0],
@@ -260,6 +272,12 @@ export function writeCommand(w: BinaryWriter, seq: number, cmd: GameCommand): Ui
     case CommandType.Hire:
       w.u8(cmd.unit);
       break;
+    case CommandType.KingdomOrder:
+      w.u8(cmd.order).u8(cmd.target & 0xff);
+      break;
+    case CommandType.UnitCast:
+      w.u16(cmd.unit).u8(cmd.skill).u16(cmd.target);
+      break;
   }
   return w.bytes();
 }
@@ -280,14 +298,14 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
     case CommandType.Hold:
       return { seq, cmd: { type } };
     case CommandType.Cast: {
-      const slot = r.u8() & 3,
+      const slot = r.u8(),
         target = r.u8();
       if (target === 1) return { seq, cmd: { type, slot, target, id: r.u16(), x: 0, y: 0 } };
       if (target === 2) return { seq, cmd: { type, slot, target, id: 0, x: dqPos(r.u16()), y: dqPos(r.u16()) } };
       return { seq, cmd: { type, slot, target: 0, id: 0, x: 0, y: 0 } };
     }
     case CommandType.Learn:
-      return { seq, cmd: { type, slot: r.u8() & 3 } };
+      return { seq, cmd: { type, slot: r.u8() } };
     case CommandType.UseItem: {
       const slot = r.u8(),
         target = r.u8();
@@ -311,6 +329,10 @@ export function readCommand(r: BinaryReader): { seq: number; cmd: GameCommand } 
       return { seq, cmd: { type, upgrade: r.u8() } };
     case CommandType.Hire:
       return { seq, cmd: { type, unit: r.u8() } };
+    case CommandType.KingdomOrder:
+      return { seq, cmd: { type, order: r.u8(), target: r.u8() } };
+    case CommandType.UnitCast:
+      return { seq, cmd: { type, unit: r.u16(), skill: r.u8(), target: r.u16() } };
   }
   return null;
 }
@@ -443,8 +465,13 @@ export class SnapshotWriter {
     const p = this.player;
     if (p) {
       w.u16(p.heroId).u32(p.gold).u32(p.xp).u8(p.level).u8(p.skillPoints).u16(p.respawnTicks).u16(p.moveSpeed).u8(p.hiredSupply);
+      w.u8(p.hireStock.length);
+      for (const s of p.hireStock) w.u8(s.shop).u16(s.unit).u8(s.count).u32(s.readyAt);
+      w.u8(p.abilityLevels.length);
       for (const l of p.abilityLevels) w.u8(l);
       for (const c of p.cooldownEnds) w.u32(c);
+      w.u8(p.abilityCharges?.length ?? 0);
+      for (const c of p.abilityCharges ?? []) w.u8(c);
       for (let i = 0; i < SLOTS; i++)
         w.u8(p.items[i] ?? 0)
           .u8(p.charges[i] ?? 0)
@@ -452,7 +479,18 @@ export class SnapshotWriter {
     }
     if (this.factionList.length) w.u8(this.factionList.length);
     for (const f of this.factionList) {
-      w.u8(f.slot).u32(f.gold).u32(f.wood).u8(f.supplyUsed).u8(f.supplyCap).u8(f.tier).u8(f.workers).u8(f.army).str(f.status);
+      w.u8(f.slot)
+        .u32(f.gold)
+        .u32(f.wood)
+        .u16(f.supplyUsed)
+        .u16(f.supplyCap)
+        .u8(f.tier)
+        .u8(f.workers)
+        .u16(f.army)
+        .str(f.status)
+        .u8(f.order)
+        .u8(f.orderTarget)
+        .u8(f.orderBy);
       w.u8(f.upgrades.length);
       for (let i = 0; i < f.upgrades.length; i++) w.u8(f.upgrades[i]!).u32(f.upgradeReady[i] ?? 0);
       w.u8(f.tech.length);
@@ -487,7 +525,7 @@ export class SnapshotWriter {
         .u16(e.a)
         .u16(e.b)
         .u16(Math.max(0, Math.min(65535, e.value)))
-        .u8(e.kind);
+        .u16(e.kind);
     }
     if (items) {
       w.u8(this.nItemSpawn);
@@ -547,8 +585,24 @@ export class SnapshotData {
       p.respawnTicks = r.u16();
       p.moveSpeed = r.u16();
       p.hiredSupply = r.u8();
-      for (let i = 0; i < 4; i++) p.abilityLevels[i] = r.u8();
-      for (let i = 0; i < 4; i++) p.cooldownEnds[i] = r.u32();
+      p.hireStock.length = r.u8();
+      for (let i = 0; i < p.hireStock.length; i++) {
+        const s = p.hireStock[i] ?? (p.hireStock[i] = { shop: 0, unit: 0, count: 0, readyAt: 0 });
+        s.shop = r.u8();
+        s.unit = r.u16();
+        s.count = r.u8();
+        s.readyAt = r.u32();
+      }
+      const abilityCount = r.u8();
+      p.abilityLevels.length = p.cooldownEnds.length = abilityCount;
+      for (let i = 0; i < abilityCount; i++) p.abilityLevels[i] = r.u8();
+      for (let i = 0; i < abilityCount; i++) p.cooldownEnds[i] = r.u32();
+      const charges = r.u8();
+      if (charges) {
+        p.abilityCharges ??= [];
+        p.abilityCharges.length = charges;
+        for (let i = 0; i < charges; i++) p.abilityCharges[i] = r.u8();
+      } else delete p.abilityCharges;
       for (let i = 0; i < SLOTS; i++) {
         p.items[i] = r.u8();
         p.charges[i] = r.u8();
@@ -562,12 +616,15 @@ export class SnapshotData {
       f.slot = r.u8();
       f.gold = r.u32();
       f.wood = r.u32();
-      f.supplyUsed = r.u8();
-      f.supplyCap = r.u8();
+      f.supplyUsed = r.u16();
+      f.supplyCap = r.u16();
       f.tier = r.u8();
       f.workers = r.u8();
-      f.army = r.u8();
+      f.army = r.u16();
       f.status = r.str();
+      f.order = r.u8();
+      f.orderTarget = r.u8();
+      f.orderBy = r.u8();
       const n = r.u8();
       f.upgrades.length = f.upgradeReady.length = n;
       for (let i = 0; i < n; i++) {
@@ -631,7 +688,7 @@ export class SnapshotData {
       e.a = r.u16();
       e.b = r.u16();
       e.value = r.u16();
-      e.kind = r.u8();
+      e.kind = r.u16();
     }
     this.itemSpawnCount = this.itemGoneCount = 0;
     if (this.flags & SnapshotFlag.HasItems) {

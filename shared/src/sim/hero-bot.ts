@@ -1,16 +1,17 @@
+import { entityTypeIndex } from './entity-types';
 // A computer-controlled hero (Bot slots): learns abilities, farms camps that fit its level,
 // retreats on low health, defends the base and joins the faction's attacks. It only sends the
 // same commands a player sends. Written by Codex for Phase 8 (task: tools/codex-tasks/hero-bot.md).
 
-import { gameData, type AbilityDef } from '../data/index';
+import { abilityMechanic, gameData, type AbilityDef } from '../data/index';
 import { castProblem, heroAbility, lv, param, targetAllowed, type CastTarget } from './abilities';
 import type { CampState } from './camps';
 import { CommandType, type GameCommand } from './commands';
 import { isTownHall } from './faction/faction';
 import { factionTech, hallInRange, UPGRADE_IDS, upgradeProblem } from './faction/hall-shop';
-import { HIRE, hirePrice, hiredSupply, hireProblem } from './faction/hire';
+import { HIRE, hirePrice, hiredSupply, hireProblem, tavernStockAt } from './faction/hire';
 import { upgradeStatus, type UpgradeId } from './faction/upgrades';
-import { ITEMS, canStore, itemIndex, itemReadyAt, newCharges, shopInRange } from './items';
+import { ITEMS, buyPlan, canStore, canStoreAfter, itemIndex, itemReadyAt, newCharges, shopInRange, type ItemStack } from './items';
 import { NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from './match-sim';
 import { canLearn, rectDistance } from './stats';
 
@@ -29,6 +30,8 @@ export interface HeroBotHooks {
   hires?: boolean;
   /** the kingdom (faction slot) the hero buys upgrades and hires for; default: its own slot */
   kingdom?: number;
+  /** The kingdom's order keeps it near home (defend, build up): farm only camps this close to the point. */
+  campArea?: () => { x: number; y: number; range: number } | null;
 }
 
 interface DifficultySettings {
@@ -70,6 +73,8 @@ const POTION_USE_PCT = 45;
 const SHOP_NEAR = 25;
 const HALL_NEAR = 30;
 const ITEM_GOLD_BUFFER = 100;
+/** a hit counts as a fight for this long */
+const RECENT_HIT_TICKS = 4 * TICK_RATE;
 const UPGRADE_GOLD_BUFFER = 300;
 const UPGRADE_SPEND_SHARE = 0.3;
 /** the upgrade savings stop growing here (the dearest upgrade level costs 375) */
@@ -78,6 +83,33 @@ const UPGRADE_ORDER: readonly UpgradeId[] = ['iron_plates', 'sharper_blades', 'b
 const HERO_BUILDS = gameData.ai.heroBot.heroBuild as unknown as Record<string, readonly string[]>;
 const HEALS = new Set(['radiant_touch', 'sanctuary', 'dawn_shield']);
 const SELF_BUFFS = new Set(['iron_stance', 'stone_skin']);
+
+/** Is `part` somewhere in the recipe of `item` (all the way down)? */
+function madeFrom(item: number, part: number): boolean {
+  const r = ITEMS[item]?.recipe;
+  return !!r && r.components.some((c) => itemIndex(c) === part || madeFrom(itemIndex(c), part));
+}
+
+/**
+ * What to buy now for a build item: the item itself when its price (carried parts count) fits
+ * the budget, else the first missing part that fits (one level down at a time). -1 = wait.
+ */
+function nextPurchase(inv: readonly (ItemStack | null)[], goal: number, budget: number): number {
+  if (buyPlan(inv, goal).price <= budget) return goal;
+  const r = ITEMS[goal]!.recipe;
+  if (!r) return -1;
+  const used: number[] = [];
+  for (const c of r.components) {
+    const part = itemIndex(c);
+    const slot = inv.findIndex((st, i) => st?.item === part && !used.includes(i));
+    if (slot >= 0) {
+      used.push(slot);
+      continue;
+    }
+    return nextPurchase(inv, part, budget);
+  }
+  return -1;
+}
 
 function distance(a: SimEntity, x: number, y: number): number {
   return Math.hypot(a.mover.x - x, a.mover.y - y);
@@ -261,7 +293,9 @@ export class HeroBot {
       return;
     }
 
-    if (!fighting) {
+    // A shop trip goes on when a camp on the way attacks: turning back to farm made the bot swing
+    // between the two for minutes. Low health still sends it home (retreat, above).
+    if (!fighting || this.plan === PLAN_SHOP) {
       const shopping = this.shopForPotions(sim, hero, null, null, MAX_COMMANDS_PER_THINK - commands);
       if (shopping >= 0) return;
       if (this.difficulty !== 'easy') {
@@ -322,8 +356,21 @@ export class HeroBot {
     const camp = this.chooseCamp(sim, hero);
     if (!camp) {
       this.campIndex = -1;
+      const area = this.hooks.campArea?.() ?? null;
+      // Ordered to stay home and nothing to farm there: wait at the base.
+      if (
+        area &&
+        commands < MAX_COMMANDS_PER_THINK &&
+        distance(hero, area.x, area.y) > 12 &&
+        this.needsPointOrder(hero, PLAN_ARMY, area.x, area.y)
+      ) {
+        this.send(sim, { type: CommandType.AttackMove, x: area.x, y: area.y });
+        this.setPointPlan(PLAN_ARMY, area.x, area.y);
+        this.stateText = 'Guarding the base';
+        return;
+      }
       this.plan = PLAN_NONE;
-      this.stateText = 'No safe camp';
+      this.stateText = area ? 'Guarding the base' : 'No safe camp';
       return;
     }
     const target = lowestHealthMember(camp);
@@ -426,8 +473,9 @@ export class HeroBot {
           (hero.order === 'attack' && hero.orderTarget === enemy.id) ||
           enemy.targetId === hero.id ||
           (enemy.order === 'attack' && enemy.orderTarget === hero.id) ||
-          hero.lastHitBy === enemy.id ||
-          enemy.lastHitBy === hero.id)
+          // A hit long ago is not a fight: a camp the hero hit once must not hold it near forever.
+          (hero.lastHitBy === enemy.id && sim.tick - hero.lastHitAt < RECENT_HIT_TICKS) ||
+          (enemy.lastHitBy === hero.id && sim.tick - enemy.lastHitAt < RECENT_HIT_TICKS))
       ) {
         found = true;
       }
@@ -484,12 +532,18 @@ export class HeroBot {
   private shopForBuild(sim: MatchSim, hero: SimEntity, availableCommands: number): number {
     const build = HERO_BUILDS[hero.heroState!.def.id];
     if (!build) return -1;
+    const inv = hero.heroState!.inventory;
+    // Long recipe builds would eat all gold: keep some for soldiers until half the hire limit.
+    const hs = hero.heroState!;
+    const wantsSoldiers = this.hooks.hires && hs.level >= HIRING.fromLevel && hiredSupply(sim, hero) < HIRE.maxSupply / 2;
+    const budget = hs.gold - Math.max(ITEM_GOLD_BUFFER, this.upgradeReserve(sim, hero)) - (wantsSoldiers ? HIRING.goldBuffer : 0);
     for (const id of build) {
-      const item = itemIndex(id);
-      if (item < 0 || this.hasItem(hero, item)) continue;
-      const cost = ITEMS[item]!.cost;
-      if (cost === null || hero.heroState!.gold < cost + Math.max(ITEM_GOLD_BUFFER, this.upgradeReserve(sim, hero))) return -1;
-      if (!canStore(hero.heroState!.inventory, item, newCharges(item))) continue;
+      const goal = itemIndex(id);
+      if (goal < 0 || this.hasItem(hero, goal)) continue;
+      // The next build item, or a part of it while the whole recipe is too dear (wait for gold).
+      const item = nextPurchase(inv, goal, budget);
+      if (item < 0) return -1;
+      if (!canStoreAfter(inv, buyPlan(inv, item), item)) continue;
       const shop = this.nearestShop(hero, item, Infinity, null, null);
       if (!shop) return -1;
       this.stateText = 'Shopping';
@@ -608,11 +662,12 @@ export class HeroBot {
     }
     // Tavern mercenaries count too (a tavern is a map shop, not an entity: target id 0).
     let tavern: { x: number; y: number } | null = null;
-    for (const t of gameData.map.shops) {
+    for (const [shopIndex, t] of gameData.map.shops.entries()) {
       const shop = gameData.shops.find((d) => d.id === t.type) as { mercenaries?: string[] } | undefined;
       if (!shop?.mercenaries || distance(hero, t.pos[0], t.pos[1]) > HIRING.maxTravel) continue;
       for (const unitId of shop.mercenaries) {
         const index = gameData.units.findIndex((u) => u.id === unitId);
+        if (tavernStockAt(sim, shopIndex, index)?.count === 0) continue;
         const price = hirePrice(index);
         const def = gameData.units[index];
         if (price === null || !def || price <= best || price > spare || (def.supply ?? 0) > room) continue;
@@ -726,8 +781,9 @@ export class HeroBot {
     }
   }
 
+  /** Carries the item, or an item made from it (Arcane Staff after Arcane Staff II). */
   private hasItem(hero: SimEntity, item: number): boolean {
-    for (const stack of hero.heroState!.inventory) if (stack?.item === item) return true;
+    for (const stack of hero.heroState!.inventory) if (stack && (stack.item === item || madeFrom(stack.item, item))) return true;
     return false;
   }
 
@@ -742,10 +798,12 @@ export class HeroBot {
   private chooseCamp(sim: MatchSim, hero: SimEntity): CampState | null {
     // ai.json campChoice: 4 + 2 x level (3 x with an ally hero near), so orange camps open at level 3.
     const maxLevel = 4 + hero.heroState!.level * (this.hasAllyHeroNear(sim, hero) ? 3 : 2);
+    const area = this.hooks.campArea?.() ?? null;
     let best: CampState | null = null;
     let bestDistance = Infinity;
     for (const camp of sim.camps) {
       if (camp.respawnAt !== 0) continue;
+      if (area && Math.hypot(camp.x - area.x, camp.y - area.y) > area.range) continue;
       const level = aliveCampLevel(camp);
       if (level === 0 || level > maxLevel) continue;
       // A melee hero can not hit flying monsters (harpies): it would stand under them forever.
@@ -761,6 +819,7 @@ export class HeroBot {
 
   private tryAbility(sim: MatchSim, hero: SimEntity, target: SimEntity | null, retreating: boolean): boolean {
     if (hero.cast || hero.forced || this.nextRandom() >= this.settings.abilityUseQuality) return false;
+    if (hero.heroState?.def.id === 'earth_spirit') return this.tryEarthSpirit(sim, hero, target, retreating);
     if (retreating) {
       for (let slot = 0; slot < 4; slot++) {
         const a = heroAbility(hero, slot);
@@ -787,7 +846,7 @@ export class HeroBot {
       if (!a || level < 1 || a.kind !== 'active') continue;
       const healthCost = param(a, 'healthCost', level);
       if (healthCost > 0 && hero.hp - healthCost < hero.stats.maxHp * 0.7) continue;
-      if (HEALS.has(a.id)) {
+      if (HEALS.has(abilityMechanic(a))) {
         const ally = this.lowestHurtAlly(sim, hero, a, level);
         if (!ally) continue;
         const castTarget: CastTarget =
@@ -795,7 +854,7 @@ export class HeroBot {
         if (this.cast(sim, hero, slot, castTarget)) return true;
         continue;
       }
-      if (SELF_BUFFS.has(a.id)) {
+      if (SELF_BUFFS.has(abilityMechanic(a))) {
         if (hero.lastHitBy && hero.hp < hero.stats.maxHp * 0.7 && this.cast(sim, hero, slot, { kind: 0, id: 0, x: 0, y: 0 })) return true;
         continue;
       }
@@ -822,6 +881,38 @@ export class HeroBot {
         )
           return true;
       }
+    }
+    return false;
+  }
+
+  private tryEarthSpirit(sim: MatchSim, hero: SimEntity, target: SimEntity | null, retreating: boolean): boolean {
+    const point = (slot: number, x: number, y: number) => this.cast(sim, hero, slot, { kind: 2, id: 0, x, y });
+    if (retreating) {
+      const home = retreatPoint(hero);
+      return point(1, home[0], home[1]);
+    }
+    if (!target?.alive || target.building || !sim.canSee(hero.team, target)) return false;
+    const dx = target.mover.x - hero.mover.x,
+      dy = target.mover.y - hero.mover.y,
+      d = Math.hypot(dx, dy) || 1;
+    const mag = heroAbility(hero, 3)!;
+    if (
+      d <= param(mag, 'radius', 1) &&
+      !target.buffs.some((b) => b.id === 'magnetize' && b.sourceId === hero.id) &&
+      this.cast(sim, hero, 3, { kind: 0, id: 0, x: 0, y: 0 })
+    )
+      return true;
+    const stoneType = entityTypeIndex('earth_remnant');
+    const stones = sim.entities.filter((e) => e.alive && e.type === stoneType && e.leaderId === hero.id);
+    const close = stones.find((e) => distance(hero, e.mover.x, e.mover.y) <= 2);
+    if (close && d <= 20 && point(0, target.mover.x, target.mover.y)) return true;
+    const far = stones.find((e) => distance(hero, e.mover.x, e.mover.y) > 2 && distance(hero, e.mover.x, e.mover.y) <= 11);
+    if (far && point(2, far.mover.x, far.mover.y)) return true;
+    if (d > 3 && d <= 16 && point(1, target.mover.x, target.mover.y)) return true;
+    if (target.hero && d < 1.75 && this.cast(sim, hero, 5, { kind: 1, id: target.id, x: 0, y: 0 })) return true;
+    if (!stones.length && d <= 11) {
+      const activeMag = target.buffs.some((b) => b.id === 'magnetize' && b.sourceId === hero.id);
+      return point(4, activeMag ? target.mover.x : hero.mover.x + dx / d, activeMag ? target.mover.y : hero.mover.y + dy / d);
     }
     return false;
   }

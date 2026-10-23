@@ -27,6 +27,12 @@ export const HERO_FX: Record<string, { color: string; frames: Frames; color2: st
   arcane_huntress: { color: '#b07bff', frames: 'arcane', color2: '#3a1aa0' },
   centaur_raider: { color: '#f0b46a', frames: 'dust', color2: '#8a5a24' },
   forest_elf: { color: '#5fe07a', frames: 'nature', color2: '#1f6a2a' },
+  earth_spirit: { color: '#9aef52', frames: 'dust', color2: '#598641' },
+  thorn_marshal: { color: '#8ce65a', frames: 'nature', color2: '#c6a154' },
+  grave_bellkeeper: { color: '#63ebd3', frames: 'arcane', color2: '#496b9e' },
+  tidebreaker: { color: '#71dafa', frames: 'frost', color2: '#2b72b5' },
+  lantern_monk: { color: '#ffe4a1', frames: 'heal', color2: '#79dba1' },
+  obsidian_heart: { color: '#ffad42', frames: 'fire', color2: '#e13c19' },
   monster: { color: '#ffb347', frames: 'smoke', color2: '#5a4630' },
 };
 
@@ -61,6 +67,7 @@ interface Marker {
 }
 
 const MARKERS: { flag: number; color: string; head: boolean; size: number }[] = [
+  { flag: BuffFlag.Magnetized, color: '#9aef52', head: false, size: 1.3 },
   { flag: BuffFlag.Stun, color: '#ffe14a', head: true, size: 0.5 },
   { flag: BuffFlag.Root, color: '#45d14a', head: false, size: 0.9 },
   { flag: BuffFlag.Slow, color: '#6aa8ff', head: false, size: 1.1 },

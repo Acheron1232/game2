@@ -49,8 +49,8 @@ A typical match:
 
 ## 5. Heroes
 
-- One hero per slot. Levels 1–10. A skill point every level.
-- Basic abilities (Q W E) have 3 levels, needing hero level 1 / 3 / 5. The ultimate (R) has 1 level and needs level 6. 10 levels = 10 points = everything learned at level 10.
+- One hero per slot. Levels 1–15. A skill point every level.
+- Basic abilities (Q W E) have 4 levels, needing hero level 1 / 3 / 5 / 7. The ultimate (R) has 2 levels, needing hero level 6 / 11. 15 levels = 15 points; 14 learn everything, so one point is left over. The level steps are in `rules.json` `heroBase`.
 - Attributes: Strength → health and health regen. Agility → armor and attack speed. Intelligence → mana and mana regen. The **main stat** also adds attack damage.
 - Full kits: [HEROES.md](HEROES.md).
 
@@ -70,12 +70,12 @@ Base hero values: 150 HP, 0 mana, 0.25 HP regen, 0.1 mana regen, 6 item slots, s
 - Heroes of level 6–7 get 70% XP from neutral monsters, level 8+ get 50%. This pushes strong heroes to fight enemies, not only farm.
 
 <!-- table:xp -->
-| Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Total XP needed | 0 | 200 | 500 | 900 | 1400 | 2000 | 2700 | 3500 | 4400 | 5400 |
+| Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Total XP needed | 0 | 200 | 500 | 900 | 1400 | 2000 | 2700 | 3500 | 4400 | 5400 | 6500 | 7700 | 9000 | 10400 | 11900 |
 | XP for killing a unit of this level | 25 | 40 | 60 | 85 | 115 | 150 | 190 | 235 | 285 | 340 |
-| XP for killing a hero of this level | 100 | 150 | 200 | 250 | 300 | 350 | 400 | 450 | 500 | 550 |
-| Respawn time (s) | 8 | 11 | 14 | 17 | 20 | 23 | 26 | 29 | 32 | 35 |
+| XP for killing a hero of this level | 100 | 150 | 200 | 250 | 300 | 350 | 400 | 450 | 500 | 550 | 600 | 650 | 700 | 750 | 800 |
+| Respawn time (s) | 8 | 11 | 14 | 17 | 20 | 23 | 26 | 29 | 32 | 35 | 38 | 41 | 44 | 47 | 50 |
 <!-- /table -->
 
 ## 7. Gold
@@ -92,7 +92,7 @@ Base hero values: 150 HP, 0 mana, 0.25 HP regen, 0.1 mana regen, 6 item slots, s
 
 ## 8. Death and respawn
 
-- Respawn time: 5 + 3 × level seconds (8 s at level 1, 35 s at level 10).
+- Respawn time: 5 + 3 × level seconds (8 s at level 1, 35 s at level 10, 50 s at level 15).
 - You come back at your start spot. If your main Town Hall is gone, at the nearest Town Hall you still have.
 - Items stay in your inventory. Buffs end.
 
@@ -197,6 +197,7 @@ Options: quick cast (cast at the cursor at once on key press), item keys Z X C V
 | Natural expansion taken | 8–12 min |
 | Tier 3 | 15–18 min |
 | Heroes at level 10 | 25–30 min |
+| Heroes at level 15 | late game, often not reached |
 | Match end | 25–45 min |
 
 Phase 8 checks these with bot-only matches.

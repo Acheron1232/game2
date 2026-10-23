@@ -35,6 +35,10 @@ export const CommandType = {
   Follow: 16,
   /** hire a soldier (index in units.json) at one of the hero's own production buildings */
   Hire: 17,
+  /** an order to the hero's kingdom AI (orders.ts KINGDOM_ORDERS index; target = kingdom slot for attack) */
+  KingdomOrder: 18,
+  /** use the active skill (index in its units.json skills) of an own unit; target 1 = unit id */
+  UnitCast: 19,
 } as const;
 export type CommandType = (typeof CommandType)[keyof typeof CommandType];
 
@@ -59,7 +63,9 @@ export type GameCommand =
   | { type: typeof CommandType.GiveItem; slot: number; target: number }
   | { type: typeof CommandType.SwapItems; from: number; to: number }
   | { type: typeof CommandType.BuyUpgrade; upgrade: number }
-  | { type: typeof CommandType.Hire; unit: number };
+  | { type: typeof CommandType.Hire; unit: number }
+  | { type: typeof CommandType.KingdomOrder; order: number; target: number }
+  | { type: typeof CommandType.UnitCast; unit: number; skill: number; target: number };
 
 /** Commands the client can predict for its own hero. */
 export function isPredicted(cmd: GameCommand): boolean {

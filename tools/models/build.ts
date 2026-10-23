@@ -17,7 +17,23 @@ import { ROOT } from '../art/lib/sheets';
 const BLENDER = process.env['BLENDER'] ?? '/Applications/Blender.app/Contents/MacOS/Blender';
 const MODELS_DIR = join(ROOT, 'tools', 'models', 'blender', 'models');
 const OUT = join(ROOT, 'client', 'public', 'assets', 'models');
-const HELPERS = new Set(['nature', 'kit', 'humanoid', 'chunky', 'rigs', 'unitkit', '_monsters', '_buildings', '_decor', '_mercs']);
+const HELPERS = new Set([
+  'nature',
+  'kit',
+  'humanoid',
+  'chunky',
+  'rigs',
+  'unitkit',
+  '_monsters',
+  '_buildings',
+  '_decor',
+  '_mercs',
+  '_painted_units',
+  '_expansion_heroes',
+  '_expansion_props',
+  '_selected_expansion',
+  '_selected_reinforcements',
+]);
 
 const args = process.argv.slice(2);
 const preview = args.includes('--preview');
@@ -42,6 +58,7 @@ for (const id of ids) {
       id,
       ...(preview ? ['--preview'] : []),
       ...(args.includes('--uv') ? ['--uv'] : []),
+      ...(args.includes('--blend') ? ['--blend'] : []),
     ],
     {
       encoding: 'utf8',

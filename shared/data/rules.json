@@ -29,16 +29,18 @@
     "mana": 0,
     "hpRegen": 0.25,
     "manaRegen": 0.1,
-    "maxLevel": 10,
+    "maxLevel": 15,
     "itemSlots": 6,
     "sightRange": 16,
     "collisionRadius": 0.6,
-    "abilityLevelRule": "Basic ability level N needs hero level 2N-1 (levels 1, 3, 5). Ultimate needs hero level 6 and has 1 level.",
+    "abilityLevelRule": "Basic abilities have 4 levels, learned from hero level 1, 3, 5 and 7. The ultimate has 2 levels, learned from hero level 6 and 11. 15 skill points, 14 needed: one is left over at level 15.",
+    "basicAbilityHeroLevels": [1, 3, 5, 7],
+    "ultimateHeroLevels": [6, 11],
     "skillPointsPerLevel": 1
   },
 
   "experience": {
-    "totalXpForLevel": [0, 200, 500, 900, 1400, 2000, 2700, 3500, 4400, 5400],
+    "totalXpForLevel": [0, 200, 500, 900, 1400, 2000, 2700, 3500, 4400, 5400, 6500, 7700, 9000, 10400, 11900],
     "xpForKillingUnitOfLevel": [25, 40, 60, 85, 115, 150, 190, 235, 285, 340],
     "xpForKillingHero": { "base": 100, "perVictimLevel": 50 },
     "shareRange": 12,
@@ -108,7 +110,17 @@
     "mineTimeSec": 1.0,
     "chopTimeSec": 4.0,
     "maxWorkersPerMine": 5,
-    "supplyCap": 100,
+    "supplyCap": 250,
+    "upkeep": {
+      "notes": "No real army limit. The more supply a kingdom uses (workers too), the less gold every mining trip brings: from each step's supply on, a trip brings goldPct % of goldPerTrip. Wood is not touched. supplyCap is only a safety ceiling for the server; with upkeep a kingdom does not get near it.",
+      "steps": [
+        { "fromSupply": 0, "goldPct": 100, "name": "No upkeep" },
+        { "fromSupply": 70, "goldPct": 80, "name": "Low upkeep" },
+        { "fromSupply": 100, "goldPct": 60, "name": "High upkeep" },
+        { "fromSupply": 130, "goldPct": 40, "name": "Heavy upkeep" },
+        { "fromSupply": 160, "goldPct": 25, "name": "Crushing upkeep" }
+      ]
+    },
     "playerAndFactionMoneyAreSeparate": true,
     "buildingPriceRise": {
       "notes": "Like upkeep in classic RTS games: after freeCount buildings of one type (sites too), every next one costs pctPerExtra % more gold and wood, adding up. A lost building makes the next one cheaper again. Types not listed (Town Halls, houses, forge, shrine) never rise.",
@@ -133,6 +145,8 @@
     "groundItemSec": 180,
     "pickUpRange": 1.5,
     "giveRange": 3,
+    "caps": { "cooldownReductionPct": 40, "spellResistPct": 60, "critChancePct": 50, "spellDamagePct": 80, "healPowerPct": 60 },
+    "critMultiplier": 1.75,
     "notes": "Items on the ground (camp drops and dropped items) vanish after groundItemSec. A hero walks to an item to pick it up, and to an ally to give one."
   },
 

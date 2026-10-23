@@ -186,6 +186,12 @@ const CENTER = {
     { type: 'tavern_mossy', pos: [29, 49.5] },
     { type: 'tavern_ember', pos: [-29, -49.5] },
   ],
+  // Two Relic Halls (advanced items) at the other two junctions: every base has a tavern and a
+  // Relic Hall at about the same distance.
+  relicHalls: [
+    { type: 'relic_hall', pos: [49.5, -29] },
+    { type: 'relic_hall', pos: [-49.5, 29] },
+  ],
   pools: [
     [22, 22],
     [22, -22],
@@ -257,6 +263,7 @@ const layout = {
   shops: [
     ...CENTER.shops.map((s, i) => ({ id: `${s.type}_${i + 1}`, type: s.type, pos: rel(s.pos) })),
     ...CENTER.taverns.map((s) => ({ id: s.type, type: s.type, pos: rel(s.pos) })),
+    ...CENTER.relicHalls.map((s, i) => ({ id: `${s.type}_${i + 1}`, type: s.type, pos: rel(s.pos) })),
   ],
   fountains: [],
 };

@@ -79,6 +79,13 @@ export function itemBonus(inv: readonly (ItemStack | null)[]): Partial<Record<It
   return out;
 }
 
+const CAPS = gameData.rules.items.caps as Partial<Record<ItemStatKey, number>>;
+
+/** An item stat of a hero with its cap (rules.json items.caps): spell damage, cooldown cut... */
+export function itemStat(hs: { bonus: Partial<Record<ItemStatKey, number>> }, key: ItemStatKey): number {
+  return Math.min(CAPS[key] ?? Infinity, hs.bonus[key] ?? 0);
+}
+
 /** Items with an on-hit effect (Frost Orb, Storm Hammer). Unique: one of each counts. */
 function onHitItems(inv: readonly (ItemStack | null)[]): ItemDef[] {
   const out: ItemDef[] = [];
@@ -181,6 +188,43 @@ export function canStore(inv: (ItemStack | null)[], item: number, charges: numbe
   return storeItem(inv, item, charges, true);
 }
 
+// ---------- recipes ----------
+
+export interface BuyPlan {
+  /** gold to pay */
+  price: number;
+  /** inventory slots whose items go into the new one */
+  uses: number[];
+}
+
+/**
+ * What buying an item costs with the parts the hero carries. A recipe uses carried parts (and
+ * the parts of missing parts, all the way down); the rest is bought with gold at shop price.
+ */
+export function buyPlan(inv: readonly (ItemStack | null)[], item: number): BuyPlan {
+  const uses: number[] = [];
+  const need = (id: number, top: boolean): number => {
+    const def = ITEMS[id]!;
+    if (!top) {
+      const slot = inv.findIndex((st, i) => st?.item === id && !uses.includes(i));
+      if (slot >= 0) {
+        uses.push(slot);
+        return 0;
+      }
+    }
+    if (!def.recipe) return def.cost ?? 0;
+    return def.recipe.fee + def.recipe.components.reduce((sum, c) => sum + need(itemIndex(c), false), 0);
+  };
+  const price = need(item, true);
+  return { price, uses };
+}
+
+/** Would the new item fit once its parts are taken out? */
+export function canStoreAfter(inv: readonly (ItemStack | null)[], plan: BuyPlan, item: number): boolean {
+  const left = inv.map((st, i) => (plan.uses.includes(i) ? null : st));
+  return storeItem(left, item, newCharges(item), true);
+}
+
 /** Gold for selling a stack: half the value, for the charges that are left. */
 export function sellValue(st: ItemStack): number {
   const def = ITEMS[st.item]!;
@@ -256,8 +300,9 @@ export function itemCommandProblem(sim: MatchSim, e: SimEntity, cmd: GameCommand
       const def = ITEMS[cmd.item];
       if (!def || def.cost === null) return 'item';
       if (!shopInRange(e, cmd.item)) return 'range';
-      if (hs.gold < def.cost) return 'gold';
-      return canStore(hs.inventory, cmd.item, newCharges(cmd.item)) ? null : 'full';
+      const plan = buyPlan(hs.inventory, cmd.item);
+      if (hs.gold < plan.price) return 'gold';
+      return canStoreAfter(hs.inventory, plan, cmd.item) ? null : 'full';
     }
     case CommandType.SellItem:
       if (!inSlot(cmd.slot) || !hs.inventory[cmd.slot]) return 'slot';
@@ -301,10 +346,14 @@ export function useProblem(sim: MatchSim, e: SimEntity, slot: number, target: Ca
 export function runInstantItemCommand(sim: MatchSim, e: SimEntity, cmd: GameCommand): void {
   const hs = e.heroState!;
   switch (cmd.type) {
-    case CommandType.BuyItem:
-      hs.gold -= ITEMS[cmd.item]!.cost ?? 0;
+    case CommandType.BuyItem: {
+      // A recipe takes the parts out first; they make room for the new item.
+      const plan = buyPlan(hs.inventory, cmd.item);
+      for (const slot of plan.uses) hs.inventory[slot] = null;
+      hs.gold -= plan.price;
       storeItem(hs.inventory, cmd.item, newCharges(cmd.item));
       break;
+    }
     case CommandType.SellItem: {
       const st = hs.inventory[cmd.slot]!;
       hs.inventory[cmd.slot] = null;

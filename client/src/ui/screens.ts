@@ -1,7 +1,7 @@
 // Main Menu, Game HUD frame and End screen. The lobby is in lobby-screen.ts.
 // The real HUD comes in Phase 9.
 
-import { gameData, type RoomSummary } from '@game/shared';
+import { gameData, KINGDOM_ORDERS, ORDER_NAMES, upkeepStep, type RoomSummary } from '@game/shared';
 import type { NetStatus } from '../net/socket';
 import { el, setText } from './dom';
 import type { Router, Screen } from './router';
@@ -174,6 +174,24 @@ export interface AbilityButtonView {
   tooltip: string[];
 }
 
+/** One ability of the selected hero or unit (any owner): icon and tooltip only, no button. */
+export interface InspectIconView {
+  icon: string | null;
+  /** Q W E R, or empty for unit skills */
+  key: string;
+  /** first letter shown when there is no icon */
+  letter: string;
+  passive: boolean;
+  tooltip: string[];
+  /** an own unit's active skill: a button (GameActions.useUnitSkill with its index) */
+  usable?: boolean;
+  /** seconds until it is ready again (0 = ready) */
+  cooldownLeft?: number;
+  /** 0..1 still to wait */
+  cooldownFrac?: number;
+  noMana?: boolean;
+}
+
 export interface ItemSlotView {
   icon: string | null;
   /** 0 = no number on the slot */
@@ -222,9 +240,13 @@ export interface GameScreen extends Screen {
   setStatus(text: string): void;
   setHero(v: HeroView): void;
   /** Info line for a selected unit that is not your hero, or null. */
-  setSelected(text: string | null, details?: string[], portrait?: string): void;
+  setSelected(text: string | null, details?: string[], portrait?: string, abilities?: InspectIconView[]): void;
+  /** Small card next to the mouse over a unit in the world (null hides it). */
+  setHoverCard(lines: string[] | null, x?: number, y?: number): void;
   /** The player's AI faction, or null before the first faction data. */
   setFaction(v: FactionView | null): void;
+  /** the kingdom order panel (null: hidden, e.g. when watching) */
+  setOrders(v: OrdersView | null): void;
   /** Big line in the middle: Victory / Defeat. null hides it. */
   setResult(title: string | null, text?: string): void;
   /** Tab scoreboard rows (null hides it). */
@@ -274,6 +296,20 @@ export interface FactionView {
   status: string;
 }
 
+/** An enemy kingdom the players can order an attack on. */
+export interface OrderEnemy {
+  slot: number;
+  name: string;
+  color: string;
+}
+
+/** The kingdom's order panel: the order now (index in KINGDOM_ORDERS) and who can be attacked. */
+export interface OrdersView {
+  order: number;
+  target: number;
+  enemies: OrderEnemy[];
+}
+
 export interface GameActions {
   end(): void;
   cast(slot: number): void;
@@ -285,6 +321,10 @@ export interface GameActions {
   settings(): void;
   /** click on the "Your Kingdom" panel: the camera goes to the base */
   showBase(): void;
+  /** an order to the kingdom AI (index in KINGDOM_ORDERS; target = kingdom slot for attack) */
+  kingdomOrder(order: number, target: number): void;
+  /** press skill `index` of the selected own unit */
+  useUnitSkill(index: number): void;
   chat(text: string): void;
   captureMouse(): void;
 }
@@ -296,6 +336,8 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const status = el('p', {}, S.aiIdle);
   const facRes = el('p', { class: 'faction-line', hidden: true });
   const facSupply = el('p', { class: 'faction-line', hidden: true });
+  const orders = el('div', { class: 'kingdom-orders', hidden: true });
+  let ordersKey = '';
   const resultTitle = el('h1', { class: 'title' });
   const resultText = el('p', {});
   const result = el('div', { class: 'hud-result', hidden: true }, resultTitle, resultText);
@@ -350,14 +392,47 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const selectedTitle = el('strong');
   const selectedDetails = el('div', { class: 'selected-details' });
   const selectedPortrait = el('div', { class: 'selected-portrait' });
+  const selectedAbilities = el('div', { class: 'sel-abilities' });
   const selInfo = el(
     'aside',
     { class: 'sel-info', hidden: true, 'aria-label': 'Selected unit' },
     selectedPortrait,
     selectedTitle,
     selectedDetails,
+    selectedAbilities,
   );
+  const hoverCard = el('div', { class: 'hover-card', hidden: true });
+  /** The ability icons of the selected unit; own units' active skills are buttons. */
+  const buildSelAbilities = (abilities: InspectIconView[], key: string) => {
+    selectedAbilitiesKey = key;
+    selectedAbilities.hidden = !abilities.length;
+    selParts = abilities.map((a, index) => {
+      const icon = el('div', { class: 'ability-icon' }, a.icon ? '' : a.letter);
+      if (a.icon) icon.style.backgroundImage = `url(${a.icon})`;
+      const cd = el('div', { class: 'cooldown' });
+      const cdText = el('span', { class: 'cooldown-text' });
+      const cls = `sel-ability${a.passive ? ' passive' : ''}${a.usable ? ' usable' : ''}`;
+      const root = el('div', { class: cls, 'aria-label': a.tooltip[0] ?? '' }, icon, cd, cdText, el('span', { class: 'key' }, a.key));
+      if (a.usable) {
+        root.setAttribute('role', 'button');
+        root.addEventListener('click', () => actions.useUnitSkill(index));
+      }
+      // Above the panel, so the tooltip does not cover it.
+      root.addEventListener('mouseenter', () => {
+        showTip(a.usable ? [...a.tooltip, S.clickToUse] : a.tooltip);
+        tooltip.style.bottom = `${window.innerHeight - selInfo.getBoundingClientRect().top + 6}px`;
+      });
+      root.addEventListener('mouseleave', hideTip);
+      return { root, cd, cdText };
+    });
+    selectedAbilities.replaceChildren(...selParts.map((p) => p.root));
+    // The hovered icon is gone when the selection changes.
+    if (!tooltip.hidden && tooltip.style.bottom) hideTip();
+  };
+  let hoverKey = '';
   let selectedKey = '';
+  let selectedAbilitiesKey = '';
+  let selParts: { root: HTMLElement; cd: HTMLElement; cdText: HTMLElement }[] = [];
   let portraitUrl: string | null = null;
   const tooltip = el('div', { class: 'tooltip', hidden: true });
   const alertBox = el('div', { class: 'hud-alert', hidden: true });
@@ -380,9 +455,12 @@ export function createGameScreen(actions: GameActions): GameScreen {
     tooltip.replaceChildren(...lines.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
     tooltip.hidden = false;
   };
-  const hideTip = () => (tooltip.hidden = true);
+  const hideTip = () => {
+    tooltip.hidden = true;
+    tooltip.style.bottom = '';
+  };
 
-  const abilityParts = ['Q', 'W', 'E', 'R'].map((k, slot) => {
+  const abilityParts = ['Q', 'W', 'E', 'R', 'D', 'F'].map((k, slot) => {
     const icon = el('div', { class: 'ability-icon' });
     const cd = el('div', { class: 'cooldown' });
     const cdText = el('span', { class: 'cooldown-text' });
@@ -548,6 +626,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
         facRes,
         facSupply,
         status,
+        orders,
       ),
     ),
     scoreboard,
@@ -556,6 +635,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
     result,
     deathNote,
     selInfo,
+    hoverCard,
     alertBox,
     shopPanel,
     tooltip,
@@ -629,6 +709,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       abilityParts.forEach((p, i) => {
         const a = v[i];
         p.root.classList.toggle('empty', !a);
+        p.root.hidden = !a;
         if (!a) return;
         if (a.icon !== p.iconUrl) {
           p.iconUrl = a.icon;
@@ -636,7 +717,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
         }
         setText(p.state, a.stateLabel ?? '');
         p.state.hidden = !a.stateLabel;
-        p.root.setAttribute('aria-label', `${'QWER'[i]}: ${a.name}${a.stateLabel ? ` — ${a.stateLabel}` : ''}`);
+        p.root.setAttribute('aria-label', `${'QWERDF'[i]}: ${a.name}${a.stateLabel ? ` — ${a.stateLabel}` : ''}`);
         p.root.title = a.blocked ?? `${a.name}: ready`;
         p.plus.setAttribute('aria-label', `Learn ${a.name}`);
         p.root.classList.toggle('unlearned', a.level === 0);
@@ -720,23 +801,53 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (alertTimer) clearTimeout(alertTimer);
       alertTimer = setTimeout(() => (alertBox.hidden = true), 1800);
     },
-    setSelected(text, details = [], portrait) {
+    setSelected(text, details = [], portrait, abilities = []) {
       selInfo.hidden = !text;
       const key = `${text}/${details.join('/')}/${portrait ?? ''}`;
-      if (key === selectedKey) return;
-      selectedKey = key;
-      setText(selectedTitle, text ?? '');
-      selectedDetails.replaceChildren(...details.map((line) => el('p', {}, line)));
-      selectedPortrait.style.backgroundImage = portrait ? `url(${portrait})` : '';
-      selectedPortrait.hidden = !portrait;
+      if (key !== selectedKey) {
+        selectedKey = key;
+        setText(selectedTitle, text ?? '');
+        selectedDetails.replaceChildren(...details.map((line) => el('p', {}, line)));
+        selectedPortrait.style.backgroundImage = portrait ? `url(${portrait})` : '';
+        selectedPortrait.hidden = !portrait;
+      }
+      // Health changes often; the icons only when the selected unit changes.
+      const abilitiesKey = abilities.map((a) => `${a.usable ? 1 : 0}${a.tooltip.join('|')}`).join('/');
+      if (abilitiesKey !== selectedAbilitiesKey) buildSelAbilities(abilities, abilitiesKey);
+      // Cooldown and mana change all the time: only the overlay, no rebuild.
+      abilities.forEach((a, i) => {
+        const p = selParts[i];
+        if (!p || !a.usable) return;
+        p.cd.style.setProperty('--cd', String(a.cooldownFrac ?? 0));
+        setText(p.cdText, a.cooldownLeft ? String(Math.ceil(a.cooldownLeft)) : '');
+        p.root.classList.toggle('no-mana', !!a.noMana);
+      });
+    },
+    setHoverCard(lines, x = 0, y = 0) {
+      hoverCard.hidden = !lines;
+      if (!lines) {
+        hoverKey = '';
+        return;
+      }
+      const key = lines.join('\n');
+      if (key !== hoverKey) {
+        hoverKey = key;
+        hoverCard.replaceChildren(...lines.map((line, i) => el(i === 0 ? 'b' : 'p', {}, line)));
+      }
+      // Next to the mouse, kept inside the window.
+      const w = hoverCard.offsetWidth,
+        h = hoverCard.offsetHeight;
+      hoverCard.style.left = `${Math.min(x + 18, window.innerWidth - w - 8)}px`;
+      hoverCard.style.top = `${Math.max(8, Math.min(y + 18, window.innerHeight - h - 8))}px`;
     },
     setFaction(v) {
       facRes.hidden = facSupply.hidden = !v;
       if (!v) return;
       setText(facRes, `${S.gold} ${v.gold} · ${S.wood} ${v.wood}`);
+      const upkeep = upkeepStep(v.supplyUsed);
       setText(
         facSupply,
-        `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
+        `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.upkeep(upkeep.name, upkeep.goldPct)} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
       );
       setText(status, v.status);
       status.title = v.status.startsWith('Attacking')
@@ -744,6 +855,35 @@ export function createGameScreen(actions: GameActions): GameScreen {
         : v.status.startsWith('Defending')
           ? 'Your base needs help.'
           : 'Your army is preparing. Farm camps nearby and watch its supply target. Attack timing changes with losses, defense and income.';
+    },
+    setOrders(v) {
+      orders.hidden = !v;
+      if (!v) {
+        ordersKey = '';
+        return;
+      }
+      const key = `${v.order}/${v.target}/${v.enemies.map((e) => e.slot).join('.')}`;
+      if (key === ordersKey) return;
+      ordersKey = key;
+      const attack = KINGDOM_ORDERS.indexOf('attack');
+      const button = (order: number, target: number, label: string, tip: string, color?: string) =>
+        el(
+          'button',
+          {
+            class: `order-btn${v.order === order && (order !== attack || v.target === target) ? ' on' : ''}`,
+            title: tip,
+            onclick: () => actions.kingdomOrder(order, target),
+          },
+          ...(color ? [el('i', { class: 'swatch-dot', style: `background:${color}` })] : []),
+          label,
+        );
+      const others = KINGDOM_ORDERS.map((id, i) => (id === 'attack' ? null : button(i, 255, ORDER_NAMES[id], S.orderTips[id] ?? '')));
+      orders.replaceChildren(
+        el('span', { class: 'orders-label' }, S.orders),
+        others[0]!,
+        ...v.enemies.map((e) => button(attack, e.slot, `${ORDER_NAMES.attack} ${e.name}`, S.orderAttackTip(e.name), e.color)),
+        ...others.slice(1).filter((b): b is HTMLButtonElement => !!b),
+      );
     },
     setScores(rows) {
       scoreboard.hidden = !rows;

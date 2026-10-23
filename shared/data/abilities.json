@@ -8,235 +8,1957 @@
   ],
   "abilities": [
     {
-      "id": "blood_bolt", "hero": "blood_witch", "slot": "Q", "name": "Blood Bolt",
+      "id": "blood_bolt",
+      "hero": "blood_witch",
+      "slot": "Q",
+      "name": "Blood Bolt",
       "text": "Throw a bolt of blood at an enemy. Costs health, not mana.",
-      "kind": "active", "target": "unit", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 7, "manaCost": 0, "cooldown": 8,
-      "params": { "damage": [90, 150, 210], "healthCost": [40, 55, 70], "projectileSpeed": 16 }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 7,
+      "manaCost": 0,
+      "cooldown": 8,
+      "params": {
+        "damage": [
+          90,
+          150,
+          210,
+          270
+        ],
+        "healthCost": [
+          40,
+          55,
+          70,
+          85
+        ],
+        "projectileSpeed": 16
+      }
     },
     {
-      "id": "bleed", "hero": "blood_witch", "slot": "W", "name": "Bleed",
+      "id": "bleed",
+      "hero": "blood_witch",
+      "slot": "W",
+      "name": "Bleed",
       "text": "Open the enemy's wounds. Deals damage over time and slows.",
-      "kind": "active", "target": "unit", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 7, "manaCost": 75, "cooldown": 14,
-      "params": { "damagePerSec": [20, 35, 50], "duration": 5, "slowPct": [20, 25, 30] }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 7,
+      "manaCost": 75,
+      "cooldown": 14,
+      "params": {
+        "damagePerSec": [
+          20,
+          35,
+          50,
+          65
+        ],
+        "duration": 5,
+        "slowPct": [
+          20,
+          25,
+          30,
+          35
+        ]
+      }
     },
     {
-      "id": "crimson_pact", "hero": "blood_witch", "slot": "E", "name": "Crimson Pact",
+      "id": "crimson_pact",
+      "hero": "blood_witch",
+      "slot": "E",
+      "name": "Crimson Pact",
       "text": "Aura. Nearby allies heal for part of the attack damage they deal.",
-      "kind": "aura", "target": "none", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 0, "cooldown": 0,
-      "params": { "radius": 9, "lifeStealPct": [8, 14, 20] }
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "lifeStealPct": [
+          8,
+          14,
+          20,
+          26
+        ]
+      }
     },
     {
-      "id": "blood_moon", "hero": "blood_witch", "slot": "R", "name": "Blood Moon",
+      "id": "blood_moon",
+      "hero": "blood_witch",
+      "slot": "R",
+      "name": "Blood Moon",
       "text": "A red moon drains all enemies in an area. The witch heals for half the damage.",
-      "kind": "active", "target": "point", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.5, "castRange": 8, "manaCost": 200, "cooldown": 120,
-      "params": { "radius": 5, "damagePerSec": 60, "duration": 5, "healFactor": 0.5 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.5,
+      "castRange": 8,
+      "manaCost": [
+        200,
+        250
+      ],
+      "cooldown": [
+        120,
+        95
+      ],
+      "params": {
+        "radius": 5,
+        "damagePerSec": [
+          60,
+          90
+        ],
+        "duration": 5,
+        "healFactor": 0.5
+      }
     },
-
     {
-      "id": "sweep", "hero": "staff_warrior", "slot": "Q", "name": "Sweep",
+      "id": "sweep",
+      "hero": "staff_warrior",
+      "slot": "Q",
+      "name": "Sweep",
       "text": "Swing the staff in a full circle. Hits and pushes back all enemies around.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.25, "castRange": 0, "manaCost": 70, "cooldown": 10,
-      "params": { "radius": 3, "damage": [70, 120, 170], "knockback": 2 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.25,
+      "castRange": 0,
+      "manaCost": 70,
+      "cooldown": 10,
+      "params": {
+        "radius": 3,
+        "damage": [
+          70,
+          120,
+          170,
+          220
+        ],
+        "knockback": 2
+      }
     },
     {
-      "id": "iron_stance", "hero": "staff_warrior", "slot": "W", "name": "Iron Stance",
+      "id": "iron_stance",
+      "hero": "staff_warrior",
+      "slot": "W",
+      "name": "Iron Stance",
       "text": "Brace yourself. Block most damage for a short time, but move slower.",
-      "kind": "active", "target": "none", "filter": ["self"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 60, "cooldown": 16,
-      "params": { "duration": 3, "damageBlockPct": [50, 65, 80], "selfSlowPct": 50 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 60,
+      "cooldown": 16,
+      "params": {
+        "duration": 3,
+        "damageBlockPct": [
+          50,
+          65,
+          80,
+          90
+        ],
+        "selfSlowPct": 50
+      }
     },
     {
-      "id": "flurry", "hero": "staff_warrior", "slot": "E", "name": "Flurry",
+      "id": "flurry",
+      "hero": "staff_warrior",
+      "slot": "E",
+      "name": "Flurry",
       "text": "Passive. Each attack has a chance to hit twice.",
-      "kind": "passive", "target": "none", "filter": ["self"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 0, "cooldown": 0,
-      "params": { "chancePct": [15, 20, 25] }
+      "kind": "passive",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "chancePct": [
+          15,
+          20,
+          25,
+          30
+        ]
+      }
     },
     {
-      "id": "sky_pillar", "hero": "staff_warrior", "slot": "R", "name": "Sky Pillar",
+      "id": "sky_pillar",
+      "hero": "staff_warrior",
+      "slot": "R",
+      "name": "Sky Pillar",
       "text": "Leap high on the staff and crash down. Damages and stuns all enemies where you land.",
-      "kind": "active", "target": "point", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.2, "castRange": 8, "manaCost": 150, "cooldown": 90,
-      "params": { "leapTime": 0.6, "radius": 4, "damage": 200, "stunDuration": 2 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 8,
+      "manaCost": [
+        150,
+        200
+      ],
+      "cooldown": [
+        90,
+        70
+      ],
+      "params": {
+        "leapTime": 0.6,
+        "radius": 4,
+        "damage": [
+          200,
+          300
+        ],
+        "stunDuration": [
+          2,
+          2.5
+        ]
+      }
     },
-
     {
-      "id": "fire_breath", "hero": "sky_dragon", "slot": "Q", "name": "Fire Breath",
+      "id": "fire_breath",
+      "hero": "sky_dragon",
+      "slot": "Q",
+      "name": "Fire Breath",
       "text": "Breathe fire in a cone in front of you.",
-      "kind": "active", "target": "cone", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 7, "manaCost": 80, "cooldown": 9,
-      "params": { "length": 7, "angleDeg": 45, "damage": [85, 145, 205] }
+      "kind": "active",
+      "target": "cone",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 7,
+      "manaCost": 80,
+      "cooldown": 9,
+      "params": {
+        "length": 7,
+        "angleDeg": 45,
+        "damage": [
+          85,
+          145,
+          205,
+          265
+        ]
+      }
     },
     {
-      "id": "wing_gust", "hero": "sky_dragon", "slot": "W", "name": "Wing Gust",
+      "id": "wing_gust",
+      "hero": "sky_dragon",
+      "slot": "W",
+      "name": "Wing Gust",
       "text": "Beat your wings. Pushes enemies away and slows them.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.2, "castRange": 0, "manaCost": 70, "cooldown": 13,
-      "params": { "radius": 4, "damage": [40, 70, 100], "knockback": 3, "slowPct": 30, "slowDuration": 2 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.2,
+      "castRange": 0,
+      "manaCost": 70,
+      "cooldown": 13,
+      "params": {
+        "radius": 4,
+        "damage": [
+          40,
+          70,
+          100,
+          130
+        ],
+        "knockback": 3,
+        "slowPct": 30,
+        "slowDuration": 2
+      }
     },
     {
-      "id": "dragon_scales", "hero": "sky_dragon", "slot": "E", "name": "Dragon Scales",
+      "id": "dragon_scales",
+      "hero": "sky_dragon",
+      "slot": "E",
+      "name": "Dragon Scales",
       "text": "Passive. Thick scales give armor and less spell damage taken.",
-      "kind": "passive", "target": "none", "filter": ["self"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 0, "cooldown": 0,
-      "params": { "bonusArmor": [2, 4, 6], "spellReductionPct": [10, 15, 20] }
+      "kind": "passive",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "bonusArmor": [
+          2,
+          4,
+          6,
+          8
+        ],
+        "spellReductionPct": [
+          10,
+          15,
+          20,
+          25
+        ]
+      }
     },
     {
-      "id": "inferno_dive", "hero": "sky_dragon", "slot": "R", "name": "Inferno Dive",
+      "id": "inferno_dive",
+      "hero": "sky_dragon",
+      "slot": "R",
+      "name": "Inferno Dive",
       "text": "Dive at a point, hit everything there and leave the ground burning.",
-      "kind": "active", "target": "point", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.2, "castRange": 10, "manaCost": 175, "cooldown": 100,
-      "params": { "diveTime": 0.5, "radius": 4.5, "impactDamage": 120, "burnDamagePerSec": 40, "burnDuration": 4 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 10,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "diveTime": 0.5,
+        "radius": 4.5,
+        "impactDamage": [
+          120,
+          180
+        ],
+        "burnDamagePerSec": [
+          40,
+          60
+        ],
+        "burnDuration": 4
+      }
     },
-
     {
-      "id": "boulder_toss", "hero": "stone_golem", "slot": "Q", "name": "Boulder Toss",
+      "id": "boulder_toss",
+      "hero": "stone_golem",
+      "slot": "Q",
+      "name": "Boulder Toss",
       "text": "Throw a big rock at an enemy. Deals damage and stuns.",
-      "kind": "active", "target": "unit", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.4, "castRange": 7, "manaCost": 90, "cooldown": 11,
-      "params": { "damage": [75, 125, 175], "stunDuration": [1.0, 1.5, 2.0], "projectileSpeed": 12 }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.4,
+      "castRange": 7,
+      "manaCost": 90,
+      "cooldown": 11,
+      "params": {
+        "damage": [
+          75,
+          125,
+          175,
+          225
+        ],
+        "stunDuration": [
+          1.0,
+          1.5,
+          2.0,
+          2.5
+        ],
+        "projectileSpeed": 12
+      }
     },
     {
-      "id": "stone_skin", "hero": "stone_golem", "slot": "W", "name": "Stone Skin",
+      "id": "stone_skin",
+      "hero": "stone_golem",
+      "slot": "W",
+      "name": "Stone Skin",
       "text": "Harden your body. Take less damage for a while.",
-      "kind": "active", "target": "none", "filter": ["self"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 75, "cooldown": 20,
-      "params": { "duration": 8, "damageReductionPct": [20, 30, 40] }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 75,
+      "cooldown": 20,
+      "params": {
+        "duration": 8,
+        "damageReductionPct": [
+          20,
+          30,
+          40,
+          50
+        ]
+      }
     },
     {
-      "id": "tremor", "hero": "stone_golem", "slot": "E", "name": "Tremor",
+      "id": "tremor",
+      "hero": "stone_golem",
+      "slot": "E",
+      "name": "Tremor",
       "text": "Slam the ground. Damages and slows enemies around you.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 0, "manaCost": 80, "cooldown": 12,
-      "params": { "radius": 4.5, "damage": [30, 50, 70], "slowPct": [30, 40, 50], "slowDuration": 3 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 0,
+      "manaCost": 80,
+      "cooldown": 12,
+      "params": {
+        "radius": 4.5,
+        "damage": [
+          30,
+          50,
+          70,
+          90
+        ],
+        "slowPct": [
+          30,
+          40,
+          50,
+          60
+        ],
+        "slowDuration": 3
+      }
     },
     {
-      "id": "mountain_form", "hero": "stone_golem", "slot": "R", "name": "Mountain Form",
+      "id": "mountain_form",
+      "hero": "stone_golem",
+      "slot": "R",
+      "name": "Mountain Form",
       "text": "Grow huge. Gain a lot of health and force nearby enemies to attack you.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.5, "castRange": 0, "manaCost": 150, "cooldown": 120,
-      "params": { "duration": 15, "bonusMaxHpPct": 50, "scale": 1.4, "tauntRadius": 6, "tauntDuration": 3 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.5,
+      "castRange": 0,
+      "manaCost": [
+        150,
+        200
+      ],
+      "cooldown": [
+        120,
+        95
+      ],
+      "params": {
+        "duration": [
+          15,
+          20
+        ],
+        "bonusMaxHpPct": [
+          50,
+          75
+        ],
+        "scale": 1.4,
+        "tauntRadius": 6,
+        "tauntDuration": [
+          3,
+          3.5
+        ]
+      }
     },
-
     {
-      "id": "radiant_touch", "hero": "light_healer", "slot": "Q", "name": "Radiant Touch",
+      "id": "radiant_touch",
+      "hero": "light_healer",
+      "slot": "Q",
+      "name": "Radiant Touch",
       "text": "Heal an ally hero or unit, or yourself.",
-      "kind": "active", "target": "unit", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 8, "manaCost": 70, "cooldown": 7,
-      "params": { "heal": [120, 200, 280] }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 8,
+      "manaCost": 70,
+      "cooldown": 7,
+      "params": {
+        "heal": [
+          120,
+          200,
+          280,
+          360
+        ]
+      }
     },
     {
-      "id": "blessing", "hero": "light_healer", "slot": "W", "name": "Blessing",
+      "id": "blessing",
+      "hero": "light_healer",
+      "slot": "W",
+      "name": "Blessing",
       "text": "Bless an ally. More armor and faster movement for a while.",
-      "kind": "active", "target": "unit", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.2, "castRange": 8, "manaCost": 60, "cooldown": 10,
-      "params": { "duration": 10, "bonusArmor": [4, 6, 8], "moveSpeedPct": 15 }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.2,
+      "castRange": 8,
+      "manaCost": 60,
+      "cooldown": 10,
+      "params": {
+        "duration": 10,
+        "bonusArmor": [
+          4,
+          6,
+          8,
+          10
+        ],
+        "moveSpeedPct": 15
+      }
     },
     {
-      "id": "sanctuary", "hero": "light_healer", "slot": "E", "name": "Sanctuary",
+      "id": "sanctuary",
+      "hero": "light_healer",
+      "slot": "E",
+      "name": "Sanctuary",
       "text": "Make a circle of light on the ground. Allies inside heal every second.",
-      "kind": "active", "target": "point", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.4, "castRange": 8, "manaCost": 100, "cooldown": 18,
-      "params": { "radius": 4, "healPerSec": [15, 25, 35], "duration": 6 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.4,
+      "castRange": 8,
+      "manaCost": 100,
+      "cooldown": 18,
+      "params": {
+        "radius": 4,
+        "healPerSec": [
+          15,
+          25,
+          35,
+          45
+        ],
+        "duration": 6
+      }
     },
     {
-      "id": "dawn_shield", "hero": "light_healer", "slot": "R", "name": "Dawn Shield",
+      "id": "dawn_shield",
+      "hero": "light_healer",
+      "slot": "R",
+      "name": "Dawn Shield",
       "text": "An ally can not die for a few seconds, then gets a big heal.",
-      "kind": "active", "target": "unit", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.2, "castRange": 8, "manaCost": 150, "cooldown": 100,
-      "params": { "duration": 4, "minHp": 1, "healAtEnd": 300 }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 8,
+      "manaCost": [
+        150,
+        200
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "duration": [
+          4,
+          5
+        ],
+        "minHp": 1,
+        "healAtEnd": [
+          300,
+          450
+        ]
+      }
     },
-
     {
-      "id": "arcane_arrow", "hero": "arcane_huntress", "slot": "Q", "name": "Arcane Arrow",
+      "id": "arcane_arrow",
+      "hero": "arcane_huntress",
+      "slot": "Q",
+      "name": "Arcane Arrow",
       "text": "Shoot a long magic arrow in a line. Hits the first enemy.",
-      "kind": "active", "target": "line", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 12, "manaCost": 75, "cooldown": 9,
-      "params": { "length": 12, "width": 1, "damage": [90, 150, 210], "projectileSpeed": 22, "hitsFirstOnly": true }
+      "kind": "active",
+      "target": "line",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 12,
+      "manaCost": 75,
+      "cooldown": 9,
+      "params": {
+        "length": 12,
+        "width": 1,
+        "damage": [
+          90,
+          150,
+          210,
+          270
+        ],
+        "projectileSpeed": 22,
+        "hitsFirstOnly": true
+      }
     },
     {
-      "id": "blink", "hero": "arcane_huntress", "slot": "W", "name": "Blink",
+      "id": "blink",
+      "hero": "arcane_huntress",
+      "slot": "W",
+      "name": "Blink",
       "text": "Teleport a short distance.",
-      "kind": "active", "target": "point", "filter": ["self"], "maxLevel": 3,
-      "castTime": 0, "castRange": [8, 10, 12], "manaCost": 50, "cooldown": [12, 10, 8],
-      "params": { "minRange": 1 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": [
+        8,
+        10,
+        12,
+        14
+      ],
+      "manaCost": 50,
+      "cooldown": [
+        12,
+        10,
+        8,
+        6
+      ],
+      "params": {
+        "minRange": 1
+      }
     },
     {
-      "id": "mana_mark", "hero": "arcane_huntress", "slot": "E", "name": "Mana Mark",
+      "id": "mana_mark",
+      "hero": "arcane_huntress",
+      "slot": "E",
+      "name": "Mana Mark",
       "text": "Mark an enemy. It takes more spell damage and can be seen.",
-      "kind": "active", "target": "unit", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.2, "castRange": 8, "manaCost": 50, "cooldown": 10,
-      "params": { "duration": 8, "bonusSpellDamagePct": [12, 18, 24], "reveals": true }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.2,
+      "castRange": 8,
+      "manaCost": 50,
+      "cooldown": 10,
+      "params": {
+        "duration": 8,
+        "bonusSpellDamagePct": [
+          12,
+          18,
+          24,
+          30
+        ],
+        "reveals": true
+      }
     },
     {
-      "id": "arcane_storm", "hero": "arcane_huntress", "slot": "R", "name": "Arcane Storm",
+      "id": "arcane_storm",
+      "hero": "arcane_huntress",
+      "slot": "R",
+      "name": "Arcane Storm",
       "text": "Call a storm of magic bolts on an area. You must stand still while it lasts.",
-      "kind": "active", "target": "point", "filter": ["enemy", "ground", "air", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.3, "castRange": 10, "manaCost": 200, "cooldown": 120,
-      "params": { "radius": 5, "channelTime": 4, "waves": 8, "damagePerWave": 40 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.3,
+      "castRange": 10,
+      "manaCost": [
+        200,
+        250
+      ],
+      "cooldown": [
+        120,
+        95
+      ],
+      "params": {
+        "radius": 5,
+        "channelTime": 4,
+        "waves": 8,
+        "damagePerWave": [
+          40,
+          60
+        ]
+      }
     },
-
     {
-      "id": "spear_throw", "hero": "centaur_raider", "slot": "Q", "name": "Spear Throw",
+      "id": "spear_throw",
+      "hero": "centaur_raider",
+      "slot": "Q",
+      "name": "Spear Throw",
       "text": "Throw a spear in a line. Hits every enemy on its way.",
-      "kind": "active", "target": "line", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 9, "manaCost": 80, "cooldown": 10,
-      "params": { "length": 9, "width": 1.5, "damage": [80, 130, 180], "projectileSpeed": 20, "hitsFirstOnly": false }
+      "kind": "active",
+      "target": "line",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 9,
+      "manaCost": 80,
+      "cooldown": 10,
+      "params": {
+        "length": 9,
+        "width": 1.5,
+        "damage": [
+          80,
+          130,
+          180,
+          230
+        ],
+        "projectileSpeed": 20,
+        "hitsFirstOnly": false
+      }
     },
     {
-      "id": "trample", "hero": "centaur_raider", "slot": "W", "name": "Trample",
+      "id": "trample",
+      "hero": "centaur_raider",
+      "slot": "W",
+      "name": "Trample",
       "text": "Rear up and stomp. Damages and stuns enemies around you.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 0, "manaCost": 90, "cooldown": 13,
-      "params": { "radius": 3.5, "damage": [50, 80, 110], "stunDuration": [1.0, 1.25, 1.5] }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 0,
+      "manaCost": 90,
+      "cooldown": 13,
+      "params": {
+        "radius": 3.5,
+        "damage": [
+          50,
+          80,
+          110,
+          140
+        ],
+        "stunDuration": [
+          1.0,
+          1.25,
+          1.5,
+          1.75
+        ]
+      }
     },
     {
-      "id": "herd_call", "hero": "centaur_raider", "slot": "E", "name": "Herd Call",
+      "id": "herd_call",
+      "hero": "centaur_raider",
+      "slot": "E",
+      "name": "Herd Call",
       "text": "Aura. Nearby allies move and attack faster.",
-      "kind": "aura", "target": "none", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 0, "cooldown": 0,
-      "params": { "radius": 9, "moveSpeedPct": [6, 9, 12], "attackSpeedPct": [5, 8, 11] }
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "moveSpeedPct": [
+          6,
+          9,
+          12,
+          15
+        ],
+        "attackSpeedPct": [
+          5,
+          8,
+          11,
+          14
+        ]
+      }
     },
     {
-      "id": "great_charge", "hero": "centaur_raider", "slot": "R", "name": "Great Charge",
+      "id": "great_charge",
+      "hero": "centaur_raider",
+      "slot": "R",
+      "name": "Great Charge",
       "text": "Charge far ahead. Enemies in the way are hit, thrown aside and stunned.",
-      "kind": "active", "target": "point", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.2, "castRange": 14, "manaCost": 150, "cooldown": 90,
-      "params": { "chargeSpeed": 9, "width": 2.5, "damage": 150, "sideKnockback": 2.5, "stunDuration": 1 }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 14,
+      "manaCost": [
+        150,
+        200
+      ],
+      "cooldown": [
+        90,
+        70
+      ],
+      "params": {
+        "chargeSpeed": 9,
+        "width": 2.5,
+        "damage": [
+          150,
+          225
+        ],
+        "sideKnockback": 2.5,
+        "stunDuration": [
+          1,
+          1.5
+        ]
+      }
     },
-
     {
-      "id": "vine_snare", "hero": "forest_elf", "slot": "Q", "name": "Vine Snare",
+      "id": "vine_snare",
+      "hero": "forest_elf",
+      "slot": "Q",
+      "name": "Vine Snare",
       "text": "Vines grab an enemy. It can not move and takes damage.",
-      "kind": "active", "target": "unit", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 3,
-      "castTime": 0.3, "castRange": 8, "manaCost": 70, "cooldown": 12,
-      "params": { "rootDuration": [1.5, 2.25, 3.0], "damagePerSec": 15 }
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 8,
+      "manaCost": 70,
+      "cooldown": 12,
+      "params": {
+        "rootDuration": [
+          1.5,
+          2.25,
+          3.0,
+          3.75
+        ],
+        "damagePerSec": 15
+      }
     },
     {
-      "id": "forest_spirit", "hero": "forest_elf", "slot": "W", "name": "Forest Spirit",
+      "id": "forest_spirit",
+      "hero": "forest_elf",
+      "slot": "W",
+      "name": "Forest Spirit",
       "text": "Wake a tree guardian that fights for you for a while.",
-      "kind": "active", "target": "point", "filter": ["ground"], "maxLevel": 3,
-      "castTime": 0.5, "castRange": 4, "manaCost": 100, "cooldown": 30,
-      "params": { "summonUnit": "tree_guardian", "count": [1, 1, 2], "duration": 40, "summonHp": [400, 600, 800], "summonDamage": [15, 25, 35] }
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "ground"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.5,
+      "castRange": 4,
+      "manaCost": 100,
+      "cooldown": 30,
+      "params": {
+        "summonUnit": "tree_guardian",
+        "count": [
+          1,
+          1,
+          2,
+          2
+        ],
+        "duration": 40,
+        "summonHp": [
+          400,
+          600,
+          800,
+          1000
+        ],
+        "summonDamage": [
+          15,
+          25,
+          35,
+          45
+        ]
+      }
     },
     {
-      "id": "natures_gift", "hero": "forest_elf", "slot": "E", "name": "Nature's Gift",
+      "id": "natures_gift",
+      "hero": "forest_elf",
+      "slot": "E",
+      "name": "Nature's Gift",
       "text": "Aura. Nearby allies get health back faster.",
-      "kind": "aura", "target": "none", "filter": ["ally", "self", "ground", "air", "notBuilding"], "maxLevel": 3,
-      "castTime": 0, "castRange": 0, "manaCost": 0, "cooldown": 0,
-      "params": { "radius": 9, "bonusHpRegen": [1.5, 3.0, 4.5] }
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "bonusHpRegen": [
+          1.5,
+          3.0,
+          4.5,
+          6
+        ]
+      }
     },
     {
-      "id": "wrath_of_the_grove", "hero": "forest_elf", "slot": "R", "name": "Wrath of the Grove",
+      "id": "wrath_of_the_grove",
+      "hero": "forest_elf",
+      "slot": "R",
+      "name": "Wrath of the Grove",
       "text": "Vines burst from the ground all around you. Hit and hold every enemy in a big area.",
-      "kind": "active", "target": "none", "filter": ["enemy", "ground", "notBuilding"], "maxLevel": 1,
-      "castTime": 0.6, "castRange": 0, "manaCost": 200, "cooldown": 120,
-      "params": { "radius": 10, "damage": 150, "rootDuration": 1.5 }
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.6,
+      "castRange": 0,
+      "manaCost": [
+        200,
+        250
+      ],
+      "cooldown": [
+        120,
+        95
+      ],
+      "params": {
+        "radius": 10,
+        "damage": [
+          150,
+          225
+        ],
+        "rootDuration": [
+          1.5,
+          2
+        ]
+      }
+    },
+    {
+      "id": "briar_lance",
+      "hero": "thorn_marshal",
+      "slot": "Q",
+      "name": "Briar Lance",
+      "text": "Send a piercing briar lance through enemies.",
+      "kind": "active",
+      "target": "line",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 9,
+      "manaCost": 80,
+      "cooldown": 10,
+      "params": {
+        "length": 9,
+        "width": 1.5,
+        "damage": [
+          75,
+          125,
+          175,
+          225
+        ],
+        "projectileSpeed": 20,
+        "hitsFirstOnly": false,
+        "effect": "spear_throw"
+      }
+    },
+    {
+      "id": "ironbark_mantle",
+      "hero": "thorn_marshal",
+      "slot": "W",
+      "name": "Ironbark Mantle",
+      "text": "Bark armor reduces incoming damage.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 75,
+      "cooldown": 20,
+      "params": {
+        "duration": 8,
+        "damageReductionPct": [
+          20,
+          30,
+          40,
+          50
+        ],
+        "effect": "stone_skin"
+      }
+    },
+    {
+      "id": "grove_vigor",
+      "hero": "thorn_marshal",
+      "slot": "E",
+      "name": "Grove Vigor",
+      "text": "Aura. Nearby allies heal faster.",
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "bonusHpRegen": [
+          1.5,
+          3.0,
+          4.5,
+          6
+        ],
+        "effect": "natures_gift"
+      }
+    },
+    {
+      "id": "thorn_dominion",
+      "hero": "thorn_marshal",
+      "slot": "R",
+      "name": "Thorn Dominion",
+      "text": "Thorns strike and root nearby enemies.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.6,
+      "castRange": 0,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "radius": 10,
+        "damage": [
+          150,
+          225
+        ],
+        "rootDuration": [
+          1.5,
+          2
+        ],
+        "effect": "wrath_of_the_grove"
+      }
+    },
+    {
+      "id": "dread_toll",
+      "hero": "grave_bellkeeper",
+      "slot": "Q",
+      "name": "Dread Toll",
+      "text": "A spirit bolt damages and stuns an enemy.",
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.4,
+      "castRange": 7,
+      "manaCost": 90,
+      "cooldown": 11,
+      "params": {
+        "damage": [
+          75,
+          125,
+          175,
+          225
+        ],
+        "stunDuration": [
+          1.0,
+          1.5,
+          2.0,
+          2.5
+        ],
+        "projectileSpeed": 12,
+        "effect": "boulder_toss"
+      }
+    },
+    {
+      "id": "mourning_field",
+      "hero": "grave_bellkeeper",
+      "slot": "W",
+      "name": "Mourning Field",
+      "text": "A spirit field drains enemies and heals the keeper.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.5,
+      "castRange": 8,
+      "manaCost": [
+        80,
+        100,
+        120,
+        140
+      ],
+      "cooldown": 20,
+      "params": {
+        "radius": 4,
+        "damagePerSec": [
+          18,
+          28,
+          38,
+          48
+        ],
+        "duration": 4,
+        "healFactor": 0.5,
+        "effect": "blood_moon"
+      }
+    },
+    {
+      "id": "soul_choir",
+      "hero": "grave_bellkeeper",
+      "slot": "E",
+      "name": "Soul Choir",
+      "text": "Aura. Allies heal from their attack damage.",
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "lifeStealPct": [
+          8,
+          14,
+          20,
+          26
+        ],
+        "effect": "crimson_pact"
+      }
+    },
+    {
+      "id": "last_toll",
+      "hero": "grave_bellkeeper",
+      "slot": "R",
+      "name": "Last Toll",
+      "text": "Ring the great bell. Damage and stun enemies around you.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.3,
+      "castRange": 0,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "radius": 7,
+        "damage": [
+          220,
+          330
+        ],
+        "stunDuration": [
+          2,
+          2.5
+        ],
+        "effect": "trample"
+      }
+    },
+    {
+      "id": "anchor_hurl",
+      "hero": "tidebreaker",
+      "slot": "Q",
+      "name": "Anchor Hurl",
+      "text": "Throw an anchor to damage and stun an enemy.",
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.4,
+      "castRange": 7,
+      "manaCost": 90,
+      "cooldown": 11,
+      "params": {
+        "damage": [
+          75,
+          125,
+          175,
+          225
+        ],
+        "stunDuration": [
+          1.0,
+          1.5,
+          2.0,
+          2.5
+        ],
+        "projectileSpeed": 12,
+        "effect": "boulder_toss"
+      }
+    },
+    {
+      "id": "breaker_wave",
+      "hero": "tidebreaker",
+      "slot": "W",
+      "name": "Breaker Wave",
+      "text": "A crashing wave hits enemies in a cone.",
+      "kind": "active",
+      "target": "cone",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 7,
+      "manaCost": 80,
+      "cooldown": 9,
+      "params": {
+        "length": 7,
+        "angleDeg": 45,
+        "damage": [
+          80,
+          135,
+          190,
+          245
+        ],
+        "effect": "fire_breath"
+      }
+    },
+    {
+      "id": "deep_hide",
+      "hero": "tidebreaker",
+      "slot": "E",
+      "name": "Deep Hide",
+      "text": "Passive. Gain armor and resist spell damage.",
+      "kind": "passive",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "bonusArmor": [
+          2,
+          4,
+          6,
+          8
+        ],
+        "spellReductionPct": [
+          10,
+          15,
+          20,
+          25
+        ],
+        "effect": "dragon_scales"
+      }
+    },
+    {
+      "id": "tidal_rush",
+      "hero": "tidebreaker",
+      "slot": "R",
+      "name": "Tidal Rush",
+      "text": "Rush forward, throwing enemies aside.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 14,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "chargeSpeed": 9,
+        "width": 2.5,
+        "damage": [
+          150,
+          225
+        ],
+        "sideKnockback": 2.5,
+        "stunDuration": [
+          1,
+          1.5
+        ],
+        "effect": "great_charge"
+      }
+    },
+    {
+      "id": "lantern_mend",
+      "hero": "lantern_monk",
+      "slot": "Q",
+      "name": "Lantern Mend",
+      "text": "Lantern light heals an ally or yourself.",
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 8,
+      "manaCost": 70,
+      "cooldown": 7,
+      "params": {
+        "heal": [
+          110,
+          180,
+          250,
+          320
+        ],
+        "effect": "radiant_touch"
+      }
+    },
+    {
+      "id": "bamboo_sweep",
+      "hero": "lantern_monk",
+      "slot": "W",
+      "name": "Bamboo Sweep",
+      "text": "Sweep the staff around you and push enemies away.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.25,
+      "castRange": 0,
+      "manaCost": 70,
+      "cooldown": 10,
+      "params": {
+        "radius": 3,
+        "damage": [
+          70,
+          120,
+          170,
+          220
+        ],
+        "knockback": 2,
+        "effect": "sweep"
+      }
+    },
+    {
+      "id": "guiding_light",
+      "hero": "lantern_monk",
+      "slot": "E",
+      "name": "Guiding Light",
+      "text": "Aura. Allies move and attack faster.",
+      "kind": "aura",
+      "target": "none",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "radius": 9,
+        "moveSpeedPct": [
+          6,
+          9,
+          12,
+          15
+        ],
+        "attackSpeedPct": [
+          5,
+          8,
+          11,
+          14
+        ],
+        "effect": "herd_call"
+      }
+    },
+    {
+      "id": "lantern_refuge",
+      "hero": "lantern_monk",
+      "slot": "R",
+      "name": "Lantern Refuge",
+      "text": "A warm lantern circle heals nearby allies.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "ally",
+        "self",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.4,
+      "castRange": 8,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "radius": 6,
+        "healPerSec": [
+          55,
+          80
+        ],
+        "duration": 8,
+        "effect": "sanctuary"
+      }
+    },
+    {
+      "id": "magma_shard",
+      "hero": "obsidian_heart",
+      "slot": "Q",
+      "name": "Magma Shard",
+      "text": "A molten shard damages and stuns an enemy.",
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "enemy",
+        "ground",
+        "air",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.4,
+      "castRange": 7,
+      "manaCost": 90,
+      "cooldown": 11,
+      "params": {
+        "damage": [
+          85,
+          140,
+          195,
+          250
+        ],
+        "stunDuration": [
+          0.6,
+          1,
+          1.4,
+          1.8
+        ],
+        "projectileSpeed": 12,
+        "effect": "boulder_toss"
+      }
+    },
+    {
+      "id": "heat_shell",
+      "hero": "obsidian_heart",
+      "slot": "W",
+      "name": "Heat Shell",
+      "text": "Harden volcanic plates to reduce damage.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "self"
+      ],
+      "maxLevel": 4,
+      "castTime": 0,
+      "castRange": 0,
+      "manaCost": 75,
+      "cooldown": 20,
+      "params": {
+        "duration": 8,
+        "damageReductionPct": [
+          20,
+          30,
+          40,
+          50
+        ],
+        "effect": "stone_skin"
+      }
+    },
+    {
+      "id": "furnace_pulse",
+      "hero": "obsidian_heart",
+      "slot": "E",
+      "name": "Furnace Pulse",
+      "text": "A heat pulse damages and slows nearby enemies.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.3,
+      "castRange": 0,
+      "manaCost": 80,
+      "cooldown": 12,
+      "params": {
+        "radius": 4.5,
+        "damage": [
+          30,
+          50,
+          70,
+          90
+        ],
+        "slowPct": [
+          30,
+          40,
+          50,
+          60
+        ],
+        "slowDuration": 3,
+        "effect": "tremor"
+      }
+    },
+    {
+      "id": "caldera_drop",
+      "hero": "obsidian_heart",
+      "slot": "R",
+      "name": "Caldera Drop",
+      "text": "Crash into the ground and leave a molten field.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "notBuilding"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.2,
+      "castRange": 10,
+      "manaCost": [
+        175,
+        225
+      ],
+      "cooldown": [
+        100,
+        80
+      ],
+      "params": {
+        "diveTime": 0.5,
+        "radius": 4.5,
+        "impactDamage": [
+          120,
+          180
+        ],
+        "burnDamagePerSec": [
+          40,
+          60
+        ],
+        "burnDuration": 4,
+        "effect": "inferno_dive"
+      }
+    },
+    {
+      "id": "boulder_smash",
+      "hero": "earth_spirit",
+      "slot": "Q",
+      "name": "Boulder Smash",
+      "text": "Kick a nearby unit or stone toward the chosen point. Stones travel farther, damage and slow enemies they cross. Slows spread through Magnetize.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.1,
+      "castRange": 20,
+      "manaCost": 100,
+      "cooldown": [
+        20,
+        16,
+        12,
+        12
+      ],
+      "params": {
+        "damage": [
+          120,
+          180,
+          240,
+          300
+        ],
+        "slowPct": 50,
+        "slowDuration": [
+          2,
+          3,
+          4,
+          5
+        ],
+        "pickRadius": 2,
+        "stoneDistance": 20,
+        "unitDistance": 6,
+        "speed": 15,
+        "width": 1.4
+      }
+    },
+    {
+      "id": "rolling_boulder",
+      "hero": "earth_spirit",
+      "slot": "W",
+      "name": "Rolling Boulder",
+      "text": "Curl into stone and roll in a direction, damaging enemies and stopping to stun the first enemy hero. A stone in the path doubles range and speed and extends the stun.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.6,
+      "castRange": 16,
+      "manaCost": 50,
+      "cooldown": [
+        16,
+        12,
+        8,
+        8
+      ],
+      "params": {
+        "distance": 8,
+        "stoneDistance": 16,
+        "speed": 8,
+        "stoneSpeed": 16,
+        "width": 1.4,
+        "damage": [
+          70,
+          110,
+          150,
+          190
+        ],
+        "strengthFactor": 1,
+        "stunDuration": [
+          0.6,
+          0.9,
+          1.2,
+          1.5
+        ],
+        "stoneStunBonus": 0.6
+      }
+    },
+    {
+      "id": "geomagnetic_grip",
+      "hero": "earth_spirit",
+      "slot": "E",
+      "name": "Geomagnetic Grip",
+      "text": "Pull a stone or allied unit to you. Stones damage and silence enemies along their path. Silences spread through Magnetize.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "enemy",
+        "ground",
+        "air"
+      ],
+      "maxLevel": 4,
+      "castTime": 0.1,
+      "castRange": 11,
+      "manaCost": 75,
+      "cooldown": [
+        13,
+        11,
+        9,
+        9
+      ],
+      "params": {
+        "damage": [
+          80,
+          140,
+          200,
+          260
+        ],
+        "silenceDuration": [
+          2,
+          2.75,
+          3.5,
+          4.25
+        ],
+        "pickRadius": 1.6,
+        "allyRange": 6,
+        "speed": 9,
+        "allySpeed": 6,
+        "width": 1.4
+      }
+    },
+    {
+      "id": "magnetize",
+      "hero": "earth_spirit",
+      "slot": "R",
+      "name": "Magnetize",
+      "text": "Magnetize nearby enemies for six seconds. Nearby stones shatter, spreading and refreshing the effect. Boulder Smash slows and Geomagnetic Grip silences spread between magnetized enemies.",
+      "kind": "active",
+      "target": "none",
+      "filter": [
+        "enemy",
+        "ground",
+        "air"
+      ],
+      "maxLevel": 2,
+      "castTime": 0.1,
+      "castRange": 0,
+      "manaCost": [
+        100,
+        150
+      ],
+      "cooldown": [
+        100,
+        90
+      ],
+      "params": {
+        "radius": 3.5,
+        "dps": [
+          60,
+          120
+        ],
+        "duration": 6,
+        "refreshRadius": 4,
+        "spreadRadius": 6,
+        "stoneDelay": 0.5
+      }
+    },
+    {
+      "id": "stone_remnant",
+      "hero": "earth_spirit",
+      "slot": "D",
+      "name": "Stone Remnant",
+      "text": "Place an invulnerable stone for your combos. Charges recover over time. Unused charges grant attack damage; using a stone grants a short damage bonus.",
+      "kind": "active",
+      "target": "point",
+      "filter": [
+        "self",
+        "ally",
+        "ground"
+      ],
+      "maxLevel": 1,
+      "castTime": 0,
+      "castRange": 11,
+      "manaCost": 0,
+      "cooldown": 0,
+      "params": {
+        "innate": true,
+        "charges": 7,
+        "chargeLevelStep": 5,
+        "rechargeSec": 18,
+        "duration": 60,
+        "damagePerChargePct": 3,
+        "usedDamagePct": 7.5,
+        "usedDuration": 10
+      }
+    },
+    {
+      "id": "enchant_remnant",
+      "hero": "earth_spirit",
+      "slot": "F",
+      "name": "Enchant Remnant",
+      "text": "Turn a unit into an invulnerable stone for 2.4 seconds. Kick or pull it before it shatters, releasing the unit and damaging nearby enemies. Also enchants a stone. Free unlock at hero level 6.",
+      "kind": "active",
+      "target": "unit",
+      "filter": [
+        "self",
+        "ally",
+        "enemy",
+        "ground",
+        "air"
+      ],
+      "maxLevel": 1,
+      "castTime": 0.1,
+      "castRange": 5,
+      "manaCost": 150,
+      "cooldown": 45,
+      "params": {
+        "innate": true,
+        "unlockLevel": 6,
+        "enemyRange": 1.75,
+        "duration": 2.4,
+        "damage": 450,
+        "radius": 4.5,
+        "stoneCooldown": 5
+      }
     }
   ]
 }

@@ -146,3 +146,115 @@ Every `pnpm art:gen` call. Failed calls that made no image (and cost nothing) ar
 - Output: `art/raw/skin_ember_wisp.png` (2404 KB, 65 s)
 - Prompt file: `tools/art/prompts/skin_ember_wisp.md`
 - Input images: `art/source/uv/ember_wisp_guide.png`, `art/raw/mercs_concept.png`
+
+## 2026-10-22 — warden-frost-materials
+- Tool: built-in image_gen (one image).
+- Output: `art/raw/warden-frost-materials.png`.
+- Prompt: `tools/art/prompts/warden-frost-materials.md`.
+- Strict 4×4 material swatches for U02/U06; processed into one 512px atlas and team mask.
+
+## 2026-10-22 — warden-frost-painted-skins (second art direction)
+- Tool: built-in image_gen, one sheet plus a small torso correction sheet.
+- Outputs: `art/raw/warden-frost-painted-skins.png`, `art/raw/warden-frost-torso-fix.png`.
+- Prompts: `tools/art/prompts/warden-frost-painted-skins.md`, `tools/art/prompts/warden-frost-torso-fix.md`.
+- References: model UV guide, existing units_1/units_2 skin previews and the U02/U06 concept sheet.
+- Corrected only torso cells using distinct front/back panels. Other painted cells stay unchanged.
+- Processing: `tools/models/painted-unit-skins.ts`; two 1024×512 skins and team masks.
+
+## 2026-10-22 — detailed hero and foundry skins
+
+Seven built-in image_gen calls. Thorn Marshal was the first test: processed and checked on the mesh before the other skins were generated. One full atlas per model; raw outputs retained. All prompts were saved before generation.
+
+### thorn_marshal
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_thorn_marshal.md`.
+- Output: `art/raw/skin_thorn_marshal.png`.
+- References: its model-first UV guide, hero concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### grave_bellkeeper
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_grave_bellkeeper.md`.
+- Output: `art/raw/skin_grave_bellkeeper.png`.
+- References: its model-first UV guide, hero concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### tidebreaker
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_tidebreaker.md`.
+- Output: `art/raw/skin_tidebreaker.png`.
+- References: its model-first UV guide, hero concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### lantern_monk
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_lantern_monk.md`.
+- Output: `art/raw/skin_lantern_monk.png`.
+- References: its model-first UV guide, hero concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### obsidian_heart
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_obsidian_heart.md`.
+- Output: `art/raw/skin_obsidian_heart.png`.
+- References: its model-first UV guide, hero concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### golem_foundry
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_golem_foundry.md`.
+- Output: `art/raw/skin_golem_foundry.png`.
+- References: its model-first UV guide, B07 building concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×1024, sixteen cells with external team mask.
+
+### foundry_golem
+
+- Tool: built-in image_gen, one image.
+- Prompt: `tools/art/prompts/skin_foundry_golem.md`.
+- Output: `art/raw/skin_foundry_golem.png`.
+- References: its model-first UV guide, B07 building concept sheet and approved U02/U06 painted skin.
+- Processor: `tools/models/expansion-assets.ts process`; 1024×512, eight cells with external team mask.
+
+## 2026-10-22 22:57 UTC — icons_skills
+- Output: `art/raw/icons_skills.png` (3659 KB, 82 s)
+- Prompt file: `tools/art/prompts/icons_skills.md`
+- Result: all 36 cells right on the first try (20 expansion-hero abilities, 16 unit skills).
+
+## 2026-10-22 23:13 UTC — icons_items_2
+- Output: `art/raw/icons_items_2.png` (2769 KB, 78 s)
+- Prompt file: `tools/art/prompts/icons_items_2.md`
+- Result: all 42 cells right on the first try (the new items of part d). Note: Guardian Shield shows a lion on a blue-gold shield; if it reads too close to a known game crest, redo that one cell in a small fix sheet.
+
+## 2026-10-23 — production / defense concepts (built-in image_gen, 7 calls)
+
+- Prompt: `tools/art/prompts/expansion-01-production.md`; output: `art/concepts/2026-10-23/01-production.png` (twelve linked concepts).
+- Prompt: `tools/art/prompts/expansion-02-new-units-a.md`; output: `art/concepts/2026-10-23/02-new-units-a.png` (twelve linked concepts).
+- Prompt: `tools/art/prompts/expansion-03-new-units-b.md`; output: `art/concepts/2026-10-23/03-new-units-b.png` (twelve linked concepts).
+- Prompt: `tools/art/prompts/expansion-04-walls-gates.md`; output: `art/concepts/2026-10-23/04-walls-gates.png` (twelve linked concepts).
+- Prompt: `tools/art/prompts/expansion-05-towers-traps.md`; output: `art/concepts/2026-10-23/05-towers-traps.png` (twelve linked concepts).
+- Prompt: `tools/art/prompts/expansion-06-existing-rosters.md`; output: `art/concepts/2026-10-23/06-existing-rosters.png` (twelve linked concepts).
+- D21 patch: `tools/art/prompts/expansion-d21-patch.md` → `art/concepts/2026-10-23/patches/d21-pitch-basin.png`. Composited only the D21 cell; original draft retained.
+
+## 2026-10-23 — selected expansion batch 1 skins (built-in image_gen, 5 calls)
+
+- Prompt: `tools/art/prompts/selected-batch1-1.md`; exact model-first guide: `art/source/uv/selected-batch1-1.png`; raw output: `art/raw/selected-batch1-1.png`; units: chainbreaker, rune_gunner.
+- Prompt: `tools/art/prompts/selected-batch1-2.md`; exact model-first guide: `art/source/uv/selected-batch1-2.png`; raw output: `art/raw/selected-batch1-2.png`; units: null_warden, reliquary_guard.
+- Prompt: `tools/art/prompts/selected-batch1-3.md`; exact model-first guide: `art/source/uv/selected-batch1-3.png`; raw output: `art/raw/selected-batch1-3.png`; units: banner_captain, lantern_novice.
+- Prompt: `tools/art/prompts/selected-batch1-4.md`; exact model-first guide: `art/source/uv/selected-batch1-4.png`; raw output: `art/raw/selected-batch1-4.png`; units: veil_sister, bulwark_golem.
+- Prompt: `tools/art/prompts/selected-batch1-5.md`; exact model-first guide: `art/source/uv/selected-batch1-5.png`; raw output: `art/raw/selected-batch1-5.png`; units: siege_golem.
+- First sheet inspected before the remaining four calls. Processed by `tools/models/selected-skins.ts`, 1024×512 per unit with external team-color masks. Front/back half-cells and bone-axis limb strips match the approved painted UV contract. New structures reuse the existing golem_foundry_skin materials.
+
+## 2026-10-23 — selected expansion batch 2 skins (built-in image_gen, 5 calls)
+
+- Prompt: `tools/art/prompts/selected-batch2-1.md`; guide: `art/source/uv/selected-batch2-1.png`; output: `art/raw/selected-batch2-1.png`; models: boar_lancer.
+- Prompt: `tools/art/prompts/selected-batch2-2.md`; guide: `art/source/uv/selected-batch2-2.png`; output: `art/raw/selected-batch2-2.png`; models: ram_drummer.
+- Prompt: `tools/art/prompts/selected-batch2-3.md`; guide: `art/source/uv/selected-batch2-3.png`; output: `art/raw/selected-batch2-3.png`; models: covered_ram, bolt_cart.
+- Prompt: `tools/art/prompts/selected-batch2-4.md`; guide: `art/source/uv/selected-batch2-4.png`; output: `art/raw/selected-batch2-4.png`; models: badger_mercenary, fox_trailshot.
+- Prompt: `tools/art/prompts/selected-batch2-5.md`; guide: `art/source/uv/selected-batch2-5.png`; output: `art/raw/selected-batch2-5.png`; models: coalback_porter, kite_bomber.
+- Boar/rider test sheet inspected first. Two 16-cell cavalry skins (separate rider and mount panels); six 8-cell skins packed two per sheet. Split/processed with `selected-skins.ts --batch2`, plus team masks. Hooves/horns, wood/steel spear surfaces, boots/gloves and equipment/fur use explicit sub-rectangles. Buildings reuse golem_foundry_skin materials.

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { gameData, type FactionAI } from '@game/shared';
 import { runHeadlessMatch } from '../src/match/headless';
 
 describe('headless match', () => {
@@ -26,6 +27,25 @@ describe('headless match', () => {
     expect(result.tickMsAvg).toBeGreaterThan(0);
     expect(result.tickMsP99).toBeGreaterThan(0);
     expect(result.tickMsMax).toBeGreaterThan(0);
+  });
+
+  it('changes ai.json numbers only for the tuned faction (self-play tuning)', () => {
+    let trainUpTo: number[] = [];
+    const result = runHeadlessMatch({
+      seed: 4,
+      slots: 2,
+      maxMinutes: 4,
+      aiTuning: { 0: { difficulty: { workerTarget: 6 }, army: { trainUpToSupply: 77 } } },
+      attach: (sim) => {
+        const ai = sim.ai as FactionAI;
+        trainUpTo = [0, 1].map((slot) => ai.brain(slot)!.armyRules.trainUpToSupply);
+      },
+    });
+
+    expect(trainUpTo).toEqual([77, gameData.ai.faction.army.trainUpToSupply]);
+    const last = result.log[result.log.length - 1]!;
+    expect(last.factions[0]!.workers).toBeLessThanOrEqual(6);
+    expect(last.factions[1]!.workers).toBeGreaterThan(6);
   });
 
   it('calls attach once and updates it every tick', () => {

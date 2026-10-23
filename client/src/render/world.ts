@@ -499,7 +499,7 @@ export class GameWorld {
     ip.colorCurves = curves;
   }
 
-  private play(unit: Unit, name: string, loop = true, speed = 1): void {
+  play(unit: Unit, name: string, loop = true, speed = 1): void {
     const baked = unit.model.baked;
     if (unit.anim === name && loop) {
       if (name === 'walk' && unit.animationSpeed !== unit.speed / 3) {

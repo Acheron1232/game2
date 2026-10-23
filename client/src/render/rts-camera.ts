@@ -42,6 +42,8 @@ export class RtsCamera {
   edgeScroll = true;
   /** settings: camera speed multiplier */
   speedScale = 1;
+  /** Dev review fields can frame a wider lineup while retaining normal camera controls. */
+  baseRadius = BASE_RADIUS;
   /** Set while following a unit (Space twice). */
   follow: (() => { x: number; y: number }) | null = null;
 
@@ -167,12 +169,12 @@ export class RtsCamera {
   private apply(): void {
     const h = this.heightAt(this.target.x, this.target.y);
     this.camera.target.set(this.target.x, h, -this.target.y);
-    this.camera.radius = BASE_RADIUS * this.zoom;
+    this.camera.radius = this.baseRadius * this.zoom;
   }
 
   /** Keep the view inside the rendered mountain apron, without locking cameras out of edge bases. */
   private clampGoal(): void {
-    const height = BASE_RADIUS * Math.max(this.zoom, this.zoomGoal) * Math.cos(TILT);
+    const height = this.baseRadius * Math.max(this.zoom, this.zoomGoal) * Math.cos(TILT);
     const halfFov = this.camera.fov / 2;
     const north = height * (Math.tan(TILT + halfFov) - Math.tan(TILT));
     const south = height * (Math.tan(TILT) - Math.tan(TILT - halfFov));

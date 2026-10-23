@@ -12,3 +12,9 @@ tools/models/palette_preview.png
 __pycache__/
 *.pyc
 art/raw/audio/
+
+# Blender scenes written by models:build for review (rebuilt every build) and their backups
+art/source/blender/
+*.blend1
+# trailer videos (too big for git)
+media/

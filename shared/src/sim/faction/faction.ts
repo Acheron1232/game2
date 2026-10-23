@@ -12,6 +12,8 @@ import { buildingDefOf, entityTypeIndex, ENTITY_TYPES, footprintOf, GOLD_MINE, i
 import { EventType } from '../events';
 import { FACTION_HERO_SLOT, NEUTRAL, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
 import { buildingStats, rectDistance } from '../stats';
+import { maxBuff } from '../buffs';
+import type { KingdomOrder } from './orders';
 
 const E = gameData.rules.economy;
 const PRICE_RISE = E.buildingPriceRise as Record<string, { freeCount: number; pctPerExtra: number } | string>;
@@ -58,6 +60,14 @@ export interface FactionState {
   campsCleared: number;
   /** fights of its army against an enemy army far from every Town Hall (match report) */
   fieldFights: number;
+  /** the players' order to the AI (orders.ts); 'auto' = the AI decides */
+  order: KingdomOrder;
+  /** attack order: the kingdom slot to attack, else -1 */
+  orderTarget: number;
+  /** hero slot that gave the order, -1 = none yet */
+  orderBy: number;
+  /** the kingdom slot our army attacks now, -1 = none (other AIs pile on a kingdom under attack) */
+  attacking: number;
   /** soldiers hired by the player's hero (not in `units`: no supply, not in the army) */
   hired: Set<number>;
 }
@@ -110,6 +120,14 @@ export function isTownHall(e: SimEntity): boolean {
 
 export function unitDef(id: string): UnitDef | undefined {
   return gameData.units.find((u) => u.id === id);
+}
+
+/** The upkeep step for this much used supply (rules.json economy.upkeep): big armies cost gold income. */
+export function upkeepStep(supplyUsed: number): { fromSupply: number; goldPct: number; name: string } {
+  const steps = E.upkeep.steps;
+  let step = steps[0]!;
+  for (const s of steps) if (supplyUsed >= s.fromSupply) step = s;
+  return step;
 }
 
 export class Factions {
@@ -186,6 +204,10 @@ export class Factions {
       heroId: 0,
       campsCleared: 0,
       fieldFights: 0,
+      order: 'auto',
+      orderTarget: -1,
+      orderBy: -1,
+      attacking: -1,
       hired: new Set(),
     };
     this.list[slot] = f;
@@ -514,7 +536,7 @@ export class Factions {
           mb.inside = Math.max(0, mb.inside - 1);
           w.hidden = false;
           sim.teleport(w, j.standX, j.standY);
-          j.amount = Math.min(mb.gold, Math.round(E.goldPerTrip * sim.gatherFactor(f)));
+          j.amount = Math.min(mb.gold, Math.round((E.goldPerTrip * sim.gatherFactor(f) * upkeepStep(f.supplyUsed).goldPct) / 100));
           mb.gold -= j.amount;
           j.carry = 'gold';
           j.phase = 'return';
@@ -585,7 +607,7 @@ export class Factions {
             this.finishBuilding(site);
             j.kind = 'idle';
           }
-        } else site.hp = Math.min(site.stats.maxHp, site.hp + site.stats.maxHp * step);
+        } else site.hp = Math.min(site.stats.maxHp, site.hp + site.stats.maxHp * step * (1 + maxBuff(w.buffs, 'repairSpeedPct') / 100));
         return;
       }
     }

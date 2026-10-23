@@ -12,7 +12,7 @@ import { CommandType } from '../src/sim/commands';
 import { entityTypeIndex } from '../src/sim/entity-types';
 import { FactionAI } from '../src/sim/faction/brain';
 import { blankBuilding } from '../src/sim/faction/faction';
-import { HIRE, hirePrice, hiredSupply, hireProblem } from '../src/sim/faction/hire';
+import { HIRE, hirePrice, hiredSupply, hireProblem, tavernStockAt } from '../src/sim/faction/hire';
 import { MatchSim, TICK_RATE, type SimEntity } from '../src/sim/match-sim';
 
 const DATA = join(import.meta.dirname, '..', 'data');
@@ -53,6 +53,46 @@ function setup() {
 const near = (a: SimEntity, x: number, y: number) => Math.hypot(a.mover.x - x, a.mover.y - y);
 
 describe('hiring soldiers', () => {
+  it('new tavern stocks are shared, reject an empty hire without payment, and refill over simulation time', () => {
+    const { sim, hero, send, run } = setup();
+    const shop = gameData.map.shops.findIndex((s) => s.type === 'tavern_mossy');
+    const at = gameData.map.shops[shop]!.pos;
+    sim.teleport(hero, at[0] + 4, at[1]);
+    const badger = unit('badger_mercenary');
+    for (let i = 0; i < 2; i++) {
+      expect(send({ type: CommandType.Hire, unit: badger })).toBe(true);
+      run(0.1);
+    }
+    const gold = hero.heroState!.gold;
+    expect(tavernStockAt(sim, shop, badger)?.count).toBe(0);
+    expect(hireProblem(sim, hero, badger)).toBe('stock');
+    expect(send({ type: CommandType.Hire, unit: badger })).toBe(false);
+    expect(hero.heroState!.gold).toBe(gold);
+    const other = sim.heroes[1]!;
+    sim.teleport(other, at[0] + 4, at[1]);
+    expect(hireProblem(sim, other, badger)).toBe('stock');
+    sim.tick += 70 * TICK_RATE;
+    expect(tavernStockAt(sim, shop, badger)?.count).toBe(1);
+    expect(hireProblem(sim, hero, badger)).toBeNull();
+    sim.tick += 70 * TICK_RATE;
+    expect(tavernStockAt(sim, shop, badger)).toEqual({ count: 2, readyAt: 0 });
+  });
+  it.each([
+    ['badger_mercenary', 'tavern_mossy'],
+    ['fox_trailshot', 'tavern_mossy'],
+    ['coalback_porter', 'tavern_ember'],
+  ])('hires %s at the expanded %s roster', (id, tavern) => {
+    const { sim, f, hero, send, run } = setup();
+    const at = gameData.map.shops.find((s) => s.type === tavern)!.pos;
+    sim.teleport(hero, at[0] + 4, at[1]);
+    const gold = hero.heroState!.gold;
+    expect(hireProblem(sim, hero, unit(id))).toBeNull();
+    expect(send({ type: CommandType.Hire, unit: unit(id) })).toBe(true);
+    run(0.1);
+    const hired = [...f.hired].map((uid) => sim.get(uid)!).find((e) => e.type === entityTypeIndex(id));
+    expect(hired?.leaderId).toBe(hero.id);
+    expect(hero.heroState!.gold).toBeLessThanOrEqual(gold - hirePrice(unit(id))! + 1);
+  });
   it('costs hero gold at an own building, uses no faction supply, and has a limit', () => {
     const { sim, f, hero, send, run } = setup();
     const supply = f.supplyUsed;

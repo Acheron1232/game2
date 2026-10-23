@@ -4,14 +4,36 @@
 
 import type { GameData } from './index';
 
-const SLOTS = ['Q', 'W', 'E', 'R'] as const;
+const SLOTS = ['Q', 'W', 'E', 'R', 'D', 'F'] as const;
 
 export function validateGameData(d: GameData): string[] {
   const errors: string[] = [];
   const fail = (msg: string) => errors.push(msg);
 
+  const hb = d.rules.heroBase;
+  const xp = d.rules.experience.totalXpForLevel;
+  if (xp.length !== hb.maxLevel) fail(`experience.totalXpForLevel: has ${xp.length} values, needs ${hb.maxLevel}`);
+  if (xp.some((n, i) => i > 0 && n <= xp[i - 1]!)) fail('experience.totalXpForLevel: must grow at every level');
+  for (const [name, steps] of [
+    ['basicAbilityHeroLevels', hb.basicAbilityHeroLevels],
+    ['ultimateHeroLevels', hb.ultimateHeroLevels],
+  ] as const) {
+    if (steps.some((n, i) => n < 1 || n > hb.maxLevel || (i > 0 && n <= steps[i - 1]!)))
+      fail(`heroBase.${name}: levels must grow and stay between 1 and ${hb.maxLevel}`);
+  }
+  if (3 * hb.basicAbilityHeroLevels.length + hb.ultimateHeroLevels.length > hb.maxLevel)
+    fail('heroBase: a max-level hero has fewer skill points than ability levels');
+
   const heroIds = new Set(d.heroes.map((h) => h.id));
   const abilityById = new Map(d.abilities.map((a) => [a.id, a]));
+  if (d.abilities.length > 127) fail('abilities: more than 127 (cast events reserve index 127)');
+  for (const a of d.abilities) {
+    const effect = a.params['effect'];
+    if (effect === undefined) continue;
+    const base = typeof effect === 'string' ? abilityById.get(effect) : undefined;
+    if (!base || base.params['effect'] !== undefined || base.kind !== a.kind || base.target !== a.target)
+      fail(`ability ${a.id}: effect must name a base ability with the same kind and target`);
+  }
   const unitById = new Map(d.units.map((u) => [u.id, u]));
   const buildingById = new Map(d.buildings.buildings.map((b) => [b.id, b]));
   const neutralBuildingIds = new Set(d.buildings.neutralBuildings.map((b) => b.id));
@@ -26,6 +48,7 @@ export function validateGameData(d: GameData): string[] {
     buildings: d.buildings.buildings,
     items: d.items,
     camps: d.camps.campTypes,
+    skills: d.skills,
     upgrades: d.upgrades.upgrades,
   };
   for (const [name, list] of Object.entries(lists)) {
@@ -51,7 +74,9 @@ export function validateGameData(d: GameData): string[] {
       if (!a) return fail(`hero ${h.id}: unknown ability ${aid}`);
       if (a.hero !== h.id) fail(`ability ${aid}: belongs to ${a.hero}, but is listed on ${h.id}`);
       if (a.slot !== SLOTS[i]) fail(`ability ${aid}: slot ${a.slot}, expected ${SLOTS[i]}`);
-      const want = a.slot === 'R' ? 1 : 3;
+      const want = a.params['innate']
+        ? 1
+        : (a.slot === 'R' ? d.rules.heroBase.ultimateHeroLevels : d.rules.heroBase.basicAbilityHeroLevels).length;
       if (a.maxLevel !== want) fail(`ability ${aid}: maxLevel ${a.maxLevel}, expected ${want}`);
       checkLevels(`ability ${aid}`, { castRange: a.castRange, manaCost: a.manaCost, cooldown: a.cooldown }, a.maxLevel);
       checkLevels(`ability ${aid}.params`, a.params, a.maxLevel);
@@ -66,7 +91,18 @@ export function validateGameData(d: GameData): string[] {
     for (const t of armorTypes) if (typeof (row as Record<string, number>)[t] !== 'number') fail(`damageTable.${atk}: missing ${t}`);
   }
 
+  const skillIds = new Set(d.skills.map((s) => s.id));
   for (const u of d.units) {
+    for (const s of u.skills) if (!skillIds.has(s.id)) fail(`unit ${u.id}: skill ${s.id} has no name in skills.json`);
+    for (const s of u.skills) {
+      if (typeof s['summonUnit'] === 'string' && !unitById.has(s['summonUnit']))
+        fail(`unit ${u.id}: unknown skill summon ${s['summonUnit']}`);
+      const info = d.skills.find((x) => x.id === s.id);
+      if (info?.kind === 'active' && !info.target) fail(`skill ${s.id}: an active skill needs a target (none or unit)`);
+      if (info?.target === 'unit' && !info.targets) fail(`skill ${s.id}: a unit target needs targets (enemy or ally)`);
+      if (info?.target === 'unit' && typeof s['range'] !== 'number') fail(`unit ${u.id}: skill ${s.id} needs a range`);
+      if ((s['manaCost'] as number | undefined) && !(u.mana > 0)) fail(`unit ${u.id}: skill ${s.id} costs mana, the unit has none`);
+    }
     if (u.attackRange <= d.rules.combat.meleeRange + 0.3 && u.canHit.includes('air')) fail(`unit ${u.id}: a melee unit can not hit air`);
     if (u.level < 1 || u.level > d.rules.experience.xpForKillingUnitOfLevel.length) fail(`unit ${u.id}: level is outside the XP table`);
     if (u.group === 'faction') {
@@ -80,6 +116,7 @@ export function validateGameData(d: GameData): string[] {
   }
 
   for (const b of d.buildings.buildings) {
+    for (const s of b.skills ?? []) if (!skillIds.has(s.id)) fail(`building ${b.id}: unknown skill ${s.id}`);
     for (const t of b.trains) if (!unitById.has(t)) fail(`building ${b.id}: trains unknown unit ${t}`);
     for (const r of b.requires) if (!buildingById.has(r)) fail(`building ${b.id}: unknown requirement ${r}`);
     if (b.upgradesTo && !buildingById.has(b.upgradesTo)) fail(`building ${b.id}: unknown upgradesTo ${b.upgradesTo}`);
@@ -96,8 +133,22 @@ export function validateGameData(d: GameData): string[] {
     if (it.cost !== null && it.cost < it.value * d.rules.gold.sellFactor) fail(`item ${it.id}: sells for more than it costs`);
   }
   if (d.items.length > 255) fail('items: more than 255 (the network sends an item index as u8)');
+  const sold = new Set(d.shops.flatMap((s) => s.items));
+  for (const it of d.items) {
+    if (!it.recipe) continue;
+    let sum = it.recipe.fee;
+    for (const cid of it.recipe.components) {
+      const c = itemById.get(cid);
+      if (!c || c.cost === null || cid === it.id) fail(`item ${it.id}: recipe part ${cid} is not a shop item`);
+      else sum += c.cost;
+    }
+    if (it.cost !== sum) fail(`item ${it.id}: cost ${it.cost}, but parts + fee = ${sum}`);
+    if (!sold.has(it.id)) fail(`item ${it.id}: a recipe item no shop sells`);
+  }
 
   for (const s of d.shops) {
+    for (const uid of Object.keys(s.mercenaryStock ?? {}))
+      if (!s.mercenaries?.includes(uid)) fail(`shop ${s.id}: stock for a recruit outside its roster: ${uid}`);
     for (const uid of (s as { mercenaries?: string[] }).mercenaries ?? []) {
       const u = unitById.get(uid);
       if (!u) fail(`shop ${s.id}: unknown mercenary ${uid}`);

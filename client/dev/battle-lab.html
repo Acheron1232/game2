@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Temple Wars · Battle Lab</title>
+  </head>
+  <body>
+    <canvas id="view" tabindex="0"></canvas>
+    <header>
+      <div class="title">
+        <strong>BATTLE LAB</strong><span>Heroes · Foundry · Army</span><a href="/dev/models.html?model=thorn_marshal">Model viewer ↗</a
+        ><a href="/">Game ↗</a>
+      </div>
+      <nav>
+        <select id="hero" aria-label="Controlled hero"></select
+        ><button id="reset">Reset field</button><button id="refill">Refill · F6</button><button id="targets">Add targets</button
+        ><button id="army">Add army</button><button id="expansion">New units · batch 1</button
+        ><button id="reinforcements">Reinforcements · batch 2</button><button id="lantern">Healing lantern demo</button
+        ><button id="defenses">Defense yard</button><button id="walls">Upgrade walls</button><button id="fight">Start skirmish</button
+        ><button id="train">Train golem · 38s</button><button id="crowd">300-unit review</button>
+      </nav>
+    </header>
+    <div id="labels"></div>
+    <aside id="skills"></aside>
+    <footer><span id="hint">Loading assets…</span><output id="stats"></output></footer>
+    <script type="module" src="/src/dev/battle-lab.ts"></script>
+  </body>
+</html>

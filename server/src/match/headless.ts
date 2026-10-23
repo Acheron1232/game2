@@ -2,8 +2,8 @@ import {
   buildMatchNav,
   entityTypeIndex,
   FactionAI,
-  difficultyRules,
   ENTITY_TYPES,
+  factionRules,
   FACTION_HERO_SLOT,
   gameData,
   MatchSim,
@@ -11,6 +11,7 @@ import {
   TICK_RATE,
   type Difficulty,
   type FactionState,
+  type FactionTuning,
   type TreeList,
 } from '@game/shared';
 import { readSharedDataFile } from '../data-files';
@@ -27,6 +28,8 @@ export interface HeadlessOptions {
   onMinute?: (m: MinuteLog) => void;
   /** tests of the stuck check: no faction brains and hero bots */
   noAi?: boolean;
+  /** self-play tuning (tools/ai/tune.ts): ai.json numbers changed per faction slot */
+  aiTuning?: Record<number, FactionTuning>;
   /** extra setup after the sim is built (8b uses it to attach brains / hero bots) */
   attach?: (sim: MatchSim) => { update(): void } | void;
 }
@@ -138,13 +141,15 @@ function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
   const factions = sim.factions!;
   let workers = 0;
   for (const id of f.units) if (sim.get(id)?.alive && sim.get(id)?.job) workers++;
-  const enoughWorkers = workers >= difficultyRules(f.difficulty).workerTarget;
+  // ai.json numbers of this faction (the AI stops training army at army.trainUpToSupply)
+  const { rules, army } = factionRules(f.difficulty, sim.setup.aiTuning?.[f.slot]);
+  const enoughWorkers = workers >= rules.workerTarget;
   // Only buildings the faction does not have yet (more Houses only while supply can grow).
   for (const def of gameData.buildings.buildings) {
     if (TIER_BUILDINGS.has(def.id) || factions.missing(f, def.requires).length > 0) continue;
     if (
       def.id === 'house'
-        ? f.supplyCap >= gameData.rules.economy.supplyCap || f.supplyCap - f.supplyUsed >= 6
+        ? f.supplyCap >= Math.min(gameData.rules.economy.supplyCap, army.trainUpToSupply) || f.supplyCap - f.supplyUsed >= 6
         : factions.has(f, def.id) || hasSite(sim, f, def.id)
     )
       continue;
@@ -158,6 +163,8 @@ function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
       // Spare supply for one worker is not an opportunity when the economy has its workers.
       // Combat units need more supply: this used to flag a winning 99/100 army as stuck.
       if (unitId === 'worker' && enoughWorkers) continue;
+      // Upkeep: the AI trains no more army from trainUpToSupply on (ai.json army), on purpose.
+      if (unitId !== 'worker' && f.supplyUsed >= army.trainUpToSupply) continue;
       const unit = gameData.units.find((candidate) => candidate.id === unitId);
       if (!unit || factions.missing(f, unit.requires).length > 0 || !factions.canPay(f, unit.cost)) continue;
       if (f.supplyUsed + (unit.supply ?? 0) <= f.supplyCap) return true;
@@ -274,6 +281,7 @@ export function runHeadlessMatch(o: HeadlessOptions): HeadlessResult {
         ai: o.difficulty?.[index] ?? 'normal',
         bot: true,
       })),
+      aiTuning: o.aiTuning,
     },
     buildMatchNav(map.terrain, gameData.map),
     map,

@@ -1888,6 +1888,147 @@
           ]
         }
       ]
+    },
+    {
+      "id": "icons_skills",
+      "grid": [
+        6,
+        6
+      ],
+      "aspect": "square",
+      "prompt": "icons_skills.md",
+      "groups": [
+        {
+          "kind": "icon",
+          "size": 128,
+          "out": "icons",
+          "cells": [
+            "briar_lance",
+            "ironbark_mantle",
+            "grove_vigor",
+            "thorn_dominion",
+            "dread_toll",
+            "mourning_field",
+            "soul_choir",
+            "last_toll",
+            "anchor_hurl",
+            "breaker_wave",
+            "deep_hide",
+            "tidal_rush",
+            "lantern_mend",
+            "bamboo_sweep",
+            "guiding_light",
+            "lantern_refuge",
+            "magma_shard",
+            "heat_shell",
+            "furnace_pulse",
+            "caldera_drop",
+            "gather",
+            "build",
+            "repair",
+            "mend",
+            "howl",
+            "screech",
+            "web",
+            "ground_slam",
+            "stone_guard",
+            "frost_nova",
+            "faith_ward",
+            "hex_bolt",
+            "bog_curse",
+            "ice_shard",
+            "ember_flare",
+            "troll_blood"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "icons_items_2",
+      "grid": [
+        7,
+        6
+      ],
+      "aspect": "landscape",
+      "prompt": "icons_items_2.md",
+      "groups": [
+        {
+          "kind": "icon",
+          "size": 128,
+          "out": "icons",
+          "cells": [
+            "greater_healing_potion",
+            "greater_mana_potion",
+            "focus_crystal",
+            "hourglass_charm",
+            "mana_pearl",
+            "mage_ring",
+            "warding_cloth",
+            "chain_vest",
+            "heart_stone",
+            "iron_buckler",
+            "keen_dagger",
+            "healer_herbs",
+            "arcane_staff",
+            "arcane_staff_2",
+            "timeworn_tome",
+            "sages_hourglass",
+            "mana_font",
+            "crystal_heart",
+            "bloodletter_axe",
+            "berserker_mail",
+            "warlord_blade",
+            "giant_maul",
+            "bulwark_plate",
+            "bulwark_plate_2",
+            "spellward_cloak",
+            "troll_heart",
+            "guardian_shield",
+            {
+              "name": "banner_of_valor",
+              "teamColor": true
+            },
+            "healers_censer",
+            "soul_lantern",
+            "elder_robe",
+            "marksman_bow",
+            "assassin_blade",
+            "swift_quiver",
+            "windrunner_boots",
+            "sage_treads",
+            "archmage_scepter",
+            "titan_aegis",
+            "kingslayer",
+            "sky_piercer",
+            "dawn_relic",
+            "crown_of_ages"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "earth-spirit-icons",
+      "grid": [
+        3,
+        2
+      ],
+      "aspect": "square",
+      "prompt": "earth-spirit-icons.md",
+      "groups": [
+        {
+          "kind": "icon",
+          "size": 128,
+          "out": "icons",
+          "cells": [
+            "boulder_smash",
+            "rolling_boulder",
+            "geomagnetic_grip",
+            "magnetize",
+            "stone_remnant",
+            "enchant_remnant"
+          ]
+        }
+      ]
     }
   ]
 }

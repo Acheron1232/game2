@@ -12,42 +12,24 @@ import { ENTITY_TYPES, entityTypeIndex, footprintOf } from '../entity-types';
 import { HeroBot, type BotDifficulty } from '../hero-bot';
 import { FACTION_HERO_SLOT, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
 import { ArmyMover, roleOf, type ArmyGroup } from './army';
-import { isTownHall, unitDef, type Difficulty, type Factions, type FactionState } from './faction';
+import { isTownHall, unitDef, type Factions, type FactionState } from './faction';
+import { clearKingdomOrder, orderLabel, type KingdomOrder } from './orders';
 import { makePersonality, spotNoise, type BuildStep, type Personality } from './personality';
 import { baseCorridors, findBuildSpot, type Rect } from './placement';
-
-interface DifficultyRules {
-  thinkDelaySec: number;
-  workerTarget: number;
-  maxProductionBuildings: number;
-  firstAttackArmySupply: number;
-  attackArmySupply: number;
-  retreatAtArmyPct: number;
-  expandAtMinute: number | null;
-  towersAtBase: number;
-  targetChoice: 'closest' | 'closest_or_weakest' | 'weakest_or_where_our_hero_fights';
-  focusFire: boolean;
-  pullWoundedUnits: boolean;
-  buildOrderDelaySec: number;
-}
+import { tryFortify, WALL_RULES } from './fortifications';
+import { factionRules, type ArmyRules, type DifficultyRules, type MixTier, type UnitMix } from './tuning';
 
 type Step = BuildStep;
 
 const AI = gameData.ai.faction as unknown as {
-  difficulties: Record<Difficulty, DifficultyRules>;
   buildOrder: Step[];
-  unitMix: Record<'tier1' | 'tier2' | 'tier3', Record<string, number>>;
   attack: { gatherPointDistance: number; waitForStragglersSec: number; retargetEverySec: number; creepCampsWhenIdle: boolean };
 };
-const ARMY = gameData.ai.faction.army;
 const HERO_RULES = gameData.ai.faction.factionHero;
-
-export function difficultyRules(d: Difficulty): DifficultyRules {
-  return AI.difficulties[d];
-}
+const ORDERS = gameData.ai.faction.orders;
 
 const COLOR_NAMES = ['Red', 'Blue', 'Teal', 'Purple'];
-const PRODUCTION = new Set(['barracks', 'archery_range', 'chapel', 'workshop', 'hawk_roost']);
+const PRODUCTION = new Set(gameData.buildings.buildings.filter((b) => b.trains.some((id) => id !== 'worker')).map((b) => b.id));
 const WOOD_SHARE = 0.3;
 /** wood is plenty above this (and more than gold): fewer woodcutters */
 const WOOD_PLENTY = 400;
@@ -62,7 +44,6 @@ const DEFENSE_SUPPLY = 4;
 const BUILD_RADIUS_EXPANSION = 12;
 const WOUNDED_PCT = 0.25;
 const MILITIA_HALL_PCT = 0.3;
-const REINFORCE_SUPPLY = 6;
 /** always rebuild at least this many workers, even while saving */
 const MIN_WORKERS = 5;
 /** gold left in our mines under this: time for a new Town Hall */
@@ -141,9 +122,13 @@ export class FactionBrain {
   /** for the status line */
   status = 'Starting';
   private readonly rules: DifficultyRules;
+  /** ai.json army numbers (with this faction's MatchSetup.aiTuning, tools only) */
+  readonly armyRules: ArmyRules;
+  private readonly unitMix: UnitMix;
   private readonly thinkTicks: number;
   private readonly trained = new Map<string, number>();
   private lastStepAt = -Infinity;
+  private fortifyAt = 0;
   private home: SimEntity | null = null;
   private mineOfHall = new Map<number, number>();
   private readonly rally = { x: 0, y: 0 };
@@ -198,7 +183,10 @@ export class FactionBrain {
     readonly f: FactionState,
     private readonly army: ArmyMover,
   ) {
-    this.rules = difficultyRules(f.difficulty);
+    const tuned = factionRules(f.difficulty, sim.setup.aiTuning?.[f.slot]);
+    this.rules = tuned.rules;
+    this.armyRules = tuned.army;
+    this.unitMix = tuned.unitMix;
     this.personality = makePersonality(sim.setup.seed, f.slot, AI.buildOrder);
     // Team match: a second player plays the kingdom's own hero, so no Hero Shrine.
     if (sim.setup.teams && sim.heroes[FACTION_HERO_SLOT + f.slot])
@@ -230,6 +218,7 @@ export class FactionBrain {
     this.doing = '';
     this.savingFor = '';
     this.reserveGold = this.reserveWood = 0;
+    this.checkOrder();
     this.findThreat();
     this.expansion();
     this.workers();
@@ -239,9 +228,46 @@ export class FactionBrain {
     // Under attack the army comes first: savings may be spent on units.
     if (this.threat && !this.urgent) this.reserveGold = this.reserveWood = 0;
     this.production();
+    if (!this.threat && !this.savingFor && this.home && this.sim.tick >= this.fortifyAt) {
+      this.fortifyAt = this.sim.tick + WALL_RULES.everySec * TICK_RATE;
+      const action = tryFortify(this.sim, this.f, this.home, (x, y) => this.builder(x, y));
+      if (action) this.doing = action;
+    }
     this.repair();
     this.armyThink();
-    f.status = this.status = this.statusLine();
+    f.attacking = this.armyState === 'attack' ? this.attackSlot : -1;
+    f.status = this.status = this.statusWithOrder();
+  }
+
+  // ---------- orders ----------
+
+  /** The players' order (orders.ts). An attack on a kingdom that is gone ends: back to auto. */
+  private checkOrder(): void {
+    const f = this.f;
+    if (f.order !== 'attack') return;
+    const t = this.fs.get(f.orderTarget);
+    if (!t || t.defeated || t.team === f.team) clearKingdomOrder(f);
+  }
+
+  private get order(): KingdomOrder {
+    return this.f.order;
+  }
+
+  private readonly campArea = { x: 0, y: 0, range: 0 };
+
+  /** Bot heroes of the kingdom farm only near home while the order keeps the army there. */
+  heroCampArea(): { x: number; y: number; range: number } | null {
+    const home = this.home;
+    if (!home || !this.stayHome()) return null;
+    this.campArea.x = home.mover.x;
+    this.campArea.y = home.mover.y;
+    this.campArea.range = ORDERS.heroCampRange[this.order === 'defend' ? 'defend' : 'build_up'];
+    return this.campArea;
+  }
+
+  /** Orders that keep the army at home (it fights only near the base). */
+  private stayHome(): boolean {
+    return this.order === 'defend' || this.order === 'build_up';
   }
 
   // ---------- base ----------
@@ -422,7 +448,7 @@ export class FactionBrain {
 
   private houses(): void {
     const f = this.f;
-    if (f.supplyCap >= gameData.rules.economy.supplyCap) return;
+    if (f.supplyCap >= Math.min(gameData.rules.economy.supplyCap, this.armyRules.trainUpToSupply + this.personality.houseAhead)) return;
     if (f.supplyCap - f.supplyUsed >= this.personality.houseAhead || this.siteOf('house')) return;
     if (this.savingFor === 'Town Hall' && f.supplyCap - f.supplyUsed > 1) return;
     this.tryBuild('house');
@@ -713,7 +739,11 @@ export class FactionBrain {
     const minute = this.sim.tick / (60 * TICK_RATE);
     // No fixed limit: every tower above the free count costs more (rules.json buildingPriceRise),
     // and each personality pays only up to its own price limit.
-    const towers = this.rules.towersAtBase + p.extraTowers + Math.floor(Math.max(0, minute - 8) / p.towerEveryMin);
+    const towers =
+      this.rules.towersAtBase +
+      p.extraTowers +
+      Math.floor(Math.max(0, minute - 8) / p.towerEveryMin) +
+      (this.order === 'defend' ? ORDERS.defendExtraTowers : 0);
     const towerOk = this.towerPriceOk();
     if (towerOk && this.towersOf(home) < towers && this.tryBuild('watchtower', undefined, !this.towerPriceRisen())) return;
     for (const h of this.fs.halls(f)) {
@@ -848,7 +878,7 @@ export class FactionBrain {
 
   private mix(): Record<string, number> {
     const f = this.f;
-    const base = AI.unitMix[`tier${f.tier}` as 'tier1' | 'tier2' | 'tier3'];
+    const base = this.unitMix[`tier${f.tier}` as MixTier];
     const m: Record<string, number> = { ...base };
     const shift = (to: string[], from: string, amount: number) => {
       const take = Math.min(m[from] ?? 0, amount);
@@ -870,6 +900,9 @@ export class FactionBrain {
 
   private production(): void {
     const f = this.f;
+    // Upkeep: above this, more soldiers cost more gold income than they are worth (unless the
+    // base is attacked).
+    if (f.supplyUsed >= this.armyRules.trainUpToSupply && !this.threat) return;
     const mix = this.mix();
     // What the army is made of now (with the queues).
     const have = new Map<string, number>();
@@ -938,26 +971,36 @@ export class FactionBrain {
     this.urgent = left < URGENT_GOLD;
     const minute = this.sim.tick / (60 * TICK_RATE);
     const second = this.personality.secondExpandMinute;
+    const ordered = this.order === 'expand';
     const timeUp =
+      ordered ||
       (at !== null && minute >= at && !this.expanded) ||
       (at !== null && second !== null && minute >= second && this.expansions < 2 && this.fs.halls(this.f).length < 3);
     if (!low && !timeUp) return;
     for (const h of this.fs.halls(this.f)) if (!h.building!.done) return; // one at a time
     const spot = this.freeExpansion();
-    if (!spot) return;
+    if (!spot) {
+      if (ordered) clearKingdomOrder(this.f);
+      return;
+    }
     const [tx, ty] = spot;
-    // Keep the Town Hall money from now on, even while the army still clears the spot.
-    const hall = buildingDef('town_hall')!;
-    if (!this.fs.canPay(this.f, hall.cost)) this.save(hall.name, hall.cost.gold, hall.cost.wood);
-    // Monsters or enemies there: the army clears it first. When the gold runs low this comes
-    // before any attack: the attack army is called back for it.
+    // Monsters or enemies there: the army clears it first. When the gold runs low (or the
+    // players ordered it) this comes before any attack: the attack army is called back for it.
+    // The Town Hall money is kept only once the spot is free: keeping it while the army is busy
+    // elsewhere froze a kingdom's gold (and its army) for many minutes.
     if (this.hostilesNear(tx, ty, 10)) {
       const gather = this.gather;
       // Rich and late: the gold can wait, the army ends the game first.
       const rich = this.f.gold >= RICH_NO_RECALL;
-      if (gather && this.armyState !== 'creep' && !(rich && this.lateGame())) {
+      if (gather && this.armyState !== 'creep' && !this.stayHome() && !(rich && this.lateGame())) {
         // ...but never out of a siege: the enemy base is worth more than the camp.
-        if (low && !rich && this.attack && (this.armyState === 'attack' || this.armyState === 'retreat') && !this.sieging(this.attack)) {
+        if (
+          (low || ordered) &&
+          !rich &&
+          this.attack &&
+          (this.armyState === 'attack' || this.armyState === 'retreat') &&
+          !this.sieging(this.attack)
+        ) {
           for (const id of [...this.attack.members]) this.army.add(gather, id);
           this.army.disband(this.attack);
           this.attack = null;
@@ -977,6 +1020,7 @@ export class FactionBrain {
       this.doing = 'Taking the expansion';
       this.expanded = true;
       this.expansions++;
+      if (ordered) clearKingdomOrder(this.f);
     }
   }
 
@@ -1220,8 +1264,15 @@ export class FactionBrain {
   }
 
   private attackNeed(): number {
-    const need = this.attacks === 0 ? this.rules.firstAttackArmySupply : this.rules.attackArmySupply;
-    return Math.round(need * this.personality.attackScale);
+    if (this.order === 'attack') return ORDERS.attackMinSupply;
+    const need = Math.round(
+      (this.attacks === 0 ? this.rules.firstAttackArmySupply : this.rules.attackArmySupply) * this.personality.attackScale,
+    );
+    // Upkeep eats the income of a big army: one that waits only costs, so it goes with what it
+    // has (at least half the usual size).
+    if (this.f.supplyUsed >= this.armyRules.attackAtSupplyUsed && this.gather)
+      return Math.max(Math.ceil(need / 2), Math.min(need, this.groupSupply(this.gather)));
+    return need;
   }
 
   /**
@@ -1245,7 +1296,7 @@ export class FactionBrain {
    * whole army attacks. Long games between equal armies end instead of trading forever.
    */
   private lateGame(): boolean {
-    return this.sim.tick >= ARMY.lateGameMinute * 60 * TICK_RATE;
+    return this.sim.tick >= this.armyRules.lateGameMinute * 60 * TICK_RATE;
   }
 
   /** Army supply that stays home after the first attack (none in the late game). */
@@ -1261,17 +1312,36 @@ export class FactionBrain {
     const need = this.attackNeed();
     const target = this.pickEnemy();
     this.noEnemy = !target;
-    if (supply >= ARMY.roamAtSupply && this.startHunt(gather)) return;
+    if (supply >= this.armyRules.roamAtSupply && this.startHunt(gather)) return;
+    // Orders that keep the army out of attacks: home (defend, build up), camps (farm), or the
+    // expansion (expansion() moves the army there).
+    if (this.stayHome()) {
+      this.doing ||= this.order === 'defend' ? 'Army guards the base' : `Building up the army (${supply} supply)`;
+      return;
+    }
+    if (this.order === 'farm') {
+      if (supply > 0 && this.startCreep(gather, supply)) return;
+      this.doing ||= 'No camp to farm right now';
+      return;
+    }
+    if (this.order === 'expand') return;
     if (supply < need || !target) {
       this.readyAt = 0;
       this.waitingSince = 0;
-      if (AI.attack.creepCampsWhenIdle && supply >= ARMY.roamAtSupply && (!target || !this.lateGame()) && this.startCreep(gather, supply))
+      if (
+        AI.attack.creepCampsWhenIdle &&
+        this.order !== 'attack' &&
+        supply >= this.armyRules.roamAtSupply &&
+        (!target || !this.lateGame()) &&
+        this.startCreep(gather, supply)
+      )
         return;
       if (supply > 0 && target) this.doing ||= `Army gathering (${supply} / ${need} supply)`;
       return;
     }
-    // Strong defense there: grow the army a bit more first (camps meanwhile).
-    if (!this.strongEnough(gather, target)) {
+    // Strong defense there: grow the army a bit more first (camps meanwhile). An attack order
+    // goes anyway.
+    if (this.order !== 'attack' && !this.strongEnough(gather, target)) {
       if (AI.attack.creepCampsWhenIdle && this.startCreep(gather, supply)) return;
       this.doing ||= 'Army waiting: their defense is strong';
       return;
@@ -1343,7 +1413,7 @@ export class FactionBrain {
       if (Math.hypot(w.targetX - ax, w.targetY - ay) > 8) this.army.setGoal(w, 'attack', ax, ay);
       return;
     }
-    if (this.groupSupply(gather) < this.defenseSupply() + REINFORCE_SUPPLY) return;
+    if (this.groupSupply(gather) < this.defenseSupply() + this.armyRules.reinforceSupply) return;
     const go: number[] = [];
     let kept = 0;
     for (const id of gather.members) {
@@ -1380,7 +1450,8 @@ export class FactionBrain {
       const u = this.sim.get(id);
       if (u?.alive && u.stats.canHitAir) antiAir += supplyOf(u);
     }
-    const radius = ARMY.roamRadius[this.f.tier - 1] ?? ARMY.roamRadius[ARMY.roamRadius.length - 1]!;
+    const tierRadius = this.armyRules.roamRadius[this.f.tier - 1] ?? this.armyRules.roamRadius[this.armyRules.roamRadius.length - 1]!;
+    const radius = this.order === 'farm' ? Math.max(tierRadius, ORDERS.farmRoamRadius) : tierRadius;
     let best = -1,
       bestScore = Infinity;
     for (const c of this.sim.camps) {
@@ -1392,8 +1463,8 @@ export class FactionBrain {
           level += m.stats.level;
           if (m.stats.layer !== 'ground') flyers += m.stats.level;
         }
-      if (!level || level > strength * ARMY.campLevelPerSupply) continue;
-      if (flyers && flyers > antiAir * ARMY.campLevelPerSupply) continue;
+      if (!level || level > strength * this.armyRules.campLevelPerSupply) continue;
+      if (flyers && flyers > antiAir * this.armyRules.campLevelPerSupply) continue;
       const fromHome = Math.hypot(c.x - home.mover.x, c.y - home.mover.y);
       if (fromHome > radius || this.nearEnemyHall(c.x, c.y, ENEMY_BASE_KEEP_OUT)) continue;
       const score = Math.hypot(c.x - from.x, c.y - from.y) + fromHome * 0.5;
@@ -1417,17 +1488,21 @@ export class FactionBrain {
     const supply = this.groupSupply(gather);
     if (supply === 0) return this.backToRally(gather);
     if (this.startHunt(gather)) return;
-    if (!done) {
+    // An attack order does not wait for a slow camp fight: a big enough army leaves it now.
+    if (!done && !(this.order === 'attack' && supply >= this.attackNeed())) {
       this.doing ||= camp ? 'Army clearing a camp' : 'Clearing the expansion';
       return;
     }
     this.creepCamp = -1;
-    // Strong enough now: attack straight from here (the army is together already).
+    if (this.stayHome() || this.order === 'expand') return this.backToRally(gather);
+    // Strong enough now (or ordered): attack straight from here (the army is together already).
     const target = this.pickEnemy();
     this.noEnemy = !target;
-    if (target && supply >= this.attackNeed() && this.strongEnough(gather, target)) return this.launchAttack(gather, target);
+    if (target && this.order !== 'farm' && supply >= this.attackNeed() && (this.order === 'attack' || this.strongEnough(gather, target)))
+      return this.launchAttack(gather, target);
     // Healthy: on to the next camp, else home to heal and gather.
-    if (!this.lateGame() && this.groupHealth(gather) * 100 >= ARMY.roamMinHpPct && this.startCreep(gather, supply)) return;
+    const farming = this.order === 'farm' || !this.lateGame();
+    if (farming && this.groupHealth(gather) * 100 >= this.armyRules.roamMinHpPct && this.startCreep(gather, supply)) return;
     this.backToRally(gather);
   }
 
@@ -1483,10 +1558,12 @@ export class FactionBrain {
    * home when it is much stronger and close. True when the army got a new plan.
    */
   private startHunt(g: ArmyGroup): boolean {
-    if (!this.enemyArmyNear(g, ARMY.huntRange)) return false;
+    if (!this.enemyArmyNear(g, this.armyRules.huntRange)) return false;
+    const home = this.home!;
+    if (this.stayHome() && Math.hypot(this.enemy.x - home.mover.x, this.enemy.y - home.mover.y) > ORDERS.stayHomeRange) return false;
     const ours = this.groupStrength(g);
     const theirs = this.enemy.strength;
-    if (ours >= theirs * ARMY.huntStrengthRatio) {
+    if (ours >= theirs * this.armyRules.huntStrengthRatio) {
       g.neutrals = false;
       this.creepCamp = -1;
       this.goal(g, 'attack', this.enemy.x, this.enemy.y);
@@ -1497,7 +1574,7 @@ export class FactionBrain {
     }
     // Much stronger and close: no fight we can win out here.
     const d = Math.hypot(this.enemy.x - this.center.x, this.enemy.y - this.center.y);
-    if (theirs > ours * 1.5 && d < ARMY.huntRange * 0.6 && this.armyState !== 'gather') {
+    if (theirs > ours * 1.5 && d < this.armyRules.huntRange * 0.6 && this.armyState !== 'gather') {
       this.backToRally(g);
       return true;
     }
@@ -1506,12 +1583,23 @@ export class FactionBrain {
 
   private huntThink(g: ArmyGroup): void {
     const supply = this.groupSupply(g);
-    if (supply === 0 || this.sim.tick >= this.huntUntil || !this.enemyArmyNear(g, ARMY.huntRange)) {
-      // They are gone (dead, fled, out of sight): attack from here when strong enough, else on
-      // to a camp, else home.
+    if (supply === 0 || this.sim.tick >= this.huntUntil || !this.enemyArmyNear(g, this.armyRules.huntRange)) {
+      // They are gone (dead, fled, out of sight). Won with enough army left: push on to their
+      // base while they rebuild. Else attack from here when strong enough, else on to a camp,
+      // else home.
+      if (this.stayHome() || this.order === 'expand') return this.backToRally(g);
+      const health = this.groupHealth(g);
+      const beaten = this.order === 'auto' && this.huntSlot >= 0 ? this.fs.get(this.huntSlot) : null;
+      const theirHall = beaten && !beaten.defeated ? this.fs.halls(beaten)[0] : undefined;
+      if (theirHall && health >= 0.5 && supply * 100 >= this.attackNeed() * this.armyRules.pushAfterWinPct) {
+        this.launchAttack(g, theirHall);
+        this.doing = `Pushing on to ${this.colorName(theirHall.owner)} after a won fight`;
+        return;
+      }
       const target = this.pickEnemy();
-      if (target && supply >= this.attackNeed() && this.strongEnough(g, target)) return this.launchAttack(g, target);
-      if (supply && this.groupHealth(g) * 100 >= ARMY.roamMinHpPct && this.startCreep(g, supply)) return;
+      if (target && this.order !== 'farm' && supply >= this.attackNeed() && (this.order === 'attack' || this.strongEnough(g, target)))
+        return this.launchAttack(g, target);
+      if (supply && health * 100 >= this.armyRules.roamMinHpPct && this.startCreep(g, supply)) return;
       return this.backToRally(g);
     }
     if (this.enemy.strength > this.groupStrength(g) * 1.5) return this.backToRally(g);
@@ -1529,7 +1617,7 @@ export class FactionBrain {
   /** The attack army is at the building it attacks and fighting there. */
   private sieging(a: ArmyGroup): boolean {
     if (!this.army.center(a, this.center)) return false;
-    if (Math.hypot(this.center.x - a.targetX, this.center.y - a.targetY) > ARMY.siegeRange) return false;
+    if (Math.hypot(this.center.x - a.targetX, this.center.y - a.targetY) > this.armyRules.siegeRange) return false;
     for (const id of a.members) if (this.sim.get(id)?.targetId) return true;
     return false;
   }
@@ -1548,6 +1636,21 @@ export class FactionBrain {
       this.armyState = 'gather';
       return;
     }
+    // The players called the attack off (defend, build up, farm, expand): the army comes home.
+    if (this.order !== 'auto' && this.order !== 'attack') {
+      this.army.setGoal(a, 'retreat', this.rally.x, this.rally.y);
+      this.armyState = 'retreat';
+      return;
+    }
+    // Ordered to attack another kingdom: turn to it now.
+    if (this.order === 'attack' && this.attackSlot !== this.f.orderTarget) {
+      const t = this.pickEnemy();
+      if (t) {
+        this.attackTargetId = t.id;
+        this.attackSlot = t.owner;
+        this.retargetAt = sim.tick + AI.attack.retargetEverySec * TICK_RATE;
+      }
+    }
     // Hard: hurt units walk home and join the home group.
     if (this.rules.pullWoundedUnits && this.gather)
       for (const id of [...a.members]) {
@@ -1556,7 +1659,7 @@ export class FactionBrain {
       }
     // A maxed-out, rich faction does not retreat: its losses come back at once as new waves.
     const f = this.f;
-    const refills = f.supplyCap >= gameData.rules.economy.supplyCap && f.supplyCap - f.supplyUsed < 8 && f.gold > RICH_GOLD;
+    const refills = f.supplyUsed >= this.armyRules.trainUpToSupply - 8 && f.gold > RICH_GOLD;
     if (
       !refills &&
       !this.lateGame() &&
@@ -1583,8 +1686,13 @@ export class FactionBrain {
     }
     // On the way: an enemy army near us is fought first (when we can win), then on to the base.
     const far =
-      this.army.center(a, this.center) && Math.hypot(this.center.x - target.mover.x, this.center.y - target.mover.y) > ARMY.siegeRange;
-    if (far && this.enemyArmyNear(a, ARMY.huntRange * 0.7) && this.groupStrength(a) >= this.enemy.strength * ARMY.huntStrengthRatio) {
+      this.army.center(a, this.center) &&
+      Math.hypot(this.center.x - target.mover.x, this.center.y - target.mover.y) > this.armyRules.siegeRange;
+    if (
+      far &&
+      this.enemyArmyNear(a, this.armyRules.huntRange * 0.7) &&
+      this.groupStrength(a) >= this.enemy.strength * this.armyRules.huntStrengthRatio
+    ) {
       this.goal(a, 'attack', this.enemy.x, this.enemy.y);
       this.doing = `Fighting ${this.colorName(this.enemy.slot)}'s army`;
       return;
@@ -1648,29 +1756,40 @@ export class FactionBrain {
     for (const o of this.fs.list) {
       if (!o) continue;
       for (const h of this.fs.halls(o))
-        if (Math.hypot(h.mover.x - this.center.x, h.mover.y - this.center.y) < ARMY.fieldFightMinFromBase) return;
+        if (Math.hypot(h.mover.x - this.center.x, h.mover.y - this.center.y) < this.armyRules.fieldFightMinFromBase) return;
     }
     this.lastFieldFightAt = this.sim.tick;
     this.f.fieldFights++;
   }
 
-  /** The enemy faction to attack, by difficulty, and the building to walk to. */
+  /**
+   * The enemy faction to attack, by difficulty (or the players' attack order), and the building
+   * to walk to.
+   */
   private pickEnemy(): SimEntity | null {
     const fs = this.fs;
     const home = this.home!;
+    if (this.order === 'attack') {
+      const o = fs.get(this.f.orderTarget);
+      const hall = o && !o.defeated ? this.nearestHall(o) : null;
+      if (hall) return hall;
+    }
     let best: SimEntity | null = null,
       bestScore = Infinity;
     const hero = this.sim.heroes[this.f.slot];
     for (const o of fs.list) {
       if (!o || o.defeated || o.team === this.f.team) continue;
-      const halls = fs.halls(o);
-      const hall = halls[0];
+      const hall = this.nearestHall(o);
       if (!hall) continue;
       const d = Math.hypot(hall.mover.x - home.mover.x, hall.mover.y - home.mover.y);
       let score = d;
       if (this.rules.targetChoice !== 'closest') {
-        // Weaker factions (fewer buildings and army) are better targets.
+        // Weaker factions (fewer buildings and army) are better targets; a base whose army is
+        // away has a low defense. A kingdom another AI attacks now is a good target too (it
+        // fights on two sides), and we stick to our last target unless another is much better.
         score = d * 0.5 + (o.buildings.size * 4 + o.supplyUsed) * 2 + this.defenseOf(hall) * 3;
+        for (const other of fs.list) if (other && other !== this.f && !other.defeated && other.attacking === o.slot) score -= 40;
+        if (o.slot === this.attackSlot) score -= 25;
       }
       if (this.rules.targetChoice === 'weakest_or_where_our_hero_fights' && hero?.alive) {
         const near = Math.hypot(hero.mover.x - hall.mover.x, hero.mover.y - hall.mover.y);
@@ -1679,6 +1798,21 @@ export class FactionBrain {
       if (score < bestScore) {
         bestScore = score;
         best = hall;
+      }
+    }
+    return best;
+  }
+
+  /** The Town Hall of that faction nearest to our home. */
+  private nearestHall(o: FactionState): SimEntity | null {
+    const home = this.home!;
+    let best: SimEntity | null = null,
+      bestD = Infinity;
+    for (const h of this.fs.halls(o)) {
+      const d = Math.hypot(h.mover.x - home.mover.x, h.mover.y - home.mover.y);
+      if (d < bestD) {
+        bestD = d;
+        best = h;
       }
     }
     return best;
@@ -1726,13 +1860,19 @@ export class FactionBrain {
     const supply = this.gather ? this.groupSupply(this.gather) : 0;
     let army = '';
     if (this.armyState === 'creep') army = 'Army clearing camps';
-    else if (this.armyState === 'gather')
+    else if (this.armyState === 'gather' && (this.order === 'auto' || this.order === 'attack'))
       army = this.noEnemy
         ? 'No enemy left to attack'
         : supply < need
           ? `Next attack: ${supply}/${need} army supply`
           : 'Next attack: army on the way to the rally point';
     return [saving || (d.startsWith('Army clearing') ? '' : d) || 'Gathering gold and wood', army].filter(Boolean).join(' · ');
+  }
+
+  /** The status line, with the players' order in front when there is one. */
+  private statusWithOrder(): string {
+    const line = this.statusLine();
+    return this.f.order === 'auto' ? line : `Order: ${orderLabel(this.sim, this.f)} · ${line}`;
   }
 }
 
@@ -1760,6 +1900,7 @@ export class FactionAI {
           baseUnderAttack: () => b.threat,
           withArmy: () => b.armyOut(),
           withArmyFromLevel: HERO_RULES.followArmyFromLevel,
+          campArea: () => b.heroCampArea(),
         }),
       );
     }
@@ -1789,6 +1930,7 @@ export class FactionAI {
         // The player's hero levels with the army too: camps and fights with it, not alone.
         withArmy: () => brain?.armyOut() ?? null,
         withArmyFromLevel: HERO_RULES.followArmyFromLevel,
+        campArea: () => brain?.heroCampArea() ?? null,
         hires: true,
       }),
     );

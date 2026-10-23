@@ -1,25 +1,134 @@
 {
   "version": 1,
-  "notes": "Shops have endless stock. A hero must stand within 'useRange' to buy or sell. Anyone can use any shop.",
+  "notes": "Item shops and original mercenaries have endless stock. New selected mercenaries have shared tavern stocks that refill over simulation time.",
   "shops": [
     {
-      "id": "side_shop", "name": "Trader's Tent", "useRange": 6,
-      "items": ["healing_potion", "mana_potion", "scroll_of_return", "ward", "smoke_bomb",
-                "boots_of_haste", "iron_claws", "guard_ring", "swift_gloves",
-                "sage_cloak", "giant_belt", "thief_band", "life_pendant", "mana_stone"]
+      "id": "side_shop",
+      "name": "Trader's Tent",
+      "useRange": 6,
+      "items": [
+        "healing_potion",
+        "mana_potion",
+        "greater_healing_potion",
+        "greater_mana_potion",
+        "scroll_of_return",
+        "ward",
+        "smoke_bomb",
+        "boots_of_haste",
+        "iron_claws",
+        "guard_ring",
+        "swift_gloves",
+        "sage_cloak",
+        "giant_belt",
+        "thief_band",
+        "life_pendant",
+        "mana_stone",
+        "focus_crystal",
+        "hourglass_charm",
+        "mana_pearl",
+        "mage_ring",
+        "warding_cloth",
+        "chain_vest",
+        "heart_stone",
+        "iron_buckler",
+        "keen_dagger",
+        "healer_herbs"
+      ]
     },
     {
-      "id": "temple_market", "name": "Temple Market", "useRange": 6,
-      "items": ["healing_potion", "scroll_of_return", "ward", "ironwood_shield", "warblade", "royal_circlet"]
+      "id": "temple_market",
+      "name": "Temple Market",
+      "useRange": 6,
+      "items": [
+        "healing_potion",
+        "greater_healing_potion",
+        "greater_mana_potion",
+        "scroll_of_return",
+        "ward",
+        "ironwood_shield",
+        "warblade",
+        "royal_circlet",
+        "archmage_scepter",
+        "titan_aegis",
+        "kingslayer",
+        "sky_piercer",
+        "dawn_relic",
+        "crown_of_ages"
+      ]
     },
     {
-      "id": "tavern_mossy", "name": "Mossy Tankard", "useRange": 6, "items": [],
-      "mercenaries": ["ratling_cutthroat", "toadfolk_mystic"],
-      "notes": "A tavern: any hero hires mercenaries here with hero gold (rules.json hire limit). Its own model, not a shop tent."
+      "id": "relic_hall",
+      "name": "Relic Hall",
+      "useRange": 6,
+      "notes": "Two on the map, at the road junctions between neighbor bases that have no tavern: every base has one at about the same distance. Advanced items, made from parts.",
+      "items": [
+        "arcane_staff",
+        "arcane_staff_2",
+        "timeworn_tome",
+        "sages_hourglass",
+        "mana_font",
+        "crystal_heart",
+        "bloodletter_axe",
+        "berserker_mail",
+        "warlord_blade",
+        "giant_maul",
+        "bulwark_plate",
+        "bulwark_plate_2",
+        "spellward_cloak",
+        "troll_heart",
+        "guardian_shield",
+        "banner_of_valor",
+        "healers_censer",
+        "soul_lantern",
+        "elder_robe",
+        "marksman_bow",
+        "assassin_blade",
+        "swift_quiver",
+        "windrunner_boots",
+        "sage_treads"
+      ]
     },
     {
-      "id": "tavern_ember", "name": "Ember Kettle", "useRange": 6, "items": [],
-      "mercenaries": ["shellback_beetle", "ember_wisp"]
+      "id": "tavern_mossy",
+      "name": "Wayfarer Inn",
+      "useRange": 6,
+      "items": [],
+      "mercenaries": [
+        "ratling_cutthroat",
+        "toadfolk_mystic",
+        "badger_mercenary",
+        "fox_trailshot"
+      ],
+      "notes": "A tavern: any hero hires mercenaries here with hero gold (rules.json hire limit). Its own model, not a shop tent.",
+      "model": "wayfarer_inn",
+      "mercenaryStock": {
+        "badger_mercenary": {
+          "max": 2,
+          "restockSec": 70
+        },
+        "fox_trailshot": {
+          "max": 3,
+          "restockSec": 50
+        }
+      }
+    },
+    {
+      "id": "tavern_ember",
+      "name": "Cinder Inn",
+      "useRange": 6,
+      "items": [],
+      "mercenaries": [
+        "shellback_beetle",
+        "ember_wisp",
+        "coalback_porter"
+      ],
+      "model": "cinder_inn",
+      "mercenaryStock": {
+        "coalback_porter": {
+          "max": 2,
+          "restockSec": 80
+        }
+      }
     }
   ]
 }

@@ -30,7 +30,7 @@ describe('hero stats', () => {
     const md = readFileSync(join(DOCS, 'HEROES.md'), 'utf8');
     const table = md.slice(md.indexOf('<!-- table:hero-stats -->'), md.indexOf('<!-- /table -->', md.indexOf('<!-- table:hero-stats -->')));
     const rows = table.split('\n').filter((l) => /^\| (\*\*.+\*\*)? *\| (1|10) \|/.test(l));
-    expect(rows.length).toBe(16);
+    expect(rows.length).toBe(gameData.heroes.length * 2);
     let hero = gameData.heroes[0]!;
     for (const row of rows) {
       const cells = row.split('|').map((c) => c.trim());
@@ -75,7 +75,9 @@ describe('experience and respawn', () => {
     expect(levelForXp(199)).toBe(1);
     expect(levelForXp(200)).toBe(2);
     expect(levelForXp(5400)).toBe(10);
-    expect(levelForXp(99999)).toBe(10);
+    expect(levelForXp(11899)).toBe(14);
+    expect(levelForXp(11900)).toBe(15);
+    expect(levelForXp(99999)).toBe(15);
     expect(xpForKillingUnit(1)).toBe(25);
     expect(xpForKillingUnit(7)).toBe(190);
     expect(xpForKillingHero(1)).toBe(100);

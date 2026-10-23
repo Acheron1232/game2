@@ -8,8 +8,24 @@
       "role": "Caster, drain",
       "hotkeyOrder": 1,
       "mainStat": "intelligence",
-      "attributes": { "strength": [17, 1.8], "agility": [14, 1.2], "intelligence": [22, 3.0] },
-      "baseDamage": [6, 12],
+      "attributes": {
+        "strength": [
+          17,
+          1.8
+        ],
+        "agility": [
+          14,
+          1.2
+        ],
+        "intelligence": [
+          22,
+          3.0
+        ]
+      },
+      "baseDamage": [
+        6,
+        12
+      ],
       "baseArmor": 1,
       "attackCooldown": 1.9,
       "attackRange": 6,
@@ -17,7 +33,12 @@
       "moveSpeed": 3.0,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["blood_bolt", "bleed", "crimson_pact", "blood_moon"],
+      "abilities": [
+        "blood_bolt",
+        "bleed",
+        "crimson_pact",
+        "blood_moon"
+      ],
       "look": {
         "silhouette": "Tall thin woman, long crooked staff topped with a red crystal, hood with horns, ragged long dress.",
         "palette": "Dark red, black, bone white, glowing red crystal.",
@@ -31,8 +52,24 @@
       "role": "Melee fighter",
       "hotkeyOrder": 2,
       "mainStat": "agility",
-      "attributes": { "strength": [19, 2.2], "agility": [22, 2.6], "intelligence": [14, 1.4] },
-      "baseDamage": [5, 11],
+      "attributes": {
+        "strength": [
+          19,
+          2.2
+        ],
+        "agility": [
+          22,
+          2.6
+        ],
+        "intelligence": [
+          14,
+          1.4
+        ]
+      },
+      "baseDamage": [
+        5,
+        11
+      ],
       "baseArmor": 2,
       "attackCooldown": 1.6,
       "attackRange": 1.2,
@@ -40,7 +77,12 @@
       "moveSpeed": 3.2,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["sweep", "iron_stance", "flurry", "sky_pillar"],
+      "abilities": [
+        "sweep",
+        "iron_stance",
+        "flurry",
+        "sky_pillar"
+      ],
       "look": {
         "silhouette": "Broad monk-like fighter, long iron-capped staff held across the body, topknot, big wrapped fists, bare arms.",
         "palette": "Tan skin, brown and bronze, iron grey staff.",
@@ -54,8 +96,24 @@
       "role": "Flying ranged bruiser",
       "hotkeyOrder": 3,
       "mainStat": "strength",
-      "attributes": { "strength": [23, 2.6], "agility": [14, 1.5], "intelligence": [15, 1.6] },
-      "baseDamage": [6, 12],
+      "attributes": {
+        "strength": [
+          23,
+          2.6
+        ],
+        "agility": [
+          14,
+          1.5
+        ],
+        "intelligence": [
+          15,
+          1.6
+        ]
+      },
+      "baseDamage": [
+        6,
+        12
+      ],
       "baseArmor": 2,
       "attackCooldown": 1.9,
       "attackRange": 5,
@@ -63,7 +121,12 @@
       "moveSpeed": 3.0,
       "movementLayer": "lowAir",
       "hpBonus": -50,
-      "abilities": ["fire_breath", "wing_gust", "dragon_scales", "inferno_dive"],
+      "abilities": [
+        "fire_breath",
+        "wing_gust",
+        "dragon_scales",
+        "inferno_dive"
+      ],
       "look": {
         "silhouette": "Young dragon with very big wings, long neck and tail, horns swept back. Flies about 3 units above the ground and casts a clear shadow.",
         "palette": "Copper-orange scales, cream belly, dark horns, fire glow in the mouth.",
@@ -77,8 +140,24 @@
       "role": "Tank",
       "hotkeyOrder": 4,
       "mainStat": "strength",
-      "attributes": { "strength": [25, 3.0], "agility": [10, 1.0], "intelligence": [13, 1.2] },
-      "baseDamage": [7, 15],
+      "attributes": {
+        "strength": [
+          25,
+          3.0
+        ],
+        "agility": [
+          10,
+          1.0
+        ],
+        "intelligence": [
+          13,
+          1.2
+        ]
+      },
+      "baseDamage": [
+        7,
+        15
+      ],
       "baseArmor": 3,
       "attackCooldown": 2.0,
       "attackRange": 1.4,
@@ -86,7 +165,12 @@
       "moveSpeed": 2.8,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["boulder_toss", "stone_skin", "tremor", "mountain_form"],
+      "abilities": [
+        "boulder_toss",
+        "stone_skin",
+        "tremor",
+        "mountain_form"
+      ],
       "look": {
         "silhouette": "Huge rounded rock body, tiny head sunk into the shoulders, very long arms with boulder fists, moss on top, glowing rune eyes.",
         "palette": "Warm grey stone, green moss, blue rune glow.",
@@ -100,8 +184,24 @@
       "role": "Support",
       "hotkeyOrder": 5,
       "mainStat": "intelligence",
-      "attributes": { "strength": [16, 1.6], "agility": [13, 1.2], "intelligence": [21, 3.0] },
-      "baseDamage": [4, 10],
+      "attributes": {
+        "strength": [
+          16,
+          1.6
+        ],
+        "agility": [
+          13,
+          1.2
+        ],
+        "intelligence": [
+          21,
+          3.0
+        ]
+      },
+      "baseDamage": [
+        4,
+        10
+      ],
       "baseArmor": 1,
       "attackCooldown": 1.9,
       "attackRange": 6,
@@ -109,7 +209,12 @@
       "moveSpeed": 3.0,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["radiant_touch", "blessing", "sanctuary", "dawn_shield"],
+      "abilities": [
+        "radiant_touch",
+        "blessing",
+        "sanctuary",
+        "dawn_shield"
+      ],
       "look": {
         "silhouette": "Robed priestess with a big round sun halo behind the head, short mace with a glowing sun disk, long sleeves.",
         "palette": "White and gold robes, pale blue trim, warm yellow light.",
@@ -123,8 +228,24 @@
       "role": "Ranged magic damage",
       "hotkeyOrder": 6,
       "mainStat": "agility",
-      "attributes": { "strength": [15, 1.6], "agility": [22, 2.8], "intelligence": [17, 1.8] },
-      "baseDamage": [4, 10],
+      "attributes": {
+        "strength": [
+          15,
+          1.6
+        ],
+        "agility": [
+          22,
+          2.8
+        ],
+        "intelligence": [
+          17,
+          1.8
+        ]
+      },
+      "baseDamage": [
+        4,
+        10
+      ],
       "baseArmor": 1,
       "attackCooldown": 1.6,
       "attackRange": 7,
@@ -132,7 +253,12 @@
       "moveSpeed": 3.1,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["arcane_arrow", "blink", "mana_mark", "arcane_storm"],
+      "abilities": [
+        "arcane_arrow",
+        "blink",
+        "mana_mark",
+        "arcane_storm"
+      ],
       "look": {
         "silhouette": "Slim agile woman, big curved bow made of light, short cape, light leather armor, long ponytail.",
         "palette": "Deep purple and silver, cyan-violet magic glow on the bow and arrows.",
@@ -146,8 +272,24 @@
       "role": "Mobile bruiser",
       "hotkeyOrder": 7,
       "mainStat": "strength",
-      "attributes": { "strength": [22, 2.6], "agility": [17, 1.8], "intelligence": [14, 1.4] },
-      "baseDamage": [6, 12],
+      "attributes": {
+        "strength": [
+          22,
+          2.6
+        ],
+        "agility": [
+          17,
+          1.8
+        ],
+        "intelligence": [
+          14,
+          1.4
+        ]
+      },
+      "baseDamage": [
+        6,
+        12
+      ],
       "baseArmor": 2,
       "attackCooldown": 1.8,
       "attackRange": 1.5,
@@ -155,7 +297,12 @@
       "moveSpeed": 3.4,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["spear_throw", "trample", "herd_call", "great_charge"],
+      "abilities": [
+        "spear_throw",
+        "trample",
+        "herd_call",
+        "great_charge"
+      ],
       "look": {
         "silhouette": "Horse body with a strong human upper body, long spear, war paint, braided mane, round shield on the back.",
         "palette": "Chestnut horse body, tanned skin, leather and bone ornaments.",
@@ -169,8 +316,24 @@
       "role": "Ranger, nature",
       "hotkeyOrder": 8,
       "mainStat": "agility",
-      "attributes": { "strength": [16, 1.8], "agility": [20, 2.4], "intelligence": [18, 2.0] },
-      "baseDamage": [5, 11],
+      "attributes": {
+        "strength": [
+          16,
+          1.8
+        ],
+        "agility": [
+          20,
+          2.4
+        ],
+        "intelligence": [
+          18,
+          2.0
+        ]
+      },
+      "baseDamage": [
+        5,
+        11
+      ],
       "baseArmor": 1,
       "attackCooldown": 1.7,
       "attackRange": 7,
@@ -178,12 +341,283 @@
       "moveSpeed": 3.1,
       "movementLayer": "ground",
       "hpBonus": 0,
-      "abilities": ["vine_snare", "forest_spirit", "natures_gift", "wrath_of_the_grove"],
+      "abilities": [
+        "vine_snare",
+        "forest_spirit",
+        "natures_gift",
+        "wrath_of_the_grove"
+      ],
       "look": {
         "silhouette": "Tall elf with long pointed ears, leaf cloak, wooden longbow with leaves growing on it, antler circlet.",
         "palette": "Forest green, bark brown, pale skin, small golden-green glow.",
         "teamColorParts": "Leaf cloak edges, chest sash, bow string glow.",
         "scale": 1.15
+      }
+    },
+    {
+      "id": "thorn_marshal",
+      "name": "Thorn Marshal",
+      "role": "Front, control",
+      "hotkeyOrder": 9,
+      "mainStat": "strength",
+      "attributes": {
+        "strength": [
+          22,
+          2.6
+        ],
+        "agility": [
+          17,
+          1.8
+        ],
+        "intelligence": [
+          14,
+          1.4
+        ]
+      },
+      "baseDamage": [
+        6,
+        12
+      ],
+      "baseArmor": 2,
+      "attackCooldown": 1.8,
+      "attackRange": 1.6,
+      "projectileSpeed": 0,
+      "moveSpeed": 3,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": [
+        "briar_lance",
+        "ironbark_mantle",
+        "grove_vigor",
+        "thorn_dominion"
+      ],
+      "look": {
+        "silhouette": "Thorn Marshal with distinct hand-painted equipment and a detailed hero silhouette.",
+        "palette": "Ivory fur, bronze, forest green.",
+        "teamColorParts": "Shoulder facings, sash and cloth.",
+        "scale": 1.2
+      }
+    },
+    {
+      "id": "grave_bellkeeper",
+      "name": "Grave Bellkeeper",
+      "role": "Caster, drain",
+      "hotkeyOrder": 10,
+      "mainStat": "intelligence",
+      "attributes": {
+        "strength": [
+          17,
+          1.8
+        ],
+        "agility": [
+          14,
+          1.2
+        ],
+        "intelligence": [
+          22,
+          3.0
+        ]
+      },
+      "baseDamage": [
+        6,
+        12
+      ],
+      "baseArmor": 1,
+      "attackCooldown": 1.9,
+      "attackRange": 6,
+      "projectileSpeed": 14,
+      "moveSpeed": 3.0,
+      "movementLayer": "ground",
+      "hpBonus": 40,
+      "abilities": [
+        "dread_toll",
+        "mourning_field",
+        "soul_choir",
+        "last_toll"
+      ],
+      "look": {
+        "silhouette": "Grave Bellkeeper with distinct hand-painted equipment and a detailed hero silhouette.",
+        "palette": "Deep violet robes, aged bronze, teal spirits.",
+        "teamColorParts": "Shoulder facings, sash and cloth.",
+        "scale": 1.2
+      }
+    },
+    {
+      "id": "tidebreaker",
+      "name": "Tidebreaker",
+      "role": "Front, assault",
+      "hotkeyOrder": 11,
+      "mainStat": "strength",
+      "attributes": {
+        "strength": [
+          25,
+          3.0
+        ],
+        "agility": [
+          10,
+          1.0
+        ],
+        "intelligence": [
+          13,
+          1.2
+        ]
+      },
+      "baseDamage": [
+        7,
+        15
+      ],
+      "baseArmor": 3,
+      "attackCooldown": 2.0,
+      "attackRange": 1.4,
+      "projectileSpeed": 0,
+      "moveSpeed": 2.8,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": [
+        "anchor_hurl",
+        "breaker_wave",
+        "deep_hide",
+        "tidal_rush"
+      ],
+      "look": {
+        "silhouette": "Tidebreaker with distinct hand-painted equipment and a detailed hero silhouette.",
+        "palette": "Grey-blue hide, sea blue, coral and bronze.",
+        "teamColorParts": "Shoulder facings, sash and cloth.",
+        "scale": 1.35
+      }
+    },
+    {
+      "id": "lantern_monk",
+      "name": "Lantern Monk",
+      "role": "Support, melee",
+      "hotkeyOrder": 12,
+      "mainStat": "agility",
+      "attributes": {
+        "strength": [
+          19,
+          2.2
+        ],
+        "agility": [
+          22,
+          2.6
+        ],
+        "intelligence": [
+          19,
+          2.2
+        ]
+      },
+      "baseDamage": [
+        5,
+        11
+      ],
+      "baseArmor": 2,
+      "attackCooldown": 1.6,
+      "attackRange": 1.2,
+      "projectileSpeed": 0,
+      "moveSpeed": 3.2,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": [
+        "lantern_mend",
+        "bamboo_sweep",
+        "guiding_light",
+        "lantern_refuge"
+      ],
+      "look": {
+        "silhouette": "Lantern Monk with distinct hand-painted equipment and a detailed hero silhouette.",
+        "palette": "Red panda fur, jade cloth, amber lantern.",
+        "teamColorParts": "Shoulder facings, sash and cloth.",
+        "scale": 1.2
+      }
+    },
+    {
+      "id": "obsidian_heart",
+      "name": "Obsidian Heart",
+      "role": "Front, volcanic caster",
+      "hotkeyOrder": 13,
+      "mainStat": "strength",
+      "attributes": {
+        "strength": [
+          25,
+          3.0
+        ],
+        "agility": [
+          10,
+          1.0
+        ],
+        "intelligence": [
+          18,
+          2.0
+        ]
+      },
+      "baseDamage": [
+        7,
+        15
+      ],
+      "baseArmor": 3,
+      "attackCooldown": 2.0,
+      "attackRange": 1.4,
+      "projectileSpeed": 0,
+      "moveSpeed": 2.8,
+      "movementLayer": "ground",
+      "hpBonus": 0,
+      "abilities": [
+        "magma_shard",
+        "heat_shell",
+        "furnace_pulse",
+        "caldera_drop"
+      ],
+      "look": {
+        "silhouette": "Obsidian Heart with distinct hand-painted equipment and a detailed hero silhouette.",
+        "palette": "Black obsidian, orange molten core.",
+        "teamColorParts": "Shoulder facings, sash and cloth.",
+        "scale": 1.35
+      }
+    },
+    {
+      "id": "earth_spirit",
+      "name": "Earth Spirit",
+      "role": "Stone combos, control",
+      "hotkeyOrder": 14,
+      "mainStat": "strength",
+      "attributes": {
+        "strength": [
+          22,
+          3.2
+        ],
+        "agility": [
+          17,
+          1.7
+        ],
+        "intelligence": [
+          18,
+          2.1
+        ]
+      },
+      "baseDamage": [
+        9,
+        15
+      ],
+      "baseArmor": 2,
+      "attackCooldown": 1.7,
+      "attackRange": 1.5,
+      "projectileSpeed": 0,
+      "moveSpeed": 3.1,
+      "movementLayer": "ground",
+      "hpBonus": 40,
+      "abilities": [
+        "boulder_smash",
+        "rolling_boulder",
+        "geomagnetic_grip",
+        "magnetize",
+        "stone_remnant",
+        "enchant_remnant"
+      ],
+      "look": {
+        "silhouette": "Broad faceted stone monk, olive sash, bronze bands, jade seams and a double stone-ended staff.",
+        "palette": "Slate stone, olive cloth, aged bronze, jade light.",
+        "teamColorParts": "Small belt cloth tabs.",
+        "scale": 1.3
       }
     }
   ]

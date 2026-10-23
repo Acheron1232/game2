@@ -28,13 +28,59 @@ export function hirePrice(unit: number): number | null {
 }
 
 /** A map tavern that hires this mercenary, with the hero in its use range, or null. */
-export function tavernInRange(hero: SimEntity, unitId: string): { x: number; y: number } | null {
-  for (const s of gameData.map.shops) {
+export function tavernInRange(hero: SimEntity, unitId: string): { x: number; y: number; shop: number } | null {
+  for (const [index, s] of gameData.map.shops.entries()) {
     const shop = gameData.shops.find((d) => d.id === s.type) as { useRange: number; mercenaries?: string[] } | undefined;
     if (!shop?.mercenaries?.includes(unitId)) continue;
-    if (Math.hypot(s.pos[0] - hero.mover.x, s.pos[1] - hero.mover.y) <= shop.useRange) return { x: s.pos[0], y: s.pos[1] };
+    if (Math.hypot(s.pos[0] - hero.mover.x, s.pos[1] - hero.mover.y) <= shop.useRange) return { x: s.pos[0], y: s.pos[1], shop: index };
   }
   return null;
+}
+
+interface StockRule {
+  max: number;
+  restockSec: number;
+}
+export interface HireStockView {
+  shop: number;
+  unit: number;
+  count: number;
+  readyAt: number;
+}
+const STOCKS = gameData.map.shops.flatMap((s, shop) => {
+  const def = gameData.shops.find((d) => d.id === s.type);
+  const rules = def?.['mercenaryStock'] as Record<string, StockRule> | undefined;
+  return Object.entries(rules ?? {}).map(([id, rule]) => ({ shop, unit: gameData.units.findIndex((u) => u.id === id), ...rule }));
+});
+
+/** Refresh lazily from simulation time. No wall-clock timers and no per-tick stock work. */
+export function tavernStockAt(sim: MatchSim, shop: number, unit: number): { count: number; readyAt: number } | null {
+  const rule = STOCKS.find((s) => s.shop === shop && s.unit === unit);
+  if (!rule) return null;
+  const key = `${shop}:${unit}`;
+  let state = sim.tavernStock.get(key);
+  if (!state) {
+    state = { count: rule.max, readyAt: 0 };
+    sim.tavernStock.set(key, state);
+  }
+  const interval = Math.max(1, Math.round(rule.restockSec * 20));
+  if (state.readyAt && sim.tick >= state.readyAt) {
+    const added = 1 + Math.floor((sim.tick - state.readyAt) / interval);
+    state.count = Math.min(rule.max, state.count + added);
+    state.readyAt = state.count === rule.max ? 0 : state.readyAt + added * interval;
+  }
+  return state;
+}
+
+export function writeHireStockView(sim: MatchSim, into: HireStockView[]): void {
+  into.length = STOCKS.length;
+  for (let i = 0; i < STOCKS.length; i++) {
+    const rule = STOCKS[i]!,
+      state = tavernStockAt(sim, rule.shop, rule.unit)!;
+    const row = into[i] ?? (into[i] = { shop: rule.shop, unit: rule.unit, count: 0, readyAt: 0 });
+    row.count = state.count;
+    row.readyAt = state.readyAt;
+  }
 }
 
 /**
@@ -84,7 +130,9 @@ export function hireProblem(sim: MatchSim, hero: SimEntity, unit: number): strin
   if (!hero.alive) return 'dead';
   const def = gameData.units[unit]!;
   if (def.group === 'mercenary') {
-    if (!tavernInRange(hero, def.id)) return 'range';
+    const tavern = tavernInRange(hero, def.id);
+    if (!tavern) return 'range';
+    if (tavernStockAt(sim, tavern.shop, unit)?.count === 0) return 'stock';
   } else {
     if (!hireBuildingInRange(sim, hero, f, def.id)) return 'range';
     if (sim.factions!.missing(f, def.requires).length) return 'needs';
@@ -101,6 +149,14 @@ export function hire(sim: MatchSim, hero: SimEntity, unit: number): SimEntity {
   // One of the faction's buildings, or a tavern (mercenaries).
   const b = def.group === 'mercenary' ? null : hireBuildingInRange(sim, hero, f, def.id);
   const at = b ? { x: b.mover.x, y: b.mover.y } : tavernInRange(hero, def.id)!;
+  if (!b && 'shop' in at) {
+    const state = tavernStockAt(sim, at.shop as number, unit);
+    const rule = STOCKS.find((r) => r.shop === at.shop && r.unit === unit);
+    if (state && rule) {
+      state.count = Math.max(0, state.count - 1);
+      if (!state.readyAt) state.readyAt = sim.tick + Math.round(rule.restockSec * 20);
+    }
+  }
   const half = b ? b.building!.w / 2 + 1 : TAVERN_EXIT;
   hero.heroState!.gold -= hirePrice(unit)!;
   // Out on the hero's side of the building.

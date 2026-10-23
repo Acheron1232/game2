@@ -1,10 +1,11 @@
+import { updateEarthSpirit } from './earth-spirit';
 // The match simulation: entities, orders, combat, abilities and one fixed tick.
 // Runs on the server (in the match worker). Plain logic: no network, no timers, no DOM.
 // Phase 7a: attacks, projectiles, death and respawn, neutral camps, bounty, XP and levels.
 // Phase 7b: abilities, buffs and debuffs, auras, zones, summons, monster skills.
 // Phase 7c: items, shops, items on the ground, camp drops, fountains, uphill misses.
 
-import { gameData, type HeroDef } from '../data/index';
+import { gameData, type HeroDef, type ItemStatKey } from '../data/index';
 import { findPath, groundLevel, isWalkable, nearestWalkable, type NavGrid } from '../nav/nav-grid';
 import {
   castProblem,
@@ -13,9 +14,12 @@ import {
   learn,
   monsterCast,
   monsterPassives,
+  unitCast,
+  unitSkillProblem,
   orderCast,
   refreshPassives,
   updateAuras,
+  placeInstantStone,
   updateCast,
   type CastTarget,
 } from './abilities';
@@ -25,6 +29,7 @@ import { applyMove, CommandType, isPredicted, type GameCommand } from './command
 import { entityTypeIndex, ENTITY_TYPES, isHeroType, statsOf } from './entity-types';
 import { applyUpgrades, gatherFactor, trainTimeFactor } from './faction/upgrades';
 import { Factions, type BuildingState, type Difficulty, type FactionState, type WorkerJob } from './faction/faction';
+import type { FactionTuning } from './faction/tuning';
 import type { TerrainGrid } from '../map/terrain';
 import type { TreeList } from '../nav/trees';
 import { DamageKind, EventList, EventType } from './events';
@@ -35,6 +40,7 @@ import {
   isInstantItemCommand,
   isItemCommand,
   itemBonus,
+  itemStat,
   itemCommandProblem,
   itemsOnHit,
   nextGroundId,
@@ -70,6 +76,7 @@ import { qPos } from '../protocol/game';
 import { HIRE, hire, hireProblem } from './faction/hire';
 import { CATAPULT_TYPE, fightsBack, pickTarget } from './faction/targeting';
 import { buyUpgrade, upgradeProblem } from './faction/hall-shop';
+import { giveKingdomOrder, kingdomOrderProblem } from './faction/orders';
 
 /** Focus fire per AI difficulty (ai.json). */
 const FOCUS_FIRE = Object.fromEntries(
@@ -133,6 +140,11 @@ export interface MatchSetup {
    * That second hero takes the place of the kingdom's Hero Shrine hero.
    */
   teams?: boolean;
+  /**
+   * Tools only (self-play tuning, tools/ai/tune.ts): ai.json numbers changed for one faction,
+   * by faction slot. Never set from the lobby or the protocol.
+   */
+  aiTuning?: Record<number, FactionTuning>;
 }
 
 export type OrderKind = 'idle' | 'move' | 'attack' | 'attackMove' | 'follow' | 'hold' | 'cast' | 'item';
@@ -153,6 +165,8 @@ export interface HeroState {
   abilityLevels: number[];
   /** 6 slots; null = empty */
   inventory: (ItemStack | null)[];
+  /** what the carried items add (itemBonus), kept up to date by refreshStats */
+  bonus: Partial<Record<ItemStatKey, number>>;
   /** item cooldown group (or item id) -> tick it is ready again */
   itemCooldowns: Map<string, number>;
   /** Phoenix Feather: come back here with this share of health, instead of at the base */
@@ -231,6 +245,8 @@ export interface SimEntity {
   chaseX: number;
   chaseY: number;
   lastHitBy: number;
+  /** tick of that last hit */
+  lastHitAt: number;
   /** neutral camp index, -1 for others */
   camp: number;
   returning: boolean;
@@ -345,6 +361,8 @@ export class MatchSim {
   readonly zones: Zone[] = [];
   /** items lying on the ground (camp drops, dropped by heroes) */
   readonly groundItems: GroundItem[] = [];
+  /** Limited tavern recruits, shared by all heroes in this match. Key: map shop / unit index. */
+  readonly tavernStock = new Map<string, { count: number; readyAt: number }>();
   /** Can this team see the entity? Set by the server from its vision; used to check commands. */
   canSee: (team: number, e: SimEntity) => boolean = () => true;
   /** Can this team see this point? (items on the ground) */
@@ -402,8 +420,12 @@ export class MatchSim {
       skillPoints: 1,
       gold: R.gold.startGold,
       respawnAt: 0,
-      abilityLevels: [0, 0, 0, 0],
+      abilityLevels: def.abilities.map((id) => {
+        const a = gameData.abilities.find((a) => a.id === id)!;
+        return a.params['innate'] && Number(a.params['unlockLevel'] ?? 1) <= 1 ? 1 : 0;
+      }),
       inventory: emptyInventory(),
+      bonus: {},
       itemCooldowns: new Map(),
       revive: null,
       stats: { kills: 0, deaths: 0, goldEarned: 0, camps: 0 },
@@ -460,6 +482,7 @@ export class MatchSim {
       chaseX: 0,
       chaseY: 0,
       lastHitBy: 0,
+      lastHitAt: 0,
       camp: -1,
       returning: false,
       homeX: x,
@@ -467,7 +490,7 @@ export class MatchSim {
       homeFacing: mover.facing,
       passive: false,
       thinkAt: 0,
-      cooldowns: [0, 0, 0, 0],
+      cooldowns: Array.from({ length: 6 }, () => 0),
       cast: null,
       forced: null,
       leaderId: 0,
@@ -543,10 +566,13 @@ export class MatchSim {
   private isValid(slot: number, cmd: GameCommand): boolean {
     const hero = this.heroes[slot];
     if (!hero) return false;
-    if (cmd.type === CommandType.Learn) return cmd.slot >= 0 && cmd.slot < 4 && (hero.heroState?.skillPoints ?? 0) > 0;
+    if (cmd.type === CommandType.Learn)
+      return cmd.slot >= 0 && cmd.slot < (hero.heroState?.def.abilities.length ?? 0) && (hero.heroState?.skillPoints ?? 0) > 0;
     if (isItemCommand(cmd)) return itemCommandProblem(this, hero, cmd) === null;
     if (cmd.type === CommandType.BuyUpgrade) return upgradeProblem(this, hero, cmd.upgrade) === null;
     if (cmd.type === CommandType.Hire) return hireProblem(this, hero, cmd.unit) === null;
+    if (cmd.type === CommandType.KingdomOrder) return kingdomOrderProblem(this, hero, cmd.order, cmd.target) === null;
+    if (cmd.type === CommandType.UnitCast) return unitSkillProblem(this, hero, cmd.unit, cmd.skill, cmd.target) === null;
     if (!hero.alive) return false;
     switch (cmd.type) {
       case CommandType.Move:
@@ -569,7 +595,9 @@ export class MatchSim {
       }
       case CommandType.Cast:
         return (
-          cmd.slot >= 0 && cmd.slot < 4 && castProblem(this, hero, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y }) === null
+          cmd.slot >= 0 &&
+          cmd.slot < (hero.heroState?.def.abilities.length ?? 0) &&
+          castProblem(this, hero, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y }) === null
         );
       case CommandType.Stop:
       case CommandType.Hold:
@@ -608,6 +636,20 @@ export class MatchSim {
     }
     if (cmd.type === CommandType.Hire) {
       if (!hireProblem(this, e, cmd.unit)) hire(this, e, cmd.unit);
+      return;
+    }
+    // Orders to the kingdom AI do not touch the hero (it may be dead too).
+    if (cmd.type === CommandType.KingdomOrder) {
+      if (!kingdomOrderProblem(this, e, cmd.order, cmd.target)) giveKingdomOrder(this, e, cmd.order, cmd.target);
+      return;
+    }
+    // A skill of an own unit: the hero keeps doing what it does (it may be dead too).
+    if (cmd.type === CommandType.UnitCast) {
+      if (!unitSkillProblem(this, e, cmd.unit, cmd.skill, cmd.target)) unitCast(this, cmd.unit, cmd.skill, cmd.target);
+      return;
+    }
+    if (cmd.type === CommandType.Cast && e.heroState?.def.abilities[cmd.slot] === 'stone_remnant') {
+      placeInstantStone(this, e, cmd.slot, { kind: cmd.target, id: cmd.id, x: cmd.x, y: cmd.y });
       return;
     }
     // A new order stops a cast, a channel or an item order that has not happened yet.
@@ -680,7 +722,11 @@ export class MatchSim {
     this.events.clear();
     for (const q of this.queue) {
       const hero = this.heroes[q.slot];
-      const deadOk = q.cmd?.type === CommandType.Learn || q.cmd?.type === CommandType.SwapItems;
+      const deadOk =
+        q.cmd?.type === CommandType.Learn ||
+        q.cmd?.type === CommandType.SwapItems ||
+        q.cmd?.type === CommandType.KingdomOrder ||
+        q.cmd?.type === CommandType.UnitCast;
       if (hero && q.cmd && (hero.alive || deadOk)) this.runCommand(hero, q.cmd);
       this.lastSeq[q.slot] = q.seq;
       this.lastSeqTick[q.slot] = this.tick;
@@ -693,6 +739,7 @@ export class MatchSim {
 
     this.factions?.blockers.refresh();
     this.grid.rebuild(this.entities, (e) => e.alive && !e.hidden);
+    updateEarthSpirit(this);
     this.updateBuffs();
     updateAuras(this);
     updateCamps(this);
@@ -859,7 +906,8 @@ export class MatchSim {
       return;
     }
     const lt = leader.targetId ? this.byId.get(leader.targetId) : undefined;
-    if (lt && lt.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer)) e.targetId = lt.id;
+    if (lt && lt.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer) && (!e.stats.buildingsOnly || !!lt.building))
+      e.targetId = lt.id;
     else if (!e.targetId && due) e.targetId = this.acquire(e, ACQUIRE_RANGE, false);
     if (!e.targetId && due && Math.hypot(leader.mover.x - e.mover.x, leader.mover.y - e.mover.y) > 4)
       this.moveTo(e, leader.mover.x, leader.mover.y);
@@ -897,7 +945,7 @@ export class MatchSim {
       else if (fighting) {
         // Nothing near us: help the hero with its target.
         const lt = this.byId.get(leader.targetId);
-        if (lt?.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer)) e.targetId = lt.id;
+        if (lt?.alive && canAttackLayer(e.stats.canHitAir, lt.stats.layer) && (!e.stats.buildingsOnly || !!lt.building)) e.targetId = lt.id;
       }
       if (e.targetId) return;
     }
@@ -935,7 +983,14 @@ export class MatchSim {
     let best = 0,
       bestD = Infinity;
     this.grid.query(e.mover.x, e.mover.y, range, (o, d2) => {
-      if (o === e || o.invulnerable || !this.isEnemy(e, o) || !canAttackLayer(e.stats.canHitAir, o.stats.layer) || hiddenFrom(o, e.team))
+      if (
+        o === e ||
+        o.invulnerable ||
+        !this.isEnemy(e, o) ||
+        (e.stats.buildingsOnly && !o.building) ||
+        !canAttackLayer(e.stats.canHitAir, o.stats.layer) ||
+        hiddenFrom(o, e.team)
+      )
         return;
       if (o.team === NEUTRAL_TEAM && !takeNeutrals) {
         const ot = o.targetId ? this.byId.get(o.targetId) : undefined;
@@ -980,7 +1035,15 @@ export class MatchSim {
   engage(e: SimEntity): void {
     const t = this.byId.get(e.targetId);
     // An enemy that turned invisible can not be attacked any more.
-    if (!t || !t.alive || t.invulnerable || t.hidden || !canAttackLayer(e.stats.canHitAir, t.stats.layer) || hiddenFrom(t, e.team)) {
+    if (
+      !t ||
+      !t.alive ||
+      t.invulnerable ||
+      t.hidden ||
+      (e.stats.buildingsOnly && !t.building) ||
+      !canAttackLayer(e.stats.canHitAir, t.stats.layer) ||
+      hiddenFrom(t, e.team)
+    ) {
       e.targetId = 0;
       e.swing = 0;
       return;
@@ -1031,7 +1094,10 @@ export class MatchSim {
   private hit(e: SimEntity, t: SimEntity): void {
     e.swing = 2;
     const roll = () => this.rng.int(Math.round(e.stats.damageMin), Math.round(e.stats.damageMax));
-    const raw = roll();
+    let raw = roll();
+    // Critical hit (items): rules.json items.critMultiplier x damage.
+    const crit = e.heroState ? itemStat(e.heroState, 'critChancePct') : 0;
+    if (crit > 0 && this.rng.next() * 100 < crit) raw = Math.round(raw * gameData.rules.items.critMultiplier);
     const miss = this.uphillMiss(e, t);
     if (e.stats.projectileSpeed > 0) {
       const p: Projectile = {
@@ -1213,18 +1279,22 @@ export class MatchSim {
 
   private stepForced(e: SimEntity): void {
     const f = e.forced!;
+    if (f.kind === 'charge' && (this.isRooted(e) || this.isStunned(e))) {
+      e.forced = null;
+      return;
+    }
     const t = Math.min(1, (this.tick - f.start) / (f.end - f.start));
     const x = f.fromX + (f.toX - f.fromX) * t,
       y = f.fromY + (f.toY - f.fromY) * t;
     // A push stops at trees, cliffs and buildings.
-    if (f.kind === 'knock' && !this.isFlying(e) && !isWalkable(this.nav, x, y)) {
+    if ((f.kind === 'knock' || f.kind === 'charge') && !this.isFlying(e) && !isWalkable(this.nav, x, y)) {
       e.forced = null;
       return;
     }
     e.mover.x = x;
     e.mover.y = y;
     f.onTick?.();
-    if (t >= 1) {
+    if (e.forced === f && this.tick >= f.end) {
       e.forced = null;
       f.onEnd?.();
     }
@@ -1247,7 +1317,7 @@ export class MatchSim {
     if (!s) return;
     // Life steal: Crimson Pact aura and Vampire Fang.
     if (s.alive && dealt > 0) {
-      const ls = sumBuffs(s.buffs, 'lifeStealPct') + (s.heroState ? (itemBonus(s.heroState.inventory).lifeStealPct ?? 0) : 0);
+      const ls = sumBuffs(s.buffs, 'lifeStealPct') + (s.heroState?.bonus.lifeStealPct ?? 0);
       if (ls > 0) this.heal(s, (dealt * ls) / 100, source);
     }
     // Frost Orb slow, Storm Hammer lightning.
@@ -1258,24 +1328,46 @@ export class MatchSim {
   spellHit(t: SimEntity, raw: number, source: DamageSource): number {
     // Spells do not hurt buildings (rules.json combat.spellDamage).
     if (t.building) return 0;
-    return this.damage(t, spellDamage(raw, t.hero), source, DamageKind.Spell);
+    // Spell damage items of the caster (Arcane Staff...).
+    const caster = this.byId.get(source.id)?.heroState;
+    const amp = caster ? 1 + itemStat(caster, 'spellDamagePct') / 100 : 1;
+    return this.damage(t, spellDamage(raw * amp, t.hero), source, DamageKind.Spell);
   }
 
   /** Applies damage after shields. Returns what was really taken. */
-  damage(t: SimEntity, amount: number, source: DamageSource, kind: number): number {
+  damage(t: SimEntity, amount: number, source: DamageSource, kind: number, redirected = false): number {
     if (!t.alive || amount <= 0 || t.invulnerable || t.hidden) return 0;
     if (kind === DamageKind.Spell) {
-      amount *= 1 - Math.min(90, sumBuffs(t.buffs, 'spellReductionPct')) / 100;
+      const resist = sumBuffs(t.buffs, 'spellReductionPct') + (t.heroState ? itemStat(t.heroState, 'spellResistPct') : 0);
+      amount *= 1 - Math.min(90, resist) / 100;
       amount *= 1 + sumBuffs(t.buffs, 'spellDamageTakenPct') / 100;
     }
     amount *= 1 - Math.min(95, maxBuff(t.buffs, 'damageBlockPct')) / 100;
     amount *= 1 - Math.min(90, sumBuffs(t.buffs, 'damageReductionPct')) / 100;
+    const attacker = this.byId.get(source.id);
+    if (kind === DamageKind.Attack && attacker && attacker.stats.attackRange > 2)
+      amount *= 1 - Math.min(90, maxBuff(t.buffs, 'rangedReductionPct')) / 100;
+    if (!redirected) {
+      const link = t.buffs.find((b) => b.guardId && b.guardSharePct);
+      const guard = link?.guardId ? this.get(link.guardId) : undefined;
+      if (
+        guard?.alive &&
+        guard.id !== t.id &&
+        guard.team === t.team &&
+        Math.hypot(guard.mover.x - t.mover.x, guard.mover.y - t.mover.y) <= (link?.guardRange ?? 5)
+      ) {
+        const shared = (amount * Math.min(80, link!.guardSharePct!)) / 100;
+        amount -= shared;
+        this.damage(guard, shared, source, kind, true);
+      }
+    }
     const before = t.hp;
     t.hp -= amount;
     const minHp = maxBuff(t.buffs, 'minHp');
     if (minHp > 0 && t.hp < minHp) t.hp = minHp;
     const dealt = before - t.hp;
     t.lastHitBy = source.id;
+    t.lastHitAt = this.tick;
     this.events.push(EventType.Damage, t.id, source.id, Math.round(amount), kind);
     if (t.camp >= 0) onCampMemberAttacked(this, t, source);
     else if (!t.targetId && t.order === 'idle' && !t.passive) {
@@ -1289,6 +1381,9 @@ export class MatchSim {
 
   heal(t: SimEntity, amount: number, source: DamageSource): void {
     if (!t.alive || amount <= 0) return;
+    // Heal items of the healer (Healer's Censer...).
+    const healer = this.byId.get(source.id)?.heroState;
+    if (healer) amount *= 1 + itemStat(healer, 'healPowerPct') / 100;
     const before = t.hp;
     t.hp = Math.min(t.stats.maxHp, t.hp + amount);
     if (t.hp - before >= 0.5) this.events.push(EventType.Damage, t.id, source.id, Math.round(t.hp - before), DamageKind.Heal);
@@ -1338,7 +1433,10 @@ export class MatchSim {
 
   /** Base stats (level + items) + buffs. Health and mana grow when the max grows. */
   refreshStats(e: SimEntity): void {
-    if (e.heroState) e.base = heroStats(e.heroState.def, e.heroState.level, itemBonus(e.heroState.inventory));
+    if (e.heroState) {
+      e.heroState.bonus = itemBonus(e.heroState.inventory);
+      e.base = heroStats(e.heroState.def, e.heroState.level, e.heroState.bonus);
+    }
     const old = e.stats;
     const next = applyBuffs(e.base, e.buffs);
     if (next.maxHp > old.maxHp) e.hp += next.maxHp - old.maxHp;
@@ -1437,6 +1535,7 @@ export class MatchSim {
       hs.level++;
       hs.skillPoints++;
       this.refreshStats(hero);
+      refreshPassives(this, hero);
       this.events.push(EventType.LevelUp, hero.id, 0, hs.level);
     }
   }

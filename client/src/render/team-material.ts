@@ -148,7 +148,9 @@ export function createModelMaterials(scene: Scene, palette: Texture, teamMask: T
   glow.disableLighting = true;
   glow.diffuseTexture = palette;
   glow.diffuseColor = Color3.White();
-  glow.emissiveColor = Color3.Black();
+  // With lighting disabled, a black emissive term multiplies the textured surface by zero.
+  // White gives the unlit texture its own light while retaining its vertex tint.
+  glow.emissiveColor = Color3.White();
 
   return {
     palette: mat,

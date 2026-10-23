@@ -6,66 +6,235 @@
     "Workers are trained all the time until workerTarget, without being listed in the order.",
     "After the last step the AI goes into 'free play': keeps supply ahead, spends money on its unit mix, rebuilds lost buildings."
   ],
-
   "faction": {
     "difficulties": {
       "easy": {
-        "thinkDelaySec": 1.0, "workerTarget": 12, "maxProductionBuildings": 2,
-        "firstAttackArmySupply": 20, "attackArmySupply": 22, "retreatAtArmyPct": 0,
-        "expandAtMinute": null, "towersAtBase": 1, "targetChoice": "closest",
-        "focusFire": false, "pullWoundedUnits": false, "buildOrderDelaySec": 20
+        "thinkDelaySec": 1.0,
+        "workerTarget": 12,
+        "maxProductionBuildings": 2,
+        "firstAttackArmySupply": 22,
+        "attackArmySupply": 28,
+        "retreatAtArmyPct": 0,
+        "expandAtMinute": null,
+        "towersAtBase": 1,
+        "targetChoice": "closest",
+        "focusFire": false,
+        "pullWoundedUnits": false,
+        "buildOrderDelaySec": 20
       },
       "normal": {
-        "thinkDelaySec": 0.5, "workerTarget": 16, "maxProductionBuildings": 3,
-        "firstAttackArmySupply": 24, "attackArmySupply": 28, "retreatAtArmyPct": 20,
-        "expandAtMinute": 10, "towersAtBase": 2, "targetChoice": "closest_or_weakest",
-        "focusFire": true, "pullWoundedUnits": false, "buildOrderDelaySec": 0
+        "thinkDelaySec": 0.5,
+        "workerTarget": 16,
+        "maxProductionBuildings": 3,
+        "firstAttackArmySupply": 30,
+        "attackArmySupply": 40,
+        "retreatAtArmyPct": 20,
+        "expandAtMinute": 10,
+        "towersAtBase": 2,
+        "targetChoice": "closest_or_weakest",
+        "focusFire": true,
+        "pullWoundedUnits": false,
+        "buildOrderDelaySec": 0
       },
       "hard": {
-        "thinkDelaySec": 0.3, "workerTarget": 20, "maxProductionBuildings": 5,
-        "firstAttackArmySupply": 22, "attackArmySupply": 34, "retreatAtArmyPct": 40,
-        "expandAtMinute": 7, "towersAtBase": 2, "targetChoice": "weakest_or_where_our_hero_fights",
-        "focusFire": true, "pullWoundedUnits": true, "buildOrderDelaySec": 0
+        "thinkDelaySec": 0.3,
+        "workerTarget": 20,
+        "maxProductionBuildings": 5,
+        "firstAttackArmySupply": 28,
+        "attackArmySupply": 46,
+        "retreatAtArmyPct": 40,
+        "expandAtMinute": 7,
+        "towersAtBase": 2,
+        "targetChoice": "weakest_or_where_our_hero_fights",
+        "focusFire": true,
+        "pullWoundedUnits": true,
+        "buildOrderDelaySec": 0
       }
     },
-
     "buildOrder": [
-      { "do": "build", "what": "house" },
-      { "do": "build", "what": "barracks" },
-      { "do": "build", "what": "house" },
-      { "do": "build", "what": "archery_range" },
-      { "do": "build", "what": "hero_shrine" },
-      { "do": "summon", "what": "hero", "when": "the Hero Shrine is ready; runs on its own and does not hold the order back" },
-      { "do": "train", "what": "swordsman", "count": 2 },
-      { "do": "build", "what": "watchtower" },
-      { "do": "build", "what": "forge" },
-      { "do": "build", "what": "house" },
-      { "do": "train", "what": "archer", "count": 3 },
-      { "do": "upgrade", "what": "stronghold" },
-      { "do": "build", "what": "house" },
-      { "do": "build", "what": "chapel" },
-      { "do": "build", "what": "workshop" },
-      { "do": "expand", "what": "natural", "when": "expandAtMinute reached and natural camp is cleared or our army is strong enough to clear it" },
-      { "do": "build", "what": "barracks", "when": "maxProductionBuildings allows" },
-      { "do": "upgrade", "what": "citadel" },
-      { "do": "build", "what": "hawk_roost" }
+      {
+        "do": "build",
+        "what": "house"
+      },
+      {
+        "do": "build",
+        "what": "barracks"
+      },
+      {
+        "do": "build",
+        "what": "house"
+      },
+      {
+        "do": "build",
+        "what": "archery_range"
+      },
+      {
+        "do": "build",
+        "what": "hero_shrine"
+      },
+      {
+        "do": "summon",
+        "what": "hero",
+        "when": "the Hero Shrine is ready; runs on its own and does not hold the order back"
+      },
+      {
+        "do": "train",
+        "what": "swordsman",
+        "count": 2
+      },
+      {
+        "do": "build",
+        "what": "watchtower"
+      },
+      {
+        "do": "build",
+        "what": "forge"
+      },
+      {
+        "do": "build",
+        "what": "house"
+      },
+      {
+        "do": "train",
+        "what": "archer",
+        "count": 3
+      },
+      {
+        "do": "upgrade",
+        "what": "stronghold"
+      },
+      {
+        "do": "build",
+        "what": "house"
+      },
+      {
+        "do": "build",
+        "what": "chapel"
+      },
+      {
+        "do": "build",
+        "what": "workshop"
+      },
+      {
+        "do": "build",
+        "what": "golem_foundry"
+      },
+      {
+        "do": "build",
+        "what": "bulwark_hall"
+      },
+      {
+        "do": "build",
+        "what": "tusk_lodge"
+      },
+      {
+        "do": "build",
+        "what": "repair_post"
+      },
+      {
+        "do": "build",
+        "what": "frost_obelisk"
+      },
+      {
+        "do": "build",
+        "what": "shield_pylon"
+      },
+      {
+        "do": "expand",
+        "what": "natural",
+        "when": "expandAtMinute reached and natural camp is cleared or our army is strong enough to clear it"
+      },
+      {
+        "do": "build",
+        "what": "barracks",
+        "when": "maxProductionBuildings allows"
+      },
+      {
+        "do": "upgrade",
+        "what": "citadel"
+      },
+      {
+        "do": "build",
+        "what": "hawk_roost"
+      }
     ],
-
     "unitMix": {
       "notes": "Share of army supply the AI tries to keep, by Town Hall tier. Hero upgrades shift it (see reactions).",
-      "tier1": { "swordsman": 0.6, "archer": 0.4 },
-      "tier2": { "swordsman": 0.25, "archer": 0.25, "lancer": 0.25, "cleric": 0.15, "catapult": 0.1 },
-      "tier3": { "swordsman": 0.15, "archer": 0.2, "lancer": 0.25, "cleric": 0.1, "catapult": 0.1, "hawk_rider": 0.2 }
+      "tier1": {
+        "swordsman": 0.6,
+        "archer": 0.4
+      },
+      "tier2": {
+        "swordsman": 0.08343,
+        "archer": 0.11123,
+        "lancer": 0.08343,
+        "cleric": 0.05562,
+        "catapult": 0.05562,
+        "pike_warden": 0.05562,
+        "frost_adept": 0.05562,
+        "foundry_golem": 0.05562,
+        "chainbreaker": 0.02781,
+        "rune_gunner": 0.02781,
+        "null_warden": 0.02781,
+        "reliquary_guard": 0.02781,
+        "banner_captain": 0.02781,
+        "lantern_novice": 0.02781,
+        "veil_sister": 0.02781,
+        "bulwark_golem": 0.02781,
+        "siege_golem": 0.02781,
+        "boar_lancer": 0.04839,
+        "ram_drummer": 0.04839,
+        "covered_ram": 0.04839,
+        "bolt_cart": 0.04839
+      },
+      "tier3": {
+        "swordsman": 0.05305,
+        "archer": 0.05305,
+        "lancer": 0.07958,
+        "cleric": 0.05305,
+        "catapult": 0.05305,
+        "hawk_rider": 0.07958,
+        "pike_warden": 0.05305,
+        "frost_adept": 0.05305,
+        "foundry_golem": 0.05305,
+        "chainbreaker": 0.02652,
+        "rune_gunner": 0.02652,
+        "null_warden": 0.02652,
+        "reliquary_guard": 0.02652,
+        "banner_captain": 0.02652,
+        "lantern_novice": 0.02652,
+        "veil_sister": 0.02652,
+        "bulwark_golem": 0.02652,
+        "siege_golem": 0.02652,
+        "boar_lancer": 0.04615,
+        "ram_drummer": 0.04615,
+        "covered_ram": 0.04615,
+        "bolt_cart": 0.04615,
+        "kite_bomber": 0.04615
+      }
     },
-
     "reactions": [
-      { "when": "hero bought sharper_blades", "do": "add 0.1 to swordsman and lancer share, take it from archer" },
-      { "when": "hero bought better_arrows", "do": "add 0.1 to archer share, take it from swordsman" },
-      { "when": "hero bought siege_works", "do": "add 0.05 to catapult share" },
-      { "when": "enemy army has many air units", "do": "add 0.15 to archer share" },
-      { "when": "base is attacked", "do": "pull the army home if it is closer than the enemy base, and use workers only if the Town Hall is under 30% health" }
+      {
+        "when": "hero bought sharper_blades",
+        "do": "add 0.1 to swordsman and lancer share, take it from archer"
+      },
+      {
+        "when": "hero bought better_arrows",
+        "do": "add 0.1 to archer share, take it from swordsman"
+      },
+      {
+        "when": "hero bought siege_works",
+        "do": "add 0.05 to catapult share"
+      },
+      {
+        "when": "enemy army has many air units",
+        "do": "add 0.15 to archer share"
+      },
+      {
+        "when": "base is attacked",
+        "do": "pull the army home if it is closer than the enemy base, and use workers only if the Town Hall is under 30% health"
+      }
     ],
-
     "attack": {
       "gatherPointDistance": 20,
       "waitForStragglersSec": 15,
@@ -73,7 +242,6 @@
       "catapultsTarget": "buildings first, towers before other buildings",
       "creepCampsWhenIdle": true
     },
-
     "factionHero": {
       "notes": [
         "The faction summons one hero of its own at the Hero Shrine. It never picks the hero its player plays.",
@@ -83,15 +251,33 @@
         "The hero farms camps alone while the army is at home; from followArmyFromLevel it walks with the army when the army is out (camps, enemy armies, attacks) and shares the XP of everything the army kills."
       ],
       "roles": {
-        "blood_witch": "caster", "staff_warrior": "front", "sky_dragon": "ranged", "stone_golem": "front",
-        "light_healer": "support", "arcane_huntress": "ranged", "centaur_raider": "front", "forest_elf": "ranged"
+        "blood_witch": "caster",
+        "staff_warrior": "front",
+        "sky_dragon": "ranged",
+        "stone_golem": "front",
+        "light_healer": "support",
+        "arcane_huntress": "ranged",
+        "centaur_raider": "front",
+        "forest_elf": "ranged",
+        "thorn_marshal": "front",
+        "grave_bellkeeper": "caster",
+        "tidebreaker": "front",
+        "lantern_monk": "support",
+        "obsidian_heart": "front",
+        "earth_spirit": "front"
       },
-      "score": { "base": 1, "frontNeeded": 2, "rangedNeeded": 2, "supportBigArmy": 1.5, "casterBigArmy": 1, "random": 2 },
+      "score": {
+        "base": 1,
+        "frontNeeded": 2,
+        "rangedNeeded": 2,
+        "supportBigArmy": 1.5,
+        "casterBigArmy": 1,
+        "random": 2
+      },
       "frontShareWanted": 0.5,
       "bigArmySupply": 16,
       "followArmyFromLevel": 1
     },
-
     "army": {
       "notes": [
         "Between attacks the army roams: it clears neutral camps it can beat (total monster level <= campLevelPerSupply x army supply), up to roamRadius[tier - 1] from home, camp after camp while its health is above roamMinHpPct.",
@@ -100,10 +286,21 @@
         "chaseLeash / goalLeash: an army unit stops chasing a unit that got this far away from it, or this far from the group's goal (the building it attacks, the camp, the enemy army), and walks on with its group.",
         "groupSpread: how far (in path distance) a unit may walk ahead of its group's middle before it slows down (6 more and it waits). Melee walks in front, siege at the back.",
         "fieldFightMinFromBase: a fight between armies at least this far from every Town Hall counts as a field fight (for the match report).",
-        "lateGameMinute: from this game minute the AI stops roaming, keeps no home group and does not retreat: the whole army attacks, so long games between equal armies end."
+        "lateGameMinute: from this game minute the AI stops roaming, keeps no home group and does not retreat: the whole army attacks, so long games between equal armies end.",
+        "reinforceSupply: units at home above the home group walk to the attack army as one wave of at least this much supply.",
+        "Upkeep (rules.json economy.upkeep) makes a big army cost gold income. From attackAtSupplyUsed used supply the AI attacks with what it has (at least half the attack size): an army that waits only costs. It trains no more army above trainUpToSupply (unless its base is attacked).",
+        "pushAfterWinPct: after our army wins a fight in the field, it goes on to that enemy's base when it still has at least this % of the attack size and half its health."
       ],
+      "reinforceSupply": 10,
+      "attackAtSupplyUsed": 100,
+      "trainUpToSupply": 130,
+      "pushAfterWinPct": 60,
       "roamAtSupply": 6,
-      "roamRadius": [70, 100, 140],
+      "roamRadius": [
+        70,
+        100,
+        140
+      ],
       "roamMinHpPct": 55,
       "campLevelPerSupply": 0.6,
       "huntRange": 32,
@@ -111,32 +308,206 @@
       "siegeRange": 30,
       "chaseLeash": 10,
       "goalLeash": 20,
-      "groupSpread": { "melee": 4, "ranged": 1, "siege": -2 },
+      "groupSpread": {
+        "melee": 4,
+        "ranged": 1,
+        "siege": -2
+      },
       "fieldFightMinFromBase": 30,
       "lateGameMinute": 34
+    },
+    "orders": {
+      "notes": [
+        "Orders the players of a kingdom give its AI (the panel under the kingdom line). One order per kingdom: in a team match both heroes share it, the last one counts. Bot heroes of the kingdom follow it too.",
+        "auto: the AI decides. attack: the army goes for that kingdom's base now with at least attackMinSupply, reinforcements follow; back to auto when that kingdom is out. defend: the army stays home and fights only within stayHomeRange of the Town Hall; defendExtraTowers more towers. build_up: like defend, but no extra towers: all money goes to the army. farm: the army clears camps up to farmRoamRadius from home (no attacks). expand: take the nearest free gold mine now (the army clears it first); back to auto once the Town Hall is started.",
+        "heroCampRange: bot heroes farm only camps this close to home while the order is defend or build_up."
+      ],
+      "attackMinSupply": 6,
+      "stayHomeRange": 40,
+      "defendExtraTowers": 2,
+      "farmRoamRadius": 160,
+      "heroCampRange": {
+        "defend": 45,
+        "build_up": 75
+      }
+    },
+    "fortifications": {
+      "startMinute": 6,
+      "everySec": 20,
+      "maxSegments": 4,
+      "gap": 8,
+      "frontDistance": 6,
+      "rowStep": 4,
+      "rows": 6,
+      "minGold": 250,
+      "minWood": 150,
+      "upgradeReserveGold": 400,
+      "upgradeReserveWood": 200
     }
   },
-
   "heroBot": {
     "difficulties": {
-      "easy": { "reactionSec": 0.8, "abilityUseQuality": 0.4, "retreatAtHpPct": 20, "lastHitSkill": 0.3, "joinsAttacks": false },
-      "normal": { "reactionSec": 0.4, "abilityUseQuality": 0.7, "retreatAtHpPct": 30, "lastHitSkill": 0.6, "joinsAttacks": true },
-      "hard": { "reactionSec": 0.2, "abilityUseQuality": 0.9, "retreatAtHpPct": 35, "lastHitSkill": 0.9, "joinsAttacks": true }
+      "easy": {
+        "reactionSec": 0.8,
+        "abilityUseQuality": 0.4,
+        "retreatAtHpPct": 20,
+        "lastHitSkill": 0.3,
+        "joinsAttacks": false
+      },
+      "normal": {
+        "reactionSec": 0.4,
+        "abilityUseQuality": 0.7,
+        "retreatAtHpPct": 30,
+        "lastHitSkill": 0.6,
+        "joinsAttacks": true
+      },
+      "hard": {
+        "reactionSec": 0.2,
+        "abilityUseQuality": 0.9,
+        "retreatAtHpPct": 35,
+        "lastHitSkill": 0.9,
+        "joinsAttacks": true
+      }
     },
     "campChoice": "Pick the closest camp whose total monster level is at most 4 + 2 x hero level (4 + 3 x hero level when the hero has an ally hero near). Each base has only weak camps close by, so a stricter rule makes bots walk across the map. A hero that can not hit air (melee) skips camps with flying monsters (harpies).",
     "skills": "Learn the ultimate when allowed, then the main damage or control skill, then the least learned of the other two (so the third skill is not empty until level 8). Cast Q/W/E/R when they fit: damage and control on enemies, heals on hurt allies, self buffs when hit, Mana Mark on enemy heroes.",
-    "shopping": "Buy healing potions when below 2. Then follow the hero's item list (heroBuild below) at the nearest shop when gold allows.",
-    "hiring": { "fromLevel": 3, "goldBuffer": 350, "maxTravel": 90, "notes": "Bot-slot heroes hire soldiers (rules.json hire) from level fromLevel when they keep goldBuffer gold after paying: the most expensive unit an own production building or a tavern within maxTravel has, while the hire limit allows." },
+    "shopping": "Buy healing potions when below 2. Then follow the hero's item list (heroBuild below) at the nearest shop when gold allows. A recipe item is bought whole when the gold (minus the parts it carries) is enough, else part by part. An item counts as owned when the hero carries something made from it (an upgrade).",
+    "hiring": {
+      "fromLevel": 3,
+      "goldBuffer": 350,
+      "maxTravel": 90,
+      "notes": "Bot-slot heroes hire soldiers (rules.json hire) from level fromLevel when they keep goldBuffer gold after paying: the most expensive unit an own production building or a tavern within maxTravel has, while the hire limit allows."
+    },
     "upgrades": "Spend 30% of gold above 300 on Town Hall upgrades, in this order: iron_plates, sharper_blades, better_arrows, rich_veins, stone_walls.",
     "heroBuild": {
-      "blood_witch": ["sage_cloak", "mana_stone", "boots_of_haste", "royal_circlet"],
-      "staff_warrior": ["thief_band", "swift_gloves", "boots_of_haste", "warblade"],
-      "sky_dragon": ["giant_belt", "guard_ring", "boots_of_haste", "ironwood_shield"],
-      "stone_golem": ["giant_belt", "guard_ring", "life_pendant", "ironwood_shield"],
-      "light_healer": ["mana_stone", "sage_cloak", "boots_of_haste", "royal_circlet"],
-      "arcane_huntress": ["thief_band", "iron_claws", "boots_of_haste", "warblade"],
-      "centaur_raider": ["giant_belt", "iron_claws", "boots_of_haste", "ironwood_shield"],
-      "forest_elf": ["thief_band", "life_pendant", "boots_of_haste", "warblade"]
+      "blood_witch": [
+        "boots_of_haste",
+        "arcane_staff",
+        "timeworn_tome",
+        "sage_treads",
+        "arcane_staff_2",
+        "archmage_scepter",
+        "crystal_heart",
+        "spellward_cloak"
+      ],
+      "staff_warrior": [
+        "boots_of_haste",
+        "bloodletter_axe",
+        "windrunner_boots",
+        "berserker_mail",
+        "assassin_blade",
+        "warlord_blade",
+        "kingslayer"
+      ],
+      "sky_dragon": [
+        "boots_of_haste",
+        "giant_maul",
+        "bulwark_plate",
+        "troll_heart",
+        "warlord_blade",
+        "bulwark_plate_2"
+      ],
+      "stone_golem": [
+        "boots_of_haste",
+        "chain_vest",
+        "bulwark_plate",
+        "troll_heart",
+        "spellward_cloak",
+        "bulwark_plate_2",
+        "titan_aegis",
+        "guardian_shield"
+      ],
+      "light_healer": [
+        "boots_of_haste",
+        "healer_herbs",
+        "healers_censer",
+        "sage_treads",
+        "banner_of_valor",
+        "dawn_relic",
+        "elder_robe",
+        "timeworn_tome"
+      ],
+      "arcane_huntress": [
+        "boots_of_haste",
+        "marksman_bow",
+        "swift_quiver",
+        "windrunner_boots",
+        "sky_piercer",
+        "assassin_blade",
+        "bloodletter_axe"
+      ],
+      "centaur_raider": [
+        "boots_of_haste",
+        "giant_maul",
+        "berserker_mail",
+        "bloodletter_axe",
+        "warlord_blade"
+      ],
+      "forest_elf": [
+        "boots_of_haste",
+        "swift_quiver",
+        "marksman_bow",
+        "windrunner_boots",
+        "sky_piercer",
+        "soul_lantern",
+        "bloodletter_axe"
+      ],
+      "thorn_marshal": [
+        "boots_of_haste",
+        "bulwark_plate",
+        "giant_maul",
+        "spellward_cloak",
+        "berserker_mail",
+        "bulwark_plate_2"
+      ],
+      "grave_bellkeeper": [
+        "boots_of_haste",
+        "arcane_staff",
+        "timeworn_tome",
+        "sage_treads",
+        "arcane_staff_2",
+        "archmage_scepter",
+        "crystal_heart",
+        "spellward_cloak"
+      ],
+      "tidebreaker": [
+        "boots_of_haste",
+        "chain_vest",
+        "bulwark_plate",
+        "troll_heart",
+        "spellward_cloak",
+        "bulwark_plate_2",
+        "titan_aegis",
+        "guardian_shield"
+      ],
+      "lantern_monk": [
+        "boots_of_haste",
+        "healers_censer",
+        "windrunner_boots",
+        "banner_of_valor",
+        "dawn_relic",
+        "berserker_mail",
+        "bulwark_plate"
+      ],
+      "obsidian_heart": [
+        "boots_of_haste",
+        "bulwark_plate",
+        "timeworn_tome",
+        "spellward_cloak",
+        "crystal_heart",
+        "bulwark_plate_2",
+        "titan_aegis"
+      ],
+      "earth_spirit": [
+        "boots_of_haste",
+        "chain_vest",
+        "bulwark_plate",
+        "troll_heart",
+        "spellward_cloak",
+        "bulwark_plate_2",
+        "titan_aegis",
+        "guardian_shield"
+      ]
     }
   }
 }

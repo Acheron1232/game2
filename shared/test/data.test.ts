@@ -7,13 +7,21 @@ const ROOT = join(import.meta.dirname, '..', '..');
 
 describe('game data', () => {
   it('loads with the expected content', () => {
-    expect(gameData.heroes).toHaveLength(8);
-    expect(gameData.abilities).toHaveLength(32);
+    expect(gameData.heroes).toHaveLength(14);
+    expect(gameData.abilities).toHaveLength(58);
     expect(gameData.map.starts).toHaveLength(4);
   });
 
   it('files agree with each other', () => {
     expect(validateGameData(gameData)).toEqual([]);
+  });
+
+  it('rejects unknown, chained or incompatible shared ability mechanics', () => {
+    for (const effect of ['missing_effect', 'briar_lance', 'stone_skin']) {
+      const copy = structuredClone(gameData);
+      copy.abilities.find((a) => a.id === 'briar_lance')!.params['effect'] = effect;
+      expect(validateGameData(copy).some((e) => e.includes('briar_lance: effect'))).toBe(true);
+    }
   });
 
   it('uses none of the banned Blizzard / Valve names', () => {

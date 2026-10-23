@@ -31,6 +31,7 @@ export interface CombatStats {
   radius: number;
   sight: number;
   level: number;
+  buildingsOnly?: boolean;
 }
 
 export interface Attributes {
@@ -61,7 +62,7 @@ export function heroStats(h: HeroDef, level: number, bonus: Partial<Record<ItemS
   const attackSpeedPct = a.agility * at.agility.attackSpeedPctPerPoint + (bonus.attackSpeedPct ?? 0);
   return {
     maxHp: hb.hp + h.hpBonus + a.strength * at.strength.hpPerPoint + (bonus.maxHp ?? 0),
-    maxMana: hb.mana + a.intelligence * at.intelligence.manaPerPoint,
+    maxMana: hb.mana + a.intelligence * at.intelligence.manaPerPoint + (bonus.maxMana ?? 0),
     hpRegen: hb.hpRegen + a.strength * at.strength.hpRegenPerPoint + (bonus.hpRegen ?? 0),
     manaRegen: hb.manaRegen + a.intelligence * at.intelligence.manaRegenPerPoint + (bonus.manaRegen ?? 0),
     armor: h.baseArmor + a.agility * at.agility.armorPerPoint + (bonus.armor ?? 0),
@@ -83,6 +84,7 @@ export function heroStats(h: HeroDef, level: number, bonus: Partial<Record<ItemS
 
 export function unitStats(u: UnitDef): CombatStats {
   return {
+    buildingsOnly: u.buildingsOnly ?? false,
     maxHp: u.hp,
     maxMana: u.mana,
     hpRegen: u.group === 'neutral' ? 0.5 : 0.25,
@@ -229,9 +231,14 @@ export function respawnSeconds(level: number): number {
   return R.respawn.heroBaseSec + R.respawn.heroPerLevelSec * level;
 }
 
-/** Skill points: one per level. Basic level N needs hero level 2N-1, the ultimate needs 6. */
+/** Hero level needed to learn ability level `abilityLevel` (1-based) in this slot; Infinity = no such level. */
+export function heroLevelForAbility(slot: number, abilityLevel: number): number {
+  const steps = slot === 3 ? R.heroBase.ultimateHeroLevels : R.heroBase.basicAbilityHeroLevels;
+  return steps[abilityLevel - 1] ?? Infinity;
+}
+
+/** Skill points: one per level. The hero level each ability level needs is in rules.json heroBase. */
 export function canLearn(slot: number, currentLevel: number, maxLevel: number, heroLevel: number): boolean {
   if (currentLevel >= maxLevel) return false;
-  if (slot === 3) return heroLevel >= 6;
-  return heroLevel >= 2 * (currentLevel + 1) - 1;
+  return heroLevel >= heroLevelForAbility(slot, currentLevel + 1);
 }

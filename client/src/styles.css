@@ -795,9 +795,12 @@ td .btn.tiny {
 }
 .shop-grid {
   display: grid;
-  grid-template-columns: repeat(5, 48px);
+  /* as many columns as the panel holds; big shops (26 items) scroll */
+  grid-template-columns: repeat(auto-fill, 48px);
   gap: 6px;
   justify-content: center;
+  max-height: calc(100vh - 380px);
+  overflow-y: auto;
 }
 .shop-item {
   position: relative;

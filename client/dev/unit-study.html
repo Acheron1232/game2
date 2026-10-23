@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Temple Wars — Unit Study</title>
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+    <header>
+      <strong>UNIT STUDY</strong>
+      <span>Game map, lighting and army renderer · visual review only</span>
+      <nav>
+        <button data-mode="compare">Side by side</button>
+        <button data-mode="mixed">Mixed army · 300</button>
+        <button data-mode="standard">Standard · 300</button>
+        <button data-mode="new">New models · 300</button>
+        <button data-mode="expansion">Heroes + army · 300</button>
+        <a href="/dev/battle-lab.html">Battle Lab ↗</a>
+        <button id="action">Play attacks</button>
+      </nav>
+    </header>
+    <div id="labels"></div>
+    <output id="stats">Loading game assets…</output>
+    <script type="module" src="/src/dev/unit-study.ts"></script>
+  </body>
+</html>

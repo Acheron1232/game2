@@ -1,0 +1,361 @@
+{
+  "version": 1,
+  "notes": [
+    "Names and text of unit skills (army units, monsters, hired soldiers). The numbers stay on each unit in units.json (skills[]), because one skill can be stronger on a stronger unit.",
+    "kind: active (the unit uses it by itself in a fight; the player can also press it on an own unit) | passive (always on) | work (workers only).",
+    "target: none (around the unit) | unit (one target). targets: enemy | ally (who a unit target may be).",
+    "effect: the code that runs (abilities.ts useSkill); default is the skill id. bolt = spell damage (+ slow), curse = slow + more spell damage taken, ward = armor for an ally, slam = damage (+ stun) around the unit.",
+    "The HUD shows these when a player selects or points at a unit. Own units show active skills as buttons."
+  ],
+  "skills": [
+    {
+      "id": "gather",
+      "name": "Gather",
+      "kind": "work",
+      "text": "Brings gold from a mine and wood from trees to the Town Hall."
+    },
+    {
+      "id": "build",
+      "name": "Build",
+      "kind": "work",
+      "text": "Builds new buildings for the kingdom."
+    },
+    {
+      "id": "repair",
+      "name": "Repair",
+      "kind": "work",
+      "text": "Fixes damaged buildings."
+    },
+    {
+      "id": "mend",
+      "name": "Mend",
+      "kind": "active",
+      "target": "unit",
+      "targets": "ally",
+      "text": "Heals a hurt ally. Works in and after a fight."
+    },
+    {
+      "id": "howl",
+      "name": "Pack Howl",
+      "kind": "active",
+      "target": "none",
+      "text": "Allies nearby deal more damage for a while."
+    },
+    {
+      "id": "screech",
+      "name": "Screech",
+      "kind": "active",
+      "target": "none",
+      "text": "Slows all enemies nearby."
+    },
+    {
+      "id": "web",
+      "name": "Web",
+      "kind": "active",
+      "target": "unit",
+      "targets": "enemy",
+      "text": "Roots an enemy: it can not move for a moment."
+    },
+    {
+      "id": "ground_slam",
+      "name": "Rock Slam",
+      "kind": "active",
+      "target": "none",
+      "effect": "slam",
+      "text": "Hits the ground: damages and stuns enemies nearby."
+    },
+    {
+      "id": "stone_guard",
+      "name": "Stone Guard",
+      "kind": "passive",
+      "text": "Takes less damage from spells."
+    },
+    {
+      "id": "frost_nova",
+      "name": "Chill Burst",
+      "kind": "active",
+      "target": "none",
+      "effect": "screech",
+      "text": "A burst of cold slows all enemies nearby."
+    },
+    {
+      "id": "faith_ward",
+      "name": "Faith Ward",
+      "kind": "active",
+      "target": "unit",
+      "targets": "ally",
+      "effect": "ward",
+      "text": "A shield of light gives an ally more armor."
+    },
+    {
+      "id": "hex_bolt",
+      "name": "Hex Bolt",
+      "kind": "active",
+      "target": "unit",
+      "targets": "enemy",
+      "effect": "bolt",
+      "text": "A cursed bolt hurts an enemy."
+    },
+    {
+      "id": "bog_curse",
+      "name": "Bog Curse",
+      "kind": "active",
+      "target": "unit",
+      "targets": "enemy",
+      "effect": "curse",
+      "text": "Swamp mud slows an enemy, and spells hurt it more."
+    },
+    {
+      "id": "ice_shard",
+      "name": "Ice Shard",
+      "kind": "active",
+      "target": "unit",
+      "targets": "enemy",
+      "effect": "bolt",
+      "text": "A shard of ice hurts and slows an enemy."
+    },
+    {
+      "id": "ember_flare",
+      "name": "Ember Flare",
+      "kind": "active",
+      "target": "none",
+      "effect": "slam",
+      "text": "The wisp flares up and burns enemies around it."
+    },
+    {
+      "id": "troll_blood",
+      "name": "Troll Blood",
+      "kind": "passive",
+      "text": "Wounds close fast: more health back every second."
+    },
+    {
+      "id": "shatter_armor",
+      "name": "Shatter Armor",
+      "kind": "active",
+      "text": "A maul strike reduces the target armor for a short time.",
+      "effect": "armor_break",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "rune_shot",
+      "name": "Rune Shot",
+      "kind": "active",
+      "text": "Fires a charged rune bolt at the current enemy.",
+      "effect": "bolt",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "null_screen",
+      "name": "Null Screen",
+      "kind": "active",
+      "text": "Briefly grants nearby allies resistance to spell damage.",
+      "effect": "screen",
+      "target": "none",
+      "targets": "ally"
+    },
+    {
+      "id": "reliquary_link",
+      "name": "Reliquary Link",
+      "kind": "active",
+      "text": "Takes part of the protected ally damage while the guard stays close.",
+      "effect": "guard_link",
+      "target": "unit",
+      "targets": "ally"
+    },
+    {
+      "id": "captain_banner",
+      "name": "Captain Banner",
+      "kind": "passive",
+      "text": "Nearby allies gain armor. Equal banners do not stack.",
+      "effect": "aura"
+    },
+    {
+      "id": "lantern_mend",
+      "name": "Lantern Mend",
+      "kind": "active",
+      "text": "The lantern staff heals the most injured nearby ally.",
+      "effect": "mend",
+      "target": "unit",
+      "targets": "ally"
+    },
+    {
+      "id": "veil_cleanse",
+      "name": "Veil Cleanse",
+      "kind": "active",
+      "text": "Removes one harmful effect and grants a short spell barrier.",
+      "effect": "cleanse",
+      "target": "unit",
+      "targets": "ally"
+    },
+    {
+      "id": "bulwark_cover",
+      "name": "Bulwark Cover",
+      "kind": "passive",
+      "text": "Nearby ranged troops take less damage from ranged attacks.",
+      "effect": "aura"
+    },
+    {
+      "id": "demolition_slam",
+      "name": "Demolition Slam",
+      "kind": "active",
+      "text": "A hammer shockwave damages and briefly stuns nearby ground enemies.",
+      "effect": "slam",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "repair_aura",
+      "name": "Repair Tools",
+      "kind": "passive",
+      "text": "Nearby workers repair buildings faster.",
+      "effect": "aura"
+    },
+    {
+      "id": "rest_aura",
+      "name": "Shelter",
+      "kind": "passive",
+      "text": "Nearby defenders regenerate health after leaving combat.",
+      "effect": "aura"
+    },
+    {
+      "id": "chain_arc",
+      "name": "Chain Arc",
+      "kind": "active",
+      "text": "Lightning jumps through a cluster of enemies.",
+      "effect": "chain",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "frost_pulse",
+      "name": "Frost Pulse",
+      "kind": "active",
+      "text": "Slows nearby ground enemies.",
+      "effect": "screech",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "bell_interrupt",
+      "name": "Bell Interrupt",
+      "kind": "active",
+      "text": "A bell pulse silences nearby enemies and interrupts casting.",
+      "effect": "silence_pulse",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "sticky_pitch",
+      "name": "Sticky Pitch",
+      "kind": "active",
+      "text": "Slows ground enemies stepping into the basin.",
+      "effect": "screech",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "wind_gust",
+      "name": "Wind Gust",
+      "kind": "active",
+      "text": "Pushes back airborne enemies.",
+      "effect": "gust",
+      "target": "none",
+      "targets": "enemy"
+    },
+    {
+      "id": "pylon_cover",
+      "name": "Pylon Cover",
+      "kind": "active",
+      "text": "Briefly protects nearby defenses against ranged attacks.",
+      "effect": "screen",
+      "target": "none",
+      "targets": "ally"
+    },
+    {
+      "id": "boar_charge",
+      "name": "Boar Charge",
+      "kind": "active",
+      "text": "Charges the current ground target. Roots, stuns and blocked terrain stop it.",
+      "effect": "charge",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "drum_rhythm",
+      "name": "Drum Rhythm",
+      "kind": "passive",
+      "text": "Nearby allies attack faster. Equal drum auras do not stack.",
+      "effect": "aura"
+    },
+    {
+      "id": "arrow_roof",
+      "name": "Arrow Roof",
+      "kind": "passive",
+      "text": "The covered ram takes much less damage from ranged attacks.",
+      "effect": "passive"
+    },
+    {
+      "id": "piercing_bolt",
+      "name": "Piercing Bolt",
+      "kind": "active",
+      "text": "A huge bolt pierces a narrow line of ground enemies.",
+      "effect": "pierce_line",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "badger_bodyguard",
+      "name": "Bodyguard",
+      "kind": "active",
+      "text": "Shares part of a nearby ally damage while the badger stays close.",
+      "effect": "guard_link",
+      "target": "unit",
+      "targets": "ally"
+    },
+    {
+      "id": "trail_mark",
+      "name": "Trail Mark",
+      "kind": "active",
+      "text": "A marked shot reduces armor and reveals the enemy.",
+      "effect": "mark_shot",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "coalback_repair",
+      "name": "Coalback Repair",
+      "kind": "active",
+      "text": "Repairs a nearby injured allied construct or siege engine.",
+      "effect": "repair_construct",
+      "target": "unit",
+      "targets": "ally"
+    },
+    {
+      "id": "bomb_run",
+      "name": "Bomb Run",
+      "kind": "active",
+      "text": "Drops a short line of bombs on ground enemies. Cannot hit air.",
+      "effect": "bomb_line",
+      "target": "unit",
+      "targets": "enemy"
+    },
+    {
+      "id": "place_lantern",
+      "name": "Place Lantern",
+      "kind": "active",
+      "target": "none",
+      "targets": "ally",
+      "effect": "place_lantern",
+      "text": "Places one destroyable healing lantern near the novice. It stays in place and expires."
+    },
+    {
+      "id": "lantern_light",
+      "name": "Lantern Light",
+      "kind": "passive",
+      "effect": "aura",
+      "text": "Nearby allied units regenerate health. Equal lantern auras do not stack."
+    }
+  ]
+}

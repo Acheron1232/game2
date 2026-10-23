@@ -1,0 +1,21 @@
+Use case: stylized-concept.
+Create ONE landscape fantasy RTS concept selection sheet, exact 4 columns x 3 rows, TWELVE equal bordered cells. Crisp high-detail hand-painted chunky game art, classic readable strategy-game proportions, broad silhouettes, rich painted bronze highlights, colored cloth, wood, stone, fur. Match the approved hero reference especially H07/H08/H10/H11/H12, and the building reference. ORIGINAL designs only, no franchise assets or recognizable copied characters. Muted cream parchment background, restrained dark-gold frame, soft daylight from upper left, soft contact shadows. Every object or unit isolated inside its cell, no scenery spilling into neighbors, no collage overlap, complete figure/base visible. Team-color cloth is vivid MAGENTA #FF00FF; fixed colors remain distinct. NO photorealism, no black sci-fi, no UI icons, no tiny microtext. All 12 designs must be clearly different in silhouette, weapon and function. No extra full characters outside the requested subjects. Carefully readable English labels.
+Layout: one thin title band above the grid; each cell reserves a clean caption strip UNDER the artwork, exactly TWO lines. First line is the provided code and name, second line the provided short caption. Do not put labels on the objects themselves. No paragraphs. Grid order is left to right, top to bottom.
+
+Title EXACT: "TEMPLE WARS / NEW BUILDING UNITS B"
+Units: full-body three-quarter front view at roughly equal scale, with feet/wheels/wings completely visible. Characters have chunky silhouettes like the reference heroes but are regular army troops with simpler equipment. Machines remain machines, not humanoids. Mounts and riders form ONE unit.
+
+1. Artwork: Low wheeled battering ram under a curved layered timber roof, brass ram head, hanging hide curtains and magenta pennant. Caption first line EXACT: "U25 Covered Ram". Second line EXACT: "FROM B19".
+2. Artwork: Compact four-wheel ballista cart with visibly stretched wooden bow limbs, one huge steel bolt and bronze winch. Caption first line EXACT: "U26 Bolt Cart". Second line EXACT: "FROM B19".
+3. Artwork: Small hooded insectfolk scout riding a large pale green moth, broad translucent wings with visible veins, magenta saddle ribbons. Caption first line EXACT: "U27 Moth Scout". Second line EXACT: "FROM B20".
+4. Artwork: Light masked rider on a tall white crane bird with black wing tips, long lance and small bronze chest armor. Caption first line EXACT: "U28 Crane Lancer". Second line EXACT: "FROM B20".
+5. Artwork: Small fox humanoid woodsman with antler snare frame, curved hook blade, green hood and thorn bundles. Caption first line EXACT: "U29 Root Trapper". Second line EXACT: "FROM B21".
+6. Artwork: Large stocky armored stag with bark shoulder plates, thick branching antlers, green leaf mane and a magenta flank cloth. Caption first line EXACT: "U30 Thorn Stag". Second line EXACT: "FROM B21".
+7. Artwork: Goggle-wearing badger sapper with an oversized black pitch barrel backpack, smoking fuse tools and a bronze helmet. Caption first line EXACT: "U31 Pitch Sapper". Second line EXACT: "FROM B22".
+8. Artwork: Round toadfolk alchemist with two small brass mist tanks, long spray nozzle, leather goggles and glass potion belt. Caption first line EXACT: "U32 Mist Brewer". Second line EXACT: "FROM B22".
+9. Artwork: Scarred badger sellsword in patched heavy armor, large round shield, short notched sword, rolled bedroll and magenta scarf. Caption first line EXACT: "U33 Badger Mercenary". Second line EXACT: "FROM B23".
+10. Artwork: Slender fox humanoid scout with short recurved crossbow, long coat, feathered hat and compact travel pack. Caption first line EXACT: "U34 Fox Trailshot". Second line EXACT: "FROM B23".
+11. Artwork: Short broad basalt-skinned construct with coal basket back, heavy bronze repair hammer, tongs and orange furnace eyes. Caption first line EXACT: "U35 Coalback Porter". Second line EXACT: "FROM B24".
+12. Artwork: Small bipedal orange salamander with dark heatproof apron, bronze sling cup, clay fire pots and magenta neck wrap. Caption first line EXACT: "U36 Salamander Slinger". Second line EXACT: "FROM B24".
+
+Check all twelve codes and both caption lines before finishing.

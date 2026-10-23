@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 15719779,
+  "totalBytes": 31095191,
   "files": [
     {
       "path": "audio/audio.json",
@@ -273,15 +273,69 @@
       "group": "Map"
     },
     {
+      "path": "icons/anchor_hurl.webp",
+      "bytes": 11172,
+      "hash": "8eafa567d6",
+      "group": "Interface"
+    },
+    {
       "path": "icons/arcane_arrow.webp",
       "bytes": 6784,
       "hash": "4d49ec01f4",
       "group": "Interface"
     },
     {
+      "path": "icons/arcane_staff.webp",
+      "bytes": 3950,
+      "hash": "55a2096f60",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/arcane_staff_2.webp",
+      "bytes": 5776,
+      "hash": "3204e1daa1",
+      "group": "Interface"
+    },
+    {
       "path": "icons/arcane_storm.webp",
       "bytes": 9244,
       "hash": "15070f6f08",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/archmage_scepter.webp",
+      "bytes": 6848,
+      "hash": "cf8548bf6e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/assassin_blade.webp",
+      "bytes": 4988,
+      "hash": "3fb80eafbd",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/bamboo_sweep.webp",
+      "bytes": 10058,
+      "hash": "c8f4571716",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/banner_of_valor.webp",
+      "bytes": 6468,
+      "hash": "517d38f8fa",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/banner_of_valor_team.webp",
+      "bytes": 690,
+      "hash": "dce86d8622",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/berserker_mail.webp",
+      "bytes": 7088,
+      "hash": "064d6477f3",
       "group": "Interface"
     },
     {
@@ -315,15 +369,75 @@
       "group": "Interface"
     },
     {
+      "path": "icons/bloodletter_axe.webp",
+      "bytes": 5784,
+      "hash": "2c2192414d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/bog_curse.webp",
+      "bytes": 10876,
+      "hash": "c7f73515f8",
+      "group": "Interface"
+    },
+    {
       "path": "icons/boots_of_haste.webp",
       "bytes": 7798,
       "hash": "70fee6c7b0",
       "group": "Interface"
     },
     {
+      "path": "icons/boulder_smash.webp",
+      "bytes": 7858,
+      "hash": "8b4510a964",
+      "group": "Interface"
+    },
+    {
       "path": "icons/boulder_toss.webp",
       "bytes": 9230,
       "hash": "ff7c1cdeb9",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/breaker_wave.webp",
+      "bytes": 11006,
+      "hash": "807eb0ca55",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/briar_lance.webp",
+      "bytes": 9940,
+      "hash": "446203de4b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/build.webp",
+      "bytes": 9416,
+      "hash": "002abfa289",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/bulwark_plate.webp",
+      "bytes": 7790,
+      "hash": "2a3977179f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/bulwark_plate_2.webp",
+      "bytes": 8884,
+      "hash": "e5571da22b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/caldera_drop.webp",
+      "bytes": 10798,
+      "hash": "b2e748050d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/chain_vest.webp",
+      "bytes": 7996,
+      "hash": "480d8e3f57",
       "group": "Interface"
     },
     {
@@ -357,15 +471,69 @@
       "group": "Interface"
     },
     {
+      "path": "icons/crown_of_ages.webp",
+      "bytes": 8452,
+      "hash": "455b42f818",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/crystal_heart.webp",
+      "bytes": 6140,
+      "hash": "cf4548d6df",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/dawn_relic.webp",
+      "bytes": 7500,
+      "hash": "6db6ad004c",
+      "group": "Interface"
+    },
+    {
       "path": "icons/dawn_shield.webp",
       "bytes": 8550,
       "hash": "6a78159531",
       "group": "Interface"
     },
     {
+      "path": "icons/deep_hide.webp",
+      "bytes": 10098,
+      "hash": "0530dce19d",
+      "group": "Interface"
+    },
+    {
       "path": "icons/dragon_scales.webp",
       "bytes": 8828,
       "hash": "bac51caac2",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/dread_toll.webp",
+      "bytes": 8162,
+      "hash": "051115c6cb",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/elder_robe.webp",
+      "bytes": 7092,
+      "hash": "627de8efb8",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/ember_flare.webp",
+      "bytes": 9624,
+      "hash": "f8adbc658a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/enchant_remnant.webp",
+      "bytes": 8878,
+      "hash": "3f9e209d03",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/faith_ward.webp",
+      "bytes": 9866,
+      "hash": "0dfa3b3cf3",
       "group": "Interface"
     },
     {
@@ -381,9 +549,21 @@
       "group": "Interface"
     },
     {
+      "path": "icons/focus_crystal.webp",
+      "bytes": 4566,
+      "hash": "b839f93479",
+      "group": "Interface"
+    },
+    {
       "path": "icons/forest_spirit.webp",
       "bytes": 11160,
       "hash": "9ce2c0c8cf",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/frost_nova.webp",
+      "bytes": 11324,
+      "hash": "1ee2cbe83b",
       "group": "Interface"
     },
     {
@@ -393,9 +573,33 @@
       "group": "Interface"
     },
     {
+      "path": "icons/furnace_pulse.webp",
+      "bytes": 10584,
+      "hash": "24ef0c0fb9",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/gather.webp",
+      "bytes": 9774,
+      "hash": "059f22f543",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/geomagnetic_grip.webp",
+      "bytes": 7050,
+      "hash": "b212844542",
+      "group": "Interface"
+    },
+    {
       "path": "icons/giant_belt.webp",
       "bytes": 7224,
       "hash": "5ed251bb55",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/giant_maul.webp",
+      "bytes": 5722,
+      "hash": "e3a990c2fa",
       "group": "Interface"
     },
     {
@@ -405,9 +609,57 @@
       "group": "Interface"
     },
     {
+      "path": "icons/greater_healing_potion.webp",
+      "bytes": 5476,
+      "hash": "a4c78c6837",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/greater_mana_potion.webp",
+      "bytes": 5656,
+      "hash": "7a613fc8ec",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/ground_slam.webp",
+      "bytes": 10776,
+      "hash": "2dd3db87a1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/grove_vigor.webp",
+      "bytes": 9234,
+      "hash": "514e2a869a",
+      "group": "Interface"
+    },
+    {
       "path": "icons/guard_ring.webp",
       "bytes": 8616,
       "hash": "58c79e7c7d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/guardian_shield.webp",
+      "bytes": 7840,
+      "hash": "6a8271e795",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/guiding_light.webp",
+      "bytes": 8150,
+      "hash": "14dbadf4ef",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/healer_herbs.webp",
+      "bytes": 7482,
+      "hash": "411dc11ca8",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/healers_censer.webp",
+      "bytes": 6276,
+      "hash": "da4043ecf5",
       "group": "Interface"
     },
     {
@@ -417,9 +669,45 @@
       "group": "Interface"
     },
     {
+      "path": "icons/heart_stone.webp",
+      "bytes": 4604,
+      "hash": "23eb0bbe5a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/heat_shell.webp",
+      "bytes": 10324,
+      "hash": "7ec5de3ec7",
+      "group": "Interface"
+    },
+    {
       "path": "icons/herd_call.webp",
       "bytes": 8886,
       "hash": "f148a4a577",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/hex_bolt.webp",
+      "bytes": 9414,
+      "hash": "fd3580acae",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/hourglass_charm.webp",
+      "bytes": 4928,
+      "hash": "bc1730e64f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/howl.webp",
+      "bytes": 9398,
+      "hash": "4d6b32135f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/ice_shard.webp",
+      "bytes": 9886,
+      "hash": "74b3986b79",
       "group": "Interface"
     },
     {
@@ -453,6 +741,12 @@
       "group": "Interface"
     },
     {
+      "path": "icons/iron_buckler.webp",
+      "bytes": 5876,
+      "hash": "15ebdce3ea",
+      "group": "Interface"
+    },
+    {
       "path": "icons/iron_claws.webp",
       "bytes": 8270,
       "hash": "fd1bb5b1be",
@@ -465,9 +759,45 @@
       "group": "Interface"
     },
     {
+      "path": "icons/ironbark_mantle.webp",
+      "bytes": 10622,
+      "hash": "ee97251804",
+      "group": "Interface"
+    },
+    {
       "path": "icons/ironwood_shield.webp",
       "bytes": 8494,
       "hash": "367b1132e3",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/keen_dagger.webp",
+      "bytes": 3548,
+      "hash": "c24b6a9e45",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/kingslayer.webp",
+      "bytes": 6602,
+      "hash": "29de7feb20",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/lantern_mend.webp",
+      "bytes": 8672,
+      "hash": "5625f7870a",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/lantern_refuge.webp",
+      "bytes": 9002,
+      "hash": "25ddf1b783",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/last_toll.webp",
+      "bytes": 9870,
+      "hash": "31ed2ed28c",
       "group": "Interface"
     },
     {
@@ -477,9 +807,39 @@
       "group": "Interface"
     },
     {
+      "path": "icons/mage_ring.webp",
+      "bytes": 5032,
+      "hash": "ea078371d0",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/magma_shard.webp",
+      "bytes": 9568,
+      "hash": "ca0687d65f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/magnetize.webp",
+      "bytes": 8596,
+      "hash": "76683b471d",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mana_font.webp",
+      "bytes": 7022,
+      "hash": "8c4091b4a8",
+      "group": "Interface"
+    },
+    {
       "path": "icons/mana_mark.webp",
       "bytes": 8052,
       "hash": "dfaeed1e38",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mana_pearl.webp",
+      "bytes": 5512,
+      "hash": "4abd00138b",
       "group": "Interface"
     },
     {
@@ -495,9 +855,27 @@
       "group": "Interface"
     },
     {
+      "path": "icons/marksman_bow.webp",
+      "bytes": 4664,
+      "hash": "42fd160c24",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mend.webp",
+      "bytes": 8734,
+      "hash": "34ed85238c",
+      "group": "Interface"
+    },
+    {
       "path": "icons/mountain_form.webp",
       "bytes": 9496,
       "hash": "d0e6032ee1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/mourning_field.webp",
+      "bytes": 8782,
+      "hash": "fe3896b653",
       "group": "Interface"
     },
     {
@@ -519,6 +897,18 @@
       "group": "Interface"
     },
     {
+      "path": "icons/repair.webp",
+      "bytes": 9992,
+      "hash": "9683065e77",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/rolling_boulder.webp",
+      "bytes": 8542,
+      "hash": "f0607befa9",
+      "group": "Interface"
+    },
+    {
       "path": "icons/royal_circlet.webp",
       "bytes": 7558,
       "hash": "aa2b6c2b04",
@@ -531,15 +921,39 @@
       "group": "Interface"
     },
     {
+      "path": "icons/sage_treads.webp",
+      "bytes": 6274,
+      "hash": "c92b9b7a79",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sages_hourglass.webp",
+      "bytes": 6886,
+      "hash": "a60c9b647a",
+      "group": "Interface"
+    },
+    {
       "path": "icons/sanctuary.webp",
       "bytes": 7822,
       "hash": "4cecb600ce",
       "group": "Interface"
     },
     {
+      "path": "icons/screech.webp",
+      "bytes": 10106,
+      "hash": "995410df83",
+      "group": "Interface"
+    },
+    {
       "path": "icons/scroll_of_return.webp",
       "bytes": 7948,
       "hash": "6519c789b4",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/sky_piercer.webp",
+      "bytes": 8256,
+      "hash": "6d7dfd5097",
       "group": "Interface"
     },
     {
@@ -555,9 +969,39 @@
       "group": "Interface"
     },
     {
+      "path": "icons/soul_choir.webp",
+      "bytes": 8492,
+      "hash": "d2b4aa4ace",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/soul_lantern.webp",
+      "bytes": 4310,
+      "hash": "4053ee5364",
+      "group": "Interface"
+    },
+    {
       "path": "icons/spear_throw.webp",
       "bytes": 7054,
       "hash": "7ce78ed105",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/spellward_cloak.webp",
+      "bytes": 6428,
+      "hash": "f94cf8697b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/stone_guard.webp",
+      "bytes": 10782,
+      "hash": "61982126a1",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/stone_remnant.webp",
+      "bytes": 7300,
+      "hash": "01bfb3baaf",
       "group": "Interface"
     },
     {
@@ -585,6 +1029,12 @@
       "group": "Interface"
     },
     {
+      "path": "icons/swift_quiver.webp",
+      "bytes": 6034,
+      "hash": "47c455e378",
+      "group": "Interface"
+    },
+    {
       "path": "icons/temple_crown.webp",
       "bytes": 8488,
       "hash": "20915e921e",
@@ -594,6 +1044,30 @@
       "path": "icons/thief_band.webp",
       "bytes": 7284,
       "hash": "94ad3f03fa",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/thorn_dominion.webp",
+      "bytes": 10616,
+      "hash": "2849e49a94",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/tidal_rush.webp",
+      "bytes": 11770,
+      "hash": "2a9fa99100",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/timeworn_tome.webp",
+      "bytes": 7810,
+      "hash": "0cb49efa82",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/titan_aegis.webp",
+      "bytes": 7838,
+      "hash": "a8d6c86d50",
       "group": "Interface"
     },
     {
@@ -612,6 +1086,18 @@
       "path": "icons/tremor.webp",
       "bytes": 9428,
       "hash": "65e3d5aa3f",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/troll_blood.webp",
+      "bytes": 9280,
+      "hash": "46eed6347b",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/troll_heart.webp",
+      "bytes": 6678,
+      "hash": "8f111e2195",
       "group": "Interface"
     },
     {
@@ -696,6 +1182,30 @@
       "path": "icons/ward.webp",
       "bytes": 7646,
       "hash": "2e2723e443",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/warding_cloth.webp",
+      "bytes": 5270,
+      "hash": "77159f700e",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/warlord_blade.webp",
+      "bytes": 4264,
+      "hash": "088c2a06bf",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/web.webp",
+      "bytes": 10336,
+      "hash": "88e851ec47",
+      "group": "Interface"
+    },
+    {
+      "path": "icons/windrunner_boots.webp",
+      "bytes": 6570,
+      "hash": "1fa0b3a4e9",
       "group": "Interface"
     },
     {
@@ -957,6 +1467,30 @@
       "group": "Units"
     },
     {
+      "path": "models/badger_mercenary.glb",
+      "bytes": 215620,
+      "hash": "beaf82182f",
+      "group": "Units"
+    },
+    {
+      "path": "models/badger_mercenary_skin.json",
+      "bytes": 1131,
+      "hash": "53a0dfa570",
+      "group": "Units"
+    },
+    {
+      "path": "models/badger_mercenary_skin.webp",
+      "bytes": 241122,
+      "hash": "2e2a5367a0",
+      "group": "Units"
+    },
+    {
+      "path": "models/badger_mercenary_skin_team.webp",
+      "bytes": 3016,
+      "hash": "b132ec2440",
+      "group": "Units"
+    },
+    {
       "path": "models/bandit.glb",
       "bytes": 189024,
       "hash": "00e4d7d6ca",
@@ -969,6 +1503,30 @@
       "group": "Units"
     },
     {
+      "path": "models/banner_captain.glb",
+      "bytes": 195728,
+      "hash": "f3701d1191",
+      "group": "Units"
+    },
+    {
+      "path": "models/banner_captain_skin.json",
+      "bytes": 1113,
+      "hash": "5a83298b36",
+      "group": "Units"
+    },
+    {
+      "path": "models/banner_captain_skin.webp",
+      "bytes": 181718,
+      "hash": "289a0309e9",
+      "group": "Units"
+    },
+    {
+      "path": "models/banner_captain_skin_team.webp",
+      "bytes": 1172,
+      "hash": "17f2beed3d",
+      "group": "Units"
+    },
+    {
       "path": "models/barracks.glb",
       "bytes": 24408,
       "hash": "0561898387",
@@ -978,6 +1536,12 @@
       "path": "models/barrel.glb",
       "bytes": 11032,
       "hash": "89e58188b2",
+      "group": "Units"
+    },
+    {
+      "path": "models/bell_ward.glb",
+      "bytes": 25148,
+      "hash": "e9d3a3eb0c",
       "group": "Units"
     },
     {
@@ -1002,6 +1566,54 @@
       "path": "models/blood_witch_skin_team.webp",
       "bytes": 19384,
       "hash": "a5694d109a",
+      "group": "Units"
+    },
+    {
+      "path": "models/boar_lancer.glb",
+      "bytes": 251724,
+      "hash": "0247355e7a",
+      "group": "Units"
+    },
+    {
+      "path": "models/boar_lancer_skin.json",
+      "bytes": 2119,
+      "hash": "0ab24a79b3",
+      "group": "Units"
+    },
+    {
+      "path": "models/boar_lancer_skin.webp",
+      "bytes": 437858,
+      "hash": "69a27c1b21",
+      "group": "Units"
+    },
+    {
+      "path": "models/boar_lancer_skin_team.webp",
+      "bytes": 1026,
+      "hash": "5b0ff72604",
+      "group": "Units"
+    },
+    {
+      "path": "models/bolt_cart.glb",
+      "bytes": 61256,
+      "hash": "2160c02d1d",
+      "group": "Units"
+    },
+    {
+      "path": "models/bolt_cart_skin.json",
+      "bytes": 1068,
+      "hash": "b813a6cf9d",
+      "group": "Units"
+    },
+    {
+      "path": "models/bolt_cart_skin.webp",
+      "bytes": 222692,
+      "hash": "7827219808",
+      "group": "Units"
+    },
+    {
+      "path": "models/bolt_cart_skin_team.webp",
+      "bytes": 760,
+      "hash": "7ebf5bf962",
       "group": "Units"
     },
     {
@@ -1059,6 +1671,36 @@
       "group": "Units"
     },
     {
+      "path": "models/bulwark_golem.glb",
+      "bytes": 225700,
+      "hash": "2ebe466327",
+      "group": "Units"
+    },
+    {
+      "path": "models/bulwark_golem_skin.json",
+      "bytes": 1104,
+      "hash": "2cb09797a9",
+      "group": "Units"
+    },
+    {
+      "path": "models/bulwark_golem_skin.webp",
+      "bytes": 192280,
+      "hash": "abf1e19b76",
+      "group": "Units"
+    },
+    {
+      "path": "models/bulwark_golem_skin_team.webp",
+      "bytes": 1250,
+      "hash": "f9e53b6c0c",
+      "group": "Units"
+    },
+    {
+      "path": "models/bulwark_hall.glb",
+      "bytes": 63040,
+      "hash": "62a990bb64",
+      "group": "Units"
+    },
+    {
       "path": "models/bush.glb",
       "bytes": 9076,
       "hash": "14f23d850b",
@@ -1095,9 +1737,45 @@
       "group": "Units"
     },
     {
+      "path": "models/chain_spire.glb",
+      "bytes": 23824,
+      "hash": "d4729ac450",
+      "group": "Units"
+    },
+    {
+      "path": "models/chainbreaker.glb",
+      "bytes": 220316,
+      "hash": "71ad1de894",
+      "group": "Units"
+    },
+    {
+      "path": "models/chainbreaker_skin.json",
+      "bytes": 1095,
+      "hash": "1587d83e5f",
+      "group": "Units"
+    },
+    {
+      "path": "models/chainbreaker_skin.webp",
+      "bytes": 208410,
+      "hash": "70a1d9a989",
+      "group": "Units"
+    },
+    {
+      "path": "models/chainbreaker_skin_team.webp",
+      "bytes": 2734,
+      "hash": "71c2aa22e9",
+      "group": "Units"
+    },
+    {
       "path": "models/chapel.glb",
       "bytes": 22368,
       "hash": "867e32241a",
+      "group": "Units"
+    },
+    {
+      "path": "models/cinder_inn.glb",
+      "bytes": 83892,
+      "hash": "3f915a0548",
       "group": "Units"
     },
     {
@@ -1113,9 +1791,87 @@
       "group": "Units"
     },
     {
+      "path": "models/coalback_porter.glb",
+      "bytes": 230128,
+      "hash": "3b37d7e21e",
+      "group": "Units"
+    },
+    {
+      "path": "models/coalback_porter_skin.json",
+      "bytes": 1122,
+      "hash": "28a25b9423",
+      "group": "Units"
+    },
+    {
+      "path": "models/coalback_porter_skin.webp",
+      "bytes": 214056,
+      "hash": "a615c34322",
+      "group": "Units"
+    },
+    {
+      "path": "models/coalback_porter_skin_team.webp",
+      "bytes": 838,
+      "hash": "71d563417d",
+      "group": "Units"
+    },
+    {
+      "path": "models/covered_ram.glb",
+      "bytes": 95160,
+      "hash": "7e24f1648b",
+      "group": "Units"
+    },
+    {
+      "path": "models/covered_ram_skin.json",
+      "bytes": 1086,
+      "hash": "b702cbb54c",
+      "group": "Units"
+    },
+    {
+      "path": "models/covered_ram_skin.webp",
+      "bytes": 227544,
+      "hash": "39c255c955",
+      "group": "Units"
+    },
+    {
+      "path": "models/covered_ram_skin_team.webp",
+      "bytes": 778,
+      "hash": "503cbfca16",
+      "group": "Units"
+    },
+    {
       "path": "models/crate.glb",
       "bytes": 9308,
       "hash": "35c0d1e162",
+      "group": "Units"
+    },
+    {
+      "path": "models/earth_remnant.glb",
+      "bytes": 37180,
+      "hash": "73fd27e322",
+      "group": "Units"
+    },
+    {
+      "path": "models/earth_spirit.glb",
+      "bytes": 456256,
+      "hash": "59baf60abd",
+      "group": "Units"
+    },
+    {
+      "path": "models/earth_spirit_skin.json",
+      "bytes": 1891,
+      "hash": "ffd9fd9911",
+      "group": "Units"
+    },
+    {
+      "path": "models/earth_spirit_skin.webp",
+      "bytes": 312370,
+      "hash": "54891a5bdd",
+      "group": "Units"
+    },
+    {
+      "path": "models/earth_spirit_skin_team.webp",
+      "bytes": 160,
+      "hash": "b8de443153",
       "group": "Units"
     },
     {
@@ -1185,15 +1941,141 @@
       "group": "Units"
     },
     {
+      "path": "models/foundry_golem.glb",
+      "bytes": 212144,
+      "hash": "a0edaf81a1",
+      "group": "Units"
+    },
+    {
+      "path": "models/foundry_golem_skin.json",
+      "bytes": 1104,
+      "hash": "362f72551e",
+      "group": "Units"
+    },
+    {
+      "path": "models/foundry_golem_skin.webp",
+      "bytes": 215398,
+      "hash": "beb4db5940",
+      "group": "Units"
+    },
+    {
+      "path": "models/foundry_golem_skin_team.webp",
+      "bytes": 1234,
+      "hash": "4c29ac7712",
+      "group": "Units"
+    },
+    {
       "path": "models/fountain_of_life.glb",
       "bytes": 13568,
       "hash": "932330705f",
       "group": "Units"
     },
     {
+      "path": "models/fox_trailshot.glb",
+      "bytes": 200976,
+      "hash": "8c1407abde",
+      "group": "Units"
+    },
+    {
+      "path": "models/fox_trailshot_skin.json",
+      "bytes": 1104,
+      "hash": "9a4014aabe",
+      "group": "Units"
+    },
+    {
+      "path": "models/fox_trailshot_skin.webp",
+      "bytes": 215184,
+      "hash": "e215f581e8",
+      "group": "Units"
+    },
+    {
+      "path": "models/fox_trailshot_skin_team.webp",
+      "bytes": 2710,
+      "hash": "ca3971908e",
+      "group": "Units"
+    },
+    {
+      "path": "models/frost_adept.glb",
+      "bytes": 213516,
+      "hash": "9d4ca95a97",
+      "group": "Units"
+    },
+    {
+      "path": "models/frost_adept_skin.json",
+      "bytes": 1150,
+      "hash": "fb00ca4edf",
+      "group": "Units"
+    },
+    {
+      "path": "models/frost_adept_skin.webp",
+      "bytes": 183730,
+      "hash": "05dbfa8f8e",
+      "group": "Units"
+    },
+    {
+      "path": "models/frost_adept_skin_team.webp",
+      "bytes": 1356,
+      "hash": "400312496f",
+      "group": "Units"
+    },
+    {
+      "path": "models/frost_obelisk.glb",
+      "bytes": 20012,
+      "hash": "67124de2a3",
+      "group": "Units"
+    },
+    {
       "path": "models/gold_mine.glb",
       "bytes": 37096,
       "hash": "5bc372e828",
+      "group": "Units"
+    },
+    {
+      "path": "models/golem_foundry.glb",
+      "bytes": 138588,
+      "hash": "cb283a3f3a",
+      "group": "Units"
+    },
+    {
+      "path": "models/golem_foundry_skin.json",
+      "bytes": 1905,
+      "hash": "910b30cca8",
+      "group": "Units"
+    },
+    {
+      "path": "models/golem_foundry_skin.webp",
+      "bytes": 443020,
+      "hash": "7fb8a2ada0",
+      "group": "Units"
+    },
+    {
+      "path": "models/golem_foundry_skin_team.webp",
+      "bytes": 1806,
+      "hash": "b4c5e4365a",
+      "group": "Units"
+    },
+    {
+      "path": "models/grave_bellkeeper.glb",
+      "bytes": 306036,
+      "hash": "9579927eda",
+      "group": "Units"
+    },
+    {
+      "path": "models/grave_bellkeeper_skin.json",
+      "bytes": 1895,
+      "hash": "2de8c950cc",
+      "group": "Units"
+    },
+    {
+      "path": "models/grave_bellkeeper_skin.webp",
+      "bytes": 419342,
+      "hash": "02ffa29ae9",
+      "group": "Units"
+    },
+    {
+      "path": "models/grave_bellkeeper_skin_team.webp",
+      "bytes": 4336,
+      "hash": "b1b8f6e757",
       "group": "Units"
     },
     {
@@ -1227,6 +2109,12 @@
       "group": "Units"
     },
     {
+      "path": "models/healing_lantern.glb",
+      "bytes": 30008,
+      "hash": "36b5782a81",
+      "group": "Units"
+    },
+    {
       "path": "models/hero_shrine.glb",
       "bytes": 42444,
       "hash": "59c59e4e5a",
@@ -1239,9 +2127,81 @@
       "group": "Units"
     },
     {
+      "path": "models/kite_bomber.glb",
+      "bytes": 200392,
+      "hash": "aa7a6bb431",
+      "group": "Units"
+    },
+    {
+      "path": "models/kite_bomber_skin.json",
+      "bytes": 1086,
+      "hash": "5d3ff06342",
+      "group": "Units"
+    },
+    {
+      "path": "models/kite_bomber_skin.webp",
+      "bytes": 227986,
+      "hash": "81ea727e15",
+      "group": "Units"
+    },
+    {
+      "path": "models/kite_bomber_skin_team.webp",
+      "bytes": 2674,
+      "hash": "afe7c551e6",
+      "group": "Units"
+    },
+    {
       "path": "models/lancer.glb",
       "bytes": 222192,
       "hash": "875e11c48e",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_monk.glb",
+      "bytes": 353136,
+      "hash": "dbec3ccf0a",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_monk_skin.json",
+      "bytes": 1891,
+      "hash": "34f95f1016",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_monk_skin.webp",
+      "bytes": 440246,
+      "hash": "01351bd5c9",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_monk_skin_team.webp",
+      "bytes": 5334,
+      "hash": "f927a4686a",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_novice.glb",
+      "bytes": 195856,
+      "hash": "80a6cb4f2e",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_novice_skin.json",
+      "bytes": 1113,
+      "hash": "1597fdf104",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_novice_skin.webp",
+      "bytes": 182906,
+      "hash": "253f8c86e5",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern_novice_skin_team.webp",
+      "bytes": 1266,
+      "hash": "d4ed87a97c",
       "group": "Units"
     },
     {
@@ -1276,8 +2236,8 @@
     },
     {
       "path": "models/models.json",
-      "bytes": 13495,
-      "hash": "dce4c03d67",
+      "bytes": 23870,
+      "hash": "929099703a",
       "group": "Units"
     },
     {
@@ -1353,6 +2313,54 @@
       "group": "Units"
     },
     {
+      "path": "models/null_warden.glb",
+      "bytes": 194516,
+      "hash": "4908cb53ee",
+      "group": "Units"
+    },
+    {
+      "path": "models/null_warden_skin.json",
+      "bytes": 1086,
+      "hash": "8cd294d33b",
+      "group": "Units"
+    },
+    {
+      "path": "models/null_warden_skin.webp",
+      "bytes": 190460,
+      "hash": "a5071fe900",
+      "group": "Units"
+    },
+    {
+      "path": "models/null_warden_skin_team.webp",
+      "bytes": 526,
+      "hash": "49af7f0bdf",
+      "group": "Units"
+    },
+    {
+      "path": "models/obsidian_heart.glb",
+      "bytes": 284636,
+      "hash": "ea1cae6330",
+      "group": "Units"
+    },
+    {
+      "path": "models/obsidian_heart_skin.json",
+      "bytes": 1893,
+      "hash": "6150625f22",
+      "group": "Units"
+    },
+    {
+      "path": "models/obsidian_heart_skin.webp",
+      "bytes": 467780,
+      "hash": "c897066dcd",
+      "group": "Units"
+    },
+    {
+      "path": "models/obsidian_heart_skin_team.webp",
+      "bytes": 2554,
+      "hash": "073776872d",
+      "group": "Units"
+    },
+    {
       "path": "models/ogre_brute.glb",
       "bytes": 198392,
       "hash": "48a7c766f7",
@@ -1377,6 +2385,66 @@
       "group": "Units"
     },
     {
+      "path": "models/pike_warden.glb",
+      "bytes": 197084,
+      "hash": "816fa57624",
+      "group": "Units"
+    },
+    {
+      "path": "models/pike_warden_skin.json",
+      "bytes": 1150,
+      "hash": "1b17517efe",
+      "group": "Units"
+    },
+    {
+      "path": "models/pike_warden_skin.webp",
+      "bytes": 223196,
+      "hash": "87c5f1307a",
+      "group": "Units"
+    },
+    {
+      "path": "models/pike_warden_skin_team.webp",
+      "bytes": 2450,
+      "hash": "4f402d352f",
+      "group": "Units"
+    },
+    {
+      "path": "models/pitch_basin.glb",
+      "bytes": 28608,
+      "hash": "0719ec2058",
+      "group": "Units"
+    },
+    {
+      "path": "models/rally_bastion.glb",
+      "bytes": 36348,
+      "hash": "cb75672495",
+      "group": "Units"
+    },
+    {
+      "path": "models/ram_drummer.glb",
+      "bytes": 322372,
+      "hash": "770beff5e5",
+      "group": "Units"
+    },
+    {
+      "path": "models/ram_drummer_skin.json",
+      "bytes": 2119,
+      "hash": "b092cb73cf",
+      "group": "Units"
+    },
+    {
+      "path": "models/ram_drummer_skin.webp",
+      "bytes": 404494,
+      "hash": "8bd1f6cfdf",
+      "group": "Units"
+    },
+    {
+      "path": "models/ram_drummer_skin_team.webp",
+      "bytes": 2206,
+      "hash": "52c8420ce3",
+      "group": "Units"
+    },
+    {
       "path": "models/ratling_cutthroat.glb",
       "bytes": 199380,
       "hash": "44e458f1e4",
@@ -1398,6 +2466,42 @@
       "path": "models/ratling_cutthroat_skin_team.webp",
       "bytes": 8626,
       "hash": "4d16620c26",
+      "group": "Units"
+    },
+    {
+      "path": "models/reinforced_wall.glb",
+      "bytes": 45316,
+      "hash": "ff8877a6b8",
+      "group": "Units"
+    },
+    {
+      "path": "models/reliquary_guard.glb",
+      "bytes": 210304,
+      "hash": "8202d3b8eb",
+      "group": "Units"
+    },
+    {
+      "path": "models/reliquary_guard_skin.json",
+      "bytes": 1122,
+      "hash": "2eecfd7f61",
+      "group": "Units"
+    },
+    {
+      "path": "models/reliquary_guard_skin.webp",
+      "bytes": 205636,
+      "hash": "82016f8856",
+      "group": "Units"
+    },
+    {
+      "path": "models/reliquary_guard_skin_team.webp",
+      "bytes": 708,
+      "hash": "be8146984c",
+      "group": "Units"
+    },
+    {
+      "path": "models/repair_post.glb",
+      "bytes": 49692,
+      "hash": "e3683ba2cf",
       "group": "Units"
     },
     {
@@ -1431,6 +2535,30 @@
       "group": "Units"
     },
     {
+      "path": "models/rune_gunner.glb",
+      "bytes": 196300,
+      "hash": "c08287d336",
+      "group": "Units"
+    },
+    {
+      "path": "models/rune_gunner_skin.json",
+      "bytes": 1086,
+      "hash": "f3abe0a2a9",
+      "group": "Units"
+    },
+    {
+      "path": "models/rune_gunner_skin.webp",
+      "bytes": 212946,
+      "hash": "b731104cbb",
+      "group": "Units"
+    },
+    {
+      "path": "models/rune_gunner_skin_team.webp",
+      "bytes": 2042,
+      "hash": "18b95c4021",
+      "group": "Units"
+    },
+    {
       "path": "models/shellback_beetle.glb",
       "bytes": 94636,
       "hash": "e5a9522baf",
@@ -1455,9 +2583,39 @@
       "group": "Units"
     },
     {
+      "path": "models/shield_pylon.glb",
+      "bytes": 23108,
+      "hash": "2633cdf4dc",
+      "group": "Units"
+    },
+    {
       "path": "models/side_shop.glb",
       "bytes": 18316,
       "hash": "85104f2d90",
+      "group": "Units"
+    },
+    {
+      "path": "models/siege_golem.glb",
+      "bytes": 239508,
+      "hash": "282336a938",
+      "group": "Units"
+    },
+    {
+      "path": "models/siege_golem_skin.json",
+      "bytes": 1086,
+      "hash": "d7da835a12",
+      "group": "Units"
+    },
+    {
+      "path": "models/siege_golem_skin.webp",
+      "bytes": 203636,
+      "hash": "a0de7be271",
+      "group": "Units"
+    },
+    {
+      "path": "models/siege_golem_skin_team.webp",
+      "bytes": 1044,
+      "hash": "ba8e4f9aee",
       "group": "Units"
     },
     {
@@ -1551,6 +2709,12 @@
       "group": "Units"
     },
     {
+      "path": "models/stone_wall.glb",
+      "bytes": 28608,
+      "hash": "d3aa874a29",
+      "group": "Units"
+    },
+    {
       "path": "models/stronghold.glb",
       "bytes": 34536,
       "hash": "8880ce58be",
@@ -1578,6 +2742,60 @@
       "path": "models/temple_market.glb",
       "bytes": 27628,
       "hash": "9593fd39a3",
+      "group": "Units"
+    },
+    {
+      "path": "models/thorn_marshal.glb",
+      "bytes": 325544,
+      "hash": "538547e860",
+      "group": "Units"
+    },
+    {
+      "path": "models/thorn_marshal_skin.json",
+      "bytes": 1892,
+      "hash": "f52647f062",
+      "group": "Units"
+    },
+    {
+      "path": "models/thorn_marshal_skin.webp",
+      "bytes": 454228,
+      "hash": "f53dab4ac0",
+      "group": "Units"
+    },
+    {
+      "path": "models/thorn_marshal_skin_team.webp",
+      "bytes": 5444,
+      "hash": "8c1dc23313",
+      "group": "Units"
+    },
+    {
+      "path": "models/tidebreaker.glb",
+      "bytes": 309488,
+      "hash": "6b320b9413",
+      "group": "Units"
+    },
+    {
+      "path": "models/tidebreaker_skin.json",
+      "bytes": 1890,
+      "hash": "03e142ca96",
+      "group": "Units"
+    },
+    {
+      "path": "models/tidebreaker_skin.webp",
+      "bytes": 468456,
+      "hash": "9b517a9007",
+      "group": "Units"
+    },
+    {
+      "path": "models/tidebreaker_skin_team.webp",
+      "bytes": 3324,
+      "hash": "d779343f6b",
+      "group": "Units"
+    },
+    {
+      "path": "models/timber_wall.glb",
+      "bytes": 42772,
+      "hash": "a7e4968a0f",
       "group": "Units"
     },
     {
@@ -1638,6 +2856,12 @@
       "path": "models/troll_shaman.glb",
       "bytes": 189500,
       "hash": "5c2cf30583",
+      "group": "Units"
+    },
+    {
+      "path": "models/tusk_lodge.glb",
+      "bytes": 58388,
+      "hash": "c6c7c0f2c7",
       "group": "Units"
     },
     {
@@ -1713,9 +2937,45 @@
       "group": "Units"
     },
     {
+      "path": "models/veil_sister.glb",
+      "bytes": 190628,
+      "hash": "5f5d20717a",
+      "group": "Units"
+    },
+    {
+      "path": "models/veil_sister_skin.json",
+      "bytes": 1086,
+      "hash": "fd613a43be",
+      "group": "Units"
+    },
+    {
+      "path": "models/veil_sister_skin.webp",
+      "bytes": 167026,
+      "hash": "a35d03f8c3",
+      "group": "Units"
+    },
+    {
+      "path": "models/veil_sister_skin_team.webp",
+      "bytes": 2156,
+      "hash": "655542f86b",
+      "group": "Units"
+    },
+    {
       "path": "models/watchtower.glb",
       "bytes": 25540,
       "hash": "99dcba203c",
+      "group": "Units"
+    },
+    {
+      "path": "models/wayfarer_inn.glb",
+      "bytes": 66452,
+      "hash": "899f2e0028",
+      "group": "Units"
+    },
+    {
+      "path": "models/wind_totem.glb",
+      "bytes": 31944,
+      "hash": "311f861bfa",
       "group": "Units"
     },
     {
@@ -1743,15 +3003,45 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/badger_mercenary.webp",
+      "bytes": 4158,
+      "hash": "a1e5c1b262",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/bandit.webp",
       "bytes": 5312,
       "hash": "19f93bd7e4",
       "group": "Interface"
     },
     {
+      "path": "portraits/banner_captain.webp",
+      "bytes": 3328,
+      "hash": "2c54ed1f09",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/blood_witch.webp",
       "bytes": 6530,
       "hash": "c3777321ff",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/boar_lancer.webp",
+      "bytes": 3162,
+      "hash": "9a4a4762fe",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/bolt_cart.webp",
+      "bytes": 2382,
+      "hash": "5261b1fedd",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/bulwark_golem.webp",
+      "bytes": 4346,
+      "hash": "9864b8c76c",
       "group": "Interface"
     },
     {
@@ -1767,9 +3057,39 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/chainbreaker.webp",
+      "bytes": 4152,
+      "hash": "9c1789ba6e",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/cleric.webp",
       "bytes": 5192,
       "hash": "b984f1669c",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/coalback_porter.webp",
+      "bytes": 4554,
+      "hash": "df2d467d80",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/covered_ram.webp",
+      "bytes": 3232,
+      "hash": "7d5c23b96d",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/earth_remnant.webp",
+      "bytes": 2516,
+      "hash": "73dde7cc57",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/earth_spirit.webp",
+      "bytes": 3714,
+      "hash": "979e98af81",
       "group": "Interface"
     },
     {
@@ -1788,6 +3108,30 @@
       "path": "portraits/forest_troll.webp",
       "bytes": 6300,
       "hash": "0c21c83397",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/foundry_golem.webp",
+      "bytes": 4412,
+      "hash": "d36539f919",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/fox_trailshot.webp",
+      "bytes": 3786,
+      "hash": "04cb606a2f",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/frost_adept.webp",
+      "bytes": 2890,
+      "hash": "15e8ceb81d",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/grave_bellkeeper.webp",
+      "bytes": 3848,
+      "hash": "c17efd4045",
       "group": "Interface"
     },
     {
@@ -1815,6 +3159,18 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/healing_lantern.webp",
+      "bytes": 4170,
+      "hash": "895b598b71",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/kite_bomber.webp",
+      "bytes": 2554,
+      "hash": "7e61c3b465",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/lancer.webp",
       "bytes": 6478,
       "hash": "196dd50add",
@@ -1827,9 +3183,33 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/lantern_monk.webp",
+      "bytes": 4320,
+      "hash": "66f2d5706b",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/lantern_novice.webp",
+      "bytes": 4476,
+      "hash": "3df1b0fdf3",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/light_healer.webp",
       "bytes": 6632,
       "hash": "4f4890e9f3",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/null_warden.webp",
+      "bytes": 4050,
+      "hash": "8892a60b08",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/obsidian_heart.webp",
+      "bytes": 4490,
+      "hash": "e6b811baa4",
       "group": "Interface"
     },
     {
@@ -1839,9 +3219,27 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/pike_warden.webp",
+      "bytes": 1690,
+      "hash": "b4d0e45bf1",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/ram_drummer.webp",
+      "bytes": 3468,
+      "hash": "94d2b31355",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/ratling_cutthroat.webp",
       "bytes": 3396,
       "hash": "9b64b2fa66",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/reliquary_guard.webp",
+      "bytes": 4100,
+      "hash": "665587c49c",
       "group": "Interface"
     },
     {
@@ -1851,9 +3249,21 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/rune_gunner.webp",
+      "bytes": 4134,
+      "hash": "a07bc1b903",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/shellback_beetle.webp",
       "bytes": 2268,
       "hash": "360b0e1160",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/siege_golem.webp",
+      "bytes": 4898,
+      "hash": "8ae81f94a4",
       "group": "Interface"
     },
     {
@@ -1893,6 +3303,18 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/thorn_marshal.webp",
+      "bytes": 2598,
+      "hash": "b2e935c0d7",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/tidebreaker.webp",
+      "bytes": 4830,
+      "hash": "4f9458f0c2",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/toadfolk_mystic.webp",
       "bytes": 3926,
       "hash": "0ced0c99d2",
@@ -1902,6 +3324,12 @@
       "path": "portraits/tree_guardian.webp",
       "bytes": 7482,
       "hash": "04085f6dd8",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/veil_sister.webp",
+      "bytes": 3918,
+      "hash": "1c18b217c2",
       "group": "Interface"
     },
     {

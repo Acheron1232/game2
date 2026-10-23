@@ -82,7 +82,9 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 - **Top bar:** game time, ally heroes (portrait, level, health), your gold, Menu button.
 - **AI status panel:** status line, army supply, Town Hall tier, worker count. Click it to move the camera to your base.
 - **Bottom bar:** minimap (left), hero panel (middle), inventory 2 × 3 (right).
-- **Selected other unit:** the middle panel shows its portrait, name, health, armor, damage (no buttons).
+- **Selected other unit:** the middle panel shows its portrait, name, health, armor, damage, and a row of small ability icons. Works for any owner: own, ally, enemy, neutral. Hover an icon: a tooltip above the panel with the text and the numbers of every level. How far a hero has learned an ability is not shown (user's choice: icon and text only). Unit skill names and text are in `shared/data/skills.json`, their numbers on the unit in `units.json`, their icons in `icons_skills` (one Codex sheet).
+- **Own unit skills:** on an own unit (army or hired) the active skills are buttons (gold edge, cooldown sweep, blue when there is no mana). Click: skills around the unit go off at once; one-target skills ask for a target (left click; right click or Esc cancels). The unit must already be in range ("Too far from your unit.").
+- **Hover card:** pointing at a hero or unit in the world (not the own hero, not the selected unit, not buildings) shows a small card next to the mouse: name, level, ally/enemy/neutral and one line per ability (its name and text). Click for the numbers.
 - **Shop / Town Hall panel:** opens above the inventory when the hero is near and the building is selected.
 - **Floating:** health bars (team color for allies, red for enemies, yellow for neutrals), damage numbers, gold pop-ups on last hits, ground markers for aiming.
 - **Scoreboard (Tab):** per player: hero, level, kills, deaths, gold, camps, faction army supply, Town Hall tier.
@@ -107,14 +109,14 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 
 ## 5. Shop panel
 
-Grid of item icons with price under each. Hover = tooltip. Left or right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?" (Yes / No). The panel opens when you click a shop building while your hero stands next to it (never by itself); it closes when the hero walks away, or with ✕ / Esc. The Town Hall (upgrades), own production buildings (hiring) and taverns work the same way.
+Grid of item icons with price under each. Hover = tooltip. Left or right click = buy. Items you can not afford are dimmed. Drop an item from your inventory onto the panel to sell: "Sell for 125 gold?" (Yes / No). The panel opens when you click a shop building while your hero stands next to it (never by itself); it closes when the hero walks away, or with ✕ / Esc. The Town Hall (upgrades), own production buildings (hiring) and taverns work the same way. The price on a recipe item is what the hero pays now: the parts it carries count ("Your parts pay 550 gold of it."), and the tooltip says what it is made from. Big shops (the Trader's Tent sells 26 items) show as many columns as fit and scroll.
 
 ## 6. Tooltips (parchment box)
 
 ```
 Blood Bolt (Q)           Level 2
 Throw a bolt of blood at an enemy. Costs health, not mana.
-Damage: 90 / [150] / 210
+Damage: 90 / [150] / 210 / 270
 Health cost: 55     Cooldown: 8 s     Range: 7
 ```
 Rules: name + hotkey, one line of text, then the numbers. Current level in brackets.
