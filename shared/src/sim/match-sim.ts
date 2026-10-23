@@ -868,7 +868,8 @@ export class MatchSim {
   /**
    * Hired soldiers: they pick their own targets and stay in their fight when the hero takes a
    * step; they leave a fight only when it is more than hire.leash from the hero, and walk back
-   * to a spot near it. Without a hero (dead) they wait at its respawn point.
+   * to a spot near it. Without a hero (dead) they wait at its respawn point. When the hero has
+   * an attack order on one enemy, they all attack that enemy.
    */
   private followHired(e: SimEntity, due: boolean): void {
     const leader = this.byId.get(e.leaderId);
@@ -879,6 +880,23 @@ export class MatchSim {
       return;
     }
     const alive = leader.alive;
+    // The player chose this enemy (A + click, or right click): every soldier that can hit it
+    // joins in, also beyond the leash. Read from the hero's order (orderTarget, not targetId,
+    // so a taunt on the hero does not move them), so it ends with the next order or the kill.
+    const focus = alive && leader.order === 'attack' ? this.byId.get(leader.orderTarget) : undefined;
+    if (
+      focus?.alive &&
+      !focus.invulnerable &&
+      !focus.hidden &&
+      !hiddenFrom(focus, e.team) &&
+      canAttackLayer(e.stats.canHitAir, focus.stats.layer)
+    ) {
+      if (e.targetId !== focus.id) {
+        e.targetId = focus.id;
+        e.swing = 0;
+      }
+      return;
+    }
     const lx = alive ? leader.mover.x : leader.heroState.home[0],
       ly = alive ? leader.mover.y : leader.heroState.home[1];
     if (e.targetId) {

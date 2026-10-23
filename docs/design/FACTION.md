@@ -96,8 +96,9 @@ The player's hero can hire soldiers for itself, with **hero gold** (rules.json `
 
 - Stand next to one of your own finished production buildings (Barracks, Archery Range, Chapel, Workshop, Hawk Roost). A "Hire at …" panel opens with the units that building trains. Same tech as the kingdom: a Lancer needs Stronghold and Forge.
 - Price = (unit gold + unit wood) × `priceFactor` (1.5): Swordsman 180, Archer 225, Cleric 285, Catapult 420, Lancer 450, Hawk Rider 525.
-- Up to `maxSupply` (12) supply of soldiers per hero. They use no kingdom supply and are not part of the kingdom's army; Town Hall upgrades work on them.
+- Up to `maxSupply` (30) supply of soldiers per hero (15 two-supply soldiers at most). They use no kingdom supply and are not part of the kingdom's army; Town Hall upgrades work on them.
 - The player does not give them orders. They follow the hero (a spot near it), choose their own targets, and stay in their fight when the hero takes a few steps. They leave a fight only when it is more than `leash` (14) from the hero. They fight neutral camps only when the hero fights. When the hero is dead they walk to its respawn point and wait.
+- **Focus fire:** when the hero gets an attack order on one enemy (A + click, or right click on it), every soldier that can hit that enemy attacks it, also past the leash. It ends when the hero gets another order (move, stop, attack-move on the ground...) or the enemy dies; then they choose their own targets again. Soldiers that can not hit it (ground fighters vs. a flyer) keep their own targets. It follows the hero's order, not its current target, so a taunt on the hero does not pull the soldiers away. Bot heroes use the same order on camps, so their soldiers focus too.
 - Bot heroes (Bot slots) hire too (ai.json `heroBot.hiring`): from level 3, the most expensive unit they can pay while keeping 350 gold, at an own building or a tavern within 90. The faction's own hero does not hire (it has the whole army).
 
 ### Taverns (mercenaries)
