@@ -137,6 +137,8 @@ function buildingBusy(sim: MatchSim, f: FactionState): boolean {
   return false;
 }
 
+const WALLS = gameData.ai.faction['fortifications'] as { minGold: number; minWood: number };
+
 function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
   const factions = sim.factions!;
   let workers = 0;
@@ -153,6 +155,9 @@ function canBuildOrTrain(sim: MatchSim, f: FactionState): boolean {
         : factions.has(f, def.id) || hasSite(sim, f, def.id)
     )
       continue;
+    // Walls come only from the AI's wall plan, which keeps a gold and wood reserve (ai.json
+    // fortifications): a kingdom without gold income and with wood for a timber wall is not idle.
+    if (def.id.endsWith('_wall') && (f.gold < WALLS.minGold || f.wood < WALLS.minWood)) continue;
     if (factions.canPay(f, def.cost)) return true;
   }
   for (const id of f.buildings) {

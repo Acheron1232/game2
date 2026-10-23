@@ -27,6 +27,8 @@ const PACE_GOAL_DISTANCE = 12;
 /** In front of its place by up to this much more: a unit slows down; farther: it waits. */
 const PACE_WAIT = 6;
 const PACE_SLOW = 0.6;
+/** Members this close to the group's focus building hit it (see ArmyGroup.focusId). */
+const FOCUS_RANGE = 18;
 
 export type ArmyMode = 'gather' | 'attack' | 'retreat';
 
@@ -39,6 +41,11 @@ export interface ArmyGroup {
   targetY: number;
   /** attack mode also fights neutral monsters (clearing a camp); off: walk past camps */
   neutrals: boolean;
+  /**
+   * attack mode: a building (an enemy Town Hall) the members near it hit and keep hitting,
+   * whatever fights them there (0 = none). Defending heroes respawn; the Town Hall does not.
+   */
+  focusId: number;
   /** marching: median path distance to the goal of the walking members (NaN = no pace this tick) */
   paceMiddle: number;
   /** marching: move speed of the slowest walking member */
@@ -82,6 +89,7 @@ export class ArmyMover {
       targetX: x,
       targetY: y,
       neutrals: false,
+      focusId: 0,
       paceMiddle: NaN,
       paceSpeed: 0,
     };
@@ -235,6 +243,9 @@ export class ArmyMover {
       e.swing = 0;
       e.speedCap = 0;
       this.setOrder(g, e);
+    } else if (g.mode === 'attack' && g.focusId && this.focus(g, e)) {
+      this.markNotWalking(move, e);
+      return;
     } else if (g.mode === 'attack' && e.targetId) {
       e.speedCap = 0;
       // Chase leash: a unit that ran this far away, or this far from the group's goal, is let
@@ -316,6 +327,24 @@ export class ArmyMover {
       return;
     }
     e.mover.path = [[e.mover.x + this.direction.x * STEP_DISTANCE, e.mover.y + this.direction.y * STEP_DISTANCE]];
+  }
+
+  /** A member close to the group's focus building attacks it. False when it is gone or far. */
+  private focus(g: ArmyGroup, e: SimEntity): boolean {
+    const b = this.sim.get(g.focusId);
+    if (!b?.alive) {
+      g.focusId = 0;
+      return false;
+    }
+    if (e.stats.damageMax <= 0 || Math.hypot(b.mover.x - e.mover.x, b.mover.y - e.mover.y) > FOCUS_RANGE) return false;
+    if (e.targetId !== b.id) {
+      e.targetId = b.id;
+      e.swing = 0;
+    }
+    // 'attack' keeps the target: attack-move would turn to the heroes that fight back.
+    e.order = 'attack';
+    e.speedCap = 0;
+    return true;
   }
 
   /** At the goal: gather/retreat stop; attackers stay and fight what is near (the goal may be a building). */
