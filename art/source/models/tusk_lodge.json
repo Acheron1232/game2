@@ -1,0 +1,15 @@
+{
+  "id": "tusk_lodge",
+  "triangles": 796,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": true
+    }
+  ],
+  "height": 2.95,
+  "sockets": [],
+  "skin": "golem_foundry_skin"
+}

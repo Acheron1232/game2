@@ -1,0 +1,58 @@
+{
+  "id": "earth_spirit",
+  "triangles": 5168,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 78,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 36,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 47,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 16,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 52,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 62,
+      "loop": false
+    },
+    {
+      "name": "roll",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 2.373,
+  "sockets": [
+    "weapon",
+    "core"
+  ],
+  "skin": "earth_spirit_skin"
+}

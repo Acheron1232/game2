@@ -1,0 +1,50 @@
+{
+  "id": "ram_drummer",
+  "triangles": 2970,
+  "bones": 26,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 24,
+      "loop": true
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 48,
+      "loop": false
+    },
+    {
+      "name": "attack",
+      "frames": 30,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 30,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 30,
+      "loop": false
+    }
+  ],
+  "height": 2.15,
+  "sockets": [],
+  "skin": "ram_drummer_skin"
+}

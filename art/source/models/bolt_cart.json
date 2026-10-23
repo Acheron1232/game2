@@ -1,0 +1,52 @@
+{
+  "id": "bolt_cart",
+  "triangles": 568,
+  "bones": 6,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 29,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 36,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 30,
+      "loop": false
+    }
+  ],
+  "height": 1.85,
+  "sockets": [
+    "weapon"
+  ],
+  "skin": "bolt_cart_skin"
+}

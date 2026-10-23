@@ -1,0 +1,17 @@
+{
+  "id": "pitch_basin",
+  "triangles": 308,
+  "bones": 2,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 90,
+      "loop": true
+    }
+  ],
+  "height": 0.43,
+  "sockets": [
+    "effect"
+  ],
+  "skin": "golem_foundry_skin"
+}

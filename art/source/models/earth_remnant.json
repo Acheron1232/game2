@@ -1,0 +1,15 @@
+{
+  "id": "earth_remnant",
+  "triangles": 440,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 1,
+      "loop": true
+    }
+  ],
+  "height": 1.285,
+  "sockets": [],
+  "skin": "earth_spirit_skin"
+}

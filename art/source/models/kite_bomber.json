@@ -1,0 +1,52 @@
+{
+  "id": "kite_bomber",
+  "triangles": 1514,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 48,
+      "loop": false
+    },
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": false
+    },
+    {
+      "name": "walk",
+      "frames": 32,
+      "loop": false
+    },
+    {
+      "name": "attack",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 40,
+      "loop": false
+    }
+  ],
+  "height": 1.759,
+  "sockets": [
+    "bomb"
+  ],
+  "skin": "kite_bomber_skin"
+}

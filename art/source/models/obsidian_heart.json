@@ -1,0 +1,53 @@
+{
+  "id": "obsidian_heart",
+  "triangles": 4324,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "attack",
+      "frames": 34,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 34,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 44,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 15,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 49,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 59,
+      "loop": false
+    },
+    {
+      "name": "idle",
+      "frames": 60,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 60,
+      "loop": true
+    }
+  ],
+  "height": 2.373,
+  "sockets": [
+    "weapon",
+    "core"
+  ],
+  "skin": "obsidian_heart_skin"
+}

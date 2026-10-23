@@ -1,0 +1,121 @@
+[
+  {
+    "id": "thorn_marshal",
+    "triangles": 4000,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 16,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "grave_bellkeeper",
+    "triangles": 4080,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 13,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "tidebreaker",
+    "triangles": 3912,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 16,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "lantern_monk",
+    "triangles": 4536,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 15,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "obsidian_heart",
+    "triangles": 4324,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 9,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "foundry_golem",
+    "triangles": 1378,
+    "bones": 19,
+    "clips": [
+      "attack",
+      "attack2",
+      "cast",
+      "death",
+      "hit",
+      "idle",
+      "victory",
+      "walk"
+    ],
+    "paintedCells": 8,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  },
+  {
+    "id": "golem_foundry",
+    "triangles": 1964,
+    "bones": 2,
+    "clips": [
+      "idle"
+    ],
+    "paintedCells": 16,
+    "uvWithinSingleCell": true,
+    "packedImages": 1
+  }
+]

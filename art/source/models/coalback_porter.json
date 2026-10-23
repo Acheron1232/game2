@@ -1,0 +1,50 @@
+{
+  "id": "coalback_porter",
+  "triangles": 1838,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 72,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 34,
+      "loop": true
+    },
+    {
+      "name": "hit",
+      "frames": 14,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 48,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 58,
+      "loop": false
+    },
+    {
+      "name": "attack",
+      "frames": 34,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 34,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 34,
+      "loop": false
+    }
+  ],
+  "height": 1.79,
+  "sockets": [],
+  "skin": "coalback_porter_skin"
+}

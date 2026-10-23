@@ -1,0 +1,17 @@
+{
+  "id": "shield_pylon",
+  "triangles": 220,
+  "bones": 2,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 90,
+      "loop": true
+    }
+  ],
+  "height": 2.32,
+  "sockets": [
+    "effect"
+  ],
+  "skin": "golem_foundry_skin"
+}

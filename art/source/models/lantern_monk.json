@@ -1,0 +1,53 @@
+{
+  "id": "lantern_monk",
+  "triangles": 4536,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 62,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 29,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 29,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 29,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 37,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 12,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 42,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 50,
+      "loop": false
+    }
+  ],
+  "height": 2.14,
+  "sockets": [
+    "weapon",
+    "lantern"
+  ],
+  "skin": "lantern_monk_skin"
+}

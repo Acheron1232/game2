@@ -1,0 +1,52 @@
+{
+  "id": "pike_warden",
+  "triangles": 1206,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 66,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 31,
+      "loop": true
+    },
+    {
+      "name": "cast",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 13,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 44,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 53,
+      "loop": false
+    },
+    {
+      "name": "attack",
+      "frames": 40,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 40,
+      "loop": false
+    }
+  ],
+  "height": 2.352,
+  "sockets": [
+    "weapon"
+  ],
+  "skin": "pike_warden_skin"
+}

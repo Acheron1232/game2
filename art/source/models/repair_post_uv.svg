@@ -1,0 +1,362 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="1024" height="512" viewBox="0 0 1024 512"
+     xmlns="http://www.w3.org/2000/svg" version="1.1">
+<desc>, (Blender 5.2.2 LTS)</desc>
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,124.647 518.052,126.000 516.000,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,126.000 518.052,124.647 516.000,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,3.353 516.000,3.353 518.052,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,3.353 518.052,2.000 516.000,3.353 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,124.647 764.000,124.647 761.948,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,124.647 761.948,126.000 764.000,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,3.353 761.948,2.000 764.000,3.353 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,3.353 764.000,3.353 761.948,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,3.353 518.052,124.647 516.000,124.647 516.000,3.353 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="516.000,116.080 516.000,11.920 518.705,11.920 518.705,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,124.647 518.052,3.353 516.000,3.353 516.000,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="764.000,11.920 764.000,116.080 761.295,116.080 761.295,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,3.353 518.052,3.353 518.052,2.000 761.948,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,3.353 761.948,3.353 761.948,2.000 518.052,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.295,11.920 761.295,116.080 764.000,116.080 764.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,124.647 761.948,3.353 764.000,3.353 764.000,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,3.353 761.948,124.647 764.000,124.647 764.000,3.353 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="516.000,11.920 516.000,116.080 518.705,116.080 518.705,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,124.647 761.948,124.647 761.948,126.000 518.052,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,124.647 518.052,124.647 518.052,126.000 761.948,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,3.353 761.948,3.353 761.948,124.647 518.052,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.705,116.080 518.705,11.920 761.295,11.920 761.295,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,116.080 761.948,11.920 518.052,11.920 518.052,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.948,3.353 518.052,3.353 518.052,124.647 761.948,124.647 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="518.052,116.080 518.052,11.920 761.948,11.920 761.948,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="761.295,116.080 761.295,11.920 518.705,11.920 518.705,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,126.000 10.868,120.748 4.000,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,7.252 10.868,2.000 4.000,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,126.000 4.000,120.748 10.868,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,2.000 10.868,7.252 4.000,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,126.000 252.000,120.748 245.132,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,2.000 245.132,7.252 252.000,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,126.000 245.132,120.748 252.000,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,2.000 252.000,7.252 245.132,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="232.160,126.000 23.840,126.000 23.840,120.748 232.160,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,120.748 10.868,7.252 4.000,7.252 4.000,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="23.840,2.000 232.160,2.000 232.160,7.252 23.840,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,7.252 10.868,120.748 4.000,120.748 4.000,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,126.000 10.868,126.000 10.868,120.748 245.132,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,2.000 245.132,2.000 245.132,7.252 10.868,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="252.000,7.252 252.000,120.748 245.132,120.748 245.132,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="23.840,126.000 232.160,126.000 232.160,120.748 23.840,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="232.160,2.000 23.840,2.000 23.840,7.252 232.160,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,7.252 245.132,120.748 252.000,120.748 252.000,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,126.000 245.132,126.000 245.132,120.748 10.868,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,2.000 10.868,2.000 10.868,7.252 245.132,7.252 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,11.920 245.132,11.920 245.132,116.080 10.868,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="23.840,120.748 23.840,7.252 232.160,7.252 232.160,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,120.748 245.132,7.252 10.868,7.252 10.868,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="245.132,11.920 10.868,11.920 10.868,116.080 245.132,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="10.868,120.748 10.868,7.252 245.132,7.252 245.132,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="232.160,120.748 232.160,7.252 23.840,7.252 23.840,120.748 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 791.840,124.788 772.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 791.840,116.080 772.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 772.000,124.788 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 791.840,2.000 772.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 1020.000,124.788 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 1000.160,126.000 1020.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 1000.160,124.788 1020.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 1020.000,11.920 1000.160,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 791.840,116.080 772.000,116.080 772.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 772.000,3.212 772.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,116.080 791.840,11.920 772.000,11.920 772.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,3.212 791.840,124.788 772.000,124.788 772.000,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 791.840,126.000 791.840,124.788 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 1000.160,11.920 1000.160,2.000 791.840,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,3.212 1020.000,124.788 1000.160,124.788 1000.160,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 1000.160,11.920 1020.000,11.920 1020.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 1000.160,116.080 1020.000,116.080 1020.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,3.212 1000.160,124.788 1020.000,124.788 1020.000,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 1000.160,126.000 1000.160,124.788 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 791.840,116.080 791.840,126.000 1000.160,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 1000.160,11.920 1000.160,116.080 791.840,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 1000.160,3.212 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,124.788 1000.160,3.212 791.840,3.212 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 791.840,11.920 791.840,116.080 1000.160,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 1000.160,3.212 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,124.788 1000.160,3.212 791.840,3.212 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 791.840,124.788 772.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 791.840,116.080 772.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 772.000,124.788 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 791.840,2.000 772.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 1020.000,124.788 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 1000.160,126.000 1020.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 1000.160,124.788 1020.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 1020.000,11.920 1000.160,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 791.840,116.080 772.000,116.080 772.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 772.000,3.212 772.000,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,116.080 791.840,11.920 772.000,11.920 772.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,3.212 791.840,124.788 772.000,124.788 772.000,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 791.840,126.000 791.840,124.788 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 1000.160,11.920 1000.160,2.000 791.840,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,3.212 1020.000,124.788 1000.160,124.788 1000.160,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 1000.160,11.920 1020.000,11.920 1020.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 1000.160,116.080 1020.000,116.080 1020.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,3.212 1000.160,124.788 1020.000,124.788 1020.000,3.212 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 1000.160,126.000 1000.160,124.788 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,116.080 791.840,116.080 791.840,126.000 1000.160,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,11.920 1000.160,11.920 1000.160,116.080 791.840,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 1000.160,3.212 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,124.788 1000.160,3.212 791.840,3.212 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,11.920 791.840,11.920 791.840,116.080 1000.160,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,124.788 791.840,3.212 1000.160,3.212 1000.160,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,124.788 1000.160,3.212 791.840,3.212 791.840,124.788 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="508.000,126.000 260.000,126.000 260.000,114.048 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="508.000,126.000 260.000,114.048 384.000,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="508.000,126.000 384.000,2.000 508.000,114.048 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="384.000,2.000 384.000,126.000 508.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="384.000,2.000 508.000,126.000 508.000,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,114.048 260.000,126.000 508.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,114.048 508.000,126.000 508.000,114.048 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="508.000,126.000 260.000,126.000 260.000,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="508.000,126.000 260.000,2.000 508.000,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,2.000 260.000,126.000 384.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,2.000 384.000,126.000 384.000,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="384.000,2.000 260.000,114.048 260.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="384.000,2.000 260.000,126.000 508.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="384.000,2.000 508.000,126.000 508.000,114.048 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,126.000 260.000,114.048 508.000,114.048 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="260.000,126.000 508.000,114.048 508.000,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,126.000 772.000,116.080 776.409,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,11.920 776.409,2.000 776.409,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,126.000 1015.591,116.080 1020.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,2.000 1020.000,11.920 1015.591,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,126.000 776.409,116.080 772.000,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,2.000 772.000,11.920 776.409,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,126.000 1020.000,116.080 1015.591,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,2.000 1015.591,11.920 1020.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,126.000 776.409,126.000 776.409,116.080 1015.591,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,116.080 772.000,11.920 776.409,11.920 776.409,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,2.000 1015.591,2.000 1015.591,11.920 776.409,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,11.920 1020.000,116.080 1015.591,116.080 1015.591,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1018.236,4.204 773.764,4.204 773.764,2.000 1018.236,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="773.764,4.204 1018.236,4.204 1018.236,2.000 773.764,2.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,11.920 1015.591,116.080 1020.000,116.080 1020.000,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,126.000 1015.591,126.000 1015.591,116.080 776.409,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,2.000 776.409,2.000 776.409,11.920 1015.591,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,11.920 772.000,116.080 776.409,116.080 776.409,11.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="773.764,123.796 1018.236,123.796 1018.236,126.000 773.764,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1018.236,123.796 773.764,123.796 773.764,126.000 1018.236,126.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="773.764,4.204 1018.236,4.204 1018.236,123.796 773.764,123.796 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="776.409,116.080 776.409,11.920 1015.591,11.920 1015.591,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1018.236,116.080 1018.236,11.920 773.764,11.920 773.764,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1018.236,4.204 773.764,4.204 773.764,123.796 1018.236,123.796 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="773.764,116.080 773.764,11.920 1018.236,11.920 1018.236,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1015.591,116.080 1015.591,11.920 776.409,11.920 776.409,116.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 772.000,123.483 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,4.517 778.364,2.000 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 1013.636,123.483 1020.000,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 1020.000,4.517 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 778.364,123.483 772.000,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,2.000 772.000,4.517 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 1020.000,123.483 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 1013.636,4.517 1020.000,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 778.364,126.000 778.364,123.483 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,123.483 772.000,4.517 778.364,4.517 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,2.000 1013.636,2.000 1013.636,4.517 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,4.517 1020.000,123.483 1013.636,123.483 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 791.840,126.000 791.840,123.483 1000.160,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,2.000 1000.160,2.000 1000.160,4.517 791.840,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,4.517 1013.636,123.483 1020.000,123.483 1020.000,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 1013.636,126.000 1013.636,123.483 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 778.364,2.000 778.364,4.517 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,4.517 772.000,123.483 778.364,123.483 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 1000.160,126.000 1000.160,123.483 791.840,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,2.000 791.840,2.000 791.840,4.517 1000.160,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,5.182 1000.160,5.182 1000.160,122.818 791.840,122.818 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,123.483 778.364,4.517 1013.636,4.517 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,123.483 1000.160,4.517 791.840,4.517 791.840,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,5.182 791.840,5.182 791.840,122.818 1000.160,122.818 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,123.483 791.840,4.517 1000.160,4.517 1000.160,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,123.483 1013.636,4.517 778.364,4.517 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 772.000,123.483 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,4.517 778.364,2.000 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 1013.636,123.483 1020.000,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 1020.000,4.517 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 778.364,123.483 772.000,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,2.000 772.000,4.517 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 1020.000,123.483 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 1013.636,4.517 1020.000,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,126.000 778.364,126.000 778.364,123.483 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,123.483 772.000,4.517 778.364,4.517 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,2.000 1013.636,2.000 1013.636,4.517 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,4.517 1020.000,123.483 1013.636,123.483 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,126.000 791.840,126.000 791.840,123.483 1000.160,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,2.000 1000.160,2.000 1000.160,4.517 791.840,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,4.517 1013.636,123.483 1020.000,123.483 1020.000,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,126.000 1013.636,126.000 1013.636,123.483 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,2.000 778.364,2.000 778.364,4.517 1013.636,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,4.517 772.000,123.483 778.364,123.483 778.364,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,126.000 1000.160,126.000 1000.160,123.483 791.840,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,2.000 791.840,2.000 791.840,4.517 1000.160,4.517 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,5.182 1000.160,5.182 1000.160,122.818 791.840,122.818 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="778.364,123.483 778.364,4.517 1013.636,4.517 1013.636,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,123.483 1000.160,4.517 791.840,4.517 791.840,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,5.182 791.840,5.182 791.840,122.818 1000.160,122.818 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,123.483 791.840,4.517 1000.160,4.517 1000.160,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1013.636,123.483 1013.636,4.517 778.364,4.517 778.364,123.483 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,254.000 4.000,244.080 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,139.920 11.936,130.000 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,254.000 244.064,244.080 252.000,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,130.000 252.000,139.920 244.064,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,254.000 252.000,244.080 239.791,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,130.000 239.791,139.920 252.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,130.000 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 252.000,133.968 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,254.000 11.936,254.000 11.936,244.080 244.064,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,244.080 4.000,139.920 11.936,139.920 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,130.000 244.064,130.000 244.064,139.920 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="252.000,139.920 252.000,244.080 244.064,244.080 244.064,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,130.000 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,130.000 16.209,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="252.000,139.920 252.000,244.080 239.791,244.080 239.791,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 239.791,133.968 252.000,133.968 252.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,250.032 252.000,250.032 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,139.920 239.791,244.080 252.000,244.080 252.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,254.000 239.791,254.000 239.791,244.080 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,130.000 16.209,130.000 16.209,139.920 239.791,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,250.032 16.209,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,244.080 11.936,139.920 244.064,139.920 244.064,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,244.080 239.791,139.920 16.209,139.920 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,250.032 239.791,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,244.080 16.209,139.920 239.791,139.920 239.791,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,244.080 244.064,139.920 11.936,139.920 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,250.032 16.209,254.000 4.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,254.000 16.209,250.032 4.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 4.000,133.968 16.209,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 16.209,130.000 4.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 252.000,250.032 239.791,254.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 239.791,254.000 252.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,130.000 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 252.000,133.968 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 16.209,250.032 4.000,250.032 4.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,244.080 16.209,139.920 4.000,139.920 4.000,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,250.032 16.209,133.968 4.000,133.968 4.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,139.920 16.209,244.080 4.000,244.080 4.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,130.000 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,130.000 16.209,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,139.920 244.064,244.080 252.000,244.080 252.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 239.791,133.968 252.000,133.968 252.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,250.032 252.000,250.032 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,139.920 4.000,244.080 11.936,244.080 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,250.032 239.791,250.032 239.791,254.000 16.209,254.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 16.209,250.032 16.209,254.000 239.791,254.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,250.032 16.209,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,244.080 11.936,139.920 244.064,139.920 244.064,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,244.080 239.791,139.920 16.209,139.920 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,250.032 239.791,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,244.080 16.209,139.920 239.791,139.920 239.791,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,244.080 244.064,139.920 11.936,139.920 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,254.000 4.000,244.080 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,139.920 11.936,130.000 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,254.000 4.000,244.080 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,130.000 16.209,139.920 4.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,254.000 11.936,244.080 4.000,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,130.000 4.000,139.920 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,130.000 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 252.000,133.968 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,254.000 11.936,254.000 11.936,244.080 244.064,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,244.080 4.000,139.920 11.936,139.920 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,130.000 244.064,130.000 244.064,139.920 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,139.920 16.209,244.080 4.000,244.080 4.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,130.000 239.791,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,130.000 16.209,130.000 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,139.920 244.064,244.080 252.000,244.080 252.000,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,250.032 239.791,133.968 252.000,133.968 252.000,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 239.791,250.032 252.000,250.032 252.000,133.968 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="4.000,139.920 4.000,244.080 11.936,244.080 11.936,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,254.000 239.791,254.000 239.791,244.080 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,130.000 16.209,130.000 16.209,139.920 239.791,139.920 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,133.968 239.791,133.968 239.791,250.032 16.209,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="11.936,244.080 11.936,139.920 244.064,139.920 244.064,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,244.080 239.791,139.920 16.209,139.920 16.209,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="239.791,133.968 16.209,133.968 16.209,250.032 239.791,250.032 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="16.209,244.080 16.209,139.920 239.791,139.920 239.791,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="244.064,244.080 244.064,139.920 11.936,139.920 11.936,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,382.000 772.000,375.581 788.166,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,264.419 788.166,258.000 788.166,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,382.000 1003.834,375.581 1020.000,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,258.000 1020.000,264.419 1003.834,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,382.000 788.166,375.581 772.000,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,258.000 772.000,264.419 788.166,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,382.000 1020.000,375.581 1003.834,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,258.000 1003.834,264.419 1020.000,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,382.000 788.166,382.000 788.166,375.581 1003.834,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,375.581 772.000,264.419 788.166,264.419 788.166,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,258.000 1003.834,258.000 1003.834,264.419 788.166,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,264.419 1020.000,375.581 1003.834,375.581 1003.834,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,382.000 791.840,382.000 791.840,375.581 1000.160,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,258.000 1000.160,258.000 1000.160,264.419 791.840,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,264.419 1003.834,375.581 1020.000,375.581 1020.000,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,382.000 1003.834,382.000 1003.834,375.581 788.166,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,258.000 788.166,258.000 788.166,264.419 1003.834,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,264.419 772.000,375.581 788.166,375.581 788.166,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,382.000 1000.160,382.000 1000.160,375.581 791.840,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,258.000 791.840,258.000 791.840,264.419 1000.160,264.419 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,266.083 1000.160,266.083 1000.160,373.917 791.840,373.917 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="788.166,375.581 788.166,264.419 1003.834,264.419 1003.834,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,375.581 1000.160,264.419 791.840,264.419 791.840,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,266.083 791.840,266.083 791.840,373.917 1000.160,373.917 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,375.581 791.840,264.419 1000.160,264.419 1000.160,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1003.834,375.581 1003.834,264.419 788.166,264.419 788.166,375.581 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,254.000 774.267,253.390 772.000,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,130.610 774.267,130.000 772.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,254.000 772.000,253.390 774.267,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,130.000 774.267,130.610 772.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,254.000 791.840,253.390 772.000,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,130.000 772.000,130.610 791.840,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,254.000 1020.000,253.390 1000.160,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,130.000 1000.160,130.610 1020.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,254.000 791.840,254.000 791.840,253.390 1000.160,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,253.390 774.267,130.610 772.000,130.610 772.000,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,130.000 1000.160,130.000 1000.160,130.610 791.840,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,130.610 774.267,253.390 772.000,253.390 772.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,254.000 774.267,254.000 774.267,253.390 1017.733,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,130.000 1017.733,130.000 1017.733,130.610 774.267,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,130.610 1000.160,253.390 1020.000,253.390 1020.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,254.000 1000.160,254.000 1000.160,253.390 791.840,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,130.000 791.840,130.000 791.840,130.610 1000.160,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,130.610 772.000,253.390 791.840,253.390 791.840,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,254.000 1017.733,254.000 1017.733,253.390 774.267,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,130.000 774.267,130.000 774.267,130.610 1017.733,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,139.920 1017.733,139.920 1017.733,244.080 774.267,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,253.390 791.840,130.610 1000.160,130.610 1000.160,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,253.390 1017.733,130.610 774.267,130.610 774.267,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,139.920 774.267,139.920 774.267,244.080 1017.733,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,253.390 774.267,130.610 1017.733,130.610 1017.733,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,253.390 1000.160,130.610 791.840,130.610 791.840,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,254.000 772.000,253.390 791.840,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,130.610 791.840,130.000 791.840,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,254.000 1000.160,253.390 1020.000,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,130.000 1020.000,130.610 1000.160,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,254.000 1020.000,253.390 1017.733,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,130.000 1017.733,130.610 1020.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,254.000 1017.733,253.390 1020.000,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,130.000 1020.000,130.610 1017.733,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,254.000 791.840,254.000 791.840,253.390 1000.160,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="772.000,253.390 772.000,130.610 791.840,130.610 791.840,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,130.000 1000.160,130.000 1000.160,130.610 791.840,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,130.610 1020.000,253.390 1000.160,253.390 1000.160,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,254.000 774.267,254.000 774.267,253.390 1017.733,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,130.000 1017.733,130.000 1017.733,130.610 774.267,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1020.000,130.610 1020.000,253.390 1017.733,253.390 1017.733,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,254.000 1000.160,254.000 1000.160,253.390 791.840,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,130.000 791.840,130.000 791.840,130.610 1000.160,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,130.610 1017.733,253.390 1020.000,253.390 1020.000,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,254.000 1017.733,254.000 1017.733,253.390 774.267,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,130.000 774.267,130.000 774.267,130.610 1017.733,130.610 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,139.920 1017.733,139.920 1017.733,244.080 774.267,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="791.840,253.390 791.840,130.610 1000.160,130.610 1000.160,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,253.390 1017.733,130.610 774.267,130.610 774.267,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1017.733,139.920 774.267,139.920 774.267,244.080 1017.733,244.080 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="774.267,253.390 774.267,130.610 1017.733,130.610 1017.733,253.390 " />
+<polygon stroke="black" stroke-width="1" fill="rgb(204, 204, 204)" fill-opacity="0" points="1000.160,253.390 1000.160,130.610 791.840,130.610 791.840,253.390 " />
+
+</svg>

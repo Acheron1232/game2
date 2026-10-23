@@ -1,0 +1,12 @@
+[
+  {
+    "model": "covered_ram",
+    "forwardTravel": 0.42,
+    "verticalTravel": 0.0
+  },
+  {
+    "model": "bolt_cart",
+    "forwardTravel": 0.7,
+    "verticalTravel": 0.0
+  }
+]

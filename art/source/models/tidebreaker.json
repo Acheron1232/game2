@@ -1,0 +1,52 @@
+{
+  "id": "tidebreaker",
+  "triangles": 3912,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 81,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 38,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 38,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 38,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 49,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 16,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 54,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 65,
+      "loop": false
+    }
+  ],
+  "height": 2.133,
+  "sockets": [
+    "weapon"
+  ],
+  "skin": "tidebreaker_skin"
+}

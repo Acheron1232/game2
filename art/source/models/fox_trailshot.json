@@ -1,0 +1,50 @@
+{
+  "id": "fox_trailshot",
+  "triangles": 1446,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 51,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 24,
+      "loop": true
+    },
+    {
+      "name": "hit",
+      "frames": 10,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 34,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 41,
+      "loop": false
+    },
+    {
+      "name": "attack",
+      "frames": 32,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 32,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 32,
+      "loop": false
+    }
+  ],
+  "height": 1.849,
+  "sockets": [],
+  "skin": "fox_trailshot_skin"
+}

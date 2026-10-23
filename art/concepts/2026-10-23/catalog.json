@@ -1,0 +1,894 @@
+{
+  "title": "Temple Wars — Production and Defense Concepts",
+  "date": "2026-10-23",
+  "status": "Selection concepts only; no gameplay changes. Codes B01-B12, U01-U12 and H01-H12 remain on the earlier sheets.",
+  "sheets": [
+    {
+      "id": "01-production",
+      "title": "PRODUCTION AND TAVERNS",
+      "image": "01-production.png",
+      "kind": "buildings",
+      "concepts": [
+        {
+          "code": "B13",
+          "name": "Bulwark Hall",
+          "role": "Armored infantry",
+          "does": "Trains shield infantry and armor breakers. Unlocks a shield-wall stance.",
+          "weakness": "Slow troops; weak against siege and flanking.",
+          "trains": [
+            "U13",
+            "U14"
+          ],
+          "visual": "A broad stone training hall, giant shield over entrance, shield racks and a bronze-banded practice gate.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 1
+        },
+        {
+          "code": "B14",
+          "name": "Tusk Lodge",
+          "role": "Beast cavalry",
+          "does": "Trains boar cavalry and mounted war drummers.",
+          "weakness": "Needs room to charge; vulnerable in narrow lanes.",
+          "trains": [
+            "U15",
+            "U16"
+          ],
+          "visual": "A timber lodge with a boar-head entrance, tusks, fenced boar pen, saddle racks and leather roof.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 2
+        },
+        {
+          "code": "B15",
+          "name": "Rune Works",
+          "role": "Magic weapons",
+          "does": "Trains rune gunners and anti-magic wardens.",
+          "weakness": "Costly troops with slow attacks and long recovery.",
+          "trains": [
+            "U17",
+            "U18"
+          ],
+          "visual": "A compact bronze-and-stone armory with a glowing blue rune anvil, thick gun barrels, metal vents and crystal tools.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 3
+        },
+        {
+          "code": "B16",
+          "name": "Mycelium House",
+          "role": "Living support",
+          "does": "Grows spore healers and mushroom sentinels.",
+          "weakness": "Strong near a position; weak while moving and against fire.",
+          "trains": [
+            "U19",
+            "U20"
+          ],
+          "visual": "A squat mushroom nursery grown around a timber hut, giant green-purple caps, spore baskets and round wooden doors.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 4
+        },
+        {
+          "code": "B17",
+          "name": "Tide Dock",
+          "role": "Amphibious troops",
+          "does": "Trains shell guards and brine slingers; troops cross shallow water.",
+          "weakness": "Short range; vulnerable to long-range weapons.",
+          "trains": [
+            "U21",
+            "U22"
+          ],
+          "visual": "A land-placeable coastal barracks on a stone base, walrus-face beam, shell armor racks, rope winch and coral roof, no water scene.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 5
+        },
+        {
+          "code": "B18",
+          "name": "Bell Sanctum",
+          "role": "Spirit infantry",
+          "does": "Trains grave cantors and reliquary guards.",
+          "weakness": "Needs mana and a protected support line.",
+          "trains": [
+            "U23",
+            "U24"
+          ],
+          "visual": "A low gothic stone training sanctuary with one huge bronze bell, teal soul lanterns, small reliquary niches and a cloth awning.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 6
+        },
+        {
+          "code": "B19",
+          "name": "Siege Yard",
+          "role": "Siege machines",
+          "does": "Builds covered rams and bolt carts.",
+          "weakness": "Machines are slow and need infantry escorts.",
+          "trains": [
+            "U25",
+            "U26"
+          ],
+          "visual": "An open timber assembly yard, wheeled ram frame, long ballista limbs, pulley crane, stacked beams and reinforced shed.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 7
+        },
+        {
+          "code": "B20",
+          "name": "Wind Aviary",
+          "role": "Flying troops",
+          "does": "Trains moth scouts and crane lancers.",
+          "weakness": "Light flyers lose to dedicated anti-air.",
+          "trains": [
+            "U27",
+            "U28"
+          ],
+          "visual": "A tall timber aviary with moth cocoon frames, a broad crane-bird nest, landing poles, pale sail awnings and ladders.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 8
+        },
+        {
+          "code": "B21",
+          "name": "Briar Lodge",
+          "role": "Ambush and control",
+          "does": "Trains root trappers and armored thorn stags.",
+          "weakness": "Traps need preparation; weak in open frontal fights.",
+          "trains": [
+            "U29",
+            "U30"
+          ],
+          "visual": "A low forest lodge with branching antler lintel, thorn fence, leaf roof, snare racks and amber sap lanterns.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 9
+        },
+        {
+          "code": "B22",
+          "name": "Apothecary Yard",
+          "role": "Alchemical warfare",
+          "does": "Trains pitch sappers and mist brewers.",
+          "weakness": "Fragile troops; fire and mist need careful positioning.",
+          "trains": [
+            "U31",
+            "U32"
+          ],
+          "visual": "A stout plaster and timber laboratory with two brass vats, green glass pipes, pitch barrels and a work awning.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 10
+        },
+        {
+          "code": "B23",
+          "name": "Wayfarer Inn",
+          "role": "Mercenary tavern",
+          "does": "Hires badger guards and fox scouts for hero gold. A limited roster rests between hires.",
+          "weakness": "Higher gold cost and limited stock.",
+          "trains": [
+            "U33",
+            "U34"
+          ],
+          "visual": "A welcoming crooked stone-and-timber roadside tavern, badger shield sign, fox-tail weather vane, travel packs and bench.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 11
+        },
+        {
+          "code": "B24",
+          "name": "Cinder Inn",
+          "role": "Mercenary tavern",
+          "does": "Hires coalback porters and salamander slingers.",
+          "weakness": "Slow reserves and short-ranged fire attacks.",
+          "trains": [
+            "U35",
+            "U36"
+          ],
+          "visual": "A black basalt tavern with orange forge windows, kettle chimney, salamander sign, coal baskets and warm copper trim.",
+          "tier": "Draft branch; choose before balancing",
+          "sheet": "01-production",
+          "cell": 12
+        }
+      ]
+    },
+    {
+      "id": "02-new-units-a",
+      "title": "NEW BUILDING UNITS A",
+      "image": "02-new-units-a.png",
+      "kind": "units",
+      "concepts": [
+        {
+          "code": "U13",
+          "name": "Pavise Guard",
+          "parent": "B13",
+          "does": "Blocks ranged fire from the front.",
+          "weakness": "Slow to turn; flank or use siege.",
+          "visual": "Broad badger humanoid, plated bronze armor, enormous rectangular shield planted before him, short side spear.",
+          "sheet": "02-new-units-a",
+          "cell": 1
+        },
+        {
+          "code": "U14",
+          "name": "Chainbreaker",
+          "parent": "B13",
+          "does": "Cracks heavy armor with slow maul strikes.",
+          "weakness": "Low attack speed; kite with light ranged units.",
+          "visual": "Stocky human heavy infantry in leather apron and bronze armor, a huge two-handed hooked maul, broken chain belt.",
+          "sheet": "02-new-units-a",
+          "cell": 2
+        },
+        {
+          "code": "U15",
+          "name": "Boar Lancer",
+          "parent": "B14",
+          "does": "Charges ranged troops and attacks the back line.",
+          "weakness": "Pikes and roots stop the charge.",
+          "visual": "Compact armored rider on a thick bristled war boar, long forward lance and small magenta saddle cloth.",
+          "sheet": "02-new-units-a",
+          "cell": 3
+        },
+        {
+          "code": "U16",
+          "name": "Ram Drummer",
+          "parent": "B14",
+          "does": "A drum rhythm speeds nearby allied attacks.",
+          "weakness": "Weak damage and exposed without escorts.",
+          "visual": "Round red-panda drummer riding a broad-horned ram, a large side drum, two mallets and a banner harness.",
+          "sheet": "02-new-units-a",
+          "cell": 4
+        },
+        {
+          "code": "U17",
+          "name": "Rune Gunner",
+          "parent": "B15",
+          "does": "Fires slow armor-piercing rune shots.",
+          "weakness": "Weak against swarms and fast melee.",
+          "visual": "Short stout dwarflike original artisan soldier, oversized single bronze rune gun, blue crystal chamber, leather hood and cartridge belt.",
+          "sheet": "02-new-units-a",
+          "cell": 5
+        },
+        {
+          "code": "U18",
+          "name": "Null Warden",
+          "parent": "B15",
+          "does": "Raises a brief anti-magic screen for nearby allies.",
+          "weakness": "Limited mana; ordinary physical attacks still hurt.",
+          "visual": "Tall stag humanoid in plated blue-grey robes, twin bronze ring staff, small blue ward disk and antler helmet.",
+          "sheet": "02-new-units-a",
+          "cell": 6
+        },
+        {
+          "code": "U19",
+          "name": "Spore Mender",
+          "parent": "B16",
+          "does": "Leaves short-lived healing patches for allies.",
+          "weakness": "Patches are stationary; fragile when chased.",
+          "visual": "Friendly toadfolk gardener under a mushroom-cap hood, spore basket, crooked sprayer staff and patched apron.",
+          "sheet": "02-new-units-a",
+          "cell": 7
+        },
+        {
+          "code": "U20",
+          "name": "Cap Sentinel",
+          "parent": "B16",
+          "does": "A rooted guard releases slowing spores.",
+          "weakness": "Cannot move while rooted; vulnerable to siege.",
+          "visual": "Broad walking mushroom soldier with wooden root legs, thick layered cap like a shield and club-shaped arms.",
+          "sheet": "02-new-units-a",
+          "cell": 8
+        },
+        {
+          "code": "U21",
+          "name": "Shell Guard",
+          "parent": "B17",
+          "does": "A durable amphibious front-line fighter.",
+          "weakness": "Slow inland; vulnerable to armor breakers.",
+          "visual": "Crab humanoid warrior in bronze shoulder armor, huge natural shell shield, short anchor-headed mace and barnacle trim.",
+          "sheet": "02-new-units-a",
+          "cell": 9
+        },
+        {
+          "code": "U22",
+          "name": "Brine Slinger",
+          "parent": "B17",
+          "does": "Salt shots briefly reduce enemy healing.",
+          "weakness": "Short range and little armor.",
+          "visual": "Lean otter humanoid with rope sling, salt-crystal pouch, shell shoulder guard and blue leather vest.",
+          "sheet": "02-new-units-a",
+          "cell": 10
+        },
+        {
+          "code": "U23",
+          "name": "Grave Cantor",
+          "parent": "B18",
+          "does": "A bell chant weakens enemy attacks in an area.",
+          "weakness": "Silence or kill the fragile caster.",
+          "visual": "Hooded spectral cantor carrying a handbell and an old hymn book, teal face glow, ragged dark cloth and bronze chains.",
+          "sheet": "02-new-units-a",
+          "cell": 11
+        },
+        {
+          "code": "U24",
+          "name": "Reliquary Guard",
+          "parent": "B18",
+          "does": "Takes part of a nearby ally's damage.",
+          "weakness": "Focus the guard or separate the pair.",
+          "visual": "Heavy empty stone-and-bronze armor animated by teal light, large tower shield with a tiny shrine niche, heavy flanged mace.",
+          "sheet": "02-new-units-a",
+          "cell": 12
+        }
+      ]
+    },
+    {
+      "id": "03-new-units-b",
+      "title": "NEW BUILDING UNITS B",
+      "image": "03-new-units-b.png",
+      "kind": "units",
+      "concepts": [
+        {
+          "code": "U25",
+          "name": "Covered Ram",
+          "parent": "B19",
+          "does": "Breaks gates and buildings under an arrow-proof roof.",
+          "weakness": "No anti-unit attack; vulnerable to fire and melee.",
+          "visual": "Low wheeled battering ram under a curved layered timber roof, brass ram head, hanging hide curtains and magenta pennant.",
+          "sheet": "03-new-units-b",
+          "cell": 1
+        },
+        {
+          "code": "U26",
+          "name": "Bolt Cart",
+          "parent": "B19",
+          "does": "A long bolt pierces a straight line of enemies.",
+          "weakness": "Slow reload and a weak side profile.",
+          "visual": "Compact four-wheel ballista cart with visibly stretched wooden bow limbs, one huge steel bolt and bronze winch.",
+          "sheet": "03-new-units-b",
+          "cell": 2
+        },
+        {
+          "code": "U27",
+          "name": "Moth Scout",
+          "parent": "B20",
+          "does": "Fast air scout that reveals a small area.",
+          "weakness": "Very fragile and deals little damage.",
+          "visual": "Small hooded insectfolk scout riding a large pale green moth, broad translucent wings with visible veins, magenta saddle ribbons.",
+          "sheet": "03-new-units-b",
+          "cell": 3
+        },
+        {
+          "code": "U28",
+          "name": "Crane Lancer",
+          "parent": "B20",
+          "does": "A diving flyer that can strike other air units.",
+          "weakness": "Vulnerable during dive recovery.",
+          "visual": "Light masked rider on a tall white crane bird with black wing tips, long lance and small bronze chest armor.",
+          "sheet": "03-new-units-b",
+          "cell": 4
+        },
+        {
+          "code": "U29",
+          "name": "Root Trapper",
+          "parent": "B21",
+          "does": "Places a root snare that holds the first enemy.",
+          "weakness": "Traps can be revealed; weak in direct combat.",
+          "visual": "Small fox humanoid woodsman with antler snare frame, curved hook blade, green hood and thorn bundles.",
+          "sheet": "03-new-units-b",
+          "cell": 5
+        },
+        {
+          "code": "U30",
+          "name": "Thorn Stag",
+          "parent": "B21",
+          "does": "Knocks back enemies after a straight charge.",
+          "weakness": "Cannot turn during the charge; pikes punish it.",
+          "visual": "Large stocky armored stag with bark shoulder plates, thick branching antlers, green leaf mane and a magenta flank cloth.",
+          "sheet": "03-new-units-b",
+          "cell": 6
+        },
+        {
+          "code": "U31",
+          "name": "Pitch Sapper",
+          "parent": "B22",
+          "does": "Throws pitch charges against buildings and walls.",
+          "weakness": "Must get close; very weak if caught.",
+          "visual": "Goggle-wearing badger sapper with an oversized black pitch barrel backpack, smoking fuse tools and a bronze helmet.",
+          "sheet": "03-new-units-b",
+          "cell": 7
+        },
+        {
+          "code": "U32",
+          "name": "Mist Brewer",
+          "parent": "B22",
+          "does": "Makes a mist cloud that reduces ranged accuracy.",
+          "weakness": "Cloud also limits allied shots through it.",
+          "visual": "Round toadfolk alchemist with two small brass mist tanks, long spray nozzle, leather goggles and glass potion belt.",
+          "sheet": "03-new-units-b",
+          "cell": 8
+        },
+        {
+          "code": "U33",
+          "name": "Badger Mercenary",
+          "parent": "B23",
+          "does": "A tough hire that protects a hero.",
+          "weakness": "High gold cost and slow movement.",
+          "visual": "Scarred badger sellsword in patched heavy armor, large round shield, short notched sword, rolled bedroll and magenta scarf.",
+          "sheet": "03-new-units-b",
+          "cell": 9
+        },
+        {
+          "code": "U34",
+          "name": "Fox Trailshot",
+          "parent": "B23",
+          "does": "A mobile hired skirmisher that marks targets.",
+          "weakness": "Fragile; loses sustained fights.",
+          "visual": "Slender fox humanoid scout with short recurved crossbow, long coat, feathered hat and compact travel pack.",
+          "sheet": "03-new-units-b",
+          "cell": 10
+        },
+        {
+          "code": "U35",
+          "name": "Coalback Porter",
+          "parent": "B24",
+          "does": "A sturdy hire that repairs nearby allied constructs.",
+          "weakness": "Slow; weak against magic and kiting.",
+          "visual": "Short broad basalt-skinned construct with coal basket back, heavy bronze repair hammer, tongs and orange furnace eyes.",
+          "sheet": "03-new-units-b",
+          "cell": 11
+        },
+        {
+          "code": "U36",
+          "name": "Salamander Slinger",
+          "parent": "B24",
+          "does": "Burning globes damage tightly packed ground troops.",
+          "weakness": "Short range; weak against air and split armies.",
+          "visual": "Small bipedal orange salamander with dark heatproof apron, bronze sling cup, clay fire pots and magenta neck wrap.",
+          "sheet": "03-new-units-b",
+          "cell": 12
+        }
+      ]
+    },
+    {
+      "id": "04-walls-gates",
+      "title": "WALLS GATES AND FORTS",
+      "image": "04-walls-gates.png",
+      "kind": "defenses",
+      "concepts": [
+        {
+          "code": "D01",
+          "name": "Timber Palisade",
+          "role": "Cheap wall",
+          "does": "Blocks ground movement early.",
+          "weakness": "Fire and siege break it quickly.",
+          "visual": "A single modular stretch of thick sharpened timber stakes, horizontal braces and a tiny team pennant.",
+          "sheet": "04-walls-gates",
+          "cell": 1
+        },
+        {
+          "code": "D02",
+          "name": "Stone Curtain",
+          "role": "Strong wall",
+          "does": "A durable wall segment with clear connection ends.",
+          "weakness": "Needs space and loses to dedicated siege.",
+          "visual": "One low broad stone curtain-wall segment, beveled capstones, bronze braces and simple crenellations, visible modular ends.",
+          "sheet": "04-walls-gates",
+          "cell": 2
+        },
+        {
+          "code": "D03",
+          "name": "Bastion Corner",
+          "role": "Wall junction",
+          "does": "A reinforced corner connects two wall directions.",
+          "weakness": "More expensive than a straight segment.",
+          "visual": "L-shaped chunky stone corner with a round buttress, battlements and two clean modular wall connection ends.",
+          "sheet": "04-walls-gates",
+          "cell": 3
+        },
+        {
+          "code": "D04",
+          "name": "Gatehouse",
+          "role": "Main gate",
+          "does": "A wide gate opens for allies and closes against enemies.",
+          "weakness": "The main breach target; needs repair support.",
+          "visual": "A wide stone arch gate with thick timber double doors, two squat guard turrets and bronze hinge straps.",
+          "sheet": "04-walls-gates",
+          "cell": 4
+        },
+        {
+          "code": "D05",
+          "name": "Iron Portcullis",
+          "role": "Narrow gate",
+          "does": "A compact heavy gate holds a choke point.",
+          "weakness": "Slow to raise; vulnerable while opening.",
+          "visual": "A narrow square stone gate with a clearly visible iron drop grille, raised counterweight and chain winch.",
+          "sheet": "04-walls-gates",
+          "cell": 5
+        },
+        {
+          "code": "D06",
+          "name": "Sally Gate",
+          "role": "Sortie gate",
+          "does": "A narrow ally gate allows short counterattacks.",
+          "weakness": "Low capacity; poor as the main entrance.",
+          "visual": "A small side door set in a slanted stone wall section, bronze door shield, stair lip and one narrow guard window.",
+          "sheet": "04-walls-gates",
+          "cell": 6
+        },
+        {
+          "code": "D07",
+          "name": "Arrow Gallery",
+          "role": "Wall upgrade",
+          "does": "A firing platform shelters ranged defenders.",
+          "weakness": "Siege and flank attacks remain dangerous.",
+          "visual": "A modular timber-roofed walkway on top of one stone wall segment, arrow slits and two empty firing positions.",
+          "sheet": "04-walls-gates",
+          "cell": 7
+        },
+        {
+          "code": "D08",
+          "name": "Stake Line",
+          "role": "Cavalry obstacle",
+          "does": "Slows charges and hurts mounted ground attackers.",
+          "weakness": "Infantry and siege can clear it.",
+          "visual": "One low diagonal line of heavy sharpened stakes mounted in timber tripods, bronze spikes and red warning cloth.",
+          "sheet": "04-walls-gates",
+          "cell": 8
+        },
+        {
+          "code": "D09",
+          "name": "Dry Ditch",
+          "role": "Ground obstacle",
+          "does": "A shallow ditch slows ground advances.",
+          "weakness": "Flyers ignore it; builders can fill a breach.",
+          "visual": "One compact rectangular dry ditch module with rough earth banks, timber retaining edges and a removable narrow plank.",
+          "sheet": "04-walls-gates",
+          "cell": 9
+        },
+        {
+          "code": "D10",
+          "name": "Drawbridge",
+          "role": "Controlled crossing",
+          "does": "Opens or closes one narrow crossing.",
+          "weakness": "Requires a suitable gap; exposed lifting chains.",
+          "visual": "A short self-contained raised wooden drawbridge with stone abutments at both ends, two chain posts, no landscape.",
+          "sheet": "04-walls-gates",
+          "cell": 10
+        },
+        {
+          "code": "D11",
+          "name": "Repair Post",
+          "role": "Defense support",
+          "does": "Nearby workers repair defenses faster.",
+          "weakness": "No attack; an exposed support target.",
+          "visual": "A compact covered timber workbench with spare shield-shaped wall plates, stone blocks, lifting jack and repair tools.",
+          "sheet": "04-walls-gates",
+          "cell": 11
+        },
+        {
+          "code": "D12",
+          "name": "Rally Bastion",
+          "role": "Safe regroup point",
+          "does": "A small shelter helps resting defenders recover outside combat.",
+          "weakness": "No recovery during combat; siege can force it empty.",
+          "visual": "A low open-front stone shelter behind a curved breastwork, lantern, field beds, bronze shield sign and team banner.",
+          "sheet": "04-walls-gates",
+          "cell": 12
+        }
+      ]
+    },
+    {
+      "id": "05-towers-traps",
+      "title": "TOWERS TRAPS AND WARDS",
+      "image": "05-towers-traps.png",
+      "kind": "defenses",
+      "concepts": [
+        {
+          "code": "D13",
+          "name": "Repeater Tower",
+          "role": "Single-target fire",
+          "does": "Fast bolts punish light ground and air units.",
+          "weakness": "Weak against heavy armor and siege.",
+          "visual": "A squat stone-and-timber watchtower crowned by a large twin-arm repeating crossbow, ammo rack and magenta pennant.",
+          "sheet": "05-towers-traps",
+          "cell": 1
+        },
+        {
+          "code": "D14",
+          "name": "Bombard Tower",
+          "role": "Area siege fire",
+          "does": "Slow shells damage clustered ground attackers.",
+          "weakness": "Cannot hit air; dangerous minimum range.",
+          "visual": "A low thick circular stone artillery bunker with a huge short bronze mortar barrel, smoke vent and shell racks.",
+          "sheet": "05-towers-traps",
+          "cell": 2
+        },
+        {
+          "code": "D15",
+          "name": "Chain Spire",
+          "role": "Chain lightning",
+          "does": "Lightning jumps across closely packed enemies.",
+          "weakness": "Weak against single targets and spread formations.",
+          "visual": "A narrow dark stone spire with three bronze conductor arms around a blue storm crystal and visible grounding chains.",
+          "sheet": "05-towers-traps",
+          "cell": 3
+        },
+        {
+          "code": "D16",
+          "name": "Frost Obelisk",
+          "role": "Slow field",
+          "does": "Ice pulses slow nearby ground enemies.",
+          "weakness": "Low damage and a limited field.",
+          "visual": "A squat engraved stone obelisk surrounding a chunky blue ice crystal, frosted bronze rings and snow only on the base.",
+          "sheet": "05-towers-traps",
+          "cell": 4
+        },
+        {
+          "code": "D17",
+          "name": "Lantern Watch",
+          "role": "Detection",
+          "does": "Reveals hidden enemies and grants long sight.",
+          "weakness": "Little direct damage; protect it behind walls.",
+          "visual": "A timber watch platform with a huge golden rotating lantern, lens shutters, fox-tail flag and stone foundation.",
+          "sheet": "05-towers-traps",
+          "cell": 5
+        },
+        {
+          "code": "D18",
+          "name": "Bell Ward",
+          "role": "Interrupt",
+          "does": "A charged bell pulse interrupts nearby spellcasting.",
+          "weakness": "Long recovery between pulses; weak to physical siege.",
+          "visual": "A low stone belfry with one enormous bronze bell suspended over a teal rune circle, chain crank and narrow roof.",
+          "sheet": "05-towers-traps",
+          "cell": 6
+        },
+        {
+          "code": "D19",
+          "name": "Spore Bunker",
+          "role": "Living bunker",
+          "does": "Tough fungal cover sends spores at nearby attackers.",
+          "weakness": "Fire and long-range siege counter it.",
+          "visual": "A broad armored mushroom bunker with root buttresses, layered hard caps, small glowing spore vents and wooden hatch.",
+          "sheet": "05-towers-traps",
+          "cell": 7
+        },
+        {
+          "code": "D20",
+          "name": "Root Snare Bed",
+          "role": "Single-use trap",
+          "does": "Roots the first ground enemy crossing it.",
+          "weakness": "Revealed by scouts; triggers on cheap troops.",
+          "visual": "A compact square bed of curled thorn roots and leaf camouflage with one visible sprung wooden snare loop.",
+          "sheet": "05-towers-traps",
+          "cell": 8
+        },
+        {
+          "code": "D21",
+          "name": "Pitch Basin",
+          "role": "Area trap",
+          "does": "Sticky pitch slows a group entering its area.",
+          "weakness": "No air effect; only protects a small patch.",
+          "visual": "A shallow stone-edged dark pitch basin with broken planks, a tipped bronze bucket and low warning stakes.",
+          "sheet": "05-towers-traps",
+          "cell": 9
+        },
+        {
+          "code": "D22",
+          "name": "Blast Charge",
+          "role": "Burst trap",
+          "does": "A buried charge bursts after an enemy steps close.",
+          "weakness": "One use; can be revealed and cleared.",
+          "visual": "A single half-buried bronze-and-clay charge, exposed gear trigger, short fuse and a small covering mound of earth.",
+          "sheet": "05-towers-traps",
+          "cell": 10
+        },
+        {
+          "code": "D23",
+          "name": "Wind Totem",
+          "role": "Anti-air support",
+          "does": "A gust pushes back low-flying attackers.",
+          "weakness": "No effect on ground siege.",
+          "visual": "A short carved timber totem with three broad bronze wind vanes, bird feathers, cyan wind ribbons and a stone base.",
+          "sheet": "05-towers-traps",
+          "cell": 11
+        },
+        {
+          "code": "D24",
+          "name": "Shield Pylon",
+          "role": "Projectile cover",
+          "does": "Briefly shields nearby defenses from ranged volleys.",
+          "weakness": "A short duration; melee and siege pressure exhaust it.",
+          "visual": "A squat bronze-and-stone pylon with an upright translucent blue shield disk, side capacitors and a magenta base banner.",
+          "sheet": "05-towers-traps",
+          "cell": 12
+        }
+      ]
+    },
+    {
+      "id": "06-existing-rosters",
+      "title": "EXISTING BUILDING RECRUITS",
+      "image": "06-existing-rosters.png",
+      "kind": "existing",
+      "concepts": [
+        {
+          "code": "U37",
+          "name": "Gate Pikeman",
+          "parent": "barracks",
+          "parentName": "Barracks",
+          "does": "Braces a long pike near allied defenses to stop charges.",
+          "weakness": "Weak while moving; ranged troops can kite it.",
+          "visual": "Armored human gate defender, very long bronze-tipped pike, small back shield and fortified kettle helmet.",
+          "sheet": "06-existing-rosters",
+          "cell": 1
+        },
+        {
+          "code": "U38",
+          "name": "Banner Captain",
+          "parent": "barracks",
+          "parentName": "Barracks",
+          "does": "A small nearby armor aura helps a tight infantry line.",
+          "weakness": "Low solo damage; the enemy can focus the captain.",
+          "visual": "Veteran stout human infantry captain with large vertical war banner, broad bronze shoulder armor, command sword and magenta sash.",
+          "sheet": "06-existing-rosters",
+          "cell": 2
+        },
+        {
+          "code": "U39",
+          "name": "Pavise Arbalist",
+          "parent": "archery_range",
+          "parentName": "Archery Range",
+          "does": "Heavy crossbow shots from behind a portable shield.",
+          "weakness": "Slow reload; weak against flankers.",
+          "visual": "Badger humanoid crossbowman with a large pavise strapped to his back, crank crossbow and thick leather gloves.",
+          "sheet": "06-existing-rosters",
+          "cell": 3
+        },
+        {
+          "code": "U40",
+          "name": "Falcon Tracker",
+          "parent": "archery_range",
+          "parentName": "Archery Range",
+          "does": "A trained falcon reveals hidden enemies ahead.",
+          "weakness": "Weak sustained damage and low armor.",
+          "visual": "Fox humanoid ranger with a small bow, trained falcon perched on a glove, hooded green cloak and magenta quiver cloth.",
+          "sheet": "06-existing-rosters",
+          "cell": 4
+        },
+        {
+          "code": "U41",
+          "name": "Lantern Novice",
+          "parent": "chapel",
+          "parentName": "Chapel",
+          "does": "Places a small stationary healing lantern for allies.",
+          "weakness": "The lantern can be destroyed; fragile caster.",
+          "visual": "Young red-panda monk with a small amber lantern staff, simple jade robe, prayer beads and magenta waist sash.",
+          "sheet": "06-existing-rosters",
+          "cell": 5
+        },
+        {
+          "code": "U42",
+          "name": "Veil Sister",
+          "parent": "chapel",
+          "parentName": "Chapel",
+          "does": "Cleanses one harmful spell and grants a short magic barrier.",
+          "weakness": "Limited mana and little attack damage.",
+          "visual": "Masked human priestess in white and dark teal robes, bronze veil frame, crescent hand shield and magenta sleeve trim.",
+          "sheet": "06-existing-rosters",
+          "cell": 6
+        },
+        {
+          "code": "U43",
+          "name": "Mortar Cart",
+          "parent": "workshop",
+          "parentName": "Workshop",
+          "does": "Arcing shells punish units hiding behind walls.",
+          "weakness": "Cannot hit air; poor at close range.",
+          "visual": "Small reinforced two-wheel cart carrying a squat bronze mortar tube, bundled stone shells, rear stabilizer and magenta flag.",
+          "sheet": "06-existing-rosters",
+          "cell": 7
+        },
+        {
+          "code": "U44",
+          "name": "Field Engineer",
+          "parent": "workshop",
+          "parentName": "Workshop",
+          "does": "Repairs machines and builds a small temporary barricade.",
+          "weakness": "Almost no attack; needs protection.",
+          "visual": "Badger humanoid engineer with bronze goggles, oversized wrench, timber plank backpack, tool apron and magenta cap.",
+          "sheet": "06-existing-rosters",
+          "cell": 8
+        },
+        {
+          "code": "U45",
+          "name": "Owl Rider",
+          "parent": "hawk_roost",
+          "parentName": "Hawk Roost",
+          "does": "Night scout with a wide detection sweep.",
+          "weakness": "Light armor and low combat damage.",
+          "visual": "Small hooded ranger riding a broad-winged grey owl, huge readable owl eyes, bronze saddle fittings and magenta wing ribbons.",
+          "sheet": "06-existing-rosters",
+          "cell": 9
+        },
+        {
+          "code": "U46",
+          "name": "Kite Bomber",
+          "parent": "hawk_roost",
+          "parentName": "Hawk Roost",
+          "does": "Drops a short line of bombs on ground targets.",
+          "weakness": "Weak against air units and during the turn back.",
+          "visual": "Compact masked pilot in an original wooden bat-wing kite glider with two visible clay bombs, bronze braces and magenta sail panels.",
+          "sheet": "06-existing-rosters",
+          "cell": 10
+        },
+        {
+          "code": "U47",
+          "name": "Bulwark Golem",
+          "parent": "golem_foundry",
+          "parentName": "Golem Foundry",
+          "does": "A stone shield construct covers nearby ranged troops.",
+          "weakness": "Slow and weak against melee armor breakers.",
+          "visual": "Broad stone-and-bronze golem, huge rectangular forearm shield, small amber furnace core and magenta shoulder plates.",
+          "sheet": "06-existing-rosters",
+          "cell": 11
+        },
+        {
+          "code": "U48",
+          "name": "Siege Golem",
+          "parent": "golem_foundry",
+          "parentName": "Golem Foundry",
+          "does": "A slow two-handed hammer breaks buildings and gates.",
+          "weakness": "Low mobility; weak against fast ranged armies.",
+          "visual": "Heavy stone construct with thick bronze bands, massive two-handed demolition hammer, glowing amber vents and magenta back pennant.",
+          "sheet": "06-existing-rosters",
+          "cell": 12
+        }
+      ]
+    }
+  ],
+  "existingBuildings": [
+    {
+      "id": "barracks",
+      "name": "Barracks",
+      "currentUnits": [
+        "swordsman",
+        "lancer",
+        "pike_warden"
+      ]
+    },
+    {
+      "id": "archery_range",
+      "name": "Archery Range",
+      "currentUnits": [
+        "archer"
+      ]
+    },
+    {
+      "id": "chapel",
+      "name": "Chapel",
+      "currentUnits": [
+        "cleric",
+        "frost_adept"
+      ]
+    },
+    {
+      "id": "workshop",
+      "name": "Workshop",
+      "currentUnits": [
+        "catapult"
+      ]
+    },
+    {
+      "id": "hawk_roost",
+      "name": "Hawk Roost",
+      "currentUnits": [
+        "hawk_rider"
+      ]
+    },
+    {
+      "id": "golem_foundry",
+      "name": "Golem Foundry",
+      "currentUnits": [
+        "foundry_golem"
+      ]
+    }
+  ]
+}

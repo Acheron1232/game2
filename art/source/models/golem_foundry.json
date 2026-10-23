@@ -1,0 +1,18 @@
+{
+  "id": "golem_foundry",
+  "triangles": 1964,
+  "bones": 2,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 90,
+      "loop": true
+    }
+  ],
+  "height": 3.845,
+  "sockets": [
+    "furnace",
+    "core"
+  ],
+  "skin": "golem_foundry_skin"
+}

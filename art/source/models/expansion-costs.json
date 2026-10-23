@@ -1,0 +1,47 @@
+[
+  {
+    "id": "staff_warrior",
+    "triangles": 2082,
+    "bundleKB": 571.9
+  },
+  {
+    "id": "swordsman",
+    "triangles": 1224,
+    "bundleKB": 424.8
+  },
+  {
+    "id": "thorn_marshal",
+    "triangles": 4000,
+    "bundleKB": 766.8
+  },
+  {
+    "id": "grave_bellkeeper",
+    "triangles": 4080,
+    "bundleKB": 712.6
+  },
+  {
+    "id": "tidebreaker",
+    "triangles": 3912,
+    "bundleKB": 763.0
+  },
+  {
+    "id": "lantern_monk",
+    "triangles": 4536,
+    "bundleKB": 780.0
+  },
+  {
+    "id": "obsidian_heart",
+    "triangles": 4324,
+    "bundleKB": 737.3
+  },
+  {
+    "id": "foundry_golem",
+    "triangles": 1378,
+    "bundleKB": 418.7
+  },
+  {
+    "id": "golem_foundry",
+    "triangles": 1964,
+    "bundleKB": 569.7
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "id": "rally_bastion",
+  "triangles": 412,
+  "bones": 2,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 90,
+      "loop": true
+    }
+  ],
+  "height": 2.6,
+  "sockets": [
+    "effect"
+  ],
+  "skin": "golem_foundry_skin"
+}

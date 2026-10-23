@@ -1,0 +1,53 @@
+{
+  "id": "bulwark_golem",
+  "triangles": 1554,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 87,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 41,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 41,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 41,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 52,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 17,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 58,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 70,
+      "loop": false
+    }
+  ],
+  "height": 1.866,
+  "sockets": [
+    "core",
+    "weapon"
+  ],
+  "skin": "bulwark_golem_skin"
+}

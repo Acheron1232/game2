@@ -1,0 +1,97 @@
+{
+  "date": "2026-10-23",
+  "selected": {
+    "buildings": [
+      "B13",
+      "B14",
+      "B23",
+      "B24"
+    ],
+    "units": [
+      "U14",
+      "U15",
+      "U16",
+      "U17",
+      "U18",
+      "U24",
+      "U25",
+      "U26",
+      "U33",
+      "U34",
+      "U35",
+      "U38",
+      "U41",
+      "U42",
+      "U46",
+      "U47",
+      "U48"
+    ],
+    "defenses": [
+      "walls-and-upgrades",
+      "D11",
+      "D12",
+      "D15",
+      "D16",
+      "D18",
+      "D21",
+      "D23",
+      "D24"
+    ]
+  },
+  "batch1": {
+    "units": [
+      "chainbreaker",
+      "rune_gunner",
+      "null_warden",
+      "reliquary_guard",
+      "banner_captain",
+      "lantern_novice",
+      "veil_sister",
+      "bulwark_golem",
+      "siege_golem"
+    ],
+    "buildings": [
+      "bulwark_hall",
+      "timber_wall",
+      "stone_wall",
+      "reinforced_wall",
+      "repair_post",
+      "rally_bastion",
+      "chain_spire",
+      "frost_obelisk",
+      "bell_ward",
+      "pitch_basin",
+      "wind_totem",
+      "shield_pylon"
+    ]
+  },
+  "remaining": [],
+  "batch2": {
+    "units": [
+      "boar_lancer",
+      "ram_drummer",
+      "covered_ram",
+      "bolt_cart",
+      "badger_mercenary",
+      "fox_trailshot",
+      "coalback_porter",
+      "kite_bomber"
+    ],
+    "buildings": [
+      "tusk_lodge",
+      "wayfarer_inn",
+      "cinder_inn"
+    ]
+  },
+  "status": "All selected visual models have first playable implementations. Follow-up adds a deployable healing lantern, shared finite stocks for the three new mercenaries, and AI wall wings/upgrades. Balance and full gate/enclosure layouts remain for later.",
+  "followup": {
+    "summons": [
+      "healing_lantern"
+    ],
+    "mechanics": [
+      "lantern placement and healing aura",
+      "shared mercenary stocks and refill timers",
+      "AI wall wings and normal upgrades"
+    ]
+  }
+}
