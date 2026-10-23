@@ -110,8 +110,9 @@ describe('hiring soldiers', () => {
     run(1);
     expect(f.supplyUsed).toBe(supply);
     expect(f.units.has(s.id)).toBe(false);
-    // Up to the limit (12 supply = 6 swordsmen), then 'limit'.
-    for (let i = 0; i < 10; i++) send({ type: CommandType.Hire, unit: SWORDSMAN });
+    // Up to the limit (30 supply = 15 swordsmen), then 'limit'.
+    expect(HIRE.maxSupply).toBe(30);
+    for (let i = 0; i < 20; i++) send({ type: CommandType.Hire, unit: SWORDSMAN });
     run(0.5);
     expect(hiredSupply(sim, hero)).toBe(HIRE.maxSupply);
     expect(hireProblem(sim, hero, SWORDSMAN)).toBe('limit');
@@ -146,6 +147,42 @@ describe('hiring soldiers', () => {
     run(15);
     expect(s.targetId).not.toBe(enemy.id);
     expect(near(s, hero.mover.x, hero.mover.y)).toBeLessThan(HIRE.followDistance + 2);
+  });
+
+  it('attacks the enemy the hero was ordered to attack, until the next order', () => {
+    const { sim, f, hero, send, run } = setup();
+    for (let i = 0; i < 3; i++) send({ type: CommandType.Hire, unit: SWORDSMAN });
+    run(2);
+    const soldiers = [...f.hired].map((id) => sim.get(id)!);
+    expect(soldiers.length).toBe(3);
+    const tough = (e: SimEntity) => {
+      e.order = 'hold';
+      e.hp = e.stats.maxHp = 50000;
+      return e;
+    };
+    // One enemy right next to the soldiers (they take it on their own), one past the leash.
+    const close = tough(sim.spawn(entityTypeIndex('swordsman'), 1, 2, 1, hero.mover.x + 3, hero.mover.y));
+    const chosen = tough(sim.spawn(entityTypeIndex('swordsman'), 1, 2, 1, hero.mover.x + HIRE.leash + 4, hero.mover.y + 2));
+    run(1);
+    for (const s of soldiers) expect(s.targetId).toBe(close.id);
+    // A + click on the far enemy: every soldier goes for it, the close one does not keep them.
+    expect(send({ type: CommandType.Attack, target: chosen.id })).toBe(true);
+    run(0.2);
+    for (const s of soldiers) expect(s.targetId).toBe(chosen.id);
+    run(6);
+    // In a ring around it (four melee fighters on one target).
+    for (const s of soldiers) expect(near(s, chosen.mover.x, chosen.mover.y)).toBeLessThan(4);
+    expect(chosen.hp).toBeLessThan(50000);
+    // A new order ends it: they leave the far fight and choose their own targets again (the
+    // close enemy is within the leash of where the hero stops).
+    send({ type: CommandType.Move, x: hero.mover.x - 25, y: hero.mover.y, queue: false });
+    run(12);
+    for (const s of soldiers) {
+      expect(s.targetId).not.toBe(chosen.id);
+      const t = sim.get(s.targetId);
+      if (t) expect(near(t, hero.mover.x, hero.mover.y)).toBeLessThanOrEqual(HIRE.leash);
+      else expect(near(s, hero.mover.x, hero.mover.y)).toBeLessThan(HIRE.followDistance + 2);
+    }
   });
 
   it('bot heroes hire soldiers and buy Town Hall upgrades', () => {

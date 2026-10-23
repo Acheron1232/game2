@@ -167,10 +167,11 @@
       "The hero hires soldiers with hero gold at one of its own finished production buildings (any unit that building trains, with the same faction tech).",
       "Price = (unit gold + unit wood) x priceFactor. Hired soldiers use no faction supply; a hero can have soldiers of at most maxSupply supply.",
       "Soldiers follow the hero (a spot within followDistance) and choose their own targets. They leave a fight only when it is more than leash from the hero.",
+      "When the hero gets an attack order on one enemy (A + click, or right click), all soldiers that can hit it attack that enemy (no leash) until the hero gets another order or the enemy dies.",
       "When the hero is dead they walk to its respawn point and wait. Town Hall upgrades work on them like on the army."
     ],
     "priceFactor": 1.5,
-    "maxSupply": 12,
+    "maxSupply": 30,
     "useRange": 6,
     "followDistance": 5,
     "leash": 14
