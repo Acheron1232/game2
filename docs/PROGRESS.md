@@ -1,5 +1,7 @@
 # Progress
 
+- **Linux launcher for the gaming graphics card** (2026-11-01, user: "is there the same launcher as on Windows for Linux?"). The built-in graphics hint now also shows on desktop Linux (not Android, ChromeOS or Mac) and offers "Temple Wars.sh": it starts Chrome / Chromium / Edge / Brave in its own app window and profile with `DRI_PRIME=1` (Mesa: AMD, Intel + AMD) and, when `nvidia-smi` exists, the NVIDIA PRIME offload variables (`client/src/ui/gpu-hint.ts`). Tests for the detection and the script; `sh -n` passes on the script. Not checked on a real Linux laptop with two GPUs. Not committed, not deployed.
+
 - **Live release `release-94f22e2`** (2026-11-01, user: "deploy"): this session's work committed on branch `claude/graphics-camps-bosses` (not merged into `main`, not pushed). Same VPS, Caddy + Cloudflare Quick Tunnel, URL unchanged: https://render-telecom-pending-elizabeth.trycloudflare.com/ . Before: data:check, 353 tests, lint and build passed; client package 38.6 MB (609 assets). After: `/health` reports the release through the tunnel, server container healthy, a real `?play` match started over WSS (WebGPU, 120 FPS, ping 85 ms) with no console errors. Previous release `release-92037d8` kept for rollback (`sudo sh ~/temple-wars/releases/release-92037d8/remote-start.sh ~/temple-wars/releases/release-92037d8 localhost quick`).
 
 - **Camp pockets** (2026-11-01, user, with a concept image and a design proposal: "the camps are too big and take too much space, and they are all round"). Not committed.

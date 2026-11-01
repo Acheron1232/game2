@@ -19,6 +19,8 @@ export const S = {
   gpuHintGet: 'Get launcher',
   gpuHintHide: 'Hide',
   gpuHintHow: 'Open the downloaded file "Temple Wars.cmd". If Windows asks, choose More info, then Run anyway.',
+  gpuHintHowLinux:
+    'In a terminal, go to your downloads and run: sh "Temple Wars.sh". It works on laptops with two graphics chips (NVIDIA or AMD).',
 
   lobbyTitle: 'Game',
   mode: 'Mode',
