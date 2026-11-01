@@ -64,28 +64,83 @@ export function windowsLauncherScript(url: string): string {
   return lines.join('\r\n') + '\r\n';
 }
 
-const LINUX_BROWSERS = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser', 'microsoft-edge', 'brave-browser'];
+// Program names differ between distributions (Arch: google-chrome-stable from the AUR, brave,
+// vivaldi-stable), so the list is long; Flatpak installs have no program in PATH at all.
+const LINUX_BROWSERS = [
+  'google-chrome',
+  'google-chrome-stable',
+  'google-chrome-beta',
+  'google-chrome-unstable',
+  'chromium',
+  'chromium-browser',
+  'ungoogled-chromium',
+  'microsoft-edge',
+  'microsoft-edge-stable',
+  'brave',
+  'brave-browser',
+  'vivaldi',
+  'vivaldi-stable',
+  'thorium-browser',
+  // Installed but not linked into PATH (a broken AUR link, a manual unpack).
+  '/opt/google/chrome/chrome',
+  '/opt/google/chrome-beta/chrome',
+  '/opt/chromium/chrome',
+  '/opt/brave.com/brave/brave',
+  '/opt/brave-bin/brave',
+  '/opt/vivaldi/vivaldi',
+  '/opt/microsoft/msedge/msedge',
+];
+const LINUX_FLATPAKS = [
+  'com.google.Chrome',
+  'org.chromium.Chromium',
+  'io.github.ungoogled_software.ungoogled_chromium',
+  'com.brave.Browser',
+  'com.microsoft.Edge',
+  'com.vivaldi.Vivaldi',
+];
 
-/** A Linux sh script that opens `url` in a Chrome/Chromium app window on the strong GPU (PRIME). */
+/**
+ * A Linux sh script that opens `url` in a Chrome/Chromium app window on the strong GPU (PRIME).
+ * A browser can also be given by hand: sh "Temple Wars.sh" /path/to/browser
+ */
 export function linuxLauncherScript(url: string): string {
   if (!/^https?:\/\/[^\s'"`$\\;&|<>()]+$/.test(url)) throw new Error('Unsafe launcher URL.');
   const lines = [
     '#!/bin/sh',
     '# Temple Wars launcher: opens the game in its own window on the gaming graphics card.',
+    '# Usage: sh "Temple Wars.sh"   or, with your own browser: sh "Temple Wars.sh" /path/to/browser',
     `URL='${url}'`,
     'PROFILE="${XDG_DATA_HOME:-$HOME/.local/share}/TempleWars/Browser"',
+    'FLAGS="--no-first-run --no-default-browser-check --start-maximized"',
     '# AMD and Intel + AMD laptops (Mesa drivers).',
     'export DRI_PRIME=1',
     '# NVIDIA laptops (PRIME render offload).',
+    'PRIME_ENV="--env=DRI_PRIME=1"',
     'if command -v nvidia-smi >/dev/null 2>&1; then',
     '  export __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only',
+    '  PRIME_ENV="$PRIME_ENV --env=__NV_PRIME_RENDER_OFFLOAD=1 --env=__GLX_VENDOR_LIBRARY_NAME=nvidia --env=__VK_LAYER_NV_optimus=NVIDIA_only"',
+    'fi',
+    'if [ -n "$1" ]; then',
+    '  # shellcheck disable=SC2086',
+    '  exec "$1" --app="$URL" --user-data-dir="$PROFILE" $FLAGS',
     'fi',
     `for b in ${LINUX_BROWSERS.join(' ')}; do`,
     '  if command -v "$b" >/dev/null 2>&1; then',
-    '    exec "$b" --app="$URL" --user-data-dir="$PROFILE" --no-first-run --no-default-browser-check --start-maximized',
+    '    # shellcheck disable=SC2086',
+    '    exec "$b" --app="$URL" --user-data-dir="$PROFILE" $FLAGS',
     '  fi',
     'done',
-    'echo "Chrome or Chromium was not found. Please install Google Chrome, then start this file again."',
+    '# Flatpak: the app may write only in its own folder, and gets the graphics settings with --env.',
+    'if command -v flatpak >/dev/null 2>&1; then',
+    `  for id in ${LINUX_FLATPAKS.join(' ')}; do`,
+    '    if flatpak info "$id" >/dev/null 2>&1; then',
+    '      # shellcheck disable=SC2086',
+    '      exec flatpak run $PRIME_ENV "$id" --app="$URL" --user-data-dir="$HOME/.var/app/$id/data/TempleWars" $FLAGS',
+    '    fi',
+    '  done',
+    'fi',
+    `echo "No Chrome-based browser was found (checked: ${LINUX_BROWSERS.join(', ')} and Flatpak)."`,
+    'echo "If you have one, start: sh \\"$0\\" /path/to/browser   (for example: sh \\"$0\\" /opt/google/chrome/chrome)"',
   ];
   return lines.join('\n') + '\n';
 }

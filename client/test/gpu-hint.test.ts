@@ -62,4 +62,13 @@ describe('Windows built-in graphics hint', () => {
     expect(() => linuxLauncherScript('https://x.com/$(id)')).toThrow();
     expect(() => linuxLauncherScript('https://x.com/`id`')).toThrow();
   });
+
+  it('finds Arch and Flatpak browsers and takes a browser path by hand', () => {
+    const script = linuxLauncherScript('https://game.example.com/');
+    expect(script).toContain('google-chrome-stable');
+    expect(script).toContain('brave');
+    expect(script).toContain('flatpak run $PRIME_ENV "$id"');
+    expect(script).toContain('com.google.Chrome');
+    expect(script).toContain('exec "$1" --app="$URL"');
+  });
 });
