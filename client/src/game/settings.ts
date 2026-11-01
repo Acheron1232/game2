@@ -89,7 +89,7 @@ export function defaultSettings(): Settings {
   return {
     quality: 'high',
     ...QUALITY_PRESETS.high,
-    showFps: true,
+    showFps: false,
     fpsLimit: GAME_FPS,
     master: 0.8,
     music: 0,

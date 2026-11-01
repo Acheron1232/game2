@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { actionOf, bindKey, defaultSettings, keyLabel, normalizeFps, parseSettings } from '../src/game/settings';
 
 describe('settings', () => {
+  it('keeps diagnostics off unless the player enables them', () => {
+    expect(defaultSettings().showFps).toBe(false);
+    expect(parseSettings({}).showFps).toBe(false);
+    expect(parseSettings({ showFps: true }).showFps).toBe(true);
+  });
   it('defaults old settings to 120 FPS and validates saved custom limits', () => {
     expect(parseSettings({}).fpsLimit).toBe(120);
     expect(parseSettings({ fpsLimit: 165 }).fpsLimit).toBe(165);

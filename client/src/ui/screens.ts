@@ -6,6 +6,7 @@ import type { NetStatus } from '../net/socket';
 import { el, setText } from './dom';
 import type { Router, Screen } from './router';
 import { S } from './strings';
+import { createItemContextMenu } from './item-context-menu';
 
 export function toggleFullScreen(): void {
   if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
@@ -193,6 +194,7 @@ export interface InspectIconView {
 }
 
 export interface ItemSlotView {
+  item: number;
   icon: string | null;
   /** 0 = no number on the slot */
   charges: number;
@@ -315,6 +317,8 @@ export interface GameActions {
   cast(slot: number): void;
   learn(slot: number): void;
   useItem(slot: number): void;
+  dropItem(slot: number): void;
+  itemIcon(item: number): string | null;
   buy(item: number): void;
   dragItem(slot: number, to: ItemDrop): void;
   closeShop(): void;
@@ -504,13 +508,22 @@ export function createGameScreen(actions: GameActions): GameScreen {
   const abilityButtons = abilityParts.map((p) => p.root);
   // ---- inventory: click or key = use, drag = move / drop / give / sell
   let itemViews: (ItemSlotView | null)[] = [];
+  const itemMenu = createItemContextMenu(actions.dropItem, actions.itemIcon);
   const ghost = el('div', { class: 'item-ghost', hidden: true });
   const itemParts = Array.from({ length: 6 }, (_, slot) => {
     const icon = el('div', { class: 'ability-icon' });
     const cd = el('div', { class: 'cooldown', hidden: true });
     const cdText = el('span', { class: 'cooldown-text' });
     const count = el('span', { class: 'charges' });
-    const root = el('div', { class: 'item-slot empty' }, icon, cd, cdText, el('span', { class: 'key' }, String(slot + 1)), count);
+    const root = el(
+      'div',
+      { class: 'item-slot empty', tabindex: '0', 'aria-label': `Item slot ${slot + 1}`, 'aria-haspopup': 'menu' },
+      icon,
+      cd,
+      cdText,
+      el('span', { class: 'key' }, String(slot + 1)),
+      count,
+    );
     root.dataset['slot'] = String(slot);
     let down: { x: number; y: number; id: number } | null = null;
     let dragging = false;
@@ -547,7 +560,20 @@ export function createGameScreen(actions: GameActions): GameScreen {
     };
     root.addEventListener('pointerup', (e) => finish(e, false));
     root.addEventListener('pointercancel', (e) => finish(e, true));
-    root.addEventListener('contextmenu', (e) => e.preventDefault());
+    root.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const view = itemViews[slot];
+      if (!view) return;
+      hideTip();
+      itemMenu.open(slot, view.item, root);
+    });
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        actions.useItem(slot);
+      }
+    });
     root.addEventListener('mouseenter', () => {
       const v = itemViews[slot];
       if (v && !down) showTip(v.tooltip);
@@ -638,6 +664,8 @@ export function createGameScreen(actions: GameActions): GameScreen {
     hoverCard,
     alertBox,
     shopPanel,
+    itemMenu.menu,
+    itemMenu.recipes,
     tooltip,
     ghost,
     el(
@@ -662,6 +690,9 @@ export function createGameScreen(actions: GameActions): GameScreen {
       el('div', { class: 'panel inventory' }, ...items),
     ),
   );
+  new MutationObserver(() => {
+    if (root.hidden) itemMenu.close();
+  }).observe(root, { attributes: true, attributeFilter: ['hidden'] });
   // Windows can request a context menu through a secondary click, a held primary
   // click or the keyboard. Suppress the browser action across the whole HUD, while
   // keeping chat editing and the shop's own secondary-click purchase handler.
@@ -736,6 +767,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
     },
     setItems(v) {
       itemViews = v;
+      itemMenu.update(v);
       itemParts.forEach((p, i) => {
         const it = v[i];
         p.root.classList.toggle('empty', !it);

@@ -31,19 +31,25 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
   const changed = () => onChange(settings);
   const refresh: (() => void)[] = [];
 
-  const row = (label: string, control: HTMLElement): Row => el('label', { class: 'set-row' }, el('span', {}, label), control);
+  const row = (label: string, control: HTMLElement): Row => {
+    if (control.getAttribute('role') === 'group') control.setAttribute('aria-label', label);
+    return el(control.getAttribute('role') === 'group' ? 'div' : 'label', { class: 'set-row' }, el('span', {}, label), control);
+  };
   const select = <T extends string>(options: readonly [T, string][], get: () => T, set: (v: T) => void) => {
-    const s = el('select', {}, ...options.map(([v, t]) => el('option', { value: v }, t)));
-    s.addEventListener('change', () => {
-      set(s.value as T);
-      changed();
-      for (const r of refresh) r();
+    const buttons = options.map(([value, title]) => {
+      const button = el('button', { type: 'button', class: 'set-option' }, title);
+      button.addEventListener('click', () => {
+        set(value);
+        changed();
+        for (const r of refresh) r();
+      });
+      refresh.push(() => button.setAttribute('aria-pressed', String(get() === value)));
+      return button;
     });
-    refresh.push(() => (s.value = get()));
-    return s;
+    return el('span', { class: 'set-choice', role: 'group' }, ...buttons);
   };
   const toggle = (get: () => boolean, set: (v: boolean) => void) => {
-    const c = el('input', { type: 'checkbox' });
+    const c = el('input', { type: 'checkbox', class: 'set-switch' });
     c.addEventListener('change', () => {
       set(c.checked);
       changed();
@@ -55,13 +61,16 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
   const slider = (min: number, max: number, step: number, get: () => number, set: (v: number) => void, fmt: (v: number) => string) => {
     const r = el('input', { type: 'range', min: String(min), max: String(max), step: String(step) });
     const out = el('span', { class: 'set-value' });
+    const fill = () => r.style.setProperty('--fill', `${((Number(r.value) - min) / (max - min)) * 100}%`);
     r.addEventListener('input', () => {
+      fill();
       set(Number(r.value));
       out.textContent = fmt(Number(r.value));
       changed();
     });
     refresh.push(() => {
       r.value = String(get());
+      fill();
       out.textContent = fmt(get());
     });
     return el('span', { class: 'set-slider' }, r, out);
@@ -156,7 +165,7 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
     el(
       'div',
       { class: 'panel ornate settings-panel' },
-      el('h1', { class: 'title' }, S.settings),
+      el('header', { class: 'settings-head' }, el('h1', { class: 'title' }, S.settings), back),
       el(
         'div',
         { class: 'set-columns' },
@@ -327,7 +336,6 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
           ),
         ),
       ),
-      el('div', { class: 'row' }, back),
     ),
   );
 

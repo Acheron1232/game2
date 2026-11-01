@@ -63,6 +63,7 @@ import { createEngine } from './render/engine';
 import { ANIMATION_MIN_STEP_MS, MENU_FPS } from './render/render-budget';
 import type { DecorItem } from './render/decor';
 import { GameWorld, TEAMS, type TreeList } from './render/world';
+import { MoveOrderMarker } from './render/move-order-marker';
 import { startDebugOverlay } from './ui/debug-overlay';
 import { GameCursor } from './ui/game-cursor';
 import { createSettingsScreen } from './ui/settings-screen';
@@ -186,6 +187,11 @@ async function main(): Promise<void> {
     },
     learn: (slot) => match?.learn(slot),
     useItem: (slot) => useItem(slot),
+    itemIcon: (index) => (ITEMS[index] ? itemIcon(ITEMS[index]) : null),
+    dropItem: (slot) => {
+      const hero = match?.ownHero?.unit;
+      if (hero) match?.dropItem(slot, hero.x, hero.y);
+    },
     buy: (item) => buyItem(item),
     dragItem: (slot, to) => dragItem(slot, to),
     closeShop: () => closeShop(),
@@ -426,10 +432,12 @@ async function main(): Promise<void> {
   await sound.load(assets).catch((err: unknown) => console.warn('Sounds not loaded:', err));
   const w = await GameWorld.create(engine, canvas, terrain, trees, decor, assets);
   world = w;
+  const moveMarker = new MoveOrderMarker(w.scene);
   const hudOcclusion = new HudOcclusion(w.scene, uiHost.querySelector<HTMLElement>('.hud-top')!);
   if (import.meta.env.DEV) Object.assign(window as object, { world: w, net, sound, match: () => match }); // for debugging in the console
   // Compile every material and model now, not when the match starts.
   await w.library.warmUp(TEAMS);
+  await moveMarker.warmUp();
   await w.warmUpGroundMarks();
   await w.scene.whenReadyAsync();
   sceneReady = true;
@@ -480,7 +488,11 @@ async function main(): Promise<void> {
     },
     (x, y) => {
       if (aim) return setAim(null);
-      match?.moveTo(x, y, false);
+      const hero = match?.ownHero?.unit;
+      if (hero && !hero.dead) {
+        match?.moveTo(x, y, false);
+        moveMarker.show(x, y, w.terrain.heightAt(x, y));
+      }
     },
   );
   const dots: { x: number; y: number; color: string; size: number }[] = [];
@@ -937,6 +949,7 @@ async function main(): Promise<void> {
         const info = match!.item(slot);
         if (!info) return null;
         return {
+          item: info.index,
           icon: itemIcon(info.def),
           charges: info.charges,
           cooldownFrac: info.cooldownFrac,
@@ -1235,7 +1248,11 @@ async function main(): Promise<void> {
         return match.pickUp(item.id);
       }
       const p = w.pickGround(e.offsetX, e.offsetY);
-      if (p) match.moveTo(p.x, p.y, e.shiftKey);
+      const hero = match.ownHero?.unit;
+      if (p && hero && !hero.dead) {
+        match.moveTo(p.x, p.y, e.shiftKey);
+        moveMarker.show(p.x, p.y, w.terrain.heightAt(p.x, p.y));
+      }
     } else if (e.button === 0) {
       if (aim) return fireAim(e.offsetX, e.offsetY, hit);
       selectedItem = 0;
@@ -1342,9 +1359,13 @@ async function main(): Promise<void> {
     if (name === 'settings') {
       engine.maxFPS = MENU_FPS;
       w.camera.enabled = false;
+      moveMarker.hide();
       return setAim(null);
     }
-    if (name !== 'game') setAim(null);
+    if (name !== 'game') {
+      setAim(null);
+      moveMarker.hide();
+    }
     engine.maxFPS = name === 'game' ? settings.fpsLimit : MENU_FPS;
     w.setMenuMode(name !== 'game');
   });

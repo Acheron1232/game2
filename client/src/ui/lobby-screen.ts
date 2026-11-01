@@ -17,6 +17,7 @@ import type { NetState } from '../net/socket';
 import { el, setText } from './dom';
 import type { Screen } from './router';
 import { S } from './strings';
+import { createHeroPicker } from './hero-picker';
 
 export interface LobbyScreen extends Screen {
   setLoad(state: LoadState): void;
@@ -37,7 +38,6 @@ function select(options: [string, string][], value: string, onChange: (v: string
 }
 
 export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): LobbyScreen {
-  const heroOptions: [string, string][] = [[RANDOM_HERO, S.random], ...gameData.heroes.map((h): [string, string] => [h.id, h.name])];
   const heroName = (id: string) => (id === RANDOM_HERO ? S.random : (gameData.heroes.find((h) => h.id === id)?.name ?? id));
 
   const title = el('h2', {}, S.lobbyTitle);
@@ -59,6 +59,12 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
   let me: string | null = null;
   let errorTimer: ReturnType<typeof setTimeout> | null = null;
   let lastKey = '';
+  let modeKey = '';
+  const rows = new Map<number, { key: string; root: HTMLTableRowElement }>();
+  const picker = createHeroPicker((slot, hero) => {
+    const target = room?.slots.find((s) => s.index === slot);
+    if (target && (target.playerId === me || (room?.hostId === me && target.kind === 'bot'))) send({ type: 'updateSlot', slot, hero });
+  });
 
   copyBtn.addEventListener('click', () => {
     if (!room) return;
@@ -141,7 +147,16 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
           )
         : el('span', { class: `swatch ${COLOR_CLASS[s.color]}` }, COLOR_NAMES[s.color] ?? '');
     if (canEdit && color instanceof HTMLSelectElement) color.classList.add(`swatch-select`, COLOR_CLASS[s.color]!);
-    const hero = !used ? '—' : canEdit ? select(heroOptions, s.hero, (v) => update({ hero: v })) : heroName(s.hero);
+    const heroButton = el(
+      'button',
+      { class: 'hero-pick', type: 'button', 'aria-label': `Choose hero: ${heroName(s.hero)}`, 'aria-haspopup': 'dialog' },
+      s.hero === RANDOM_HERO
+        ? el('span', { class: 'hero-pick-random' }, '?')
+        : el('img', { src: `/assets/portraits/${s.hero}.webp`, alt: '' }),
+      el('span', {}, heroName(s.hero)),
+    );
+    heroButton.addEventListener('click', () => picker.open(s.index, s.hero, heroButton));
+    const hero = !used ? '—' : canEdit ? heroButton : heroName(s.hero);
     const ai =
       s.kind !== 'bot'
         ? '—'
@@ -171,13 +186,40 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
     const teams = room.mode === 'teams';
     // Team room: the two slots of a kingdom one under the other (1·I, 1·II, 2·I, ...).
     const order = teams ? [...room.slots].sort((a, b) => (a.index % SLOT_COUNT) - (b.index % SLOT_COUNT) || a.index - b.index) : room.slots;
-    tbody.replaceChildren(...order.map(row));
+    // Load and ready messages arrive throughout preload. Keep active controls mounted.
+    const permissions = `${room.mode}/${room.hostId}/${room.phase}/${me}/${room.slots.map((s) => `${s.kind}:${s.color}`).join(',')}`;
+    order.forEach((s, i) => {
+      const key = permissions + JSON.stringify({ ...s, load: 0, ready: false });
+      let cached = rows.get(s.index);
+      if (!cached || cached.key !== key) {
+        cached = { key, root: row(s) };
+        rows.set(s.index, cached);
+      }
+      const old = tbody.children[i];
+      if (old !== cached.root) {
+        if (old) old.replaceWith(cached.root);
+        else tbody.append(cached.root);
+      }
+      if (s.kind === 'human') {
+        const load = cached.root.cells[7]!.firstElementChild as HTMLElement;
+        setText(load, `${s.load}%${s.ready ? ` ✔ ${S.readyShort}` : ''}`);
+        load.classList.toggle('ok', s.load >= 100);
+      }
+    });
+    while (tbody.children.length > order.length) tbody.lastElementChild!.remove();
+    const picking = room.slots.find((s) => s.index === picker.slot);
+    if (!picking || room.phase !== 'lobby' || !(picking.playerId === me || (room.hostId === me && picking.kind === 'bot'))) picker.close();
     root.classList.toggle('teams', teams);
     const hostNow = room.hostId === me && room.phase === 'lobby';
-    modeBox.replaceChildren(
-      `${S.mode}: `,
-      hostNow ? select(Object.entries(modeNames), room.mode, (v) => send({ type: 'setMode', mode: v as RoomMode })) : modeNames[room.mode],
-    );
+    const nextModeKey = `${hostNow}/${room.mode}`;
+    if (nextModeKey !== modeKey)
+      modeBox.replaceChildren(
+        `${S.mode}: `,
+        hostNow
+          ? select(Object.entries(modeNames), room.mode, (v) => send({ type: 'setMode', mode: v as RoomMode }))
+          : modeNames[room.mode],
+      );
+    modeKey = nextModeKey;
     modeBox.title = teams ? S.modeTeamsHint : '';
     const own = room.slots.find((s) => s.playerId === me);
     const isHost = room.hostId === me;
@@ -195,6 +237,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
   const root = el(
     'section',
     { class: 'screen lobby' },
+    picker.root,
     el(
       'div',
       { class: 'panel ornate lobby-panel' },
@@ -216,6 +259,10 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
       el('footer', { class: 'lobby-foot' }, leaveBtn, readyBtn, startBtn),
     ),
   );
+
+  new MutationObserver(() => {
+    if (root.hidden) picker.close();
+  }).observe(root, { attributes: true, attributeFilter: ['hidden'] });
 
   return {
     root,

@@ -54,7 +54,7 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 
 - Only the host can change other slots, teams and AI settings. Players change their own color, hero and ready.
 - "AI" column = faction AI difficulty. For a Bot slot the Hero column is the bot's hero and the bot uses the same difficulty.
-- Hero picker: a grid of 8 portraits with name and role; taken heroes are greyed out.
+- Hero picker: a dialog with three portrait cards per row and a name under each portrait. Includes Random and the full current roster. Players choose their own hero; the host can choose bot heroes. Load and ready updates keep existing table controls mounted, so loading does not close a picker or interrupt a click.
 - Start Game is grey until everyone is ready and at 100%. Hover text says why: "Waiting for Max to load (64%)".
 - **Mode** (host, next to the title): "Free for all (4)" or "Teams of two (8)". In a team room there are 8 rows, two per kingdom (1 · I, 1 · II, 2 · I, ...). Both players of a kingdom share its team, color, Town Hall, army and start spot, so team and color can not be changed. At the start an open second slot of a playing kingdom gets a bot; a closed one stays empty (that kingdom has one hero). To save height the team room shows a smaller chat and only the load bar.
 
@@ -81,7 +81,8 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 
 - **Top bar:** game time, ally heroes (portrait, level, health), your gold, Menu button.
 - **AI status panel:** status line, army supply, Town Hall tier, worker count. Click it to move the camera to your base.
-- **Bottom bar:** minimap (left), hero panel (middle), inventory 2 × 3 (right).
+- **Bottom bar:** minimap (left), hero panel (middle), inventory 2 × 3 (right). Right click an item for Drop item or View recipes. Drop leaves it at the hero's feet. Recipes appear as a small hint beside the inventory slot (up to 300 px wide and 340 px high), with parts, the fee and items made from it. Click a part or upgrade to browse. There is no modal or dark backdrop; clicks outside close the hint and still reach the game. Escape or × also closes it. Browsing does not buy or use anything. Mouse capture stays on; the wheel scrolls long recipe lists.
+- **Move feedback:** right click the ground or minimap for three small green arrowheads that converge on the clicked point and fade in 0.38 seconds. No circle or large direction arrow. Shift still queues movement.
 - **Selected other unit:** the middle panel shows its portrait, name, health, armor, damage, and a row of small ability icons. Works for any owner: own, ally, enemy, neutral. Hover an icon: a tooltip above the panel with the text and the numbers of every level. How far a hero has learned an ability is not shown (user's choice: icon and text only). Unit skill names and text are in `shared/data/skills.json`, their numbers on the unit in `units.json`, their icons in `icons_skills` (one Codex sheet).
 - **Own unit skills:** on an own unit (army or hired) the active skills are buttons (gold edge, cooldown sweep, blue when there is no mana). Click: skills around the unit go off at once; one-target skills ask for a target (left click; right click or Esc cancels). The unit must already be in range ("Too far from your unit.").
 - **Hover card:** pointing at a hero or unit in the world (not the own hero, not the selected unit, not buildings) shows a small card next to the mouse: name, level, ally/enemy/neutral and one line per ability (its name and text). Click for the numbers.
@@ -134,7 +135,7 @@ Rules: name + hotkey, one line of text, then the numbers. Current level in brack
 
 ## 8. Settings
 
-- **Graphics:** Quality (Low / Medium / High), Render scale, Shadows (on/off), Effects (Low / High), Show FPS.
+- **Graphics:** Quality (Low / Medium / High), Render scale, Shadows (on/off), Effects (Low / High), Show FPS (off by default; F3 toggles diagnostics). Choices use gold button groups, sliders use gold tracks and handles, and switches match the dark stone panels. All controls support keyboard focus.
 - **Sound:** Master, Music, Effects, Voice alerts.
 - **Controls:** Quick cast (on/off), Item keys (1–6 or Z X C V B N), Edge scroll (on/off), Camera speed, key rebinding list.
 - **Game:** Show damage numbers, Show health bars (always / when hurt).

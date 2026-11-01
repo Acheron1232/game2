@@ -79,6 +79,26 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   await expect(page.locator('.item-slot').nth(0)).toHaveClass(/empty/);
   await expect(page.locator('.item-slot').nth(1)).not.toHaveClass(/empty/);
   await expect(page.locator('.item-ghost')).toBeHidden();
+  await moveTo('.item-slot[data-slot="1"]');
+  await page.mouse.click(mouseX, mouseY, { button: 'right' });
+  const itemMenu = page.getByRole('menu', { name: 'Item actions' });
+  await expect(itemMenu).toBeVisible();
+  await moveTo('.item-context-menu button[role="menuitem"]:last-child');
+  await page.mouse.click(mouseX, mouseY);
+  await expect(page.getByRole('dialog', { name: 'Item recipes', exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !!document.pointerLockElement)).toBe(true);
+  await expect(page.locator('dialog:modal')).toHaveCount(0);
+  const recipeHint = page.getByRole('dialog', { name: 'Item recipes', exact: true });
+  await recipeHint.evaluate((node) => {
+    node.style.maxHeight = '120px';
+  });
+  await moveTo('.recipe-panel');
+  await page.mouse.wheel(0, 100);
+  await expect.poll(() => recipeHint.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Item recipes', exact: true })).toBeHidden();
+  await expect(page.locator('.item-slot').nth(1)).not.toHaveClass(/empty/);
+  await lock();
   await moveTo('button[title="Settings"]');
   await page.mouse.click(mouseX, mouseY);
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
