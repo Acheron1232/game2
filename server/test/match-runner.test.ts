@@ -89,7 +89,8 @@ describe('match runner', () => {
     expect(s.spawns.slice(0, s.spawnCount).every((sp) => sp.owner === 0 || ENTITY_TYPES[sp.type] === 'gold_mine')).toBe(true);
     // Run a while: workers go into the mine (hidden) and the faction block only comes on changes.
     let hidden = false;
-    for (let i = 0; i < 200; i++)
+    // Some bots build first and mine a little later (seed 7 since the boss units came in).
+    for (let i = 0; i < 600; i++)
       for (const p of r.tick())
         if (p.slot === 0) {
           const t = readSnapshot(p.data, new SnapshotData());

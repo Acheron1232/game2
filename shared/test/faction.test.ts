@@ -120,6 +120,41 @@ describe('economy', () => {
     expect(f.cutTrees).toContain(gone);
   });
 
+  it('trees: a big spell breaks the trees around it, and they grow back later', () => {
+    const { sim, f, run } = match();
+    // A spot in a forest: the tree with the most standing neighbors within 3 units.
+    let best = 0,
+      most = -1;
+    for (let i = 0; i < f.trees.count; i += 7) {
+      let n = 0;
+      for (let j = 0; j < f.trees.count; j++) if (Math.hypot(f.trees.x[j]! - f.trees.x[i]!, f.trees.y[j]! - f.trees.y[i]!) <= 3) n++;
+      if (n > most) [best, most] = [i, n];
+    }
+    const x = f.trees.x[best]!,
+      y = f.trees.y[best]!;
+    const broken = f.breakTrees(x, y, 3);
+    expect(broken).toBe(most);
+    expect(f.trees.alive[best]).toBe(0);
+    expect(f.cutTrees).toContain(best);
+    // The event carries where the blow came from (clients let the tree fall away from it).
+    let cause: [number, number] | null = null;
+    for (let i = 0; i < sim.events.count; i++) {
+      const e = sim.events.items[i]!;
+      if (e.type === EventType.TreeGone && e.a === best) cause = [e.b, e.value];
+    }
+    expect(cause).not.toBeNull();
+    expect(cause![0]).toBeGreaterThan(0);
+
+    let back = -1;
+    run(gameData.rules.economy.treeRegrowSec + 3, () => {
+      for (let i = 0; i < sim.events.count; i++) if (sim.events.items[i]!.type === EventType.TreeBack) back = sim.events.items[i]!.a;
+    });
+    expect(back).toBeGreaterThanOrEqual(0);
+    expect(f.trees.alive[best]).toBe(1);
+    expect(f.trees.wood[best]).toBe(50);
+    expect(f.cutTrees).not.toContain(best);
+  });
+
   it('trains a worker: pays, takes supply, and the worker starts mining', () => {
     const { sim, f, run } = match();
     const a = f.get(0)!;

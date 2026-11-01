@@ -162,6 +162,18 @@ def _shape(kind, size, segments, rings, profile, bevel):
 FLIPPED = []
 
 
+def _fcurves(act):
+    """All curves of an action (Blender 4.4+ keeps them in layers / strips / channel bags)."""
+    if hasattr(act, "fcurves") and not hasattr(act, "layers"):
+        return list(act.fcurves)
+    out = []
+    for layer in act.layers:
+        for strip in layer.strips:
+            for bag in strip.channelbags:
+                out.extend(bag.fcurves)
+    return out
+
+
 # ---------------------------------------------------------------- model
 
 
@@ -215,6 +227,8 @@ class Model:
           front - picture seen from the front (-Y); faces looking backward take `back` instead
           wrap  - picture wrapped around the part like a label; its middle faces the front
           top   - picture seen from above (toes / front of the model at the top of the picture)
+          side  - picture seen from the side (+X or -X, whichever the part faces more); faces
+                  looking the other way take `back` (a shield on the left arm faces +X)
         frame: (x0, x1, z0, z1) fixed area for front / wrap pictures, so several parts can share
           one picture without each part repeating it (for example belly + chest).
         sub: (s0, s1, t0, t1) use only this part of the slot picture (0..1), when the painted
@@ -291,21 +305,56 @@ class Model:
                     c = co[mesh.loops[li].vertex_index]
                     s = (c.x - lo.x) / span.x
                     put(li, rear if facing_back else main, 1 - s if facing_back else s, (c.z - lo.z) / span.z)
+            elif mode == "wrap" and (abs(n.z) > 0.9 or (len(loops) > 4 and abs(n.z) > 0.7)):
+                # Flat cap of a cylinder, cone or loft (a step, a platform, a tower top): all its
+                # corners sit at one height, so the wrap picture was one smeared line. Seen from
+                # above instead.
+                for li in loops:
+                    c = co[mesh.loops[li].vertex_index]
+                    put(li, main, (c.x - lo.x) / span.x, 1 - (c.y - lo.y) / span.y)
             elif mode == "wrap":
                 # Angle around the vertical axis: 0.5 = front (-Y), the seam is at the back.
                 us = []
                 for li in loops:
                     c = co[mesh.loops[li].vertex_index]
-                    us.append(0.5 + math.atan2(c.x - center.x, -(c.y - center.y)) / (2 * math.pi))
-                if max(us) - min(us) > 0.5:  # face crosses the back seam: keep it on one side
-                    us = [u if u > 0.5 else 1.0 for u in us]
+                    dx, dy = c.x - center.x, c.y - center.y
+                    # A corner on the axis (the tip of a cone) has no angle of its own: it takes
+                    # its face's. atan2(0, -0) = pi put every cone tip at the seam and smeared
+                    # half of each cone roof.
+                    us.append(None if dx * dx + dy * dy < 1e-8 else 0.5 + math.atan2(dx, -dy) / (2 * math.pi))
+                known = [u for u in us if u is not None]
+                if known and max(known) - min(known) > 0.5:  # face crosses the back seam: keep it on one side
+                    known = [u if u > 0.5 else u + 1.0 for u in known]
+                    us = [None if u is None else (u if u > 0.5 else u + 1.0) for u in us]
+                mid = sum(known) / len(known) if known else 0.5
                 for li, u in zip(loops, us):
                     c = co[mesh.loops[li].vertex_index]
-                    put(li, main, u, (c.z - lo.z) / span.z)
+                    put(li, main, mid if u is None else u, (c.z - lo.z) / span.z)
+            elif mode == "tube":
+                # Wrapped around the long Y axis (a lying body: wolf, horse, boar). 0.5 = the top,
+                # so the back seen from the RTS camera gets the middle of the picture.
+                us = []
+                for li in loops:
+                    c = co[mesh.loops[li].vertex_index]
+                    us.append(0.5 + math.atan2(c.x - center.x, c.z - center.z) / (2 * math.pi))
+                if max(us) - min(us) > 0.5:
+                    us = [u if u > 0.5 else u + 1.0 for u in us]
+                for li, u in zip(loops, us):
+                    c = co[mesh.loops[li].vertex_index]
+                    put(li, main, u, (c.y - lo.y) / span.y)
             elif mode == "top":
                 for li in loops:
                     c = co[mesh.loops[li].vertex_index]
                     put(li, main, (c.x - lo.x) / span.x, 1 - (c.y - lo.y) / span.y)
+            elif mode == "side":
+                # Outward = the side the part's center sits on (a left-arm shield looks to +X).
+                out = 1.0 if center.x >= 0 else -1.0
+                facing_back = rear is not None and n.x * out < -0.15
+                for li in loops:
+                    c = co[mesh.loops[li].vertex_index]
+                    s = (c.y - lo.y) / span.y
+                    s = s if out > 0 else 1 - s
+                    put(li, rear if facing_back else main, 1 - s if facing_back else s, (c.z - lo.z) / span.z)
             else:
                 ax = max(range(3), key=lambda i: abs(n[i]))
                 a, b = [(1, 2), (0, 2), (0, 1)][ax]
@@ -445,6 +494,55 @@ class Model:
         arm.animation_data.action = None
         self.actions.append((name, length, loop))
 
+    # ---- whole-model changes (bosses made from other models)
+
+    def scale_all(self, k):
+        """Makes the whole model k times bigger before finish(): parts, bones, joints, effect
+        sockets and the moves in its clips (a hop, a bob), so the animations fit the new size."""
+        S = Matrix.Scale(k, 4)
+        for obj, _bone in self.parts:
+            obj.data.transform(S)
+        if self.armature:
+            bpy.context.view_layer.objects.active = self.armature
+            bpy.ops.object.mode_set(mode="EDIT")
+            for b in self.armature.data.edit_bones:
+                b.head = b.head * k
+                b.tail = b.tail * k
+            bpy.ops.object.mode_set(mode="OBJECT")
+            for act in bpy.data.actions:
+                for fc in _fcurves(act):
+                    if fc.data_path.endswith(".location"):
+                        for p in fc.keyframe_points:
+                            p.co[1] *= k
+                            p.handle_left[1] *= k
+                            p.handle_right[1] *= k
+        for d in ("joints", "tails"):
+            table = getattr(self, d, None)
+            if table:
+                for name, p in table.items():
+                    table[name] = tuple(v * k for v in p)
+        for obj in bpy.data.objects:
+            if obj.name.startswith("fx_"):
+                bpy.context.view_layer.update()
+                mw = obj.matrix_world.copy()
+                mw.translation = mw.translation * k
+                obj.matrix_world = mw
+        if hasattr(self, "height"):
+            self.height *= k
+
+    def retint(self, rgb, skip_glow=True):
+        """Multiplies every part's colors by rgb (0..2 per channel): a darker or warmer version
+        of the same model. Glow parts keep their own color."""
+        for obj, _bone in self.parts:
+            if skip_glow and any(m and m.name.startswith("glow") for m in obj.data.materials):
+                continue
+            attr = obj.data.color_attributes.get("Col")
+            if not attr:
+                continue
+            for d in attr.data:
+                c = d.color
+                d.color = (min(1, c[0] * rgb[0]), min(1, c[1] * rgb[1]), min(1, c[2] * rgb[2]), c[3])
+
     # ---- finish
 
     def finish(self):
@@ -467,6 +565,7 @@ class Model:
             mod.object = self.armature
             body.parent = self.armature
         self.body = body
+        bake_shading(body)
         return body
 
     def triangles(self):
@@ -493,3 +592,91 @@ class Model:
         except TypeError:
             kwargs.pop("export_vertex_color")
             bpy.ops.export_scene.gltf(**kwargs)
+
+
+# Hemisphere directions around +Z (cosine-weighted, fixed so builds are repeatable).
+_AO_DIRS = []
+for _i in range(16):
+    _u = (_i + 0.5) / 16
+    _a = _i * 2.399963
+    _r = math.sqrt(_u)
+    _AO_DIRS.append(Vector((math.cos(_a) * _r, math.sin(_a) * _r, math.sqrt(max(0.0, 1 - _u)))))
+
+
+def bake_shading(body):
+    """Painted-look shading baked into the vertex colors of the joined model, like hand-painted
+    textures in classic hero games: ambient occlusion from the model's own parts and from the
+    ground (rays from each vertex), darker creases and lighter sharp edges. Glow parts are left
+    as they are. Cheap at run time: it is only vertex color."""
+    from mathutils.bvhtree import BVHTree
+
+    mesh = body.data
+    attr = mesh.color_attributes.get("Col")
+    if attr is None or not mesh.vertices:
+        return
+    verts = [v.co.copy() for v in mesh.vertices]
+    tree = BVHTree.FromPolygons(verts, [tuple(p.vertices) for p in mesh.polygons], all_triangles=False)
+    height = max(0.3, max(v.z for v in verts) - min(min(v.z for v in verts), 0.0))
+    # Only near things count (folds, armpits, under pads). A longer reach let a cape 0.5 m away
+    # turn the backs of legs and shoulder pads black.
+    reach = min(0.4, max(0.06, height * 0.16))
+    eps = height * 0.004
+    glow = {i for i, m in enumerate(mesh.materials) if m and m.name == "glow"}
+
+    # Neighbors for the crease / edge term.
+    links = [[] for _ in verts]
+    for e in mesh.edges:
+        a, b = e.vertices
+        links[a].append(b)
+        links[b].append(a)
+
+    shade = [1.0] * len(verts)
+    for vi, v in enumerate(mesh.vertices):
+        n = v.normal
+        if n.length < 0.5:
+            continue
+        rot = Vector((0, 0, 1)).rotation_difference(n)
+        origin = v.co + n * eps
+        hidden = 0.0
+        for d0 in _AO_DIRS:
+            d = rot @ d0
+            hit = tree.ray_cast(origin, d, reach)
+            dist = hit[3] if hit[0] is not None else None
+            # The ground under the model also blocks light (dark feet, contact shadow).
+            if d.z < -0.05 and origin.z >= -eps:
+                g = -origin.z / d.z
+                if g < reach and (dist is None or g < dist):
+                    dist = g
+            if dist is not None:
+                hidden += 1.0 - 0.6 * (dist / reach)
+        ao = 1.0 - hidden / len(_AO_DIRS)
+        # Crease (+) or sharp edge (-): where the neighbors lie compared with the normal.
+        bend = 0.0
+        if links[vi]:
+            for o in links[vi]:
+                dv = verts[o] - v.co
+                if dv.length > 1e-6:
+                    bend += n.dot(dv.normalized())
+            bend /= len(links[vi])
+        edge = 1.0 + 0.2 * min(1.0, max(0.0, -bend * 3.0)) - 0.22 * min(1.0, max(0.0, bend * 3.0))
+        # The darkest hidden spot keeps about 60% of its color (sRGB terms): dark armor must not
+        # turn black. A small lift keeps open surfaces as bright as before.
+        shade[vi] = (0.6 + 0.43 * ao) * edge
+
+    # Two smoothing passes keep the shading soft on low-poly parts.
+    for _ in range(2):
+        nxt = shade[:]
+        for vi, ls in enumerate(links):
+            if ls:
+                nxt[vi] = 0.5 * shade[vi] + 0.5 * sum(shade[o] for o in ls) / len(ls)
+        shade = nxt
+
+    print(f"SHADING avg {sum(shade) / len(shade):.2f} min {min(shade):.2f} max {max(shade):.2f}")
+    for poly in mesh.polygons:
+        if poly.material_index in glow:
+            continue
+        for li in poly.loop_indices:
+            k = shade[mesh.loops[li].vertex_index] ** 2.2  # picked in sRGB terms, colors are linear
+            c = attr.data[li].color
+            attr.data[li].color = (min(1.0, c[0] * k), min(1.0, c[1] * k), min(1.0, c[2] * k), c[3])
+

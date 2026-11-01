@@ -7,7 +7,17 @@ import { gameData, type BuildingDef, type UnitDef } from '../../data/index';
 import type { TerrainGrid } from '../../map/terrain';
 import { NavBlockers } from '../../nav/blockers';
 import { isWalkable, nearestWalkable } from '../../nav/nav-grid';
-import { buildTreeIndex, nearestChoppableTree, removeTree, type TreeIndex, type TreeList } from '../../nav/trees';
+import {
+  buildTreeIndex,
+  nearestChoppableTree,
+  removeTree,
+  restoreTree,
+  treeCells,
+  treesInCircle,
+  type TreeIndex,
+  type TreeList,
+} from '../../nav/trees';
+import { qPos } from '../../map/coordinates';
 import { buildingDefOf, entityTypeIndex, ENTITY_TYPES, footprintOf, GOLD_MINE, isHeroType } from '../entity-types';
 import { EventType } from '../events';
 import { FACTION_HERO_SLOT, NEUTRAL, NEUTRAL_TEAM, TICK_RATE, type MatchSim, type SimEntity } from '../match-sim';
@@ -25,6 +35,13 @@ const SITE_HP = 0.1;
 const MAX_QUEUE = 5;
 /** Workers look for trees this far from their Town Hall. */
 const WOOD_RANGE = 26;
+/** A tree grows back only when no unit stands this close to it (its cells reach 2 units out). */
+const REGROW_CLEAR = 2.4;
+/**
+ * ...and never this close to a building: the ground a kingdom cleared around its bases and
+ * expansions stays open (regrowing trees there walled armies out and turned games into draws).
+ */
+const REGROW_NO_BUILDING = 16;
 const FAR_WOOD_RANGE = 70;
 
 export type Difficulty = 'easy' | 'normal' | 'hard';
@@ -136,8 +153,10 @@ export class Factions {
   readonly blockers: NavBlockers;
   /** tree index -> worker id that chops it */
   private readonly treeTaken = new Map<number, number>();
-  /** trees cut down so far (for full snapshots) */
+  /** trees cut down and not grown back yet (for full snapshots) */
   readonly cutTrees: number[] = [];
+  /** tree index -> tick it was cut (it grows back rules.economy.treeRegrowSec later) */
+  private readonly cutTick = new Map<number, number>();
   /** winner team when the match is over, 0 while it runs */
   winnerTeam = 0;
   endedAt = 0;
@@ -570,7 +589,7 @@ export class Factions {
           j.carry = 'wood';
           j.phase = 'return';
           j.repathAt = 0;
-          if (this.trees.wood[j.target]! <= 0) this.cutTree(j.target);
+          if (this.trees.wood[j.target]! <= 0) this.cutTree(j.target, w.mover.x, w.mover.y);
           return;
         }
         if (j.standX === 0 && j.standY === 0) return this.nextTree(w, j, w.mover.x, w.mover.y);
@@ -635,19 +654,68 @@ export class Factions {
     this.treeTaken.set(t.tree, w.id);
   }
 
-  /** The tree falls: its walk cells open (the same on every client). */
-  private cutTree(i: number): void {
+  /**
+   * The tree falls: its walk cells open (the same on every client). (fromX, fromY) is what cut it,
+   * a worker or the middle of a spell: clients let the tree fall away from there.
+   */
+  private cutTree(i: number, fromX: number, fromY: number): void {
     const cells = removeTree(this.trees, i);
     this.blockers.openCells(cells);
     this.cutTrees.push(i);
+    this.cutTick.set(i, this.sim.tick);
     this.treeTaken.delete(i);
-    this.sim.events.push(EventType.TreeGone, i);
+    // Never (0, 0): that means "already gone" to a client (a rejoin gets the list without a cause).
+    this.sim.events.push(EventType.TreeGone, i, Math.max(1, qPos(fromX)), Math.max(1, qPos(fromY)));
+  }
+
+  /**
+   * A big blow breaks every tree in a circle (abilities.json `breaksTrees`). The wood is lost.
+   * `keep` can leave some trees standing (a cone spell keeps those outside its cone).
+   */
+  breakTrees(x: number, y: number, r: number, keep?: (tx: number, ty: number) => boolean): number {
+    let count = 0;
+    for (const i of treesInCircle(this.trees, x, y, r)) {
+      if (keep?.(this.trees.x[i]!, this.trees.y[i]!)) continue;
+      this.cutTree(i, x, y);
+      count++;
+    }
+    return count;
   }
 
   // ---------- every tick ----------
 
+  /**
+   * Cut trees grow back after a while, so the forest is not gone for good in a long match.
+   * A tree waits while a unit stands in its place or a building covers its cells.
+   */
+  private regrowTrees(): void {
+    const sim = this.sim;
+    // Once a second (TICK_RATE is read here: match-sim imports this file, a top-level const would be too early).
+    if (sim.tick % TICK_RATE !== 0 || !this.cutTick.size) return;
+    const wait = Math.round(E.treeRegrowSec * TICK_RATE);
+    for (const [i, at] of this.cutTick) {
+      if (sim.tick - at < wait) continue;
+      const x = this.trees.x[i]!,
+        y = this.trees.y[i]!;
+      let blocked = false;
+      sim.grid.query(x, y, REGROW_NO_BUILDING + 4, (e) => {
+        if (!e.alive) return;
+        const d = Math.hypot(e.mover.x - x, e.mover.y - y);
+        if (e.building ? d < REGROW_NO_BUILDING + e.stats.radius : e.stats.layer === 'ground' && d < REGROW_CLEAR + e.stats.radius)
+          blocked = true;
+      });
+      if (blocked || this.blockers.anyCovered(treeCells(this.trees, i))) continue;
+      this.blockers.closeCells(restoreTree(this.trees, i));
+      this.cutTick.delete(i);
+      const k = this.cutTrees.indexOf(i);
+      if (k >= 0) this.cutTrees.splice(k, 1);
+      sim.events.push(EventType.TreeBack, i);
+    }
+  }
+
   update(): void {
     const sim = this.sim;
+    this.regrowTrees();
     for (const f of this.list) {
       if (!f || f.defeated) continue;
       for (const id of f.buildings) {

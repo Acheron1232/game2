@@ -12,6 +12,7 @@ import '@babylonjs/core/Meshes/thinInstanceMesh';
 import type { Scene } from '@babylonjs/core/scene';
 import type { GameAssets } from '../loader/assets';
 import { scatterInstances } from './instancing';
+import { WindPlugin } from './wind';
 import type { ModelLibrary } from './model-library';
 
 export type DecorItem = [number, number, number, number, number];
@@ -110,6 +111,8 @@ export async function createDecor(
   cardMat.alphaCutOff = 0.45;
   cardMat.backFaceCulling = false;
   cardMat.specularColor = Color3.Black();
+  // Grass and flowers sway in the wind (tops of the cards; reeds no more than the rest).
+  new WindPlugin(cardMat, 0.28, 0.08);
 
   const q = new Quaternion();
   const sc = new Vector3();
@@ -133,7 +136,18 @@ export async function createDecor(
       const mesh = cardMesh(`decor-${type}`, scene, rect, card.size, card.cross);
       mesh.material = cardMat;
       const p = place(list, 0.03);
-      meshes.push(...scatterInstances(mesh, list.length, p.at, p.compose));
+      // Grass and flowers vary a little in light and warmth, like a painted meadow.
+      const tint = (i: number, out: Float32Array, at: number) => {
+        const [x, y] = list[i]!;
+        const h1 = Math.abs(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1,
+          h2 = Math.abs(Math.sin(x * 39.346 + y * 11.135) * 24634.6345) % 1;
+        const v = 0.82 + 0.32 * h1;
+        out[at] = v * (0.92 + 0.18 * h2);
+        out[at + 1] = v;
+        out[at + 2] = v * (1.02 - 0.2 * h2);
+        out[at + 3] = 1;
+      };
+      meshes.push(...scatterInstances(mesh, list.length, p.at, p.compose, undefined, undefined, tint));
       continue;
     }
     if (!library.ids.includes(type)) continue;

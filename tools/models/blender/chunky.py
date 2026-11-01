@@ -17,6 +17,17 @@ from mathutils import Vector
 W = "#ffffff"
 FACET = 28
 
+# Heroic bulk (2026-10-31): a model may call set_bulk() at the start of its build. Limbs, hands,
+# shoulder pads, capes, belts and weapons (all made with limb / blob) are drawn thicker; joints,
+# lengths and animations stay the same. Slim figures read as sticks from the RTS camera.
+BULK = 1.0
+HEAD_SCALE = 1.0
+
+
+def set_bulk(body=1.0, head=1.0):
+    global BULK, HEAD_SCALE
+    BULK, HEAD_SCALE = body, head
+
 
 def v(p):
     return Vector(p)
@@ -29,14 +40,20 @@ def lerp(a, b, t):
 
 def limb(m, a, b, sections, **kw):
     """Loft along a -> b. sections: [(t, width, depth)] with t from 0 (at a) to 1 (at b)."""
+    _limb(m, a, b, [(t, w * BULK, d * BULK) for t, w, d in sections], **kw)
+
+
+def _limb(m, a, b, sections, **kw):
+    """limb() without the bulk factor (parts whose size is already scaled)."""
     prof = [(*lerp(a, b, t), w, d) for t, w, d in sections]
     kw.setdefault("smooth", FACET)
     kw.setdefault("tint", W)
     m.part("loft", 1, profile=prof, **kw)
 
 
-def blob(m, center, r, slot, bone, sub=None, tint=W, squash=(1, 1, 1), uv="box"):
+def blob(m, center, r, slot, bone, sub=None, tint=W, squash=(1, 1, 1), uv="box", smooth=FACET):
     """A rough low-poly ball (8-12 faces): elbows, knees, knuckles, beads."""
+    r *= BULK
     cx, cy, cz = center
     pts = []
     for zc, rr, n, off in ((0.0, 1.0, 8, 0.0), (0.7, 0.68, 5, 0.3), (-0.7, 0.68, 5, 0.6)):
@@ -44,7 +61,7 @@ def blob(m, center, r, slot, bone, sub=None, tint=W, squash=(1, 1, 1), uv="box")
             a = math.pi * 2 * (i + off) / n
             pts.append((cx + math.cos(a) * r * rr * squash[0], cy + math.sin(a) * r * rr * squash[1], cz + zc * r * squash[2]))
     pts += [(cx, cy, cz + r * squash[2]), (cx, cy, cz - r * squash[2])]
-    m.part("hull", 1, profile=pts, slot=slot, sub=sub, tint=tint, bone=bone, smooth=FACET, uv=uv)
+    m.part("hull", 1, profile=pts, slot=slot, sub=sub, tint=tint, bone=bone, smooth=smooth, uv=uv)
 
 
 def frame_hull(m, origin, axes, points, **kw):
@@ -60,8 +77,11 @@ def frame_hull(m, origin, axes, points, **kw):
 # ---------------------------------------------------------------- body
 
 
-def torso(m, front="chest", back="back", waist=(0.4, 0.3), belly=(0.5, 0.35), chest=(0.82, 0.45), shoulders=(0.96, 0.44), neck=(0.42, 0.3), hump=True):
-    """Belly on the spine bone, chest on the chest bone, one front/back picture over both."""
+def torso(m, front="chest", back="back", waist=(0.4, 0.3), belly=(0.5, 0.35), chest=(0.82, 0.45), shoulders=(0.96, 0.44), neck=(0.42, 0.3), hump=True, segments=6, smooth=FACET):
+    """Belly on the spine bone, chest on the chest bone, one front/back picture over both.
+    Big bodies (ogres) pass more segments and a higher smooth angle: six hard sides on a wide
+    torso read as a crate."""
+    waist, belly, chest, shoulders, neck = ((a * BULK, b * BULK) for a, b in (waist, belly, chest, shoulders, neck))
     j = m.joints
     hz, top = j["hips"][2], j["neck"][2]
     y0 = j["hips"][1]  # the body may not stand at y = 0 (centaur, riders)
@@ -69,9 +89,9 @@ def torso(m, front="chest", back="back", waist=(0.4, 0.3), belly=(0.5, 0.35), ch
     rel = fy - y0
     fr = (-shoulders[0] / 2, shoulders[0] / 2, hz - 0.04, top + 0.06)
     m.part("loft", 1, profile=[(0, y0, hz - 0.04, *waist), (0, y0 - 0.01, hz + 0.12, (waist[0] + belly[0]) / 2, (waist[1] + belly[1]) / 2), (0, y0 - 0.03, hz + 0.3, *belly)],
-           slot=front, back=back, uv="front", frame=fr, tint=W, bone="spine", segments=6, smooth=FACET)
+           slot=front, back=back, uv="front", frame=fr, tint=W, bone="spine", segments=segments, smooth=smooth)
     m.part("loft", 1, profile=[(0, y0 - 0.03, hz + 0.28, *belly), (0, y0 + rel * 0.6, hz + 0.43, *chest), (0, y0 + rel * 0.9, top - 0.04, *shoulders), (0, fy, top + 0.06, *neck)],
-           slot=front, back=back, uv="front", frame=fr, tint=W, bone="chest", segments=6, smooth=FACET)
+           slot=front, back=back, uv="front", frame=fr, tint=W, bone="chest", segments=segments, smooth=smooth)
     if hump:
         w = shoulders[0] * 0.27
         m.part("hull", 1, profile=[(-w, fy + 0.06, top - 0.02), (w, fy + 0.06, top - 0.02), (-w / 2, fy + 0.04, top + 0.12), (w / 2, fy + 0.04, top + 0.12), (0, fy + 0.15, top + 0.04), (0, fy - 0.08, top + 0.02)],
@@ -79,12 +99,13 @@ def torso(m, front="chest", back="back", waist=(0.4, 0.3), belly=(0.5, 0.35), ch
 
 
 def head(m, face="face", back="head_back", size=(0.25, 0.25, 0.27), jaw=1.0, ears="arm"):
-    """Faceted head pushed forward; painted face in front, back of the head behind."""
+    """Head pushed forward; painted face in front, back of the head behind. Smooth shading: with
+    7 sides and a lower angle, a hard edge ran down the middle of the face."""
     hx, hy, hz = m.joints["head"]
-    w, d, h = size
+    w, d, h = (x * HEAD_SCALE for x in size)
     fr = (-w / 2 - 0.01, w / 2 + 0.01, hz - 0.05, hz - 0.05 + h)
     m.part("loft", 1, profile=[(0, hy - 0.03, hz - 0.05, w * 0.8 * jaw, d * 0.72), (0, hy - 0.02, hz + 0.03, w * 0.96, d * 0.96), (0, hy, hz + 0.13, w, d), (0, hy + 0.01, hz + 0.2, w * 0.8, d * 0.8), (0, hy + 0.01, hz - 0.05 + h, w * 0.36, d * 0.36)],
-           slot=face, back=back, uv="front", frame=fr, tint=W, bone="head", segments=7, smooth=40)
+           slot=face, back=back, uv="front", frame=fr, tint=W, bone="head", segments=7, smooth=65)
     if ears:
         x = w / 2
         m.part("hull", 1, profile=[(x - 0.02, hy, hz + 0.08), (x + 0.03, hy + 0.02, hz + 0.1), (x + 0.02, hy + 0.03, hz + 0.04), (x - 0.02, hy + 0.03, hz + 0.03)],
@@ -122,7 +143,7 @@ def fist(m, side, slot="hand", size=0.11, grip_axis=(0, 0, 1), sub=None):
     out = Vector((sx, -0.6, 0)).normalized()  # knuckles: forward and to the outside
     out = (out - up * out.dot(up)).normalized()
     third = up.cross(out).normalized()
-    s = size
+    s = size * BULK
     pts = []
     # Rounded main block: three rings of 8 points (fingers wrapped around the shaft)
     for zc, rr in ((-0.85, 0.78), (0.0, 1.0), (0.85, 0.82)):
@@ -134,7 +155,7 @@ def fist(m, side, slot="hand", size=0.11, grip_axis=(0, 0, 1), sub=None):
     for k in range(4):
         z = (k - 1.5) * s * 0.42
         kp = g + out * s * 1.08 + up * z
-        blob(m, tuple(kp), s * 0.24, slot, f"hand.{side}", sub=sub or (0.3, 0.7, 0.6, 0.95))
+        blob(m, tuple(kp), s * 0.24 / BULK, slot, f"hand.{side}", sub=sub or (0.3, 0.7, 0.6, 0.95))
     # Thumb across the front
     frame_hull(m, g, (third, out, up), [(-s * 0.2, s * 0.9, s * 0.9), (s * 0.7, s * 0.9, s * 0.95), (s * 0.7, s * 0.5, s * 1.1), (-s * 0.1, s * 0.4, s * 1.05), (s * 0.3, s * 0.8, s * 1.2)],
                slot=slot, sub=sub or (0.4, 0.9, 0.4, 0.9), bone=f"hand.{side}")
@@ -148,16 +169,16 @@ def open_hand(m, side, slot="hand", size=0.1):
     side_ax = Vector((sx, 0, 0))
     side_ax = (side_ax - d * side_ax.dot(d)).normalized()
     normal = d.cross(side_ax).normalized()
-    s = size
+    s = size * BULK
     frame_hull(m, a, (side_ax, normal, d), [(x * s * 0.8, y * s * 0.35, z * s) for x in (-1, 1) for y in (-1, 1) for z in (0.1, 1.0)], slot=slot, bone=f"hand.{side}")
     for i, off in enumerate((-0.6, -0.2, 0.2, 0.6)):
         ln = s * (0.9 if i in (1, 2) else 0.75)
         spread = off * 0.35
         base = a + d * s * 1.0 + side_ax * off * s
         tip_dir = (d + side_ax * spread).normalized()
-        limb(m, tuple(base), tuple(base + tip_dir * ln), [(0, s * 0.3, s * 0.28), (0.6, s * 0.27, s * 0.25), (1, s * 0.14, s * 0.14)], slot=slot, bone=f"hand.{side}", segments=4)
+        _limb(m, tuple(base), tuple(base + tip_dir * ln), [(0, s * 0.3, s * 0.28), (0.6, s * 0.27, s * 0.25), (1, s * 0.14, s * 0.14)], slot=slot, bone=f"hand.{side}", segments=4)
     tb = a + d * s * 0.4 - side_ax * s * 0.8
-    limb(m, tuple(tb), tuple(tb - side_ax * s * 0.5 + d * s * 0.4), [(0, s * 0.32, s * 0.3), (1, s * 0.16, s * 0.16)], slot=slot, bone=f"hand.{side}", segments=4)
+    _limb(m, tuple(tb), tuple(tb - side_ax * s * 0.5 + d * s * 0.4), [(0, s * 0.32, s * 0.3), (1, s * 0.16, s * 0.16)], slot=slot, bone=f"hand.{side}", segments=4)
 
 
 def leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0.27, 0.29, 0.18), shin=(0.17, 0.18, 0.12), band="trim", boot=1.0, foot_sub=None):
@@ -171,7 +192,7 @@ def leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0
     if band:
         limb(m, k, f, [(0.04, b0 * 1.2, b0 * 1.2), (0.16, b0 * 1.2, b0 * 1.2)], slot=band, uv="wrap", sub=(0, 0.6, 0.3, 0.7), bone=f"shin.{side}", segments=6)
     x, y, z = f
-    w = 0.1 * boot
+    w = 0.1 * boot * BULK
     m.part("hull", 1, profile=[(x - w * 0.9, y + 0.09, 0.0), (x + w * 0.9, y + 0.09, 0.0), (x - w * 1.1, y - 0.25, 0.0), (x + w * 1.1, y - 0.25, 0.0),
                                (x - w * 0.75, y + 0.06, z + 0.05), (x + w * 0.75, y + 0.06, z + 0.05), (x - w * 0.8, y - 0.2, 0.08), (x + w * 0.8, y - 0.2, 0.08)],
            slot=foot_slot, sub=foot_sub, uv="top", tint=W, bone=f"foot.{side}", smooth=FACET)
@@ -179,6 +200,7 @@ def leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0
 
 def belt(m, slot="belt", size=(0.52, 0.38), height=0.12):
     _, y0, hz = m.joints["hips"]
+    size = (size[0] * BULK, size[1] * BULK)
     m.part("loft", 1, profile=[(0, y0, hz - 0.02, *size), (0, y0, hz - 0.02 + height, size[0] * 1.02, size[1])], slot=slot, uv="wrap", tint=W, bone="hips", segments=8)
 
 
@@ -194,7 +216,7 @@ def shoulder_pad(m, side, slot="shoulder", size=1.0, spikes=2, spike_slot="weapo
     """Big angular pad over the shoulder with optional spikes."""
     x, y, z = m.joints[f"upper_arm.{side}"]
     sx = 1 if side == "L" else -1
-    k = size
+    k = size * BULK
     pts = [(-0.1, -0.2, 0.02), (0.24, -0.18, -0.05), (-0.1, 0.2, 0.02), (0.24, 0.18, -0.05), (0.02, 0, 0.16), (0.16, 0, 0.1), (0.3, 0, -0.12), (-0.12, 0, -0.02)]
     m.part("hull", 1, profile=[(x + sx * px * k, y + py * k, z + pz * k) for px, py, pz in pts], slot=slot, uv="top", tint=W, bone=f"upper_arm.{side}", smooth=FACET)
     for i in range(spikes):
@@ -217,6 +239,7 @@ def beads(m, count=11, slot="weapon_b", sub=(0.2, 0.8, 0.4, 0.6), tint="#8a5a30"
 
 def cape(m, slot="cloth", length=1.0, width=0.7):
     """A stiff hanging cape from the shoulders (team color in most skins)."""
+    width *= BULK
     j = m.joints
     top, fy = j["neck"][2], j["neck"][1]
     m.part("loft", 1, profile=[(0, fy + 0.2, top - 0.02, width * 0.9, 0.05), (0, fy + 0.3, top - length * 0.5, width, 0.05), (0, fy + 0.34, top - length, width * 1.05, 0.04)],

@@ -27,7 +27,7 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   await expect(capture).toBeVisible({ timeout: 45_000 });
   // Use the real browser lock API. The older headless-shell binary rejects it on
   // macOS, so this file uses full Chromium's current headless mode instead.
-  await page.getByRole('button', { name: '⛶', exact: true }).click();
+  await page.getByRole('button', { name: 'Full screen', exact: true }).click();
   await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
   let mouseX = 0;
   let mouseY = 0;

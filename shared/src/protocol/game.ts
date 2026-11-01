@@ -15,6 +15,7 @@ import { gameData } from '../data/index';
 import { CommandType, type GameCommand } from '../sim/commands';
 import { BinaryReader, type BinaryWriter } from './binary';
 import { MsgId } from './messages';
+import { blankHeroInfo, type NetHeroInfo } from './hero-info';
 import { dqPos, qPos } from '../map/coordinates';
 export { dqPos, qPos, quantizePoint } from '../map/coordinates';
 
@@ -70,6 +71,8 @@ export const SnapshotFlag = {
   HasFaction: 4,
   /** Items on the ground came into view or went away (block at the end). */
   HasItems: 8,
+  /** Items, skill levels and buffs of heroes in sight changed (block after the items). */
+  HasHeroes: 16,
 } as const;
 
 /** Most ground items in one snapshot block (u8 count); the rest come next tick. */
@@ -383,6 +386,8 @@ export class SnapshotWriter {
   private itemGone: number[] = [];
   private nItemSpawn = 0;
   private nItemGone = 0;
+  private heroes: NetHeroInfo[] = [];
+  private nHero = 0;
   private head = { tick: 0, ack: 0, prediction: 0, sinceAck: 0, flags: 0 };
 
   begin(tick: number, ackSeq: number, ticksSinceAck: number, flags = 0, predictionSeq = ackSeq): void {
@@ -393,8 +398,20 @@ export class SnapshotWriter {
     this.head.flags = flags;
     this.nSpawn = this.nUpdate = this.nGone = this.nEvent = 0;
     this.nItemSpawn = this.nItemGone = 0;
+    this.nHero = 0;
     this.player = null;
     this.factionList.length = 0;
+  }
+
+  /** A hero's items, skill levels and buffs (copied). */
+  heroInfo(h: NetHeroInfo): void {
+    if (this.nHero >= 255) return;
+    const o = (this.heroes[this.nHero++] ??= blankHeroInfo());
+    o.id = h.id;
+    o.items.length = o.abilityLevels.length = o.buffs.length = 0;
+    o.items.push(...h.items);
+    o.abilityLevels.push(...h.abilityLevels);
+    o.buffs.push(...h.buffs);
   }
 
   spawn(s: NetEntityState): void {
@@ -442,7 +459,7 @@ export class SnapshotWriter {
 
   get empty(): boolean {
     return (
-      this.nSpawn + this.nUpdate + this.nGone + this.nEvent + this.nItemSpawn + this.nItemGone === 0 &&
+      this.nSpawn + this.nUpdate + this.nGone + this.nEvent + this.nItemSpawn + this.nItemGone + this.nHero === 0 &&
       !this.player &&
       !this.factionList.length
     );
@@ -454,7 +471,8 @@ export class SnapshotWriter {
       this.head.flags |
       (this.player ? SnapshotFlag.HasPlayer : 0) |
       (this.factionList.length ? SnapshotFlag.HasFaction : 0) |
-      (items ? SnapshotFlag.HasItems : 0);
+      (items ? SnapshotFlag.HasItems : 0) |
+      (this.nHero ? SnapshotFlag.HasHeroes : 0);
     w.reset()
       .u8(MsgId.Snapshot)
       .u32(this.head.tick)
@@ -536,6 +554,18 @@ export class SnapshotWriter {
       w.u8(this.nItemGone);
       for (let i = 0; i < this.nItemGone; i++) w.u16(this.itemGone[i]!);
     }
+    if (this.nHero) {
+      w.u8(this.nHero);
+      for (let i = 0; i < this.nHero; i++) {
+        const h = this.heroes[i]!;
+        w.u16(h.id);
+        for (let k = 0; k < 6; k++) w.u8(h.items[k] ?? 0);
+        w.u8(h.abilityLevels.length);
+        for (const l of h.abilityLevels) w.u8(l);
+        w.u8(h.buffs.length / 2);
+        for (const v of h.buffs) w.u16(v);
+      }
+    }
     return w.bytes();
   }
 }
@@ -562,6 +592,9 @@ export class SnapshotData {
   readonly factions: NetFactionState[] = [];
   readonly itemSpawns: NetGroundItem[] = [];
   readonly itemGone: number[] = [];
+  heroCount = 0;
+  /** hero blocks of this snapshot (0..heroCount-1) */
+  readonly heroes: NetHeroInfo[] = [];
   readonly spawns: NetEntityState[] = [];
   readonly updates: NetUpdate[] = [];
   readonly gone: number[] = [];
@@ -703,6 +736,16 @@ export class SnapshotData {
       }
       this.itemGoneCount = r.u8();
       for (let i = 0; i < this.itemGoneCount; i++) this.itemGone[i] = r.u16();
+    }
+    this.heroCount = this.flags & SnapshotFlag.HasHeroes ? r.u8() : 0;
+    for (let i = 0; i < this.heroCount; i++) {
+      const h = (this.heroes[i] ??= blankHeroInfo());
+      h.id = r.u16();
+      for (let k = 0; k < 6; k++) h.items[k] = r.u8();
+      h.abilityLevels.length = r.u8();
+      for (let k = 0; k < h.abilityLevels.length; k++) h.abilityLevels[k] = r.u8();
+      h.buffs.length = r.u8() * 2;
+      for (let k = 0; k < h.buffs.length; k++) h.buffs[k] = r.u16();
     }
     return this;
   }

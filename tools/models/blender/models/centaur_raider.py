@@ -90,6 +90,8 @@ def animations(m, style="melee"):
 
 def build():
     m = Model("centaur_raider", skin="centaur_raider_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.18, head=1.1)
     rig(m)
     j, t = m.joints, m.tails
 
@@ -97,11 +99,12 @@ def build():
     Z = WITHERS
     hb = [(0, 1.0, Z - 0.2, 0.3, 0.32), (0, 0.88, Z - 0.05, 0.56, 0.62), (0, 0.62, Z - 0.02, 0.68, 0.72), (0, 0.3, Z - 0.1, 0.6, 0.62),
           (0, -0.05, Z - 0.12, 0.62, 0.66), (0, -0.38, Z - 0.05, 0.66, 0.78), (0, -0.58, Z + 0.05, 0.5, 0.62)]
-    m.part("loft", 1, profile=hb, slot="legs", uv="wrap", tint=W, bone="horse", segments=8, smooth=36)
+    # Round, not boxy: 10 sides and smooth shading (8 sides at 36 degrees made every edge hard).
+    m.part("loft", 1, profile=hb, slot="legs", uv="tube", tint=W, bone="horse", segments=10, smooth=60)
     # Haunches: rounded muscle over the hind legs
     for sx in (1, -1):
-        c.blob(m, (sx * 0.24, 0.66, Z - 0.12), 0.26, "extra_4", "horse", squash=(0.75, 1.2, 1.1), uv="front")
-        c.blob(m, (sx * 0.23, -0.35, Z - 0.2), 0.2, "legs", "withers", squash=(0.75, 1.0, 1.2))
+        c.blob(m, (sx * 0.24, 0.66, Z - 0.12), 0.26, "extra_4", "horse", squash=(0.75, 1.2, 1.1), uv="front", smooth=60)
+        c.blob(m, (sx * 0.23, -0.35, Z - 0.2), 0.2, "legs", "withers", squash=(0.75, 1.0, 1.2), smooth=60)
     # Saddle cloth (team) hanging over the back, with a fringe line
     m.part("loft", 1, profile=[(0, 0.45, Z + 0.32, 0.62, 0.04), (0, 0.1, Z + 0.27, 0.66, 0.04), (0, -0.2, Z + 0.3, 0.6, 0.04)], slot="cloth", uv="top", tint=W, bone="horse", segments=4, smooth=c.FACET)
     for sx in (1, -1):
@@ -112,9 +115,9 @@ def build():
         for part, r in (("front", 0.15), ("back", 0.17)):
             u0, u1, l1 = Vector(j[f"{part}_upper.{sd}"]), Vector(t[f"{part}_upper.{sd}"]), Vector(t[f"{part}_lower.{sd}"])
             upper = [(0, r * 2.0, r * 2.4), (0.45, r * 1.35, r * 1.6), (1, r * 0.75, r * 0.95)] if part == "back" else [(0, r * 1.7, r * 2.0), (0.6, r * 1.1, r * 1.25), (1, r * 0.8, r * 0.9)]
-            c.limb(m, tuple(u0), tuple(u1), upper, slot="legs", uv="wrap", bone=f"{part}_upper.{sd}", segments=6)
+            c.limb(m, tuple(u0), tuple(u1), upper, slot="legs", uv="wrap", bone=f"{part}_upper.{sd}", segments=6, smooth=55)
             c.blob(m, tuple(u1), r * 0.55, "legs", f"{part}_lower.{sd}")
-            c.limb(m, tuple(u1), tuple(l1), [(0, r * 0.7, r * 0.8), (0.55, r * 0.55, r * 0.62), (0.85, r * 0.72, r * 0.8), (1, r * 0.66, r * 0.72)], slot="shin", uv="wrap", bone=f"{part}_lower.{sd}", segments=6)
+            c.limb(m, tuple(u1), tuple(l1), [(0, r * 0.7, r * 0.8), (0.55, r * 0.55, r * 0.62), (0.85, r * 0.72, r * 0.8), (1, r * 0.66, r * 0.72)], slot="shin", uv="wrap", bone=f"{part}_lower.{sd}", segments=6, smooth=55)
             x, y, _ = l1
             m.part("hull", 1, profile=[(x - 0.08, y + 0.06, 0), (x + 0.08, y + 0.06, 0), (x - 0.09, y - 0.11, 0), (x + 0.09, y - 0.11, 0), (x - 0.065, y + 0.05, 0.12), (x + 0.065, y + 0.05, 0.12), (x - 0.07, y - 0.05, 0.11), (x + 0.07, y - 0.05, 0.11)],
                    slot="foot", uv="front", tint=W, bone=f"{part}_lower.{sd}", smooth=c.FACET)

@@ -1,5 +1,6 @@
 // What a player sees about any hero or unit (own, ally, enemy, neutral): its abilities with an
-// icon, the text and the numbers. How far a hero has learned them is not shown (user's choice).
+// icon, the text and the numbers. A hero's skill levels come with its hero block (main.ts adds
+// them): the user wants to see when an enemy has learned an aura or a passive.
 // Unit skill names and text are in skills.json, their numbers on the unit in units.json.
 
 import { abilityIndex, abilityMechanic, ABILITIES, ENTITY_TYPES, gameData } from '@game/shared';

@@ -5,7 +5,7 @@
   "clips": [
     {
       "name": "idle",
-      "frames": 82,
+      "frames": 98,
       "loop": true
     },
     {
@@ -15,12 +15,12 @@
     },
     {
       "name": "attack",
-      "frames": 38,
+      "frames": 41,
       "loop": false
     },
     {
       "name": "attack2",
-      "frames": 38,
+      "frames": 41,
       "loop": false
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "name": "hit",
-      "frames": 16,
+      "frames": 19,
       "loop": false
     },
     {

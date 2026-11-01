@@ -17,6 +17,6 @@ def build():
     m._material(m.parts[-1][0], "glow")
     m.parts[-1][0].data.materials.pop(index=0)
     hz = m.joints["hips"][2]
-    m.part("hull", 1, profile=[(0.16 + dx, -0.12 + dy, hz - 0.15 + dz) for dx in (0, 0.09) for dy in (0, 0.14) for dz in (0, 0.18)], slot=s.weapon_b, uv="front", tint=c.W, bone="hips", smooth=c.FACET)
+    m.part("hull", 1, profile=[(0.16 + dx, -0.12 + dy, hz - 0.15 + dz) for dx in (0, 0.09) for dy in (0, 0.14) for dz in (0, 0.18)], slot=s.weapon_b, uv="box", tint=c.W, bone="hips", smooth=c.FACET)
     m.socket("staff", tuple(g + ax * 0.85), "weapon")
     return m

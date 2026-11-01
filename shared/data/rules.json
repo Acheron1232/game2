@@ -41,7 +41,7 @@
 
   "experience": {
     "totalXpForLevel": [0, 200, 500, 900, 1400, 2000, 2700, 3500, 4400, 5400, 6500, 7700, 9000, 10400, 11900],
-    "xpForKillingUnitOfLevel": [25, 40, 60, 85, 115, 150, 190, 235, 285, 340],
+    "xpForKillingUnitOfLevel": [25, 40, 60, 85, 115, 150, 190, 235, 285, 340, 400, 470, 550, 640, 740],
     "xpForKillingHero": { "base": 100, "perVictimLevel": 50 },
     "shareRange": 12,
     "shareRule": "XP is split equally between allied heroes in range. The killer does not need to be a hero.",
@@ -61,8 +61,8 @@
   },
 
   "respawn": {
-    "heroBaseSec": 5,
-    "heroPerLevelSec": 3,
+    "heroBaseSec": 8,
+    "heroPerLevelSec": 4,
     "location": "heroSpawn of the player's start, or the nearest own Town Hall if the main one is gone"
   },
 
@@ -109,6 +109,7 @@
     "woodPerTrip": 10,
     "mineTimeSec": 1.0,
     "chopTimeSec": 4.0,
+    "treeRegrowSec": 240,
     "maxWorkersPerMine": 5,
     "supplyCap": 250,
     "upkeep": {

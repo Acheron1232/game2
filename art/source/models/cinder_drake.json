@@ -1,0 +1,53 @@
+{
+  "id": "cinder_drake",
+  "triangles": 1502,
+  "bones": 18,
+  "clips": [
+    {
+      "name": "walk",
+      "frames": 31,
+      "loop": true
+    },
+    {
+      "name": "idle",
+      "frames": 78,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 31,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 31,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 39,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 16,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 47,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 52,
+      "loop": false
+    }
+  ],
+  "height": 1.617,
+  "sockets": [
+    "mouth",
+    "feet"
+  ],
+  "skin": "cinder_drake_skin"
+}

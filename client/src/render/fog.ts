@@ -1,6 +1,6 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { Constants } from '@babylonjs/core/Engines/constants';
-import type { Material } from '@babylonjs/core/Materials/material';
+import { Material } from '@babylonjs/core/Materials/material';
 import { MaterialPluginBase } from '@babylonjs/core/Materials/materialPluginBase';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
@@ -21,7 +21,10 @@ export const FOG_VISIBLE_BRIGHTNESS = 1;
 export const FOG_EXPLORED_BRIGHTNESS = 0.45;
 export const FOG_HIDDEN_BRIGHTNESS = 0.25;
 
-const FADE_SECONDS = 0.3;
+/** How fast a cell eases toward its new light (1/s): about 0.5 s to settle, soft at the end. */
+const FADE_RATE = 6;
+/** Closer than this to the target, a cell snaps (so the fade ends and uploads stop). */
+const FADE_SNAP = 0.004;
 const GLSL = 0;
 const WGSL = 1;
 
@@ -31,20 +34,46 @@ export function fogBrightness(visible: number, explored: number): number {
   return explored !== 0 ? FOG_EXPLORED_BRIGHTNESS : FOG_HIDDEN_BRIGHTNESS;
 }
 
-/** Moves values by at most maxStep and snaps them exactly onto their targets. */
-export function fadeFogValues(current: Float32Array, target: Float32Array, maxStep: number): boolean {
+/**
+ * Eases values toward their targets by the part `k` (0..1) of the gap, snapping when close.
+ * Returns true while anything still moves.
+ */
+export function easeFogValues(current: Float32Array, target: Float32Array, k: number): boolean {
   if (current.length !== target.length) throw new RangeError('Fog fade arrays must have the same length.');
-  if (!(maxStep > 0)) return false;
+  if (!(k > 0)) return false;
   let changed = false;
   for (let i = 0; i < current.length; i++) {
     const from = current[i]!;
     const to = target[i]!;
     if (from === to) continue;
-    const delta = to - from;
-    current[i] = Math.abs(delta) <= maxStep ? to : from + Math.sign(delta) * maxStep;
+    const next = from + (to - from) * k;
+    current[i] = Math.abs(to - next) < FADE_SNAP ? to : next;
     changed = true;
   }
   return changed;
+}
+
+/**
+ * Soft edge: a small blur (5 taps each way, 1-4-6-4-1) over the light levels, so the border
+ * between seen and unseen ground is a short gradient instead of a step of one cell.
+ */
+export function blurFogValues(src: Float32Array, cols: number, tmp: Float32Array, out: Float32Array): void {
+  const at = (v: number) => Math.min(cols - 1, Math.max(0, v));
+  for (let y = 0; y < cols; y++) {
+    const row = y * cols;
+    for (let x = 0; x < cols; x++)
+      tmp[row + x] =
+        (src[row + at(x - 2)]! + 4 * src[row + at(x - 1)]! + 6 * src[row + x]! + 4 * src[row + at(x + 1)]! + src[row + at(x + 2)]!) / 16;
+  }
+  for (let y = 0; y < cols; y++)
+    for (let x = 0; x < cols; x++)
+      out[y * cols + x] =
+        (tmp[at(y - 2) * cols + x]! +
+          4 * tmp[at(y - 1) * cols + x]! +
+          6 * tmp[y * cols + x]! +
+          4 * tmp[at(y + 1) * cols + x]! +
+          tmp[at(y + 2) * cols + x]!) /
+        16;
 }
 
 /** Builds a top-down black alpha mask. Grid row 0 is written to the bottom canvas row. */
@@ -75,12 +104,19 @@ interface FogPluginState {
 }
 
 class FogMaterialPlugin extends MaterialPluginBase {
+  /** additive light (glow pools): shows only where the player sees now, never through the fog */
+  glow = false;
+
   constructor(
     material: StandardMaterial,
     private readonly state: FogPluginState,
   ) {
-    super(material, 'FogOfWar', 300);
+    super(material, 'FogOfWar', 300, { FOG_GLOW: false });
     this._enable(true);
+  }
+
+  override prepareDefines(defines: Record<string, unknown>): void {
+    defines['FOG_GLOW'] = this.glow;
   }
 
   override getClassName(): string {
@@ -118,10 +154,15 @@ class FogMaterialPlugin extends MaterialPluginBase {
         CUSTOM_FRAGMENT_DEFINITIONS: 'var fogSamplerSampler: sampler;\nvar fogSampler: texture_2d<f32>;',
         CUSTOM_FRAGMENT_BEFORE_FOG: `
 if (uniforms.fogEnabled > 0.5) {
-  let fogUv = vec2f(fragmentInputs.vPositionW.x, -fragmentInputs.vPositionW.z) / uniforms.fogMapSize;
+  let fogP = vec2f(fragmentInputs.vPositionW.x, -fragmentInputs.vPositionW.z);
+  // A little wobble, so the edge of sight is not a smooth polygon of cells.
+  let fogUv = (fogP + vec2f(sin(fogP.y * 0.37 + sin(fogP.x * 0.11)), cos(fogP.x * 0.33 + sin(fogP.y * 0.13))) * 0.7) / uniforms.fogMapSize;
   let sampledFog = textureSample(fogSampler, fogSamplerSampler, clamp(fogUv, vec2f(0.0), vec2f(1.0))).r;
   let insideFog = all(fogUv >= vec2f(0.0)) && all(fogUv <= vec2f(1.0));
-  let fogLight = select(${FOG_EXPLORED_BRIGHTNESS}, sampledFog, insideFog);
+  var fogLight = select(${FOG_EXPLORED_BRIGHTNESS}, sampledFog, insideFog);
+  #ifdef FOG_GLOW
+  fogLight = smoothstep(${FOG_EXPLORED_BRIGHTNESS}, ${FOG_VISIBLE_BRIGHTNESS}.0, fogLight);
+  #endif
   let fogGrey = dot(color.rgb, vec3f(0.299, 0.587, 0.114));
   let fogDesaturate = clamp((1.0 - fogLight) * 0.32, 0.0, 0.25);
   color = vec4f(mix(color.rgb, vec3f(fogGrey), fogDesaturate) * fogLight, color.a);
@@ -132,10 +173,15 @@ if (uniforms.fogEnabled > 0.5) {
       CUSTOM_FRAGMENT_DEFINITIONS: 'uniform sampler2D fogSampler;',
       CUSTOM_FRAGMENT_BEFORE_FOG: `
 if (fogEnabled > 0.5) {
-  vec2 fogUv = vec2(vPositionW.x, -vPositionW.z) / fogMapSize;
+  vec2 fogP = vec2(vPositionW.x, -vPositionW.z);
+  // A little wobble, so the edge of sight is not a smooth polygon of cells.
+  vec2 fogUv = (fogP + vec2(sin(fogP.y * 0.37 + sin(fogP.x * 0.11)), cos(fogP.x * 0.33 + sin(fogP.y * 0.13))) * 0.7) / fogMapSize;
   float sampledFog = texture2D(fogSampler, clamp(fogUv, vec2(0.0), vec2(1.0))).r;
   bool insideFog = all(greaterThanEqual(fogUv, vec2(0.0))) && all(lessThanEqual(fogUv, vec2(1.0)));
   float fogLight = insideFog ? sampledFog : ${FOG_EXPLORED_BRIGHTNESS};
+  #ifdef FOG_GLOW
+  fogLight = smoothstep(${FOG_EXPLORED_BRIGHTNESS}, ${FOG_VISIBLE_BRIGHTNESS}.0, fogLight);
+  #endif
   float fogGrey = dot(color.rgb, vec3(0.299, 0.587, 0.114));
   float fogDesaturate = clamp((1.0 - fogLight) * 0.32, 0.0, 0.25);
   color.rgb = mix(color.rgb, vec3(fogGrey), fogDesaturate) * fogLight;
@@ -144,10 +190,24 @@ if (fogEnabled > 0.5) {
   }
 }
 
+/**
+ * An additive light material (a glow on the ground) fades out fully in the fog, instead of
+ * shining through it at the fog's brightness. Call after the fog is attached.
+ */
+export function fogGlowOnly(material: StandardMaterial): void {
+  const plugin = material.pluginManager?.getPlugin<FogMaterialPlugin>('FogOfWar');
+  if (!plugin || plugin.glow) return;
+  plugin.glow = true;
+  material.markAsDirty(Material.MiscDirtyFlag);
+}
+
 export class FogOfWar {
   private readonly state: FogPluginState;
   private readonly current: Float32Array;
   private readonly target: Float32Array;
+  /** light levels before the blur, and the blur's scratch row */
+  private readonly raw: Float32Array;
+  private readonly scratch: Float32Array;
   private readonly upload: Uint8Array;
   private readonly attached = new WeakSet<StandardMaterial>();
   private materialObserver: Observer<Material> | null = null;
@@ -162,6 +222,8 @@ export class FogOfWar {
     this.current = new Float32Array(cells);
     this.current.fill(FOG_VISIBLE_BRIGHTNESS);
     this.target = new Float32Array(cells);
+    this.raw = new Float32Array(cells);
+    this.scratch = new Float32Array(cells);
     this.target.fill(FOG_VISIBLE_BRIGHTNESS);
     this.upload = new Uint8Array(cells);
     this.upload.fill(255);
@@ -202,12 +264,12 @@ export class FogOfWar {
     if (grid.cols !== this.cols || grid.visible.length < cells || grid.explored.length < cells) {
       throw new RangeError('Fog grid does not match the renderer size.');
     }
-    for (let i = 0; i < cells; i++) this.target[i] = fogBrightness(grid.visible[i]!, grid.explored[i]!);
+    for (let i = 0; i < cells; i++) this.raw[i] = fogBrightness(grid.visible[i]!, grid.explored[i]!);
+    blurFogValues(this.raw, this.cols, this.scratch, this.target);
   }
 
   update(dt: number): void {
-    if (!fadeFogValues(this.current, this.target, (Math.max(0, dt) / FADE_SECONDS) * (FOG_VISIBLE_BRIGHTNESS - FOG_HIDDEN_BRIGHTNESS)))
-      return;
+    if (!easeFogValues(this.current, this.target, 1 - Math.exp(-Math.max(0, dt) * FADE_RATE))) return;
     for (let i = 0; i < this.upload.length; i++) this.upload[i] = Math.round(this.current[i]! * 255);
     this.state.texture.update(this.upload);
   }

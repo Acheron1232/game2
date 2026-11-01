@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blurFogValues,
   buildFogOverlayPixels,
-  fadeFogValues,
+  easeFogValues,
   FOG_EXPLORED_BRIGHTNESS,
   FOG_HIDDEN_BRIGHTNESS,
   FOG_VISIBLE_BRIGHTNESS,
@@ -10,15 +11,32 @@ import {
 } from '../src/render/fog';
 
 describe('fog of war', () => {
-  it('fades both ways, snaps to targets and reports when work stops', () => {
-    const current = new Float32Array([0.15, 1, 0.45]);
+  it('eases both ways, snaps near the target and reports when work stops', () => {
+    const current = new Float32Array([0.25, 1, 0.45]);
     const target = new Float32Array([1, 0.45, 0.45]);
 
-    expect(fadeFogValues(current, target, 0.25)).toBe(true);
-    expect([...current]).toEqual([0.4000000059604645, 0.75, 0.44999998807907104]);
-    expect(fadeFogValues(current, target, 1)).toBe(true);
+    expect(easeFogValues(current, target, 0.5)).toBe(true);
+    expect(current[0]).toBeCloseTo(0.625);
+    expect(current[1]).toBeCloseTo(0.725);
+    expect(current[2]).toBeCloseTo(0.45);
+    for (let i = 0; i < 20; i++) easeFogValues(current, target, 0.5);
     expect([...current]).toEqual([...target]);
-    expect(fadeFogValues(current, target, 1)).toBe(false);
+    expect(easeFogValues(current, target, 0.5)).toBe(false);
+  });
+
+  it('blurs the border between seen and unseen cells but keeps flat areas as they are', () => {
+    const cols = 8;
+    const src = new Float32Array(cols * cols).fill(FOG_HIDDEN_BRIGHTNESS);
+    for (let y = 0; y < cols; y++) for (let x = 0; x < 4; x++) src[y * cols + x] = FOG_VISIBLE_BRIGHTNESS;
+    const out = new Float32Array(cols * cols);
+    blurFogValues(src, cols, new Float32Array(cols * cols), out);
+    // Far from the border: unchanged. At the border: in between, falling off step by step.
+    expect(out[3 * cols]).toBeCloseTo(FOG_VISIBLE_BRIGHTNESS);
+    expect(out[3 * cols + 7]).toBeCloseTo(FOG_HIDDEN_BRIGHTNESS);
+    const row = [...out.slice(3 * cols, 4 * cols)];
+    for (let x = 1; x < cols; x++) expect(row[x]!).toBeLessThanOrEqual(row[x - 1]! + 1e-6);
+    expect(row[3]!).toBeLessThan(FOG_VISIBLE_BRIGHTNESS);
+    expect(row[4]!).toBeGreaterThan(FOG_HIDDEN_BRIGHTNESS);
   });
 
   it('maps visible, explored and hidden cells to their light levels', () => {

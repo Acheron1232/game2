@@ -57,7 +57,18 @@ Preview legend: colored square = Town Hall (start spot), yellow circle = gold mi
 
 ### Camps for leveling
 
-10 camps per sector (3 green, 4 orange, 3 red), 40 on the map. Walk from the north hero spawn (nav grid, hero speed 3):
+**Camp pockets (2026-11-01).** A camp no longer sits in a round lawn: each one has its own pocket
+cut into the forest, made of four overlapping lobes (the fighting floor, an entrance toward the
+nearest road, a back pocket for the den, a side bulge) with a rough edge, so no two outlines are
+the same (`campLobes` in `tools/map/make-map-layout.mjs`, lobes in `map-layout.json`
+`openAreas[].lobes`). Size by tier, usable ground across: green about 12, orange 15, red 18,
+corner mega camps about 26 (longer toward the entrance). A pocket far from a road gets a short
+forest trail out to it. The den side is framed with rocks, a log and a stump (people camps also a
+crate and a barrel), so the fight happens on the open floor in front. The battle field in front
+of each base shrank (radius 9) and the Green Bandits moved off it, into a roadside pocket.
+Every camp and mine was checked reachable from its base (nav grid).
+
+10 camps per sector (3 green, 4 orange, 3 red), 40 on the map, plus the 4 corner mega camps (2026-11-01): the corner of the north and south sectors (NE, SW) holds a horde, the corner of the east and west sectors (SE, NW) the Elder Colossus. The corner gold mine moved out of the corner, next to the natural-to-corner road ([62, 88] in sector space, Town Hall spot [63, 82]), still guarded by the red ogres; the corner itself is the mega camp's arena. Walk from the north hero spawn (nav grid, hero speed 3; the corner ogres are now closer):
 
 | Camp | Tier | Path | Time |
 |---|---|---|---|

@@ -82,8 +82,8 @@ describe('experience and respawn', () => {
     expect(xpForKillingUnit(7)).toBe(190);
     expect(xpForKillingHero(1)).toBe(100);
     expect(xpForKillingHero(10)).toBe(550);
-    expect(respawnSeconds(1)).toBe(8);
-    expect(respawnSeconds(10)).toBe(35);
+    expect(respawnSeconds(1)).toBe(12);
+    expect(respawnSeconds(10)).toBe(48);
   });
 });
 
@@ -180,7 +180,7 @@ describe('combat in the simulation', () => {
     expect(camp.members.some((m) => m.alive && m.targetId === soldier.id)).toBe(true);
   });
 
-  it('a dead hero loses gold and comes back at its start after 5 + 3 x level seconds', () => {
+  it('a dead hero loses gold and comes back at its start after 8 + 4 x level seconds', () => {
     const s = sim(['blood_witch', 'stone_golem']);
     const [a, b] = [s.heroes[0]!, s.heroes[1]!];
     // Put them together and let the golem win.
@@ -195,7 +195,7 @@ describe('combat in the simulation', () => {
       if (!a.alive) diedAt = s.tick;
     }
     expect(diedAt).toBeGreaterThan(0);
-    expect(a.heroState!.respawnAt - diedAt).toBe(8 * TICK_RATE);
+    expect(a.heroState!.respawnAt - diedAt).toBe(12 * TICK_RATE);
     expect(a.heroState!.gold).toBeLessThan(100 - 15 + 11);
     expect(b.heroState!.xp).toBe(100); // level 1 hero kill
     expect(b.heroState!.gold).toBeGreaterThanOrEqual(250 + 165); // start gold + 150 + 15 bounty
@@ -204,7 +204,7 @@ describe('combat in the simulation', () => {
     b.mover.y = gameData.map.starts[1]!.heroSpawn[1];
     b.order = 'idle';
     b.targetId = 0;
-    run(s, 7.9);
+    run(s, 11.9);
     expect(a.alive).toBe(false);
     run(s, 0.2);
     expect(a.alive).toBe(true);

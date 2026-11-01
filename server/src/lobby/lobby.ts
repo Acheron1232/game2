@@ -202,7 +202,8 @@ export class Lobby {
         return;
       case 'cheat': {
         const slot = p.room?.slotOf(p);
-        if (this.options.allowTestOptions && slot && p.room?.going) p.room.match?.cheat(slot.index, msg);
+        // The test panel: for everyone in a test mode match, and on dev servers.
+        if ((this.options.allowTestOptions || p.room?.mode === 'test') && slot && p.room?.going) p.room.match?.cheat(slot.index, msg);
         return;
       }
     }
@@ -376,8 +377,9 @@ export class Lobby {
   }
 
   /**
-   * Free for all (4 slots) or teams (8 slots: slot k and 4 + k share kingdom k). Going back to
-   * free for all moves the players of slots 4-7 to free slots, or refuses when there is no room.
+   * Free for all (4 slots), test mode (4 slots like free for all, plus the test panel) or teams
+   * (8 slots: slot k and 4 + k share kingdom k). Leaving teams moves the players of slots 4-7 to
+   * free slots, or refuses when there is no room.
    */
   private setMode(p: Player, mode: RoomMode): void {
     const room = this.hostRoom(p);
@@ -394,7 +396,14 @@ export class Lobby {
       room.slots.length = SLOT_COUNT;
     }
     room.mode = mode;
-    this.chat(room, mode === 'teams' ? 'Teams: two heroes for each kingdom.' : 'Free for all: one hero for each kingdom.');
+    this.chat(
+      room,
+      mode === 'teams'
+        ? 'Teams: two heroes for each kingdom.'
+        : mode === 'test'
+          ? 'Test mode: everyone gets the test panel (levels, gold, items, enemies, switches).'
+          : 'Free for all: one hero for each kingdom.',
+    );
     this.broadcastRoom(room);
   }
 
@@ -464,6 +473,7 @@ export class Lobby {
     room.matchInfo = {
       matchId: `${room.code}-${++this.matchCount}`,
       ...(watch ? { watch } : {}),
+      ...(room.mode === 'test' ? { sandbox: true } : {}),
       slots: playing.map((s, i) => ({
         index: s.index,
         kind: s.kind,

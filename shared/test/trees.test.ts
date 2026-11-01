@@ -111,7 +111,9 @@ describe('tree index', () => {
   it('opens a straight route deeper into the forest', () => {
     const { index, nav } = makeMap();
     const start = gameData.map.starts[0]!.heroSpawn as [number, number];
-    const angle = Math.PI / 36;
+    // North-east into the forest behind the base (straight east now ends at the Green Bandits'
+    // pocket, 2026-11-01).
+    const angle = (Math.PI / 36) * 8;
     const dirX = Math.cos(angle);
     const dirY = Math.sin(angle);
     const depth = 35;

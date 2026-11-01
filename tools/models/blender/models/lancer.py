@@ -16,18 +16,19 @@ def build():
     j, t = m.joints, m.tails
     Z = cr.WITHERS
     # Horse: barrel, team caparison, legs, neck and an armored head
-    hb = [(0, 0.85, Z - 0.15, 0.46, 0.5), (0, 0.5, Z - 0.05, 0.6, 0.62), (0, 0.0, Z - 0.05, 0.62, 0.62), (0, -0.45, Z - 0.1, 0.56, 0.6)]
-    m.part("loft", 1, profile=hb, slot=s.legs, uv="wrap", tint=W, bone="horse", segments=7, smooth=c.FACET)
+    # Smooth barrel with a round rump and chest (seven hard sides read as a crate).
+    hb = [(0, 0.98, Z - 0.12, 0.2, 0.22), (0, 0.85, Z - 0.1, 0.5, 0.54), (0, 0.5, Z - 0.05, 0.62, 0.64), (0, 0.0, Z - 0.07, 0.62, 0.62), (0, -0.45, Z - 0.08, 0.58, 0.64), (0, -0.62, Z - 0.05, 0.3, 0.36)]
+    m.part("loft", 1, profile=hb, slot=s.legs, uv="tube", tint=W, bone="horse", segments=10, smooth=60)
     for sx in (1, -1):
         m.part("loft", 1, profile=[(sx * 0.33, 0.7, Z + 0.1, 0.03, 0.5), (sx * 0.37, -0.4, Z + 0.1, 0.03, 0.55), (sx * 0.4, -0.45, Z - 0.35, 0.03, 0.55), (sx * 0.38, 0.7, Z - 0.35, 0.03, 0.5)], slot=s.team, uv="front", tint=W, bone="horse", segments=4, smooth=c.FACET)
-    c.limb(m, j["horse_neck"], t["horse_neck"], [(0, 0.42, 0.5), (1, 0.28, 0.32)], slot=s.legs, uv="wrap", bone="horse_neck", segments=6)
+    c.limb(m, j["horse_neck"], t["horse_neck"], [(0, 0.42, 0.5), (1, 0.28, 0.32)], slot=s.legs, uv="wrap", bone="horse_neck", segments=8, smooth=55)
     h0, h1 = Vector(j["horse_head"]), Vector(t["horse_head"])
-    c.limb(m, tuple(h0), tuple(h1), [(0, 0.26, 0.3), (0.6, 0.2, 0.24), (1, 0.15, 0.18)], slot=s.weapon_b, uv="wrap", bone="horse_head", segments=6)
+    c.limb(m, tuple(h0), tuple(h1), [(0, 0.26, 0.3), (0.6, 0.2, 0.24), (1, 0.15, 0.18)], slot=s.weapon_b, uv="wrap", bone="horse_head", segments=8, smooth=50)
     m.part("loft", 1, profile=[(*(h0 + Vector((0, 0.02, 0.15))), 0.05, 0.05), (*(h0 + Vector((0, -0.08, 0.32))), 0.005, 0.005)], slot=s.weapon_b, tint=W, bone="horse_head", segments=4, smooth=c.FACET)
     for sd in ("L", "R"):
         for part, r in (("front", 0.16), ("back", 0.2)):
             u0, u1, l1 = Vector(j[f"{part}_upper.{sd}"]), Vector(t[f"{part}_upper.{sd}"]), Vector(t[f"{part}_lower.{sd}"])
-            c.limb(m, tuple(u0), tuple(u1), [(0, r * 1.7, r * 1.9), (1, r * 0.8, r * 0.85)], slot=s.legs, uv="wrap", bone=f"{part}_upper.{sd}", segments=6)
+            c.limb(m, tuple(u0), tuple(u1), [(0, r * 1.7, r * 1.9), (1, r * 0.8, r * 0.85)], slot=s.legs, uv="wrap", bone=f"{part}_upper.{sd}", segments=7, smooth=50)
             c.limb(m, tuple(u1), tuple(l1), [(0, r * 0.8, r * 0.85), (1, r * 0.75, r * 0.8)], slot=s.foot_hand, sub=u.FOOT, uv="wrap", bone=f"{part}_lower.{sd}", segments=6)
     c.limb(m, j["tail"], t["tail"], [(0, 0.12, 0.1), (0.5, 0.17, 0.13), (1, 0.06, 0.05)], slot=s.legs, uv="wrap", bone="tail", segments=5)
     # Knight: torso, head in a closed helm, arms, legs hanging down the horse sides
@@ -47,6 +48,6 @@ def build():
     ax = Vector((0, -0.92, 0.38)).normalized()
     c.limb(m, tuple(g - ax * 0.5), tuple(g + ax * 2.0), [(0, 0.06, 0.06), (0.18, 0.14, 0.14), (0.22, 0.07, 0.07), (1, 0.01, 0.01)], slot=s.weapon_a, uv="wrap", sub=(0.35, 0.65, 0, 1), bone="weapon", segments=5)
     p0 = g + ax * 1.3
-    m.part("loft", 1, profile=[(*p0, 0.01, 0.24), (*(p0 + Vector((0, 0.35, 0.02))), 0.01, 0.18), (*(p0 + Vector((0, 0.65, -0.03))), 0.01, 0.05)], slot=s.team, uv="front", tint=W, bone="weapon", segments=4, smooth=c.FACET)
+    m.part("loft", 1, profile=[(*p0, 0.01, 0.24), (*(p0 + Vector((0, 0.35, 0.02))), 0.01, 0.18), (*(p0 + Vector((0, 0.65, -0.03))), 0.01, 0.05)], slot=s.team, uv="side", tint=W, bone="weapon", segments=4, smooth=c.FACET)
     cr.animations(m)
     return m

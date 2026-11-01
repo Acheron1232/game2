@@ -3,6 +3,7 @@
 
 import { gameData, KINGDOM_ORDERS, ORDER_NAMES, upkeepStep, type RoomSummary } from '@game/shared';
 import type { NetStatus } from '../net/socket';
+import type { BuffView } from './buff-view';
 import { el, setText } from './dom';
 import type { Router, Screen } from './router';
 import { S } from './strings';
@@ -153,8 +154,21 @@ export interface HeroView {
   /** seconds until back, 0 when alive */
   respawn: number;
   skillPoints: number;
-  /** "Str 28 · Agi 21 · Int 40 · Dmg 47-53 · Armor 4" */
+  /** "Str 28 · Agi 21 · Int 40 · Dmg 47-53 · Armor 4" (tooltip of the stats box) */
   statsLine: string;
+  stats: HeroStatsView;
+}
+
+/** The small stats box left of the portrait (with items). */
+export interface HeroStatsView {
+  strength: number;
+  agility: number;
+  intelligence: number;
+  main: 'strength' | 'agility' | 'intelligence';
+  damageMin: number;
+  damageMax: number;
+  armor: number;
+  moveSpeed: number;
 }
 
 export interface AbilityButtonView {
@@ -190,6 +204,16 @@ export interface InspectIconView {
   /** 0..1 still to wait */
   cooldownFrac?: number;
   noMana?: boolean;
+  /** a hero's skill: its level now (0 = not learned) and the most it can get */
+  level?: number;
+  maxLevel?: number;
+}
+
+/** What the selected unit carries and what works on it (heroes: items too). */
+export interface SelectedExtra {
+  buffs?: BuffView[];
+  /** 6 slots of a hero, null = empty slot */
+  items?: ({ icon: string | null; tooltip: string[] } | null)[];
 }
 
 export interface ItemSlotView {
@@ -240,7 +264,9 @@ export interface GameScreen extends Screen {
   setStatus(text: string): void;
   setHero(v: HeroView): void;
   /** Info line for a selected unit that is not your hero, or null. */
-  setSelected(text: string | null, details?: string[], portrait?: string, abilities?: InspectIconView[]): void;
+  setSelected(text: string | null, details?: string[], portrait?: string, abilities?: InspectIconView[], extra?: SelectedExtra): void;
+  /** The own hero's buffs and debuffs, above the console. */
+  setBuffs(views: BuffView[]): void;
   /** Small card next to the mouse over a unit in the world (null hides it). */
   setHoverCard(lines: string[] | null, x?: number, y?: number): void;
   /** The player's AI faction, or null before the first faction data. */
@@ -253,8 +279,10 @@ export interface GameScreen extends Screen {
   setScores(rows: ScoreRow[] | null): void;
   /** One line in the kill feed (top right, fades after a few seconds). */
   killFeed(text: string): void;
-  /** Allied heroes in the top bar. */
-  setTeam(heroes: TeamHeroView[]): void;
+  /** Heroes in the top bar: allies left of the clock, enemies right of it. */
+  setTeam(allies: TeamHeroView[], enemies?: TeamHeroView[]): void;
+  /** Every frame: smooth cooldown sweeps (the views come only a few times per second). */
+  animate(now: number): void;
   /** A chat line in the match (fades after a while). */
   chatLine(from: string, text: string, system: boolean): void;
   /** Enter: open the chat box, or send what is typed. */
@@ -283,6 +311,8 @@ export interface TeamHeroView {
   /** 0..1, or -1 when not known */
   hp: number;
   portrait: string | null;
+  /** waiting to respawn */
+  dead?: boolean;
 }
 
 export interface FactionView {
@@ -329,13 +359,66 @@ export interface GameActions {
   captureMouse(): void;
 }
 
+/** A cooldown sweep: the game sends the time left a few times a second, the HUD draws it every frame. */
+interface Sweep {
+  /** performance.now() when it is ready, 0 = ready */
+  end: number;
+  /** full length in ms */
+  total: number;
+  /** last drawn fraction (to skip DOM writes) */
+  shown: number;
+}
+
+const newSweep = (): Sweep => ({ end: 0, total: 0, shown: -1 });
+
+/** Small differences are clock noise between two updates; keep the old end so the sweep never jumps back. */
+const SWEEP_SNAP_MS = 150;
+
+function armSweep(s: Sweep, left: number, frac: number, now: number): void {
+  if (left <= 0 || frac <= 0) {
+    s.end = 0;
+    return;
+  }
+  const end = now + left * 1000;
+  if (Math.abs(end - s.end) > SWEEP_SNAP_MS) s.end = end;
+  s.total = (left / frac) * 1000;
+}
+
+function drawSweep(s: Sweep, cd: HTMLElement, text: HTMLElement, now: number): void {
+  const left = s.end - now;
+  const frac = left > 0 && s.total > 0 ? Math.min(1, left / s.total) : 0;
+  // 1/500 of a turn is less than one pixel on the icon.
+  const step = Math.round(frac * 500) / 500;
+  if (step === s.shown) return;
+  s.shown = step;
+  cd.hidden = step <= 0;
+  cd.style.setProperty('--cd', String(step));
+  setText(text, left > 0 ? String(Math.ceil(left / 1000)) : '');
+}
+
+/** Bars scale on the GPU (transform) and ease between updates in CSS. */
+function setFill(fill: HTMLElement, frac: number): void {
+  const value = `scaleX(${Math.max(0, Math.min(1, frac)).toFixed(4)})`;
+  if (fill.style.transform !== value) fill.style.transform = value;
+}
+
 export function createGameScreen(actions: GameActions): GameScreen {
   const onEnd = actions.end;
   const clock = el('span', { class: 'clock' }, '00:00');
   const ping = el('span', { class: 'hud-ping' }, '');
-  const status = el('p', {}, S.aiIdle);
-  const facRes = el('p', { class: 'faction-line', hidden: true });
-  const facSupply = el('p', { class: 'faction-line', hidden: true });
+  const status = el('p', { class: 'kingdom-status' }, S.aiIdle);
+  /** One number with its icon in the top bar ("res gold" + "25"). */
+  const resource = (icon: string, title: string) => {
+    const value = el('b', {}, '0');
+    const root = el('span', { class: 'res', title }, el('i', { class: `res-icon ${icon}` }), value);
+    return { root, value };
+  };
+  const kGold = resource('gold', S.kingdomGoldTip);
+  const kWood = resource('wood', S.kingdomWoodTip);
+  const kSupply = resource('supply', S.supply);
+  const kArmy = resource('army', S.army);
+  const kTier = el('span', { class: 'res tier', title: S.tier }, '');
+  const facRes = el('span', { class: 'faction-res', hidden: true }, kGold.root, kWood.root, kSupply.root, kArmy.root, kTier);
   const orders = el('div', { class: 'kingdom-orders', hidden: true });
   let ordersKey = '';
   const resultTitle = el('h1', { class: 'title' });
@@ -374,25 +457,48 @@ export function createGameScreen(actions: GameActions): GameScreen {
       chatInput.blur();
     }
   });
-  const team = el('span', { class: 'hud-team' });
+  const team = el('span', { class: 'hud-team allies' });
+  const enemyTeam = el('span', { class: 'hud-team enemies' });
   let teamKey = '';
-  const gold = el('span', { class: 'gold' }, `${S.gold}: ${gameData.rules.gold.startGold}`);
+  const goldValue = el('b', {}, String(gameData.rules.gold.startGold));
+  const gold = el('span', { class: 'gold', title: S.heroGoldTip }, el('i', { class: 'res-icon gold' }), goldValue);
   const portraitImg = el('div', { class: 'portrait-img' });
-  const portrait = el('div', { class: 'portrait' }, portraitImg);
-  const heroName = el('span', { class: 'hero-name' });
-  const heroLevel = el('span', { class: 'hero-level' });
+  const portraitLevel = el('span', { class: 'portrait-level' }, '1');
   const points = el('span', { class: 'skill-points', hidden: true });
   const xpFill = el('div', { class: 'xp-fill' });
+  const portrait = el('div', { class: 'portrait' }, portraitImg, portraitLevel, points, el('div', { class: 'xp-track' }, xpFill));
+  const heroName = el('span', { class: 'hero-name' });
+  const heroLevel = el('span', { class: 'hero-level' });
   const hpFill = el('div', { class: 'fill' });
   const hpText = el('span', { class: 'bar-label' });
   const mpFill = el('div', { class: 'fill' });
   const mpText = el('span', { class: 'bar-label' });
-  const statLine = el('div', { class: 'hero-stats' });
+  /** One row of the stats box: icon + number. */
+  const statRow = (icon: string, title: string) => {
+    const value = el('b', {}, '');
+    const root = el('span', { class: `stat ${icon}`, title }, el('i', { class: `stat-icon ${icon}` }), value);
+    return { root, value };
+  };
+  const sDamage = statRow('damage', S.statDamageTip);
+  const sArmor = statRow('armor', S.statArmorTip);
+  const sSpeed = statRow('speed', S.statSpeedTip);
+  const sStr = statRow('strength', S.statStrTip);
+  const sAgi = statRow('agility', S.statAgiTip);
+  const sInt = statRow('intelligence', S.statIntTip);
+  const statLine = el(
+    'div',
+    { class: 'hero-stats' },
+    el('div', { class: 'stat-col' }, sDamage.root, sArmor.root, sSpeed.root),
+    el('div', { class: 'stat-col' }, sStr.root, sAgi.root, sInt.root),
+  );
+  let mainStat = '';
   const deathNote = el('div', { class: 'death-note', hidden: true });
   const selectedTitle = el('strong');
   const selectedDetails = el('div', { class: 'selected-details' });
   const selectedPortrait = el('div', { class: 'selected-portrait' });
   const selectedAbilities = el('div', { class: 'sel-abilities' });
+  const selItems = el('div', { class: 'sel-items', hidden: true });
+  let selItemsKey = '';
   const selInfo = el(
     'aside',
     { class: 'sel-info', hidden: true, 'aria-label': 'Selected unit' },
@@ -400,7 +506,13 @@ export function createGameScreen(actions: GameActions): GameScreen {
     selectedTitle,
     selectedDetails,
     selectedAbilities,
+    selItems,
   );
+  /** Tooltips of the selected panel open above it, so they do not cover it. */
+  const tipAboveSel = (lines: string[]) => {
+    showTip(lines);
+    tooltip.style.bottom = `${window.innerHeight - selInfo.getBoundingClientRect().top + 6}px`;
+  };
   const hoverCard = el('div', { class: 'hover-card', hidden: true });
   /** The ability icons of the selected unit; own units' active skills are buttons. */
   const buildSelAbilities = (abilities: InspectIconView[], key: string) => {
@@ -411,8 +523,17 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (a.icon) icon.style.backgroundImage = `url(${a.icon})`;
       const cd = el('div', { class: 'cooldown' });
       const cdText = el('span', { class: 'cooldown-text' });
-      const cls = `sel-ability${a.passive ? ' passive' : ''}${a.usable ? ' usable' : ''}`;
-      const root = el('div', { class: cls, 'aria-label': a.tooltip[0] ?? '' }, icon, cd, cdText, el('span', { class: 'key' }, a.key));
+      const unlearned = a.level === 0;
+      const cls = `sel-ability${a.passive ? ' passive' : ''}${a.usable ? ' usable' : ''}${unlearned ? ' unlearned' : ''}`;
+      const pips =
+        a.maxLevel !== undefined
+          ? el(
+              'div',
+              { class: 'pips' },
+              ...Array.from({ length: a.maxLevel }, (_, n) => el('i', { class: n < (a.level ?? 0) ? 'on' : '' })),
+            )
+          : null;
+      const root = el('div', { class: cls, 'aria-label': a.tooltip[0] ?? '' }, icon, cd, cdText, el('span', { class: 'key' }, a.key), pips);
       if (a.usable) {
         root.setAttribute('role', 'button');
         root.addEventListener('click', () => actions.useUnitSkill(index));
@@ -460,6 +581,52 @@ export function createGameScreen(actions: GameActions): GameScreen {
     tooltip.style.bottom = '';
   };
 
+  /** A row of buff icons: rebuilt when the set changes, the time left is updated in place. */
+  const buffRow = (cls: string, tip: (lines: string[]) => void) => {
+    const root = el('div', { class: `buff-row ${cls}`, hidden: true });
+    let key = '';
+    let views: BuffView[] = [];
+    let parts: HTMLElement[] = [];
+    const timeText = (b: BuffView) => (b.left <= 0 ? '' : b.left < 10 ? b.left.toFixed(1).replace(/\.0$/, '') : String(Math.ceil(b.left)));
+    return {
+      root,
+      set(v: BuffView[]) {
+        views = v;
+        root.hidden = !v.length;
+        const k = v.map((b) => `${b.key}:${b.stacks}:${b.icon ?? ''}`).join(',');
+        if (k !== key) {
+          key = k;
+          parts = v.map((b, i) => {
+            const icon = el('i', { class: 'buff-icon' }, b.icon ? '' : b.letter);
+            if (b.icon) icon.style.backgroundImage = `url(${b.icon})`;
+            const left = el('span', { class: 'buff-left' });
+            const node = el(
+              'div',
+              { class: `buff ${b.harmful ? 'bad' : 'good'}` },
+              icon,
+              b.stacks > 1 ? el('span', { class: 'buff-stacks' }, String(b.stacks)) : null,
+              left,
+            );
+            node.addEventListener('mouseenter', () => {
+              const cur = views[i];
+              if (cur) tip(cur.left > 0 ? [...cur.tooltip, `${Math.ceil(cur.left)} s left.`] : cur.tooltip);
+            });
+            node.addEventListener('mouseleave', hideTip);
+            return left;
+          });
+          root.replaceChildren(...parts.map((p) => p.parentElement!));
+        }
+        v.forEach((b, i) => {
+          const p = parts[i];
+          if (p) setText(p, timeText(b));
+        });
+      },
+    };
+  };
+  const ownBuffs = buffRow('own', showTip);
+  const selBuffs = buffRow('sel', tipAboveSel);
+  selInfo.append(selBuffs.root);
+
   const abilityParts = ['Q', 'W', 'E', 'R', 'D', 'F'].map((k, slot) => {
     const icon = el('div', { class: 'ability-icon' });
     const cd = el('div', { class: 'cooldown' });
@@ -499,7 +666,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       hoveredAbility = -1;
       hideTip();
     });
-    return { root, icon, cd, cdText, pips, plus, state, iconUrl: '' as string | null, pipKey: '' };
+    return { root, icon, cd, cdText, pips, plus, state, iconUrl: '' as string | null, pipKey: '', sweep: newSweep() };
   });
   const abilityButtons = abilityParts.map((p) => p.root);
   // ---- inventory: click or key = use, drag = move / drop / give / sell
@@ -553,7 +720,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (v && !down) showTip(v.tooltip);
     });
     root.addEventListener('mouseleave', hideTip);
-    return { root, icon, cd, cdText, count, iconUrl: '' as string | null };
+    return { root, icon, cd, cdText, count, iconUrl: '' as string | null, sweep: newSweep() };
   });
   const items = itemParts.map((p) => p.root);
 
@@ -596,39 +763,44 @@ export function createGameScreen(actions: GameActions): GameScreen {
   let shopKey = '';
   let shopViews: ShopItemView[] = [];
   const shopButtons = new Map<number, HTMLElement>();
+  const endLabel = import.meta.env.DEV ? S.endMatchTest : S.leave;
   const root = el(
     'section',
     { class: 'screen game' },
+    // A thin strip: kingdom numbers left, clock and heroes in the middle, own gold and menu right.
     el(
       'header',
       { class: 'hud-top' },
-      clock,
-      ping,
-      team,
-      gold,
-      el(
-        'button',
-        {
-          class: 'btn small capture-mouse',
-          'aria-pressed': 'false',
-          title: 'Keep the mouse inside the game. Esc: release.',
-          onclick: () => actions.captureMouse(),
-        },
-        'Capture mouse',
-      ),
-      el('button', { class: 'btn small', title: 'Toggle full screen', onclick: toggleFullScreen }, '⛶'),
-      el('button', { class: 'btn small', title: S.settings, onclick: () => actions.settings() }, '⚙'),
-      el('button', { class: 'btn small', onclick: onEnd }, import.meta.env.DEV ? S.endMatchTest : S.leave),
       el(
         'div',
-        { class: 'hud-kingdom' },
+        { class: 'top-left' },
         el('button', { class: 'kingdom-base', title: S.goToBase, onclick: () => actions.showBase() }, S.yourKingdom),
         facRes,
-        facSupply,
-        status,
-        orders,
+      ),
+      el('div', { class: 'top-center' }, team, el('span', { class: 'top-clock' }, clock), enemyTeam),
+      el(
+        'div',
+        { class: 'top-right' },
+        gold,
+        ping,
+        el(
+          'button',
+          {
+            class: 'hud-icon-btn capture-mouse',
+            'aria-pressed': 'false',
+            'aria-label': 'Capture mouse',
+            title: 'Keep the mouse inside the game. Esc: release.',
+            onclick: () => actions.captureMouse(),
+          },
+          '◎',
+        ),
+        el('button', { class: 'hud-icon-btn', 'aria-label': 'Full screen', title: 'Toggle full screen', onclick: toggleFullScreen }, '⛶'),
+        el('button', { class: 'hud-icon-btn', 'aria-label': S.settings, title: S.settings, onclick: () => actions.settings() }, '⚙'),
+        el('button', { class: 'hud-icon-btn leave', 'aria-label': endLabel, title: endLabel, onclick: onEnd }, '✕'),
       ),
     ),
+    // What the kingdom does and the order buttons: small, under the strip, the world shows around it.
+    el('div', { class: 'hud-kingdom' }, status, orders),
     scoreboard,
     feed,
     el('div', { class: 'hud-chat' }, chatLog, chatInput),
@@ -640,26 +812,32 @@ export function createGameScreen(actions: GameActions): GameScreen {
     shopPanel,
     tooltip,
     ghost,
+    // Separate pieces like in classic hero games: the map in the corner and one small console
+    // in the middle. The world stays visible (and clickable) between them.
     el(
       'footer',
       { class: 'hud-bottom' },
       el('div', { class: 'panel minimap' }, el('span', { class: 'muted' }, S.minimap)),
       el(
         'div',
-        { class: 'panel hero-panel' },
+        { class: 'hud-console' },
+        ownBuffs.root,
+        statLine,
         portrait,
         el(
           'div',
-          { class: 'bars' },
-          el('div', { class: 'hero-line' }, heroName, heroLevel, points),
-          el('div', { class: 'xp-track' }, xpFill),
-          el('div', { class: 'bar-track hp' }, hpFill, hpText),
-          el('div', { class: 'bar-track mp' }, mpFill, mpText),
-          statLine,
+          { class: 'console-mid hero-panel' },
+          el('div', { class: 'hero-line' }, heroName, heroLevel),
+          el('div', { class: 'abilities' }, ...abilityButtons),
+          el(
+            'div',
+            { class: 'bars' },
+            el('div', { class: 'bar-track hp' }, hpFill, hpText),
+            el('div', { class: 'bar-track mp' }, mpFill, mpText),
+          ),
         ),
-        el('div', { class: 'abilities' }, ...abilityButtons),
+        el('div', { class: 'inventory' }, ...items),
       ),
-      el('div', { class: 'panel inventory' }, ...items),
     ),
   );
   // Windows can request a context menu through a secondary click, a held primary
@@ -690,17 +868,30 @@ export function createGameScreen(actions: GameActions): GameScreen {
       }
       setText(heroName, v.name);
       setText(heroLevel, `${S.level} ${v.level}`);
+      setText(portraitLevel, String(v.level));
       points.hidden = v.skillPoints <= 0;
       setText(points, `+${v.skillPoints}`);
       points.title = S.skillPointsTip;
-      xpFill.style.width = `${Math.round(v.xpFrac * 100)}%`;
-      hpFill.style.width = `${v.maxHp ? (100 * v.hp) / v.maxHp : 0}%`;
+      setFill(xpFill, v.xpFrac);
+      setFill(hpFill, v.maxHp ? v.hp / v.maxHp : 0);
       setText(hpText, `${Math.ceil(v.hp)} / ${v.maxHp}`);
-      mpFill.style.width = `${v.maxMana ? (100 * v.mana) / v.maxMana : 0}%`;
+      setFill(mpFill, v.maxMana ? v.mana / v.maxMana : 0);
       setText(mpText, `${Math.floor(v.mana)} / ${v.maxMana}`);
-      setText(gold, `${S.gold}: ${v.gold}`);
-      setText(statLine, v.statsLine);
+      setText(goldValue, String(v.gold));
+      const st = v.stats;
+      setText(sDamage.value, `${Math.round(st.damageMin)}–${Math.round(st.damageMax)}`);
+      setText(sArmor.value, String(Math.round(st.armor)));
+      setText(sSpeed.value, st.moveSpeed.toFixed(1));
+      setText(sStr.value, String(st.strength));
+      setText(sAgi.value, String(st.agility));
+      setText(sInt.value, String(st.intelligence));
+      if (st.main !== mainStat) {
+        mainStat = st.main;
+        for (const s of [sStr, sAgi, sInt]) s.root.classList.toggle('main', s.root.classList.contains(st.main));
+      }
+      statLine.title = v.statsLine;
       deathNote.hidden = v.respawn <= 0;
+      portrait.classList.toggle('dead', v.respawn > 0);
       if (v.respawn > 0) setText(deathNote, S.youDied(v.respawn));
     },
     setAbilities(v) {
@@ -723,9 +914,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
         p.root.classList.toggle('unlearned', a.level === 0);
         p.root.classList.toggle('passive', a.passive);
         p.root.classList.toggle('no-mana', a.noMana && !a.passive && a.level > 0);
-        p.cd.style.setProperty('--cd', String(a.cooldownFrac));
-        p.cd.hidden = a.cooldownFrac <= 0;
-        setText(p.cdText, a.cooldownLeft > 0 ? String(Math.ceil(a.cooldownLeft)) : '');
+        armSweep(p.sweep, a.cooldownLeft, a.cooldownFrac, performance.now());
         p.plus.hidden = !a.canLearn;
         const key = `${a.level}/${a.maxLevel}`;
         if (key !== p.pipKey) {
@@ -745,10 +934,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
           p.icon.style.backgroundImage = url ? `url(${url})` : '';
         }
         p.root.classList.toggle('passive', !!it && !it.usable);
-        const frac = it?.cooldownFrac ?? 0;
-        p.cd.style.setProperty('--cd', String(frac));
-        p.cd.hidden = frac <= 0;
-        setText(p.cdText, it && it.cooldownLeft > 0 ? String(Math.ceil(it.cooldownLeft)) : '');
+        armSweep(p.sweep, it?.cooldownLeft ?? 0, it?.cooldownFrac ?? 0, performance.now());
         setText(p.count, it && it.charges > 0 ? String(it.charges) : '');
       });
     },
@@ -801,8 +987,29 @@ export function createGameScreen(actions: GameActions): GameScreen {
       if (alertTimer) clearTimeout(alertTimer);
       alertTimer = setTimeout(() => (alertBox.hidden = true), 1800);
     },
-    setSelected(text, details = [], portrait, abilities = []) {
+    setBuffs(views) {
+      ownBuffs.set(views);
+    },
+    setSelected(text, details = [], portrait, abilities = [], extra = {}) {
       selInfo.hidden = !text;
+      selBuffs.set(text ? (extra.buffs ?? []) : []);
+      const items = text ? extra.items : undefined;
+      const itemsKey = items ? items.map((it) => it?.tooltip[0] ?? '-').join('|') : '';
+      if (itemsKey !== selItemsKey) {
+        selItemsKey = itemsKey;
+        selItems.hidden = !items;
+        selItems.replaceChildren(
+          ...(items ?? []).map((it) => {
+            const slot = el('div', { class: `sel-item${it ? '' : ' empty'}` });
+            if (it?.icon) slot.style.backgroundImage = `url(${it.icon})`;
+            if (it) {
+              slot.addEventListener('mouseenter', () => tipAboveSel(it.tooltip));
+              slot.addEventListener('mouseleave', hideTip);
+            }
+            return slot;
+          }),
+        );
+      }
       const key = `${text}/${details.join('/')}/${portrait ?? ''}`;
       if (key !== selectedKey) {
         selectedKey = key;
@@ -812,7 +1019,7 @@ export function createGameScreen(actions: GameActions): GameScreen {
         selectedPortrait.hidden = !portrait;
       }
       // Health changes often; the icons only when the selected unit changes.
-      const abilitiesKey = abilities.map((a) => `${a.usable ? 1 : 0}${a.tooltip.join('|')}`).join('/');
+      const abilitiesKey = abilities.map((a) => `${a.usable ? 1 : 0}${a.level ?? ''}${a.tooltip.join('|')}`).join('/');
       if (abilitiesKey !== selectedAbilitiesKey) buildSelAbilities(abilities, abilitiesKey);
       // Cooldown and mana change all the time: only the overlay, no rebuild.
       abilities.forEach((a, i) => {
@@ -841,14 +1048,16 @@ export function createGameScreen(actions: GameActions): GameScreen {
       hoverCard.style.top = `${Math.max(8, Math.min(y + 18, window.innerHeight - h - 8))}px`;
     },
     setFaction(v) {
-      facRes.hidden = facSupply.hidden = !v;
+      facRes.hidden = !v;
       if (!v) return;
-      setText(facRes, `${S.gold} ${v.gold} · ${S.wood} ${v.wood}`);
+      setText(kGold.value, String(v.gold));
+      setText(kWood.value, String(v.wood));
+      setText(kSupply.value, `${v.supplyUsed}/${v.supplyCap}`);
       const upkeep = upkeepStep(v.supplyUsed);
-      setText(
-        facSupply,
-        `${S.supply} ${v.supplyUsed}/${v.supplyCap} · ${S.upkeep(upkeep.name, upkeep.goldPct)} · ${S.tier} ${v.tier} · ${S.workers} ${v.workers} · ${S.army} ${v.army}`,
-      );
+      kSupply.root.title = `${S.supply} · ${S.upkeep(upkeep.name, upkeep.goldPct)} · ${S.workers} ${v.workers}`;
+      kSupply.root.classList.toggle('upkeep', upkeep.goldPct < 100);
+      setText(kArmy.value, String(v.army));
+      setText(kTier, `${S.tier} ${v.tier}`);
       setText(status, v.status);
       status.title = v.status.startsWith('Attacking')
         ? 'Your army is fighting. Join it or pressure another lane.'
@@ -908,21 +1117,28 @@ export function createGameScreen(actions: GameActions): GameScreen {
       setTimeout(() => line.classList.add('fade'), 5000);
       setTimeout(() => line.remove(), 6000);
     },
-    setTeam(heroes) {
-      const key = heroes.map((h) => `${h.name}${h.level}${Math.round(h.hp * 20)}`).join('|');
+    setTeam(allies, enemies = []) {
+      const keyOf = (list: TeamHeroView[]) => list.map((h) => `${h.name}${h.level}${Math.round(h.hp * 20)}${h.dead ? 'd' : ''}`).join('|');
+      const key = `${keyOf(allies)}/${keyOf(enemies)}`;
       if (key === teamKey) return;
       teamKey = key;
-      team.replaceChildren(
-        ...heroes.map((h) =>
+      const face = (h: TeamHeroView) =>
+        el(
+          'span',
+          { class: `team-hero${h.dead ? ' dead' : ''}`, title: `${h.name} · ${S.level} ${h.level}` },
           el(
-            'span',
-            { class: 'team-hero', title: h.name },
-            el('i', { class: 'team-face', style: `${h.portrait ? `background-image:url(${h.portrait});` : ''}border-color:${h.color}` }),
-            el('b', {}, `${S.levelShort} ${h.level}`),
-            h.hp >= 0 ? el('i', { class: 'team-hp' }, el('i', { style: `width:${Math.round(h.hp * 100)}%` })) : null,
+            'i',
+            { class: 'team-face', style: `${h.portrait ? `background-image:url(${h.portrait});` : ''}border-color:${h.color}` },
+            el('b', {}, String(h.level)),
           ),
-        ),
-      );
+          el('i', { class: 'team-hp' }, h.hp >= 0 ? el('i', { style: `width:${Math.round(h.hp * 100)}%` }) : null),
+        );
+      team.replaceChildren(...allies.map(face));
+      enemyTeam.replaceChildren(...enemies.map(face));
+    },
+    animate(now) {
+      for (const p of abilityParts) drawSweep(p.sweep, p.cd, p.cdText, now);
+      for (const p of itemParts) drawSweep(p.sweep, p.cd, p.cdText, now);
     },
     chatLine(from, text, system) {
       const line = el('div', { class: `chat-line ${system ? 'system' : ''}` }, system ? '' : el('b', {}, `${from}: `), text);

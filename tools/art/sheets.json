@@ -635,8 +635,8 @@
             "forearm",
             "hand",
             "legs",
-            "shin",
-            "foot",
+            { "name": "shin", "teamColor": true },
+            { "name": "foot", "teamColor": true },
             "belt",
             {
               "name": "cloth",
@@ -782,7 +782,7 @@
             "forearm",
             "hand",
             "legs",
-            "shin",
+            { "name": "shin", "teamColor": true },
             "foot",
             "belt",
             {
@@ -829,9 +829,9 @@
             "arm",
             "forearm",
             "hand",
-            "legs",
-            "shin",
-            "foot",
+            { "name": "legs", "teamColor": true },
+            { "name": "shin", "teamColor": true },
+            { "name": "foot", "teamColor": true },
             "belt",
             {
               "name": "cloth",
@@ -925,9 +925,9 @@
             "arm",
             "forearm",
             "hand",
-            "legs",
-            "shin",
-            "foot",
+            { "name": "legs", "teamColor": true },
+            { "name": "shin", "teamColor": true },
+            { "name": "foot", "teamColor": true },
             "belt",
             {
               "name": "cloth",
@@ -2029,6 +2029,7 @@
           ]
         }
       ]
-    }
+    },
+    {"id": "skin_bosses", "grid": [4, 4], "aspect": "square", "prompt": "skin_bosses.md", "images": ["art/source/uv/elder_colossus_guide.png", "art/source/uv/cinder_drake_guide.png"], "groups": [{"kind": "skin", "size": 256, "out": "models", "atlas": "elder_colossus_skin", "fit": "fill", "cells": ["elder_colossus__face", "elder_colossus__body", "elder_colossus__arm", "elder_colossus__legs", "elder_colossus__foot_hand", "elder_colossus__team", "elder_colossus__weapon_a", "elder_colossus__weapon_b"]}, {"kind": "skin", "size": 256, "out": "models", "atlas": "cinder_drake_skin", "fit": "fill", "cells": ["cinder_drake__face", "cinder_drake__body", "cinder_drake__arm", "cinder_drake__legs", "cinder_drake__foot_hand", "cinder_drake__team", "cinder_drake__weapon_a", "cinder_drake__weapon_b"]}]}
   ]
 }

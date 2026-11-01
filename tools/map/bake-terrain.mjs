@@ -287,7 +287,10 @@ for (let row = 0; row < N; row++) {
         let areaD = Infinity,
           area = null;
         for (const a of layout.openAreas) {
-          const d = Math.hypot(qx - a.center[0], qy - a.center[1]) - a.radius;
+          // Shaped areas (camp pockets) are the union of their lobes, with a rougher edge.
+          let d = Math.hypot(qx - a.center[0], qy - a.center[1]) - a.radius;
+          if (a.lobes) for (const [lx, ly, lr] of a.lobes) d = Math.min(d, Math.hypot(qx - lx, qy - ly) - lr);
+          if (a.rough) d += a.rough * symNoise(px, py, 4, 61);
           if (d < areaD) {
             areaD = d;
             area = a;
@@ -401,6 +404,12 @@ export const DECOR_TYPES = [
   'fence',
   'crate',
   'barrel',
+  // living props (2026-10-31): the client adds fire, glow and ground light (decor-lights.ts)
+  'campfire',
+  'crystal',
+  'lantern',
+  'rune_stone',
+  'bones',
 ];
 const D = Object.fromEntries(DECOR_TYPES.map((t, i) => [t, i]));
 const decor = [];
@@ -447,6 +456,11 @@ for (let gy = 0; gy * DSPACE < C; gy++) {
           if (near(mx, my, isOpen) && roll < 0.22)
             type = roll2 < 0.4 ? D.fern : roll2 < 0.65 ? D.rock_small : roll2 < 0.85 ? D.stump : D.mushrooms;
           else if (roll < 0.02) type = D.rock_big;
+          // Rare glowing crystals deep in the woods: small lights in the dark.
+          else if (roll < 0.0235 && !near(mx, my, isOpen, 3)) {
+            type = D.crystal;
+            scale = 1.2 + 0.4 * roll2;
+          }
         } else if (ground[i] === G.sand) {
           if (roll < 0.35) type = D.reeds;
           else if (roll < 0.45) type = D.pebbles;
@@ -460,6 +474,7 @@ for (let gy = 0; gy * DSPACE < C; gy++) {
         } else if (isOpen(i)) {
           if (fromCenter < 92 && fromCenter > 76 && roll < 0.03 && !near(mx, my, isRoad, 3))
             type = roll2 < 0.6 ? D.ruin_block : D.ruin_pillar;
+          else if (meadow > 0.55 && roll > 0.9985 && !near(mx, my, isRoad, 4)) type = D.rune_stone;
           else if (meadow > 0.35 && roll < 0.5) type = roll2 < 0.4 ? D.flowers_yellow : roll2 < 0.7 ? D.flowers_blue : D.flowers_red;
           else if (roll < 0.42) type = D.grass;
           else if (roll < 0.445) type = D.rock_small;
@@ -491,6 +506,9 @@ for (let gy = 0; gy * DSPACE < C; gy++) {
     [36, 34, D.ruin_pillar, 0.9, 0],
     [-36, 34, D.ruin_block, 1.05, 35],
     [-22, 31, D.rock_small, 1, 0],
+    [-19, 19, D.crystal, 1.7, 20],
+    [27, 11, D.crystal, 1.3, 70],
+    [-30, 44, D.rune_stone, 1.1, 10],
   ];
   for (let q = 0; q < 4; q++) {
     for (const [dx, dy, type, scale, yaw] of T) {
@@ -528,6 +546,118 @@ for (const s of layout.starts) {
     const j = cellAt(fx, fy);
     if (j < 0 || !isOpen(j) || isRoad(j) || near(fx, fy, isRoad, 3)) continue;
     decor.push([Math.round(fx * 10) / 10, Math.round(fy * 10) / 10, D.fence, 1, Math.round(((-a * 180) / Math.PI + 360) % 360)]);
+  }
+}
+// Camps: a campfire and some bones by the people (bandits, trolls, ogres, sentinels), only
+// bones by the beasts. Fountains: two rune stones. Roads: lanterns along both sides.
+{
+  const free = (x, y) => {
+    const j = cellAt(x, y);
+    return j >= 0 && isOpen(j) && !isRoad(j);
+  };
+  const put = (x, y, type, scale, yaw) =>
+    decor.push([Math.round(x * 10) / 10, Math.round(y * 10) / 10, type, scale, Math.round(yaw) % 360]);
+  /** First free spot on a small circle around (x, y), starting at angle a. */
+  const spot = (x, y, r, a) => {
+    for (let k = 0; k < 12; k++) {
+      const b = a + (k * Math.PI) / 6;
+      const px = x + Math.cos(b) * r,
+        py = y + Math.sin(b) * r;
+      if (free(px, py)) return [px, py];
+    }
+    return null;
+  };
+  for (const camp of layout.camps) {
+    const [cx, cy] = camp.pos;
+    const away = Math.atan2(cy - C, cx - C);
+    // Frame the pocket: a den of rocks, a log and a stump on the far side from the entrance, so
+    // the fight happens on the open floor in front of it (2026-11-01).
+    if (camp.entrance) {
+      const back = Math.atan2(cy - camp.entrance[1], cx - camp.entrance[0]);
+      const mega = /^(horde|boss)/.test(camp.type);
+      const R = mega ? 12.5 : camp.type.startsWith('red') ? 8 : camp.type.startsWith('orange') ? 6.6 : 5.6;
+      const big = mega ? 1.5 : 1;
+      const den = [
+        [0, D.rock_big, 1.1],
+        [0.5, D.log, 1],
+        [-0.55, D.rock_small, 1.6],
+        [0.95, D.stump, 1.2],
+        [-1.0, D.rock_big, 0.8],
+      ];
+      den.forEach(([da, type, sc], k) => {
+        const a = back + da + (hash(cx, cy, 260 + k) - 0.5) * 0.3;
+        const r = R * (0.92 + 0.16 * hash(cx, cy, 270 + k));
+        put(cx + Math.cos(a) * r, cy + Math.sin(a) * r, type, sc * big, hash(cx, cy, 280 + k) * 360);
+      });
+      if (/bandit|troll|ogre|horde/.test(camp.type)) {
+        // Their goods: a crate and a barrel by the den.
+        for (const [da, type] of [
+          [0.28, D.crate],
+          [-0.3, D.barrel],
+        ]) {
+          const a = back + da;
+          put(cx + Math.cos(a) * R * 0.72, cy + Math.sin(a) * R * 0.72, type, 0.9 * big, hash(cx, cy, 290 + da * 10) * 360);
+        }
+      }
+    }
+    const people = /bandit|troll|ogre|sentinel|horde/.test(camp.type);
+    if (camp.type.startsWith('horde')) {
+      // The horde's war camp: more fires around the crowd.
+      for (const k of [1, 2, 3]) {
+        const p = spot(cx, cy, 8.5, away + k * 2.1);
+        if (p) put(p[0], p[1], D.campfire, 1.2, hash(cx, cy, 230 + k) * 360);
+      }
+    }
+    if (camp.type.startsWith('boss')) {
+      // An old stone circle around the Colossus, and the bones of those who tried.
+      for (let k = 0; k < 6; k++) {
+        const p = spot(cx, cy, 10, away + (k * Math.PI) / 3);
+        if (p) put(p[0], p[1], D.rune_stone, 1.1 + 0.2 * hash(cx, cy, 240 + k), ((away * 180) / Math.PI + k * 60 + 90) % 360);
+      }
+      for (let k = 0; k < 5; k++) {
+        const p = spot(cx, cy, 6.5 + k * 0.4, away + 1 + k * 1.3);
+        if (p) put(p[0], p[1], D.bones, 1.1, hash(cx, cy, 250 + k) * 360);
+      }
+    }
+    if (people) {
+      const p = spot(cx, cy, 2.6, away);
+      if (p) put(p[0], p[1], D.campfire, 1, hash(cx, cy, 201) * 360);
+    }
+    for (let k = 0; k < (people ? 1 : 3); k++) {
+      const p = spot(cx, cy, 3.2 + k * 0.6, away + 2 + k * 1.7);
+      if (p) put(p[0], p[1], D.bones, 0.9 + 0.3 * hash(cx, cy, 210 + k), hash(cx, cy, 220 + k) * 360);
+    }
+  }
+  for (const f of layout.fountains) {
+    const [fx, fy] = f.pos;
+    const toC = Math.atan2(C - fy, C - fx);
+    for (const side of [-1, 1]) {
+      const p = spot(fx, fy, f.radius + 2.2, toC + side * 1.2);
+      if (p) put(p[0], p[1], D.rune_stone, 0.9, ((toC * 180) / Math.PI + 90 + 360) % 360);
+    }
+  }
+  const SPACING = 15;
+  for (const road of layout.roads) {
+    const pts = road.points;
+    let carry = SPACING / 2,
+      n = 0;
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [ax, ay] = pts[i],
+        [bx, by] = pts[i + 1];
+      const len = Math.hypot(bx - ax, by - ay);
+      const dx = (bx - ax) / len,
+        dy = (by - ay) / len;
+      for (let d = carry; d < len; d += SPACING) {
+        const side = n++ % 2 ? 1 : -1;
+        const off = road.width / 2 + 1.3;
+        const px = ax + dx * d - dy * off * side,
+          py = ay + dy * d + dx * off * side;
+        // The lamp arm hangs over the road.
+        if (free(px, py)) put(px, py, D.lantern, 1, ((Math.atan2(dx * side, dy * side) * 180) / Math.PI + 720) % 360);
+      }
+      carry = (carry - len) % SPACING;
+      if (carry < 0) carry += SPACING;
+    }
   }
 }
 writeFileSync(
@@ -669,11 +799,13 @@ for (const f of layout.fountains) {
   blendCircle(cx, cy, 9, [230, 240, 245], 1);
   blendCircle(cx, cy, 6.5, [90, 210, 230], 1);
 }
-const CAMP = { green: [110, 230, 90], orange: [255, 150, 40], red: [235, 50, 45] };
+const CAMP = { green: [110, 230, 90], orange: [255, 150, 40], red: [235, 50, 45], horde: [190, 90, 240], boss: [255, 215, 50] };
 for (const c of layout.camps) {
   const [cx, cy] = toPx(c.pos);
-  blendCircle(cx, cy, 7, [15, 12, 8], 0.9);
-  blendCircle(cx, cy, 5, CAMP[c.type.split('_')[0]], 1);
+  // Mega camps (horde, boss) get a big marker.
+  const big = /^(horde|boss)/.test(c.type) ? 2.4 : 1;
+  blendCircle(cx, cy, 7 * big, [15, 12, 8], 0.9);
+  blendCircle(cx, cy, 5 * big, CAMP[c.type.split('_')[0]], 1);
 }
 
 // Write PNG

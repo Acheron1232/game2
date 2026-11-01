@@ -75,6 +75,8 @@ def animations(m):
 
 def build():
     m = Model("sky_dragon", skin="sky_dragon_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.12, head=1.0)
     bones(m)
     j, t = m.joints, m.tails
 
@@ -121,7 +123,7 @@ def build():
     for k, (y, bone) in enumerate(spine):
         z = j["chest"][2] + 0.45 - k * 0.02
         h = 0.32 - k * 0.03
-        m.part("hull", 1, profile=[(-0.07, y + 0.12, z - 0.08), (0.07, y + 0.12, z - 0.08), (-0.07, y - 0.1, z - 0.08), (0.07, y - 0.1, z - 0.08), (0, y + 0.14, z + h)], slot="shoulder", uv="front", tint=W, bone=bone, smooth=c.FACET)
+        m.part("hull", 1, profile=[(-0.07, y + 0.12, z - 0.08), (0.07, y + 0.12, z - 0.08), (-0.07, y - 0.1, z - 0.08), (0.07, y - 0.1, z - 0.08), (0, y + 0.14, z + h)], slot="shoulder", uv="box", tint=W, bone=bone, smooth=c.FACET)
 
     # ---- Tail: three thick segments, team spikes, a spiked club at the tip
     tp = [Vector(j["tail1"]), Vector(t["tail1"]), Vector(t["tail2"]), Vector(t["tail3"])]
@@ -129,7 +131,7 @@ def build():
         c.limb(m, tuple(tp[k]), tuple(tp[k + 1]), [(0, w0, w0 * 0.9), (1, w1, w1 * 0.9)], slot="extra_1", uv="wrap", bone=bone, segments=6)
         mid = (tp[k] + tp[k + 1]) / 2 + UP * w0 * 0.42
         m.part("hull", 1, profile=[(-0.05, mid.y + 0.08, mid.z - 0.05), (0.05, mid.y + 0.08, mid.z - 0.05), (-0.05, mid.y - 0.08, mid.z - 0.05), (0.05, mid.y - 0.08, mid.z - 0.05), (0, mid.y + 0.12, mid.z + 0.22 - k * 0.04)],
-               slot="shoulder", uv="front", tint=W, bone=bone, smooth=c.FACET)
+               slot="shoulder", uv="box", tint=W, bone=bone, smooth=c.FACET)
     tip = tp[3]
     c.frame_hull(m, tip, (Vector((1, 0, 0)), Vector((0, 1, 0)), UP), [(-0.26, 0, 0), (0.26, 0, 0), (0, 0.5, 0.02), (0, -0.08, 0.16), (0, -0.08, -0.12), (-0.09, 0.15, 0.08), (0.09, 0.15, 0.08)], slot="extra_3", uv="front", bone="tail3")
 
@@ -166,7 +168,9 @@ def build():
             for p0, p1, p2 in [(pts[0], pts[i], pts[i + 1]) for i in range(1, len(pts) - 1)]:
                 tri = [p0, p1, p2]
                 thick = [p + UP * 0.02 for p in tri] + [p - UP * 0.02 for p in tri]
-                m.part("hull", 1, profile=[tuple(p) for p in thick], slot="cloth", uv="top", tint=W, bone=bone, smooth=8)
+                # Only the clean corner of the membrane cell: its torn holes read as black dots
+                # ("ladybug wings") once the membrane is red.
+                m.part("hull", 1, profile=[tuple(p) for p in thick], slot="cloth", uv="top", sub=(0.0, 0.5, 0.0, 0.45), tint=W, bone=bone, smooth=8)
 
     m.socket("mouth", tuple(fire + jf * 0.25), "jaw")
     m.socket("chest", (0, -0.45, j["chest"][2] - 0.2), "chest")

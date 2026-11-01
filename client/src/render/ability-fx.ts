@@ -1,20 +1,18 @@
 // Placeholder looks for abilities (the final art comes in Phase 9). Every ability must be easy
 // to see: a ground ring or disc in the hero's color, a burst of sprite particles from the
-// effects atlas, flying bolts for line shots, and small markers on units that have a buff.
+// effects atlas and flying bolts for line shots. Buff markers are in status-fx.ts.
 
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
-import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
-import { CreateTorus } from '@babylonjs/core/Meshes/Builders/torusBuilder';
-import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
+import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import '@babylonjs/core/Meshes/instancedMesh';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 import type { Scene } from '@babylonjs/core/scene';
-import { BuffFlag } from '@game/shared';
+import { fxTexture, type FxShape } from './fx-textures';
 import { c4, CELL, effectsAtlas, FRAMES, type Frames } from './hero-effects';
 
 /** Look per hero: ring color and particle frames. */
@@ -62,25 +60,6 @@ interface Bolt {
   active: boolean;
 }
 
-interface Marker {
-  meshes: Map<number, AbstractMesh>;
-}
-
-const MARKERS: { flag: number; color: string; head: boolean; size: number }[] = [
-  { flag: BuffFlag.Magnetized, color: '#9aef52', head: false, size: 1.3 },
-  { flag: BuffFlag.Stun, color: '#ffe14a', head: true, size: 0.5 },
-  { flag: BuffFlag.Root, color: '#45d14a', head: false, size: 0.9 },
-  { flag: BuffFlag.Slow, color: '#6aa8ff', head: false, size: 1.1 },
-  { flag: BuffFlag.Shield, color: '#d8f0ff', head: false, size: 1.35 },
-  { flag: BuffFlag.Blessed, color: '#ffd35a', head: false, size: 1.2 },
-  { flag: BuffFlag.Marked, color: '#b07bff', head: true, size: 0.35 },
-  { flag: BuffFlag.Burning, color: '#ff4a2a', head: false, size: 0.75 },
-  { flag: BuffFlag.Taunted, color: '#ff2a2a', head: true, size: 0.45 },
-  { flag: BuffFlag.Channel, color: '#c08bff', head: false, size: 1.6 },
-  // Only the owner's team gets invisible units, so this shows "you are hidden".
-  { flag: BuffFlag.Invisible, color: '#8f86a8', head: false, size: 1.0 },
-];
-
 export class AbilityFx {
   private readonly flashes: Flash[] = [];
   private readonly bolts: Bolt[] = [];
@@ -89,16 +68,21 @@ export class AbilityFx {
   private readonly mats = new Map<string, StandardMaterial>();
   private readonly ringTemplate: Mesh;
   private readonly discTemplate: Mesh;
-  private readonly markerTemplates = new Map<number, Mesh>();
-  private readonly markers = new Map<number, Marker>();
+  private readonly zoneTemplate: Mesh;
+  /** which painted shape each ground template shows (fx-textures.ts) */
+  private readonly shapes = new Map<Mesh, FxShape>();
 
   constructor(private readonly scene: Scene) {
-    this.ringTemplate = CreateTorus('fx-ring', { diameter: 2, thickness: 0.06, tessellation: 48 }, scene);
-    this.ringTemplate.setEnabled(false);
-    this.discTemplate = CreateDisc('fx-disc', { radius: 1, tessellation: 40 }, scene);
-    this.discTemplate.rotation.x = Math.PI / 2;
-    this.discTemplate.bakeCurrentTransformIntoVertices();
-    this.discTemplate.setEnabled(false);
+    // Flat squares with soft painted shapes: a glowing ring, a round glow, a rune circle.
+    const ground = (name: string, shape: FxShape) => {
+      const mesh = CreateGround(name, { width: 2, height: 2 }, scene);
+      mesh.setEnabled(false);
+      this.shapes.set(mesh, shape);
+      return mesh;
+    };
+    this.ringTemplate = ground('fx-ring', 'ring');
+    this.discTemplate = ground('fx-disc', 'glow');
+    this.zoneTemplate = ground('fx-zone', 'rune');
     for (let i = 0; i < 10; i++) {
       const ps = new ParticleSystem(`fx-burst-${i}`, 120, scene, null, true);
       ps.particleTexture = effectsAtlas(scene);
@@ -118,23 +102,24 @@ export class AbilityFx {
       ps.updateSpeed = 1 / 60;
       this.bursts.push(ps);
     }
-    for (const m of MARKERS) {
-      const t = CreateTorus(`fx-marker-${m.flag}`, { diameter: 2, thickness: m.head ? 0.16 : 0.1, tessellation: 32 }, scene);
-      t.material = this.mat(m.color, 0.75);
-      t.isPickable = false;
-      t.setEnabled(false);
-      this.markerTemplates.set(m.flag, t);
-    }
   }
 
-  private mat(color: string, alpha: number): StandardMaterial {
-    const key = `${color}:${alpha}`;
+  /** A glowing material: a color, painted through one of the soft shapes. */
+  private mat(color: string, shape: FxShape): StandardMaterial {
+    const key = `${color}:${shape}`;
     let m = this.mats.get(key);
     if (!m) {
       m = new StandardMaterial(`fx-${key}`, this.scene);
+      const tex = fxTexture(this.scene, shape);
+      // Unlit: color = emissive color x diffuse texture (an emissive texture would be added instead).
       m.disableLighting = true;
       m.emissiveColor = Color3.FromHexString(color);
-      m.alpha = alpha;
+      m.diffuseTexture = tex;
+      m.specularColor.set(0, 0, 0);
+      m.opacityTexture = tex;
+      // Normal blending keeps the hero's color on bright grass and stone (adding light turns
+      // orange fire into a pale white flash there).
+      m.alphaMode = Constants.ALPHA_COMBINE;
       m.backFaceCulling = false;
       m.disableDepthWrite = true;
       // Ground effects must show over bumpy ground.
@@ -149,25 +134,30 @@ export class AbilityFx {
     this.flash(this.ringTemplate, x, h, z, radius * 0.4, radius, color, 0.9, life, false, 0);
   }
 
+  /** Where a move or attack order goes: a small ring that shrinks onto the point. */
+  orderMark(x: number, h: number, z: number, color: string): void {
+    this.flash(this.ringTemplate, x, h, z, 0.75, 0.2, color, 0.95, 0.4, false, 0);
+  }
+
   /** A flat disc on the ground for a while (zones), or a quick flash (life < 0.6). */
   disc(x: number, h: number, z: number, radius: number, color: string, life: number, owner = 0): void {
     const zone = life > 0.8;
-    // Keep the edge clear without painting over units and the terrain inside a large zone.
-    this.flash(this.discTemplate, x, h, z, radius, radius, color, zone ? 0.14 : 0.45, life, zone, owner);
-    if (zone) this.flash(this.ringTemplate, x, h, z, radius, radius, color, 0.7, life, true, owner);
+    // A zone is a turning rune circle with a faint glow; a quick hit is a soft flash.
+    this.flash(this.discTemplate, x, h, z, radius, radius, color, zone ? 0.22 : 0.7, life, zone, owner);
+    if (zone) this.flash(this.zoneTemplate, x, h, z, radius, radius, color, 0.85, life, true, owner);
   }
 
   /** A cone flash (Fire Breath): a disc slice pointing at `angle` (radians, game space). */
   cone(x: number, h: number, z: number, length: number, angleDeg: number, dir: number, color: string): void {
     const arc = angleDeg / 360;
     const mesh = CreateDisc('fx-cone', { radius: length, arc, tessellation: 24 }, this.scene);
-    mesh.material = this.mat(color, 0.5);
+    mesh.material = this.mat(color, 'glow');
     mesh.isPickable = false;
     mesh.position.set(x, h, z);
     // Disc lies in XY: turn it flat, then aim its arc center along dir.
     mesh.rotation.set(Math.PI / 2, 0, 0);
     mesh.rotation.y = dir + arc * Math.PI;
-    this.flashes.push({ mesh, born: performance.now(), life: 0.5, from: 1, to: 1, alpha: 0.5, active: true, hold: false, owner: -1 });
+    this.flashes.push({ mesh, born: performance.now(), life: 0.5, from: 1, to: 1, alpha: 0.9, active: true, hold: false, owner: -1 });
   }
 
   private flash(
@@ -190,7 +180,7 @@ export class AbilityFx {
       f = { mesh, born: 0, life, from, to, alpha, active: false, hold, owner };
       this.flashes.push(f);
     }
-    f.mesh.material = this.mat(color, 1);
+    f.mesh.material = this.mat(color, this.shapes.get(template) ?? 'glow');
     f.mesh.setEnabled(true);
     f.mesh.position.set(x, h + 0.12, z);
     Object.assign(f, { born: performance.now(), life, from, to, alpha, active: true, hold, owner });
@@ -226,53 +216,18 @@ export class AbilityFx {
   bolt(x: number, y: number, h: number, ex: number, ey: number, speed: number, color: string): void {
     let b = this.bolts.find((x) => !x.active);
     if (!b) {
-      const mesh = CreateBox('fx-bolt', { width: 0.18, height: 0.18, depth: 1.4 }, this.scene);
+      // A flat streak of light along the flight line (the camera looks down at it).
+      const mesh = CreateGround('fx-bolt', { width: 0.7, height: 2.2 }, this.scene);
       mesh.isPickable = false;
       b = { mesh, x: 0, y: 0, h: 0, dx: 0, dy: 0, left: 0, speed: 0, active: false };
       this.bolts.push(b);
     }
     const d = Math.hypot(ex - x, ey - y) || 1;
     Object.assign(b, { x, y, h, dx: (ex - x) / d, dy: (ey - y) / d, left: d, speed, active: true });
-    b.mesh.material = this.mat(color, 1);
+    b.mesh.material = this.mat(color, 'glow');
     b.mesh.setEnabled(true);
     b.mesh.position.set(x, h, -y);
     b.mesh.rotation.y = Math.atan2(b.dx, -b.dy) + Math.PI;
-  }
-
-  /** Buff markers: one ring per buff bit, under the feet or over the head. */
-  setMarkers(id: number, flags: number, x: number, ground: number, top: number, z: number, scale: number): void {
-    let m = this.markers.get(id);
-    if (!flags && !m) return;
-    if (!m) this.markers.set(id, (m = { meshes: new Map() }));
-    const spin = performance.now() / 400;
-    for (const spec of MARKERS) {
-      let mesh = m.meshes.get(spec.flag);
-      if (!(flags & spec.flag)) {
-        if (mesh) {
-          mesh.dispose();
-          m.meshes.delete(spec.flag);
-        }
-        continue;
-      }
-      if (!mesh) {
-        const inst = this.markerTemplates.get(spec.flag)!.createInstance(`marker-${id}-${spec.flag}`);
-        inst.isPickable = false;
-        m.meshes.set(spec.flag, inst);
-        mesh = inst;
-      }
-      const s = spec.size * scale;
-      mesh.scaling.set(s, 1, s);
-      mesh.position.set(x, spec.head ? top + 0.35 : ground + 0.1, z);
-      mesh.rotation.y = spec.head ? spin * 2 : spin * 0.5;
-    }
-    if (!m.meshes.size) this.markers.delete(id);
-  }
-
-  clearMarkers(id: number): void {
-    const m = this.markers.get(id);
-    if (!m) return;
-    for (const mesh of m.meshes.values()) mesh.dispose();
-    this.markers.delete(id);
   }
 
   update(dt: number): void {
@@ -312,18 +267,16 @@ export class AbilityFx {
   }
 
   dispose(): void {
-    for (const id of this.markers.keys()) this.clearMarkers(id);
     for (const ps of this.bursts) ps.dispose(false);
     for (const f of this.flashes) f.mesh.dispose();
     for (const b of this.bolts) b.mesh.dispose();
-    for (const mesh of this.markerTemplates.values()) mesh.dispose();
     this.ringTemplate.dispose();
     this.discTemplate.dispose();
+    this.zoneTemplate.dispose();
     for (const mat of this.mats.values()) mat.dispose();
     this.flashes.length = 0;
     this.bolts.length = 0;
     this.bursts.length = 0;
-    this.markerTemplates.clear();
     this.mats.clear();
   }
 }

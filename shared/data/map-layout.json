@@ -8,7 +8,7 @@
     "height": 256
   },
   "coordinates": "Game units (1 unit ~ 1 meter). Origin is the south-west corner. x goes east, y goes north.",
-  "symmetry": "4-fold rotation around the center (128, 128)",
+  "symmetry": "4-fold rotation around the center (128, 128); the corner mega camps alternate (2-fold)",
   "border": {
     "width": 8,
     "fill": "mountains"
@@ -80,9 +80,9 @@
       "id": "north_corner",
       "kind": "corner",
       "sector": "north",
-      "pos": [246.7, 246.7],
+      "pos": [210.7, 245.3],
       "gold": 16000,
-      "townHallSpot": [237.3, 237.3]
+      "townHallSpot": [212, 237.3]
     },
     {
       "id": "east_main",
@@ -103,9 +103,9 @@
       "id": "east_corner",
       "kind": "corner",
       "sector": "east",
-      "pos": [246.7, 9.3],
+      "pos": [245.3, 45.3],
       "gold": 16000,
-      "townHallSpot": [237.3, 18.7]
+      "townHallSpot": [237.3, 44]
     },
     {
       "id": "south_main",
@@ -126,9 +126,9 @@
       "id": "south_corner",
       "kind": "corner",
       "sector": "south",
-      "pos": [9.3, 9.3],
+      "pos": [45.3, 10.7],
       "gold": 16000,
-      "townHallSpot": [18.7, 18.7]
+      "townHallSpot": [44, 18.7]
     },
     {
       "id": "west_main",
@@ -149,9 +149,9 @@
       "id": "west_corner",
       "kind": "corner",
       "sector": "west",
-      "pos": [9.3, 246.7],
+      "pos": [10.7, 210.7],
       "gold": 16000,
-      "townHallSpot": [18.7, 237.3]
+      "townHallSpot": [18.7, 212]
     }
   ],
   "openAreas": [
@@ -171,7 +171,7 @@
     },
     {
       "tag": "corner",
-      "center": [236, 236],
+      "center": [212, 240],
       "radius": 13.3,
       "ground": "grass",
       "sector": "north"
@@ -184,58 +184,9 @@
       "sector": "north"
     },
     {
-      "tag": "camp",
-      "center": [66.7, 232],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "north"
-    },
-    {
-      "tag": "camp",
-      "center": [141.3, 213.3],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "north"
-    },
-    {
-      "tag": "camp",
-      "center": [93.3, 197.3],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "north"
-    },
-    {
-      "tag": "glade",
-      "center": [48, 213.3],
-      "radius": 13.3,
-      "ground": "grass",
-      "sector": "north"
-    },
-    {
-      "tag": "camp",
-      "center": [158.7, 217.3],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "north"
-    },
-    {
-      "tag": "camp",
-      "center": [60, 182.7],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "north"
-    },
-    {
-      "tag": "camp",
-      "center": [45.3, 237.3],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "north"
-    },
-    {
       "tag": "field",
-      "center": [136, 208],
-      "radius": 14.7,
+      "center": [132, 205.3],
+      "radius": 12,
       "ground": "grass",
       "sector": "north"
     },
@@ -268,6 +219,146 @@
       "sector": "north"
     },
     {
+      "tag": "camp",
+      "sector": "north",
+      "center": [66.7, 232],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [66.7, 232, 4.8],
+        [68, 228.3, 3.3],
+        [63.8, 233.3, 2.9],
+        [69.1, 233.7, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [145.3, 220],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [145.3, 220, 4.8],
+        [144.8, 223.9, 3.3],
+        [143.4, 217.5, 2.9],
+        [148.3, 219.6, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [93.3, 197.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [93.3, 197.3, 5.9],
+        [88.6, 196.9, 4],
+        [95.8, 200.4, 3.5],
+        [94.6, 193.9, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [178.7, 232],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [178.7, 232, 5.9],
+        [179.5, 227.3, 4],
+        [180.9, 235.2, 3.5],
+        [175, 232.3, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [212, 237.3],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [212, 237.3, 7.5],
+        [211.3, 231.3, 5.1],
+        [208.9, 241.2, 4.5],
+        [216.6, 238, 3.6]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [241.3, 241.3],
+      "radius": 11.3,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [241.3, 241.3, 11.3],
+        [233.7, 236.1, 7.7],
+        [248.8, 239.9, 6.8],
+        [239, 248, 5.4]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [158.7, 217.3],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [158.7, 217.3, 4.8],
+        [162.4, 216.2, 3.3],
+        [157.2, 220.2, 2.9],
+        [157.1, 214.8, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [60, 182.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [60, 182.7, 5.9],
+        [64.7, 181.8, 4],
+        [56.8, 180.4, 3.5],
+        [59.7, 186.3, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [45.3, 237.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [45.3, 237.3, 5.9],
+        [50, 238.2, 4],
+        [42.1, 239.6, 3.5],
+        [45, 233.7, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "north",
+      "center": [48, 213.3],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [48, 213.3, 7.5],
+        [50.7, 207.9, 5.1],
+        [43.3, 214.9, 4.5],
+        [51.5, 216.4, 3.6]
+      ]
+    },
+    {
       "tag": "base",
       "center": [229.3, 152],
       "radius": 20,
@@ -283,7 +374,7 @@
     },
     {
       "tag": "corner",
-      "center": [236, 20],
+      "center": [240, 44],
       "radius": 13.3,
       "ground": "grass",
       "sector": "east"
@@ -296,58 +387,9 @@
       "sector": "east"
     },
     {
-      "tag": "camp",
-      "center": [232, 189.3],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "east"
-    },
-    {
-      "tag": "camp",
-      "center": [213.3, 114.7],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "east"
-    },
-    {
-      "tag": "camp",
-      "center": [197.3, 162.7],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "east"
-    },
-    {
-      "tag": "glade",
-      "center": [213.3, 208],
-      "radius": 13.3,
-      "ground": "grass",
-      "sector": "east"
-    },
-    {
-      "tag": "camp",
-      "center": [217.3, 97.3],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "east"
-    },
-    {
-      "tag": "camp",
-      "center": [182.7, 196],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "east"
-    },
-    {
-      "tag": "camp",
-      "center": [237.3, 210.7],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "east"
-    },
-    {
       "tag": "field",
-      "center": [208, 120],
-      "radius": 14.7,
+      "center": [205.3, 124],
+      "radius": 12,
       "ground": "grass",
       "sector": "east"
     },
@@ -380,6 +422,146 @@
       "sector": "east"
     },
     {
+      "tag": "camp",
+      "sector": "east",
+      "center": [232, 189.3],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [232, 189.3, 4.8],
+        [228.3, 188, 3.3],
+        [233.3, 192.2, 2.9],
+        [233.7, 186.9, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [220, 110.7],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [220, 110.7, 4.8],
+        [223.9, 111.2, 3.3],
+        [217.5, 112.6, 2.9],
+        [219.6, 107.7, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [197.3, 162.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [197.3, 162.7, 5.9],
+        [196.9, 167.4, 4],
+        [200.4, 160.2, 3.5],
+        [193.9, 161.4, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [232, 77.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [232, 77.3, 5.9],
+        [227.3, 76.5, 4],
+        [235.2, 75.1, 3.5],
+        [232.3, 81, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [237.3, 44],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [237.3, 44, 7.5],
+        [231.3, 44.7, 5.1],
+        [241.2, 47.1, 4.5],
+        [238, 39.4, 3.6]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [241.3, 14.7],
+      "radius": 11.3,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [241.3, 14.7, 11.3],
+        [236.1, 22.3, 7.7],
+        [239.9, 7.2, 6.8],
+        [248, 17, 5.4]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [217.3, 97.3],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [217.3, 97.3, 4.8],
+        [216.2, 93.6, 3.3],
+        [220.2, 98.8, 2.9],
+        [214.8, 98.9, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [182.7, 196],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [182.7, 196, 5.9],
+        [181.8, 191.3, 4],
+        [180.4, 199.2, 3.5],
+        [186.3, 196.3, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [237.3, 210.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [237.3, 210.7, 5.9],
+        [238.2, 206, 4],
+        [239.6, 213.9, 3.5],
+        [233.7, 211, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "east",
+      "center": [213.3, 208],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [213.3, 208, 7.5],
+        [207.9, 205.3, 5.1],
+        [214.9, 212.7, 4.5],
+        [216.4, 204.5, 3.6]
+      ]
+    },
+    {
       "tag": "base",
       "center": [152, 26.7],
       "radius": 20,
@@ -395,7 +577,7 @@
     },
     {
       "tag": "corner",
-      "center": [20, 20],
+      "center": [44, 16],
       "radius": 13.3,
       "ground": "grass",
       "sector": "south"
@@ -408,58 +590,9 @@
       "sector": "south"
     },
     {
-      "tag": "camp",
-      "center": [189.3, 24],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "south"
-    },
-    {
-      "tag": "camp",
-      "center": [114.7, 42.7],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "south"
-    },
-    {
-      "tag": "camp",
-      "center": [162.7, 58.7],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "south"
-    },
-    {
-      "tag": "glade",
-      "center": [208, 42.7],
-      "radius": 13.3,
-      "ground": "grass",
-      "sector": "south"
-    },
-    {
-      "tag": "camp",
-      "center": [97.3, 38.7],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "south"
-    },
-    {
-      "tag": "camp",
-      "center": [196, 73.3],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "south"
-    },
-    {
-      "tag": "camp",
-      "center": [210.7, 18.7],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "south"
-    },
-    {
       "tag": "field",
-      "center": [120, 48],
-      "radius": 14.7,
+      "center": [124, 50.7],
+      "radius": 12,
       "ground": "grass",
       "sector": "south"
     },
@@ -492,6 +625,146 @@
       "sector": "south"
     },
     {
+      "tag": "camp",
+      "sector": "south",
+      "center": [189.3, 24],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [189.3, 24, 4.8],
+        [188, 27.7, 3.3],
+        [192.2, 22.7, 2.9],
+        [186.9, 22.3, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [110.7, 36],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [110.7, 36, 4.8],
+        [111.2, 32.1, 3.3],
+        [112.6, 38.5, 2.9],
+        [107.7, 36.4, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [162.7, 58.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [162.7, 58.7, 5.9],
+        [167.4, 59.1, 4],
+        [160.2, 55.6, 3.5],
+        [161.4, 62.1, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [77.3, 24],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [77.3, 24, 5.9],
+        [76.5, 28.7, 4],
+        [75.1, 20.8, 3.5],
+        [81, 23.7, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [44, 18.7],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [44, 18.7, 7.5],
+        [44.7, 24.7, 5.1],
+        [47.1, 14.8, 4.5],
+        [39.4, 18, 3.6]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [14.7, 14.7],
+      "radius": 11.3,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [14.7, 14.7, 11.3],
+        [22.3, 19.9, 7.7],
+        [7.2, 16.1, 6.8],
+        [17, 8, 5.4]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [97.3, 38.7],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [97.3, 38.7, 4.8],
+        [93.6, 39.8, 3.3],
+        [98.8, 35.8, 2.9],
+        [98.9, 41.2, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [196, 73.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [196, 73.3, 5.9],
+        [191.3, 74.2, 4],
+        [199.2, 75.6, 3.5],
+        [196.3, 69.7, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [210.7, 18.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [210.7, 18.7, 5.9],
+        [206, 17.8, 4],
+        [213.9, 16.4, 3.5],
+        [211, 22.3, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "south",
+      "center": [208, 42.7],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [208, 42.7, 7.5],
+        [205.3, 48.1, 5.1],
+        [212.7, 41.1, 4.5],
+        [204.5, 39.6, 3.6]
+      ]
+    },
+    {
       "tag": "base",
       "center": [26.7, 104],
       "radius": 20,
@@ -507,7 +780,7 @@
     },
     {
       "tag": "corner",
-      "center": [20, 236],
+      "center": [16, 212],
       "radius": 13.3,
       "ground": "grass",
       "sector": "west"
@@ -520,58 +793,9 @@
       "sector": "west"
     },
     {
-      "tag": "camp",
-      "center": [24, 66.7],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "west"
-    },
-    {
-      "tag": "camp",
-      "center": [42.7, 141.3],
-      "radius": 6.7,
-      "ground": "grass",
-      "sector": "west"
-    },
-    {
-      "tag": "camp",
-      "center": [58.7, 93.3],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "west"
-    },
-    {
-      "tag": "glade",
-      "center": [42.7, 48],
-      "radius": 13.3,
-      "ground": "grass",
-      "sector": "west"
-    },
-    {
-      "tag": "camp",
-      "center": [38.7, 158.7],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "west"
-    },
-    {
-      "tag": "camp",
-      "center": [73.3, 60],
-      "radius": 8,
-      "ground": "rough_dirt",
-      "sector": "west"
-    },
-    {
-      "tag": "camp",
-      "center": [18.7, 45.3],
-      "radius": 8,
-      "ground": "grass",
-      "sector": "west"
-    },
-    {
       "tag": "field",
-      "center": [48, 136],
-      "radius": 14.7,
+      "center": [50.7, 132],
+      "radius": 12,
       "ground": "grass",
       "sector": "west"
     },
@@ -602,9 +826,204 @@
       "radius": 6.7,
       "ground": "dirt",
       "sector": "west"
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [24, 66.7],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [24, 66.7, 4.8],
+        [27.7, 68, 3.3],
+        [22.7, 63.8, 2.9],
+        [22.3, 69.1, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [36, 145.3],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [36, 145.3, 4.8],
+        [32.1, 144.8, 3.3],
+        [38.5, 143.4, 2.9],
+        [36.4, 148.3, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [58.7, 93.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [58.7, 93.3, 5.9],
+        [59.1, 88.6, 4],
+        [55.6, 95.8, 3.5],
+        [62.1, 94.6, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [24, 178.7],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [24, 178.7, 5.9],
+        [28.7, 179.5, 4],
+        [20.8, 180.9, 3.5],
+        [23.7, 175, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [18.7, 212],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [18.7, 212, 7.5],
+        [24.7, 211.3, 5.1],
+        [14.8, 208.9, 4.5],
+        [18, 216.6, 3.6]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [14.7, 241.3],
+      "radius": 11.3,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [14.7, 241.3, 11.3],
+        [19.9, 233.7, 7.7],
+        [16.1, 248.8, 6.8],
+        [8, 239, 5.4]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [38.7, 158.7],
+      "radius": 4.8,
+      "ground": "grass",
+      "rough": 1.2,
+      "lobes": [
+        [38.7, 158.7, 4.8],
+        [39.8, 162.4, 3.3],
+        [35.8, 157.2, 2.9],
+        [41.2, 157.1, 2.3]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [73.3, 60],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [73.3, 60, 5.9],
+        [74.2, 64.7, 4],
+        [75.6, 56.8, 3.5],
+        [69.7, 59.7, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [18.7, 45.3],
+      "radius": 5.9,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [18.7, 45.3, 5.9],
+        [17.8, 50, 4],
+        [16.4, 42.1, 3.5],
+        [22.3, 45, 2.8]
+      ]
+    },
+    {
+      "tag": "camp",
+      "sector": "west",
+      "center": [42.7, 48],
+      "radius": 7.5,
+      "ground": "rough_dirt",
+      "rough": 1.2,
+      "lobes": [
+        [42.7, 48, 7.5],
+        [48.1, 50.7, 5.1],
+        [41.1, 43.3, 4.5],
+        [39.6, 51.5, 3.6]
+      ]
     }
   ],
   "roads": [
+    {
+      "tag": "trail",
+      "sector": "north",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [145.3, 220],
+        [145.6, 226.2],
+        [146.1, 235.8]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "north",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [93.3, 197.3],
+        [86, 195.2],
+        [77.5, 192.8]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "north",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [178.7, 232],
+        [178.7, 224.4],
+        [178.7, 221.3]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "north",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [158.7, 217.3],
+        [164.2, 214.4],
+        [172.6, 209.9]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "north",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [48, 213.3],
+        [53.8, 205.6],
+        [58.6, 199.3]
+      ]
+    },
     {
       "tag": "base_to_ring",
       "width": 8,
@@ -703,6 +1122,61 @@
       ],
       "sector": "north",
       "ground": "rough_dirt"
+    },
+    {
+      "tag": "trail",
+      "sector": "east",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [220, 110.7],
+        [226.2, 110.4],
+        [235.8, 109.9]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "east",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [197.3, 162.7],
+        [195.2, 170],
+        [192.8, 178.5]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "east",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [232, 77.3],
+        [224.4, 77.3],
+        [221.3, 77.3]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "east",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [217.3, 97.3],
+        [214.4, 91.8],
+        [209.9, 83.4]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "east",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [213.3, 208],
+        [205.6, 202.2],
+        [199.3, 197.4]
+      ]
     },
     {
       "tag": "base_to_ring",
@@ -804,6 +1278,61 @@
       "ground": "rough_dirt"
     },
     {
+      "tag": "trail",
+      "sector": "south",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [110.7, 36],
+        [110.4, 29.8],
+        [109.9, 20.2]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "south",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [162.7, 58.7],
+        [170, 60.8],
+        [178.5, 63.2]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "south",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [77.3, 24],
+        [77.3, 31.6],
+        [77.3, 34.7]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "south",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [97.3, 38.7],
+        [91.8, 41.6],
+        [83.4, 46.1]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "south",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [208, 42.7],
+        [202.2, 50.4],
+        [197.4, 56.7]
+      ]
+    },
+    {
       "tag": "base_to_ring",
       "width": 8,
       "points": [
@@ -901,6 +1430,61 @@
       ],
       "sector": "south",
       "ground": "rough_dirt"
+    },
+    {
+      "tag": "trail",
+      "sector": "west",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [36, 145.3],
+        [29.8, 145.6],
+        [20.2, 146.1]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "west",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [58.7, 93.3],
+        [60.8, 86],
+        [63.2, 77.5]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "west",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [24, 178.7],
+        [31.6, 178.7],
+        [34.7, 178.7]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "west",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [38.7, 158.7],
+        [41.6, 164.2],
+        [46.1, 172.6]
+      ]
+    },
+    {
+      "tag": "trail",
+      "sector": "west",
+      "width": 4.6,
+      "ground": "rough_dirt",
+      "points": [
+        [42.7, 48],
+        [50.4, 53.8],
+        [56.7, 58.6]
+      ]
     },
     {
       "tag": "base_to_ring",
@@ -1336,249 +1920,317 @@
       "id": "north_green_wolves",
       "type": "green_wolves",
       "sector": "north",
-      "pos": [66.7, 232]
+      "pos": [66.7, 232],
+      "entrance": [69.8, 226.6]
     },
     {
       "id": "north_green_bandits",
       "type": "green_bandits",
       "sector": "north",
-      "pos": [141.3, 213.3]
+      "pos": [145.3, 220],
+      "entrance": [145.6, 226.2]
     },
     {
       "id": "north_orange_harpies",
       "type": "orange_harpies",
       "sector": "north",
-      "pos": [93.3, 197.3]
+      "pos": [93.3, 197.3],
+      "entrance": [86, 195.2]
     },
     {
       "id": "north_orange_trolls",
       "type": "orange_trolls",
       "sector": "north",
       "pos": [178.7, 232],
+      "entrance": [178.7, 224.4],
       "guardsMine": "north_natural"
     },
     {
       "id": "north_red_ogres",
       "type": "red_ogres",
       "sector": "north",
-      "pos": [237.3, 237.3],
+      "pos": [212, 237.3],
+      "entrance": [212.7, 227.7],
       "guardsMine": "north_corner"
+    },
+    {
+      "id": "north_horde_warband",
+      "type": "horde_warband",
+      "sector": "north",
+      "pos": [241.3, 241.3],
+      "entrance": [227.9, 235.3]
     },
     {
       "id": "north_red_sentinels",
       "type": "red_sentinels",
       "sector": "north",
-      "pos": [142.7, 161.3]
+      "pos": [142.7, 161.3],
+      "entrance": [148.7, 169]
     },
     {
       "id": "north_green_spiders",
       "type": "green_spiders",
       "sector": "north",
-      "pos": [158.7, 217.3]
+      "pos": [158.7, 217.3],
+      "entrance": [164.2, 214.4]
     },
     {
       "id": "north_orange_wolf_pack",
       "type": "orange_wolf_pack",
       "sector": "north",
-      "pos": [60, 182.7]
+      "pos": [60, 182.7],
+      "entrance": [67.6, 182.7]
     },
     {
       "id": "north_orange_spider_nest",
       "type": "orange_spider_nest",
       "sector": "north",
-      "pos": [45.3, 237.3]
+      "pos": [45.3, 237.3],
+      "entrance": [53, 237.3]
     },
     {
       "id": "north_red_spider_brood",
       "type": "red_spider_brood",
       "sector": "north",
-      "pos": [48, 213.3]
+      "pos": [48, 213.3],
+      "entrance": [53.8, 205.6]
     },
     {
       "id": "east_green_wolves",
       "type": "green_wolves",
       "sector": "east",
-      "pos": [232, 189.3]
+      "pos": [232, 189.3],
+      "entrance": [226.6, 186.2]
     },
     {
       "id": "east_green_bandits",
       "type": "green_bandits",
       "sector": "east",
-      "pos": [213.3, 114.7]
+      "pos": [220, 110.7],
+      "entrance": [226.2, 110.4]
     },
     {
       "id": "east_orange_harpies",
       "type": "orange_harpies",
       "sector": "east",
-      "pos": [197.3, 162.7]
+      "pos": [197.3, 162.7],
+      "entrance": [195.2, 170]
     },
     {
       "id": "east_orange_trolls",
       "type": "orange_trolls",
       "sector": "east",
       "pos": [232, 77.3],
+      "entrance": [224.4, 77.3],
       "guardsMine": "east_natural"
     },
     {
       "id": "east_red_ogres",
       "type": "red_ogres",
       "sector": "east",
-      "pos": [237.3, 18.7],
+      "pos": [237.3, 44],
+      "entrance": [227.7, 43.3],
       "guardsMine": "east_corner"
+    },
+    {
+      "id": "east_boss_colossus",
+      "type": "boss_colossus",
+      "sector": "east",
+      "pos": [241.3, 14.7],
+      "entrance": [235.3, 28.1]
     },
     {
       "id": "east_red_sentinels",
       "type": "red_sentinels",
       "sector": "east",
-      "pos": [161.3, 113.3]
+      "pos": [161.3, 113.3],
+      "entrance": [169, 107.3]
     },
     {
       "id": "east_green_spiders",
       "type": "green_spiders",
       "sector": "east",
-      "pos": [217.3, 97.3]
+      "pos": [217.3, 97.3],
+      "entrance": [214.4, 91.8]
     },
     {
       "id": "east_orange_wolf_pack",
       "type": "orange_wolf_pack",
       "sector": "east",
-      "pos": [182.7, 196]
+      "pos": [182.7, 196],
+      "entrance": [182.7, 188.4]
     },
     {
       "id": "east_orange_spider_nest",
       "type": "orange_spider_nest",
       "sector": "east",
-      "pos": [237.3, 210.7]
+      "pos": [237.3, 210.7],
+      "entrance": [237.3, 203]
     },
     {
       "id": "east_red_spider_brood",
       "type": "red_spider_brood",
       "sector": "east",
-      "pos": [213.3, 208]
+      "pos": [213.3, 208],
+      "entrance": [205.6, 202.2]
     },
     {
       "id": "south_green_wolves",
       "type": "green_wolves",
       "sector": "south",
-      "pos": [189.3, 24]
+      "pos": [189.3, 24],
+      "entrance": [186.2, 29.4]
     },
     {
       "id": "south_green_bandits",
       "type": "green_bandits",
       "sector": "south",
-      "pos": [114.7, 42.7]
+      "pos": [110.7, 36],
+      "entrance": [110.4, 29.8]
     },
     {
       "id": "south_orange_harpies",
       "type": "orange_harpies",
       "sector": "south",
-      "pos": [162.7, 58.7]
+      "pos": [162.7, 58.7],
+      "entrance": [170, 60.8]
     },
     {
       "id": "south_orange_trolls",
       "type": "orange_trolls",
       "sector": "south",
       "pos": [77.3, 24],
+      "entrance": [77.3, 31.6],
       "guardsMine": "south_natural"
     },
     {
       "id": "south_red_ogres",
       "type": "red_ogres",
       "sector": "south",
-      "pos": [18.7, 18.7],
+      "pos": [44, 18.7],
+      "entrance": [43.3, 28.3],
       "guardsMine": "south_corner"
+    },
+    {
+      "id": "south_horde_warband",
+      "type": "horde_warband",
+      "sector": "south",
+      "pos": [14.7, 14.7],
+      "entrance": [28.1, 20.7]
     },
     {
       "id": "south_red_sentinels",
       "type": "red_sentinels",
       "sector": "south",
-      "pos": [113.3, 94.7]
+      "pos": [113.3, 94.7],
+      "entrance": [107.3, 87]
     },
     {
       "id": "south_green_spiders",
       "type": "green_spiders",
       "sector": "south",
-      "pos": [97.3, 38.7]
+      "pos": [97.3, 38.7],
+      "entrance": [91.8, 41.6]
     },
     {
       "id": "south_orange_wolf_pack",
       "type": "orange_wolf_pack",
       "sector": "south",
-      "pos": [196, 73.3]
+      "pos": [196, 73.3],
+      "entrance": [188.4, 73.3]
     },
     {
       "id": "south_orange_spider_nest",
       "type": "orange_spider_nest",
       "sector": "south",
-      "pos": [210.7, 18.7]
+      "pos": [210.7, 18.7],
+      "entrance": [203, 18.7]
     },
     {
       "id": "south_red_spider_brood",
       "type": "red_spider_brood",
       "sector": "south",
-      "pos": [208, 42.7]
+      "pos": [208, 42.7],
+      "entrance": [202.2, 50.4]
     },
     {
       "id": "west_green_wolves",
       "type": "green_wolves",
       "sector": "west",
-      "pos": [24, 66.7]
+      "pos": [24, 66.7],
+      "entrance": [29.4, 69.8]
     },
     {
       "id": "west_green_bandits",
       "type": "green_bandits",
       "sector": "west",
-      "pos": [42.7, 141.3]
+      "pos": [36, 145.3],
+      "entrance": [29.8, 145.6]
     },
     {
       "id": "west_orange_harpies",
       "type": "orange_harpies",
       "sector": "west",
-      "pos": [58.7, 93.3]
+      "pos": [58.7, 93.3],
+      "entrance": [60.8, 86]
     },
     {
       "id": "west_orange_trolls",
       "type": "orange_trolls",
       "sector": "west",
       "pos": [24, 178.7],
+      "entrance": [31.6, 178.7],
       "guardsMine": "west_natural"
     },
     {
       "id": "west_red_ogres",
       "type": "red_ogres",
       "sector": "west",
-      "pos": [18.7, 237.3],
+      "pos": [18.7, 212],
+      "entrance": [28.3, 212.7],
       "guardsMine": "west_corner"
+    },
+    {
+      "id": "west_boss_colossus",
+      "type": "boss_colossus",
+      "sector": "west",
+      "pos": [14.7, 241.3],
+      "entrance": [20.7, 227.9]
     },
     {
       "id": "west_red_sentinels",
       "type": "red_sentinels",
       "sector": "west",
-      "pos": [94.7, 142.7]
+      "pos": [94.7, 142.7],
+      "entrance": [87, 148.7]
     },
     {
       "id": "west_green_spiders",
       "type": "green_spiders",
       "sector": "west",
-      "pos": [38.7, 158.7]
+      "pos": [38.7, 158.7],
+      "entrance": [41.6, 164.2]
     },
     {
       "id": "west_orange_wolf_pack",
       "type": "orange_wolf_pack",
       "sector": "west",
-      "pos": [73.3, 60]
+      "pos": [73.3, 60],
+      "entrance": [73.3, 67.6]
     },
     {
       "id": "west_orange_spider_nest",
       "type": "orange_spider_nest",
       "sector": "west",
-      "pos": [18.7, 45.3]
+      "pos": [18.7, 45.3],
+      "entrance": [18.7, 53]
     },
     {
       "id": "west_red_spider_brood",
       "type": "red_spider_brood",
       "sector": "west",
-      "pos": [42.7, 48]
+      "pos": [42.7, 48],
+      "entrance": [50.4, 53.8]
     }
   ],
   "shops": [

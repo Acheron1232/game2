@@ -23,10 +23,14 @@ export interface CampState {
   /** where the last monster died: the drop falls here */
   lastDeathX: number;
   lastDeathY: number;
+  /** how far the monsters chase from the camp, and how close one must come to wake them */
+  leash: number;
+  aggro: number;
 }
 
 export function createCamps(sim: MatchSim): CampState[] {
   return gameData.map.camps.map((c, index) => {
+    const def = gameData.camps.campTypes.find((t) => t.id === c.type);
     const camp: CampState = {
       index,
       id: c.id,
@@ -37,6 +41,8 @@ export function createCamps(sim: MatchSim): CampState[] {
       respawnAt: 0,
       lastDeathX: 0,
       lastDeathY: 0,
+      leash: def?.leashRange ?? N.leashRange,
+      aggro: def?.aggroRange ?? N.aggroRange,
     };
     spawnCamp(sim, camp);
     return camp;
@@ -49,17 +55,46 @@ function spawnCamp(sim: MatchSim, camp: CampState): void {
   const types: string[] = [];
   for (const [unit, count] of def.monsters) for (let i = 0; i < count; i++) types.push(unit);
   camp.members = [];
-  // Monsters stand in a small ring around the camp spot and look toward the map center.
+  // Monsters stand in a small ring around the camp spot and look toward the map center. Big
+  // camps (a spread in the data) stand on rings: the boss in the middle, the rest around it.
   const facing = Math.atan2(-(sim.size / 2 - camp.x), sim.size / 2 - camp.y);
+  const spots = campSpots(types.length, def.spread, def.center === true);
   types.forEach((unit, i) => {
-    const a = (i / types.length) * Math.PI * 2 + 0.6;
-    const r = types.length > 1 ? 1.7 : 0;
-    const p = nearestWalkable(sim.nav, camp.x + Math.cos(a) * r, camp.y + Math.sin(a) * r, 10) ?? [camp.x, camp.y];
+    const [dx, dy] = spots[i]!;
+    const p = nearestWalkable(sim.nav, camp.x + dx, camp.y + dy, 10) ?? [camp.x, camp.y];
     const m = sim.spawn(entityTypeIndex(unit), NEUTRAL, NEUTRAL_TEAM, 255, p[0], p[1], facing);
     m.camp = camp.index;
     camp.members.push(m);
   });
   camp.respawnAt = 0;
+}
+
+/**
+ * Offsets of `count` monsters around the camp spot. Without a spread: one small ring (1.7). With
+ * one: rings `spread` apart, as many on each as fit about `spread` apart; `center` puts the first
+ * monster in the middle.
+ */
+export function campSpots(count: number, spread?: number, center = false): [number, number][] {
+  const out: [number, number][] = [];
+  if (!spread) {
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + 0.6;
+      const r = count > 1 ? 1.7 : 0;
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    return out;
+  }
+  if (center && count > 0) out.push([0, 0]);
+  for (let ring = 1; out.length < count; ring++) {
+    const r = ring * spread;
+    const fit = Math.max(3, Math.floor((Math.PI * 2 * r) / spread));
+    const n = Math.min(fit, count - out.length);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + 0.6 + ring * 0.4;
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+  }
+  return out;
 }
 
 /** Called once per tick before units act. */
@@ -85,9 +120,9 @@ function think(sim: MatchSim, camp: CampState, m: SimEntity): void {
     }
     return;
   }
-  if (home > N.leashRange) return goHome(sim, m);
+  if (home > camp.leash) return goHome(sim, m);
   const t = m.targetId ? sim.get(m.targetId) : undefined;
-  if (t && (!t.alive || Math.hypot(t.mover.x - m.homeX, t.mover.y - m.homeY) > N.leashRange + 2)) m.targetId = 0;
+  if (t && (!t.alive || Math.hypot(t.mover.x - m.homeX, t.mover.y - m.homeY) > camp.leash + 2)) m.targetId = 0;
   if (m.targetId) {
     // Hit what stands next to you: do not walk past soldiers to reach the hero behind them.
     if ((sim.tick + m.id) % 5 === 0 && t && m.swing !== 1 && !inReach(m, t)) {
@@ -98,7 +133,7 @@ function think(sim: MatchSim, camp: CampState, m: SimEntity): void {
   }
   // Someone still fights the camp? Take the nearest of them. Else look around (every 5 ticks).
   if ((sim.tick + m.id) % 5 !== 0 && home < 0.5) return;
-  const found = nearestIntruder(sim, camp, m, home > 0.5 ? N.leashRange : N.aggroRange);
+  const found = nearestIntruder(sim, camp, m, home > 0.5 ? camp.leash : camp.aggro);
   if (found) aggro(sim, camp, found);
   else if (home > 0.5) goHome(sim, m);
 }
@@ -109,7 +144,7 @@ function nearestIntruder(sim: MatchSim, camp: CampState, m: SimEntity, range: nu
   sim.grid.query(m.mover.x, m.mover.y, range, (o, d2) => {
     if (o.team === NEUTRAL_TEAM || o.passive || o.inert || !canAttackLayer(m.stats.canHitAir, o.stats.layer)) return;
     if (sim.isHiddenFrom(o, NEUTRAL_TEAM)) return;
-    if (Math.hypot(o.mover.x - camp.x, o.mover.y - camp.y) > N.leashRange) return;
+    if (Math.hypot(o.mover.x - camp.x, o.mover.y - camp.y) > camp.leash) return;
     if (d2 < bestD) {
       bestD = d2;
       best = o;

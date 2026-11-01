@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BinaryWriter,
   buildMatchNav,
+  campSpots,
   ClientView,
   CommandType,
   DamageKind,
@@ -478,7 +479,7 @@ describe('camp drops', () => {
       { seed: 4, slots: [{ index: 0, heroType: entityTypeIndex('stone_golem'), team: 1, color: 0, start: 0 }] },
       nav,
     );
-    const camp = sim.camps.find((c) => c.type === 'red_ogres')!;
+    const camp = sim.camps.find((c) => c.type === 'red_spider_brood')!;
     const hero = sim.heroes[0]!;
     sim.step();
     for (const m of camp.members.slice(0, -1)) sim.damage(m, 99999, { id: hero.id, owner: 0, team: 1 }, DamageKind.Spell);
@@ -490,6 +491,46 @@ describe('camp drops', () => {
     const table = gameData.camps.dropTables['red']!;
     expect(table.items.map(([id]) => itemIndex(id))).toContain(g.item);
     expect(Math.hypot(g.x - last.mover.x, g.y - last.mover.y)).toBeLessThan(1);
+  });
+});
+
+describe('mega camps', () => {
+  it('the corners hold two horde camps and two boss camps, each kind on one diagonal', () => {
+    const camps = gameData.map.camps.filter((c) => /^(horde|boss)/.test(c.type));
+    expect(camps).toHaveLength(4);
+    const corner = (c: (typeof camps)[number]) => `${c.pos[1] > 128 ? 'N' : 'S'}${c.pos[0] > 128 ? 'E' : 'W'}`;
+    const kinds = Object.fromEntries(camps.map((c) => [corner(c), c.type]));
+    expect(kinds['NE']).toBe(kinds['SW']);
+    expect(kinds['NW']).toBe(kinds['SE']);
+    expect(kinds['NE']).not.toBe(kinds['NW']);
+  });
+
+  it('a boss camp stands with the boss in the middle and drops a legendary and a rare item', () => {
+    const sim = new MatchSim(
+      { seed: 4, slots: [{ index: 0, heroType: entityTypeIndex('stone_golem'), team: 1, color: 0, start: 0 }] },
+      nav,
+    );
+    const camp = sim.camps.find((c) => c.type === 'boss_colossus')!;
+    expect(camp.members).toHaveLength(3);
+    const boss = camp.members[0]!;
+    expect(Math.hypot(boss.mover.x - camp.x, boss.mover.y - camp.y)).toBeLessThan(1);
+    expect(camp.leash).toBe(20);
+    const hero = sim.heroes[0]!;
+    sim.step();
+    for (const m of camp.members) sim.damage(m, 99999, { id: hero.id, owner: 0, team: 1 }, DamageKind.Spell);
+    expect(sim.groundItems).toHaveLength(2);
+    const legendary = gameData.camps.dropTables['boss']!.items.map(([id]) => itemIndex(id));
+    expect(legendary).toContain(sim.groundItems[0]!.item);
+    expect(sim.groundItems[0]!.x).not.toBe(sim.groundItems[1]!.x);
+  });
+
+  it('places a crowd on rings that do not overlap', () => {
+    const spots = campSpots(15, 2.6, true);
+    expect(spots).toHaveLength(15);
+    expect(spots[0]).toEqual([0, 0]);
+    for (let i = 0; i < spots.length; i++)
+      for (let j = i + 1; j < spots.length; j++)
+        expect(Math.hypot(spots[i]![0] - spots[j]![0], spots[i]![1] - spots[j]![1])).toBeGreaterThan(1.5);
   });
 });
 

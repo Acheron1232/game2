@@ -118,3 +118,72 @@ def barrel():
     for z in (0.15, 0.7):
         m.part("cylinder", (0.78, 0.78, 0.06), at=(0, 0, z), slot="iron_rivets", tint=W, bone="root", segments=10)
     return finish(m)
+
+
+# ---- living props (2026-10-31): light sources and landmarks; the game adds fire, glow and
+# ground light to them (client/src/render/decor-lights.ts).
+
+
+def campfire():
+    m = start("campfire")
+    # A ring of stones around crossed logs and a heap of embers (the flames are particles).
+    for k in range(9):
+        a = k / 9 * math.tau
+        boulder(m, (math.cos(a) * 0.62, math.sin(a) * 0.62, 0.1), (0.17, 0.14, 0.13), "rock_grey" if k % 3 else "rock_mossy", 40 + k)
+    for a in (0.2, 1.25, 2.3, 3.35, 4.4):
+        x, y = math.cos(a) * 0.38, math.sin(a) * 0.38
+        c.limb(m, (x, y, 0.06), (-x * 0.25, -y * 0.25, 0.32), [(0, 0.075, 0.075), (1, 0.05, 0.05)], slot="bark_oak", bone="root", segments=6)
+    m.part("sphere", (0.42, 0.42, 0.14), at=(0, 0, 0.05), slot="flat_glow", tint="#ff7a2a", bone="root", segments=10, rings=5, material="glow", light=False)
+    return finish(m)
+
+
+def crystal():
+    m = start("crystal")
+    # A cluster of thick faceted crystals growing out of a low rock: the crystals glow by themselves.
+    boulder(m, (0, 0, 0.06), (0.42, 0.36, 0.16), "rock_grey", 50)
+    boulder(m, (0.3, -0.2, 0.04), (0.2, 0.18, 0.1), "rock_mossy", 51)
+    shards = [(0, 0, 0.05, 0.3, 1.7, 0, 0), (0.3, 0.14, 0.03, 0.2, 1.1, 18, 25), (-0.28, 0.2, 0.03, 0.2, 1.0, -20, -15),
+              (0.12, -0.3, 0.03, 0.17, 0.8, 15, -30), (-0.2, -0.24, 0.03, 0.15, 0.65, -24, 20), (0.36, -0.12, 0.02, 0.12, 0.5, 30, 10)]
+    for x, y, z, w, h, tx, ty in shards:
+        m.part("loft", 1, profile=[(x, y, z, w * 0.6, w * 0.5), (x, y, z + h * 0.12, w, w * 0.85), (x, y, z + h * 0.72, w * 0.82, w * 0.7), (x, y, z + h, 0.005, 0.005)],
+               rot=(tx, ty, 0), slot="flat_glow", tint="#6fdcff", bone="root", segments=6, uv="front", smooth=0, material="glow", light=False)
+    return finish(m)
+
+
+def lantern():
+    m = start("lantern")
+    # A wooden post with an arm and an open iron lantern: cap, base and four bars round a warm light.
+    m.part("box", (0.16, 0.16, 2.2), at=(0, 0, 1.1), slot="timber_dark", tint=W, bone="root", bevel=0.25)
+    m.part("box", (0.5, 0.1, 0.1), at=(0.22, 0, 2.05), slot="timber_dark", tint=W, bone="root", bevel=0.25)
+    m.part("box", (0.36, 0.36, 0.12), at=(0, 0, 0.06), slot="stone_wall", tint="#c8c0b0", bone="root", bevel=0.2)
+    m.part("cylinder", (0.02, 0.02, 0.16), at=(0.42, 0, 1.93), slot="dark_iron", tint=W, bone="root", segments=4)
+    m.part("lathe", (1, 1, 1), profile=[(0.17, 1.8), (0.12, 1.86), (0.03, 1.9)], at=(0.42, 0, 0), slot="dark_iron", tint=W, bone="root", segments=6, smooth=10)
+    m.part("cylinder", (0.26, 0.26, 0.04), at=(0.42, 0, 1.5), slot="dark_iron", tint=W, bone="root", segments=6)
+    for k in range(4):
+        a = k / 4 * math.tau + math.pi / 4
+        m.part("box", (0.025, 0.025, 0.3), at=(0.42 + math.cos(a) * 0.12, math.sin(a) * 0.12, 1.66), slot="dark_iron", tint=W, bone="root", bevel=0.2)
+    m.part("sphere", (0.17, 0.17, 0.2), at=(0.42, 0, 1.65), slot="flat_glow", tint="#ffc860", bone="root", segments=8, rings=5, material="glow", light=False)
+    return finish(m)
+
+
+def rune_stone():
+    m = start("rune_stone")
+    # A tall standing stone, slightly leaning, with a band of glowing runes.
+    m.part("hull", 1, profile=[(x * 0.42, y * 0.28, 0) for x in (-1, 1) for y in (-1, 1)] + [(x * 0.32, y * 0.22, 1.7) for x in (-1, 1) for y in (-1, 1)] + [(0.05, 0, 2.05)],
+           rot=(0, 6, 0), slot="rock_grey", tint="#d0ccc4", bone="root", smooth=15)
+    for z in (0.7, 1.05, 1.4):
+        m.part("box", (0.3, 0.05, 0.12), at=(0.02 + z * 0.1, -0.27, z), rot=(0, 6, 0), slot="flat_glow", tint="#86e0ff", bone="root", bevel=0.1, material="glow", light=False)
+    boulder(m, (0.5, 0.3, 0.08), (0.25, 0.2, 0.15), "rock_mossy", 60)
+    return finish(m)
+
+
+def bones():
+    m = start("bones")
+    # A skull and a few scattered bones near monster camps.
+    m.part("sphere", (0.26, 0.3, 0.22), at=(0, 0, 0.12), slot="flat_white", tint="#e8dcc0", bone="root", segments=8, rings=6)
+    m.part("box", (0.16, 0.08, 0.06), at=(0, -0.16, 0.06), slot="flat_white", tint="#d8ccb0", bone="root", bevel=0.4)
+    for x, y, a, l in ((0.45, 0.1, 30, 0.6), (-0.4, 0.25, -50, 0.5), (0.15, 0.45, 80, 0.45)):
+        r = math.radians(a)
+        dx, dy = math.cos(r) * l / 2, math.sin(r) * l / 2
+        c.limb(m, (x - dx, y - dy, 0.04), (x + dx, y + dy, 0.04), [(0, 0.045, 0.045), (0.5, 0.03, 0.03), (1, 0.045, 0.045)], slot="flat_white", tint="#e0d4b8", bone="root", segments=5)
+    return finish(m)

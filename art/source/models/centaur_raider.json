@@ -1,11 +1,11 @@
 {
   "id": "centaur_raider",
-  "triangles": 2274,
+  "triangles": 2302,
   "bones": 24,
   "clips": [
     {
       "name": "idle",
-      "frames": 60,
+      "frames": 72,
       "loop": true
     },
     {
@@ -15,12 +15,12 @@
     },
     {
       "name": "attack",
-      "frames": 28,
+      "frames": 30,
       "loop": false
     },
     {
       "name": "attack2",
-      "frames": 28,
+      "frames": 30,
       "loop": false
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "name": "hit",
-      "frames": 12,
+      "frames": 14,
       "loop": false
     },
     {

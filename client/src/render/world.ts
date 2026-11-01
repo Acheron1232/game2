@@ -28,13 +28,19 @@ import { attachHeroEffects, type HeroEffects } from './hero-effects';
 import { ModelLibrary, type ModelInstance } from './model-library';
 import { UnitGroundMarks, groundMarkRadius } from './unit-ground-marks';
 import { RtsCamera, TILT } from './rts-camera';
-import { TEAM_COLORS } from './team-material';
+import { HIT_FLASH, TEAM_COLORS } from './team-material';
 import { createDecor, type DecorItem } from './decor';
 import { scatterInstances } from './instancing';
 import { FogOfWar } from './fog';
 import { CombatFx } from './combat-fx';
 import { GroundItemViews } from './ground-items';
-import { createTerrain, type Terrain } from './terrain';
+import { APRON, createTerrain, type Terrain } from './terrain';
+import { createWater } from './water';
+import { Ambience } from './ambience';
+import { DecorLights } from './decor-lights';
+import { SHADOW_SHAPES, StaticShadows, type ShadowShape } from './static-shadows';
+import { TreeMotion, type TreeSlot } from './tree-motion';
+import { WindPlugin } from './wind';
 
 export type TreeList = [number, number, number, number][];
 const TREE_MODELS = ['tree_pine', 'tree_oak', 'tree_dead', 'bush'];
@@ -85,22 +91,71 @@ export interface Unit {
   visualVisible: boolean;
   animationStarted: number;
   animationSpeed: number;
+  /** last hit flash (ms) */
+  flashAt: number;
 }
-
-interface TreeSlot {
-  mesh: Mesh;
-  slot: number;
-  /** the mesh's thin-instance matrix buffer (Babylon writes into it) */
-  data: Float32Array;
-  /** the tree's own matrix, kept while it is hidden */
-  matrix?: Matrix;
-}
-
-/** A zero matrix: the copy has no size, so nothing is drawn. */
-const HIDDEN_MATRIX = Matrix.Zero();
 
 /** Flying units hover this high (Sky Dragon, harpies). */
 const FLY_HEIGHT = 2.6;
+/** A unit flinches from hits at most this often, so a long fight does not freeze it in place. */
+const FLINCH_GAP_MS = 1600;
+/** A hit flash: up at once, gone after this long. Hits closer than FLASH_GAP_MS do not restart it. */
+const FLASH_MS = 150;
+const FLASH_GAP_MS = 70;
+/** Dead units and fallen buildings sink into the ground before they are removed. */
+const SINK_UNIT_MS = 1500;
+const SINK_BUILDING_MS = 2400;
+/** Trees and bushes: how far their tops sway (game units at the top of the model). */
+const TREE_SWAY = 0.13;
+const BUSH_SWAY = 0.07;
+
+interface Sinking {
+  u: Unit;
+  start: number;
+  ms: number;
+  from: number;
+  depth: number;
+}
+
+/**
+ * Each tree its own shade, so a forest is not one green carpet: lighter and darker, yellower and
+ * bluer, and a few oaks in autumn colors. Stable per position (the same on every load).
+ */
+function treeTint(model: string, x: number, y: number, out: Float32Array, at: number): void {
+  const h1 = fract(Math.sin(x * 12.9898 + y * 78.233) * 43758.5453),
+    h2 = fract(Math.sin(x * 39.346 + y * 11.135) * 24634.6345),
+    h3 = fract(Math.sin(x * 73.156 + y * 52.235) * 13758.9373);
+  let r: number, g: number, b: number;
+  if (model === 'tree_dead') {
+    const v = 0.85 + 0.3 * h1;
+    r = g = b = v;
+  } else {
+    const v = (model === 'tree_pine' ? 0.8 : 0.84) + 0.3 * h1;
+    // warm (yellow-green) <-> cool (blue-green)
+    const w = h2;
+    r = v * (0.9 + 0.2 * w);
+    g = v * (1.0 + 0.04 * w);
+    b = v * (1.04 - 0.24 * w);
+    if (model === 'tree_oak' && h3 > 0.9) {
+      // autumn oaks: gold or red-orange
+      const red = h3 > 0.96;
+      r = v * (red ? 1.45 : 1.35);
+      g = v * (red ? 0.62 : 0.95);
+      b = v * 0.42;
+    }
+  }
+  out[at] = r;
+  out[at + 1] = g;
+  out[at + 2] = b;
+  out[at + 3] = 1;
+}
+
+const fract = (v: number) => v - Math.floor(v);
+
+/** A shadow shape for a copy drawn `s` times its model size. */
+function scaled(shape: ShadowShape, s: number): ShadowShape {
+  return { ...shape, height: shape.height * s, crown: shape.crown * s, trunk: shape.trunk * s };
+}
 
 export class GameWorld {
   readonly scene: Scene;
@@ -111,8 +166,22 @@ export class GameWorld {
   selected: Unit | null = null;
   /** Called every frame before units are drawn, with the frame time in seconds. */
   beforeFrame: ((dt: number) => void) | null = null;
+  /** unit -> time it may flinch again */
+  private readonly flinchReady = new WeakMap<Unit, number>();
   /** items lying on the ground */
   readonly items: GroundItemViews;
+  /** pollen, fireflies and falling leaves around the view */
+  ambience: Ambience | null = null;
+  /** ground light, flames and sparkles of campfires, lanterns, crystals and rune stones */
+  decorLights: DecorLights | null = null;
+  /** baked shadows of trees and map decor */
+  staticShadows: StaticShadows | null = null;
+  /** shaking and falling trees */
+  readonly treeMotion: TreeMotion;
+  /** map trees whose baked shadow was taken off (they fell) */
+  private readonly shadowGone = new Set<number>();
+  private readonly flashing = new Set<Unit>();
+  private readonly sinking: Sinking[] = [];
   private shadows: ShadowGenerator;
   private ring: Mesh;
   private groundMarks: UnitGroundMarks;
@@ -153,6 +222,18 @@ export class GameWorld {
     this.groundMarks = new UnitGroundMarks(scene);
     this.nav = nav;
     this.items = new GroundItemViews(scene, library, terrain.heightAt);
+    this.treeMotion = new TreeMotion(treeSlots, (id) => {
+      const t = trees[id];
+      return t ? [t[0], t[1]] : undefined;
+    });
+    this.treeMotion.onLanded = (id) => {
+      const t = trees[id];
+      if (!t) return;
+      this.eraseTreeShadow(id);
+      // Dust where the crown hits the ground (about the tree's height away, along its fall).
+      const h = this.terrain.heightAt(t[0], t[1]);
+      this.combat.buildDust(t[0], h, -t[1], 1.2 * t[3]);
+    };
   }
 
   static async create(
@@ -206,7 +287,10 @@ export class GameWorld {
     shadows.darkness = 0.35;
 
     const layout = gameData.map;
-    const terrain = await createTerrain(scene, grid, layout, assets);
+    const mapSize = grid.cols * grid.cellSize;
+    const staticShadows = new StaticShadows(scene, -APRON, mapSize + 2 * APRON, sun.direction);
+    const terrain = await createTerrain(scene, grid, layout, assets, staticShadows);
+    createWater(scene, layout, terrain.heightAt);
     const library = new ModelLibrary(scene, assets);
     await library.loadAll();
     // Army units: baked vertex animation + instancing (`?skinned` in dev keeps skeletons, for A/B).
@@ -241,7 +325,15 @@ export class GameWorld {
       const q = new Quaternion();
       const sc = new Vector3();
       const pos = new Vector3();
+      // Own material per tree type: the wind must not move rocks and crates (same palette).
+      const height = library.models[id]?.height ?? 4;
+      const windy = library.ownMaterials(id).palette;
+      const sway = id === 'bush' ? BUSH_SWAY : TREE_SWAY;
+      new WindPlugin(windy, sway / (height * height), sway);
+      const shape = SHADOW_SHAPES[id];
+      if (shape) for (const [x, y, , s] of list) staticShadows.stamp(x, y, scaled(shape, s));
       for (const mesh of library.staticMeshes(id)) {
+        if (!mesh.name.includes('|glow')) mesh.material = windy;
         scatterInstances(
           mesh,
           list.length,
@@ -258,12 +350,18 @@ export class GameWorld {
             const at = mapIndex[k]![i];
             if (at !== undefined) treeSlots[at]!.push({ mesh: m, slot, data });
           },
+          (i, out, at) => treeTint(id, list[i]![0], list[i]![1], out, at),
         );
       }
     });
 
     // ---- decor: rocks, stumps, ruins, fences, crates, grass and flowers
     await createDecor(scene, decor.decor, decor.types, terrain.heightAt, library, assets);
+    for (const [x, y, t, s] of decor.decor) {
+      const shape = SHADOW_SHAPES[decor.types[t] ?? ''];
+      if (shape) staticShadows.stamp(x, y, scaled(shape, s));
+    }
+    const decorLights = new DecorLights(scene, decor.decor, decor.types, terrain.heightAt);
 
     // ---- buildings and neutral places
     const center = size / 2;
@@ -301,36 +399,57 @@ export class GameWorld {
     const camera = new RtsCamera(scene, canvas, terrain.heightAt, size);
     const world = new GameWorld(engine, terrain, library, grid, scene, camera, shadows, ring, nav, trees, treeSlots, menuBase, fog, combat);
     world.setupColorGrading();
+    world.ambience = new Ambience(scene);
+    world.decorLights = decorLights;
+    world.staticShadows = staticShadows;
     scene.onBeforeRenderObservable.add(() => world.tick(engine.getDeltaTime() / 1000));
     world.setMenuMode(true);
     return world;
   }
 
-  /** Hides chopped trees (map tree indices). Safe to call again for the same tree. */
+  /** Hides chopped trees at once (map tree indices; a rejoin). Safe to call again for the same tree. */
   hideTrees(ids: readonly number[]): void {
-    const dirty = new Set<Mesh>();
-    for (const id of ids) {
-      for (const s of this.treeSlots[id] ?? []) {
-        if (s.matrix) continue;
-        s.matrix = Matrix.FromArray(s.data, s.slot * 16);
-        s.mesh.thinInstanceSetMatrixAt(s.slot, HIDDEN_MATRIX, false);
-        dirty.add(s.mesh);
-      }
-    }
-    for (const m of dirty) m.thinInstanceBufferUpdated('matrix');
+    this.treeMotion.hide(ids);
+    for (const id of ids) this.eraseTreeShadow(id);
+  }
+
+  /** A tree was cut or broken: it falls away from (fromX, fromY), then sinks and is gone. */
+  fellTree(id: number, fromX: number, fromY: number): void {
+    this.treeMotion.fall(id, fromX, fromY);
+  }
+
+  /** A cut tree grew back: it rises out of the ground and casts its shadow again. */
+  growTree(id: number): void {
+    this.treeMotion.grow(id);
+    if (!this.shadowGone.delete(id)) return;
+    const t = this.trees[id];
+    const shape = t && SHADOW_SHAPES[TREE_MODELS[t[2]] ?? ''];
+    if (t && shape) this.staticShadows?.stamp(t[0], t[1], scaled(shape, t[3]));
+  }
+
+  /** An axe or a blow hits a tree: it shakes. */
+  shakeTree(id: number, fromX: number, fromY: number): void {
+    this.treeMotion.shake(id, fromX, fromY);
   }
 
   /** Back to the full forest (the match is over). */
   showAllTrees(): void {
-    const dirty = new Set<Mesh>();
-    for (const slots of this.treeSlots)
-      for (const s of slots) {
-        if (!s.matrix) continue;
-        s.mesh.thinInstanceSetMatrixAt(s.slot, s.matrix, false);
-        s.matrix = undefined;
-        dirty.add(s.mesh);
-      }
-    for (const m of dirty) m.thinInstanceBufferUpdated('matrix');
+    this.treeMotion.showAll();
+    for (const id of this.shadowGone) {
+      const t = this.trees[id];
+      const shape = t && SHADOW_SHAPES[TREE_MODELS[t[2]] ?? ''];
+      if (t && shape) this.staticShadows?.stamp(t[0], t[1], scaled(shape, t[3]));
+    }
+    this.shadowGone.clear();
+  }
+
+  private eraseTreeShadow(id: number): void {
+    if (this.shadowGone.has(id)) return;
+    const t = this.trees[id];
+    const shape = t && SHADOW_SHAPES[TREE_MODELS[t[2]] ?? ''];
+    if (!t || !shape) return;
+    this.shadowGone.add(id);
+    this.staticShadows?.stamp(t[0], t[1], scaled(shape, t[3]), -1);
   }
 
   /** In a match the server sends Town Halls and gold mines: hide the menu copies. */
@@ -390,6 +509,7 @@ export class GameWorld {
       visualVisible: true,
       animationStarted: performance.now(),
       animationSpeed: 1,
+      flashAt: 0,
     };
     this.play(unit, 'idle');
     this.units.add(unit);
@@ -398,14 +518,62 @@ export class GameWorld {
     return unit;
   }
 
-  removeUnit(u: Unit): void {
+  /** Takes a unit off the map. `sink`: a dead unit or a fallen building goes down into the ground first. */
+  removeUnit(u: Unit, sink = false): void {
     if (!this.units.delete(u)) return;
     this.shadowPoses.delete(u);
     this.shadowDirty = true;
     if (this.selected === u) this.select(null);
+    this.flashing.delete(u);
+    if (sink && u.model.root.isEnabled() && u.visualVisible) {
+      const from = u.model.root.position.y;
+      const depth = u.building ? u.height * 0.9 : Math.max(0.8, u.height * 0.6);
+      this.sinking.push({ u, start: performance.now(), ms: u.building ? SINK_BUILDING_MS : SINK_UNIT_MS, from, depth });
+      return;
+    }
+    this.disposeUnit(u);
+  }
+
+  private disposeUnit(u: Unit): void {
     for (const mesh of u.model.meshes) this.shadows.removeShadowCaster(mesh, false);
     u.effects?.dispose();
     u.model.dispose();
+  }
+
+  /** The unit was hit: it lights up for a moment. Army units per copy, heroes by their own material. */
+  hitFlash(u: Unit): void {
+    if (u.building || u.dead || !u.visualVisible) return;
+    const now = performance.now();
+    if (now - u.flashAt < FLASH_GAP_MS) return;
+    if (!u.model.baked && !u.effects) return; // a skinned non-hero shares its material: no flash
+    u.flashAt = now;
+    this.flashing.add(u);
+  }
+
+  private updateFlashes(now: number): void {
+    for (const u of this.flashing) {
+      const t = (now - u.flashAt) / FLASH_MS;
+      const amount = t >= 1 ? 0 : (1 - t) * (1 - t);
+      if (u.model.baked) for (const m of u.model.meshes) m.instancedBuffers[HIT_FLASH] = amount;
+      else u.model.materials.setFlash(amount);
+      if (t >= 1) this.flashing.delete(u);
+    }
+  }
+
+  private updateSinking(now: number): void {
+    for (let i = this.sinking.length - 1; i >= 0; i--) {
+      const s = this.sinking[i]!;
+      const t = (now - s.start) / s.ms;
+      if (t >= 1) {
+        this.disposeUnit(s.u);
+        this.sinking.splice(i, 1);
+        continue;
+      }
+      // Rests a moment, then slides down, faster at the end.
+      const k = Math.max(0, (t - 0.25) / 0.75);
+      s.u.model.root.position.y = s.from - s.depth * k * k;
+      if (s.u.building) this.shadowDirty = true;
+    }
   }
 
   /** Shows the selection ring under a unit (in its team color), or hides it. */
@@ -436,6 +604,7 @@ export class GameWorld {
   /** Menu: slow circle over the temple. Game: RTS camera over the hero. */
   setMenuMode(on: boolean): void {
     this.menuMode = on;
+    this.ambience?.setEnabled(!on);
     this.fog.setEnabled(!on);
     this.camera.enabled = !on;
     if (!on && this.selected) this.camera.lookAt(this.selected.x, this.selected.y);
@@ -556,6 +725,14 @@ export class GameWorld {
     const speed = seconds && length > seconds ? length / seconds : 1;
     this.play(u, name, false, speed);
     u.actionUntil = performance.now() + (length / speed) * 1000;
+  }
+
+  /** A short recoil from a strong hit, for a unit that stands still and is not busy. */
+  flinch(u: Unit): void {
+    const now = performance.now();
+    if (u.dead || u.moving || now < u.actionUntil || now < (this.flinchReady.get(u) ?? 0)) return;
+    this.flinchReady.set(u, now + FLINCH_GAP_MS);
+    this.playOnce(u, 'hit');
   }
 
   /** Death: play the clip once and stay down. Heroes are hidden until they come back. */
@@ -727,12 +904,18 @@ export class GameWorld {
       ? this.grid.cols * this.grid.cellSize + 80
       : Math.max(80, this.camera.camera.radius * this.engine.getAspectRatio(this.camera.camera) * 2);
     this.updateView();
+    this.ambience?.follow(target.x, target.y, target.z);
+    this.decorLights?.update(target.x, -target.z, !this.menuMode);
     this.beforeFrame?.(dt);
     this.fog.update(dt);
     this.combat.update(dt);
     this.items.update();
     const now = performance.now();
     this.library.setBakedTime(bakedClock(now));
+    this.treeMotion.update(now);
+    this.staticShadows?.flush();
+    if (this.flashing.size) this.updateFlashes(now);
+    if (this.sinking.length) this.updateSinking(now);
     this.renderStats.total = this.units.size;
     this.renderStats.visible = 0;
     for (const u of this.units) {

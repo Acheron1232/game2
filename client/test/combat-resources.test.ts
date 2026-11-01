@@ -8,6 +8,8 @@ import { HealthBars } from '../src/render/health-bars';
 import { effectsAtlas } from '../src/render/hero-effects';
 import type * as HeroEffectsModule from '../src/render/hero-effects';
 import { Projectiles } from '../src/render/projectiles';
+import { fxTexture } from '../src/render/fx-textures';
+import { StatusFx } from '../src/render/status-fx';
 
 vi.mock('../src/render/hero-effects', async (original) => {
   const real = await original<typeof HeroEffectsModule>();
@@ -19,6 +21,23 @@ vi.mock('../src/render/hero-effects', async (original) => {
       if (!texture) {
         texture = RawTexture.CreateRGBATexture(new Uint8Array([255, 255, 255, 255]), 1, 1, scene);
         textures.set(scene, texture);
+      }
+      return texture;
+    },
+  };
+});
+
+// Node has no canvas to draw the effect textures: a 1x1 white texture per scene and shape.
+vi.mock('../src/render/fx-textures', () => {
+  const textures = new WeakMap<Scene, Map<string, RawTexture>>();
+  return {
+    fxTexture: (scene: Scene, shape: string) => {
+      let byShape = textures.get(scene);
+      if (!byShape) textures.set(scene, (byShape = new Map()));
+      let texture = byShape.get(shape);
+      if (!texture) {
+        texture = RawTexture.CreateRGBATexture(new Uint8Array([255, 255, 255, 255]), 1, 1, scene);
+        byShape.set(shape, texture);
       }
       return texture;
     },
@@ -70,6 +89,8 @@ describe('combat render resources', () => {
     const engine = new NullEngine();
     const scene = new Scene(engine);
     const atlas = effectsAtlas(scene);
+    // Effect textures are drawn once per scene and kept (like the atlas).
+    for (const shape of ['glow', 'ring', 'rune', 'stars', 'eye', 'alert', 'spark', 'thorns'] as const) fxTexture(scene, shape);
     // Babylon creates its scene-owned fallback material on the first clone.
     void scene.defaultMaterial;
     const baseline = [scene.meshes.length, scene.materials.length, scene.particleSystems.length, scene.textures.length];
@@ -82,7 +103,12 @@ describe('combat render resources', () => {
         fx.disc(20, 0, -20, 3, '#ff0000', 5, 1);
         fx.cone(20, 0, -20, 8, 60, 0, '#ff0000');
         fx.bolt(20, 20, 2, 30, 20, 20, '#ff0000');
-        fx.setMarkers(1, BuffFlag.Stun | BuffFlag.Root, 20, 0, 3, -20, 1);
+        const status = new StatusFx(scene);
+        status.begin();
+        status.setMarkers(1, BuffFlag.Stun | BuffFlag.Root | BuffFlag.Shield, 20, 0, 3, -20, 1);
+        status.setHero(2, 'blood_witch', [1, 1, 1, 0], [21, 0, 0, 0, 0, 0], '#ff0000', 20, 0, 3, -20);
+        status.end();
+        status.dispose();
         fx.burst(20, 2, -20, 'fire', '#ff0000', '#ff8800');
         bars.update([{ x: 20, y: 3, z: -20, hp: 0.5, mana: 1, hero: true, color: '#00ff00' }], 1);
         projectiles.fire(

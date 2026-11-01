@@ -33,12 +33,53 @@ export const TEAM_COLORS: Record<string, string> = {
 /** How bright the team color is painted over the grey team parts. */
 const TEAM_STRENGTH = 1.75;
 
+/**
+ * Rim light: a warm light on the model's outline, stronger on edges that face up. It separates
+ * heroes and units from the ground the way classic hero games do, without more triangles.
+ * Added before the fog of war (fog.ts, priority 300), so it fades in the fog too.
+ */
+const RIM_GLSL = `
+float rimNV = clamp(1.0 - max(dot(normalW, viewDirectionW), 0.0), 0.0, 1.0);
+float rimLight = rimNV * rimNV * rimNV * (0.45 + 0.55 * clamp(normalW.y * 0.5 + 0.5, 0.0, 1.0));
+color.rgb += rimLight * vec3(0.62, 0.56, 0.46) * 0.55;
+`;
+const RIM_WGSL = `
+let rimNV = clamp(1.0 - max(dot(normalW, viewDirectionW), 0.0), 0.0, 1.0);
+let rimLight = rimNV * rimNV * rimNV * (0.45 + 0.55 * clamp(normalW.y * 0.5 + 0.5, 0.0, 1.0));
+color = vec4f(color.rgb + rimLight * vec3f(0.62, 0.56, 0.46) * 0.55, color.a);
+`;
+
+/**
+ * Hit flash: a struck model lights up warm white for a moment. Army units (instanced) carry the
+ * amount per copy in the instanced buffer HIT_FLASH; a hero has its own material, so its amount
+ * is the material uniform `teamFlash`. Before the fog of war too: nothing flashes in the dark.
+ */
+export const HIT_FLASH = 'hitFlash';
+const FLASH_COLOR = '1.0, 0.94, 0.84';
+const FLASH_STRENGTH = 0.62;
+const FLASH_GLSL = `
+float hitFlashAmount = teamFlash;
+#ifdef HITFLASH
+hitFlashAmount = max(hitFlashAmount, vHitFlash);
+#endif
+color.rgb = mix(color.rgb, vec3(${FLASH_COLOR}), hitFlashAmount * ${FLASH_STRENGTH});
+`;
+const FLASH_WGSL = `
+var hitFlashAmount: f32 = uniforms.teamFlash;
+#ifdef HITFLASH
+hitFlashAmount = max(hitFlashAmount, fragmentInputs.vHitFlash);
+#endif
+color = vec4f(mix(color.rgb, vec3f(${FLASH_COLOR}), hitFlashAmount * ${FLASH_STRENGTH}), color.a);
+`;
+
 export class TeamColorPlugin extends MaterialPluginBase {
   color = new Color3(1, 1, 1);
   mask: BaseTexture | null = null;
+  /** hit flash of the whole material, 0..1 (heroes: one material each) */
+  flash = 0;
 
   constructor(material: StandardMaterial) {
-    super(material, 'TeamColor', 200, { TEAMCOLOR: false });
+    super(material, 'TeamColor', 200, { TEAMCOLOR: false, HITFLASH: false });
     this._enable(true);
   }
 
@@ -50,8 +91,13 @@ export class TeamColorPlugin extends MaterialPluginBase {
     return shaderLanguage === GLSL || shaderLanguage === WGSL;
   }
 
-  override prepareDefines(defines: Record<string, unknown>): void {
+  override prepareDefines(defines: Record<string, unknown>, _scene: Scene, mesh: AbstractMesh): void {
     defines['TEAMCOLOR'] = !!this.mask;
+    defines['HITFLASH'] = hasHitFlash(mesh);
+  }
+
+  override getAttributes(attributes: string[], _scene: Scene, mesh: AbstractMesh): void {
+    if (hasHitFlash(mesh)) attributes.push(HIT_FLASH);
   }
 
   override getSamplers(samplers: string[]): void {
@@ -60,43 +106,68 @@ export class TeamColorPlugin extends MaterialPluginBase {
 
   override getUniforms(shaderLanguage?: number) {
     return {
-      ubo: [{ name: 'teamColor', size: 3, type: 'vec3' }],
-      fragment: shaderLanguage === WGSL ? '' : '#ifdef TEAMCOLOR\nuniform vec3 teamColor;\n#endif',
+      ubo: [
+        { name: 'teamColor', size: 3, type: 'vec3' },
+        { name: 'teamFlash', size: 1, type: 'float' },
+      ],
+      fragment: shaderLanguage === WGSL ? '' : '#ifdef TEAMCOLOR\nuniform vec3 teamColor;\n#endif\nuniform float teamFlash;',
     };
   }
 
   override bindForSubMesh(uniformBuffer: UniformBuffer, _scene: Scene, _engine: AbstractEngine, _subMesh: SubMesh): void {
+    uniformBuffer.updateFloat('teamFlash', this.flash);
     if (!this.mask) return;
     uniformBuffer.updateColor3('teamColor', this.color);
     uniformBuffer.setTexture('teamMaskSampler', this.mask);
   }
 
   override getCustomCode(shaderType: string, shaderLanguage?: number): Record<string, string> | null {
+    if (shaderType === 'vertex') {
+      if (shaderLanguage === WGSL)
+        return {
+          CUSTOM_VERTEX_DEFINITIONS: '#ifdef HITFLASH\nattribute hitFlash: f32;\nvarying vHitFlash: f32;\n#endif',
+          CUSTOM_VERTEX_MAIN_END: '#ifdef HITFLASH\nvertexOutputs.vHitFlash = vertexInputs.hitFlash;\n#endif',
+        };
+      return {
+        CUSTOM_VERTEX_DEFINITIONS: '#ifdef HITFLASH\nattribute float hitFlash;\nvarying float vHitFlash;\n#endif',
+        CUSTOM_VERTEX_MAIN_END: '#ifdef HITFLASH\nvHitFlash = hitFlash;\n#endif',
+      };
+    }
     if (shaderType !== 'fragment') return null;
     if (shaderLanguage === WGSL) {
       return {
         CUSTOM_FRAGMENT_DEFINITIONS:
-          '#ifdef TEAMCOLOR\nvar teamMaskSamplerSampler: sampler;\nvar teamMaskSampler: texture_2d<f32>;\n#endif',
+          '#ifdef TEAMCOLOR\nvar teamMaskSamplerSampler: sampler;\nvar teamMaskSampler: texture_2d<f32>;\n#endif\n#ifdef HITFLASH\nvarying vHitFlash: f32;\n#endif',
         CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `#if defined(TEAMCOLOR) && defined(DIFFUSE)
 let teamMask: f32 = textureSample(teamMaskSampler, teamMaskSamplerSampler, fragmentInputs.vDiffuseUV).r;
 baseColor = vec4f(mix(baseColor.rgb, baseColor.rgb * uniforms.teamColor * ${TEAM_STRENGTH}, teamMask), baseColor.a);
 #endif`,
+        CUSTOM_FRAGMENT_BEFORE_FOG: RIM_WGSL + FLASH_WGSL,
       };
     }
     return {
-      CUSTOM_FRAGMENT_DEFINITIONS: '#ifdef TEAMCOLOR\nuniform sampler2D teamMaskSampler;\n#endif',
+      CUSTOM_FRAGMENT_DEFINITIONS:
+        '#ifdef TEAMCOLOR\nuniform sampler2D teamMaskSampler;\n#endif\n#ifdef HITFLASH\nvarying float vHitFlash;\n#endif',
       CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `#if defined(TEAMCOLOR) && defined(DIFFUSE)
 float teamMask = texture2D(teamMaskSampler, vDiffuseUV).r;
 baseColor.rgb = mix(baseColor.rgb, baseColor.rgb * teamColor * ${TEAM_STRENGTH}, teamMask);
 #endif`,
+      CUSTOM_FRAGMENT_BEFORE_FOG: RIM_GLSL + FLASH_GLSL,
     };
   }
+}
+
+/** The mesh (or the source of instanced copies) carries a per-copy hit flash. */
+function hasHitFlash(mesh: AbstractMesh): boolean {
+  return !!mesh.instancedBuffers && HIT_FLASH in mesh.instancedBuffers;
 }
 
 export interface ModelMaterials {
   palette: StandardMaterial;
   glow: StandardMaterial;
   setTeam(color: string): void;
+  /** hit flash of everything drawn with this material (0..1) */
+  setFlash(amount: number): void;
 }
 
 /** Texture + team mask for a model: its own skin atlas when it has one, else the shared palette. */
@@ -157,6 +228,9 @@ export function createModelMaterials(scene: Scene, palette: Texture, teamMask: T
     glow,
     setTeam(color) {
       plugin.color = Color3.FromHexString(TEAM_COLORS[color] ?? color);
+    },
+    setFlash(amount) {
+      plugin.flash = amount;
     },
   };
 }

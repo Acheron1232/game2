@@ -25,7 +25,7 @@ Besides the player's hero, every faction gets **one hero of its own**, played by
 
 ## Economy
 
-- Workers mine gold at the gold mine next to the Town Hall (10 gold per trip, max 5 workers in a mine at once) and chop trees (10 wood per trip).
+- Workers mine gold at the gold mine next to the Town Hall (10 gold per trip, max 5 workers in a mine at once) and chop trees (10 wood per trip). A cut tree, and a tree broken by a big spell (abilities.json `breaksTrees`: Sweep, Sky Pillar, Fire Breath, Wing Gust, Inferno Dive, Tremor, Trample and the expansion heroes' versions), grows back after `economy.treeRegrowSec` (240 s), when no unit stands in its place and no building covers it.
 - Workers bring resources to the nearest Town Hall / Stronghold / Citadel.
 - Supply: each Town Hall gives 12, each House gives 8. There is **no real army limit**. Instead a big army costs **upkeep** (rules.json `economy.upkeep`): the more supply a kingdom uses (workers too), the less gold every mining trip brings. Wood is not touched.
 

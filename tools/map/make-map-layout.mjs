@@ -26,24 +26,18 @@ const SECTOR = {
   mines: [
     { kind: 'main', pos: [-28, 87], gold: 20000 },
     { kind: 'natural', pos: [40, 86], gold: 14000, townHallSpot: [37, 78] },
-    { kind: 'corner', pos: [89, 89], gold: 16000, townHallSpot: [82, 82] },
+    // The rich third mine sits off the natural-to-corner road, guarded by ogres as before; the
+    // corner itself belongs to the mega camp (its own prize, not a gate to the economy).
+    { kind: 'corner', pos: [62, 88], gold: 16000, townHallSpot: [63, 82] },
   ],
   openAreas: [
     { tag: 'base', center: [-18, 76], radius: 15, ground: 'grass' },
     { tag: 'natural', center: [38, 79], radius: 11, ground: 'grass' },
-    { tag: 'corner', center: [81, 81], radius: 10, ground: 'grass' },
+    { tag: 'corner', center: [63, 84], radius: 10, ground: 'grass' },
     { tag: 'shop', center: [-40, 62], radius: 6, ground: 'dirt' },
-    { tag: 'camp', center: [-46, 78], radius: 5, ground: 'grass' },
-    { tag: 'camp', center: [10, 64], radius: 5, ground: 'grass' },
-    { tag: 'camp', center: [-26, 52], radius: 6, ground: 'rough_dirt' },
-    // Where the old lake was: a wide grass hollow on the trail, home of the spider brood.
-    { tag: 'glade', center: [-60, 64], radius: 10, ground: 'grass' },
-    // Clearings cut into the forest pockets for the extra leveling camps.
-    { tag: 'camp', center: [23, 67], radius: 6, ground: 'grass' },
-    { tag: 'camp', center: [-51, 41], radius: 6, ground: 'rough_dirt' },
-    { tag: 'camp', center: [-62, 82], radius: 6, ground: 'grass' },
+    // Camp clearings are not listed here: each camp gets its own shaped pocket (campLobes below).
     // Battle field: the open meadow between the base and the temple ring, where armies meet.
-    { tag: 'field', center: [6, 60], radius: 11, ground: 'grass' },
+    { tag: 'field', center: [3, 58], radius: 9, ground: 'grass' },
     // Wide dirt spots where roads meet the ring, like the open junctions on classic maps.
     { tag: 'junction', center: [-5, 49], radius: 7, ground: 'dirt' },
     { tag: 'junction', center: [27, 46], radius: 6, ground: 'dirt' },
@@ -152,10 +146,19 @@ const SECTOR = {
   ramps: [{ tag: 'temple_ramp', from: [0, 45], to: [0, 34], width: 10 }],
   camps: [
     { type: 'green_wolves', pos: [-46, 78] },
-    { type: 'green_bandits', pos: [10, 64] },
+    // Off the field's north edge, in a roadside pocket (it stood in the middle of the meadow).
+    { type: 'green_bandits', pos: [13, 69] },
     { type: 'orange_harpies', pos: [-26, 52] },
     { type: 'orange_trolls', pos: [38, 78], guards: 'natural' },
-    { type: 'red_ogres', pos: [82, 82], guards: 'corner' },
+    { type: 'red_ogres', pos: [63, 82], guards: 'corner' },
+    // Mega camps in the corners, two kinds on the two diagonals (NE + SW: the horde, a crowd of
+    // strong and weak monsters; SE + NW: the boss, an Elder Colossus with two drakes). Each corner
+    // lies between two neighbor bases, so every base has one of each kind next door.
+    {
+      type: 'mega',
+      pos: [85, 85],
+      bySector: { north: 'horde_warband', south: 'horde_warband', east: 'boss_colossus', west: 'boss_colossus' },
+    },
     { type: 'red_sentinels', pos: [11, 25] },
     { type: 'green_spiders', pos: [23, 67] },
     { type: 'orange_wolf_pack', pos: [-51, 41] },
@@ -202,6 +205,59 @@ const CENTER = {
 
 const SECTORS = ['north', 'east', 'south', 'west'];
 
+/**
+ * Camp clearings shaped to the encounter instead of round lawns (2026-11-01, user: "the camps
+ * are too big and all round"). Main radius by tier (sector units, x S in the game): about 12
+ * units across for a green camp, 15 orange, 18 red, 26 for a corner mega camp, a bit longer
+ * toward the road it opens on. Lobes: the fighting floor, an entrance toward the nearest road, a
+ * back pocket for the den props and a side bulge, so no two camps have the same outline.
+ */
+const CAMP_R = { green: 3.6, orange: 4.4, red: 5.6, mega: 8.5 };
+
+function nearestRoadPoint([x, y]) {
+  let best = null,
+    bestD = Infinity;
+  for (const rd of SECTOR.roads)
+    for (let i = 0; i + 1 < rd.points.length; i++) {
+      const [ax, ay] = rd.points[i],
+        [bx, by] = rd.points[i + 1];
+      const vx = bx - ax,
+        vy = by - ay;
+      const t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy || 1)));
+      const px = ax + vx * t,
+        py = ay + vy * t;
+      const d = Math.hypot(px - x, py - y);
+      if (d < bestD) [best, bestD] = [[px, py], d];
+    }
+  return bestD < 30 ? best : null;
+}
+
+function campLobes(pos, tier, seed) {
+  const r = CAMP_R[tier];
+  // Opens toward the nearest road; with none near, toward the map center.
+  let road = nearestRoadPoint(pos) ?? [0, 0];
+  // A road right through the camp gives no direction: open toward the map center then.
+  if (Math.hypot(road[0] - pos[0], road[1] - pos[1]) < 1) road = [0, 0];
+  let dx = road[0] - pos[0],
+    dy = road[1] - pos[1];
+  const len = Math.hypot(dx, dy) || 1;
+  dx /= len;
+  dy /= len;
+  const side = seed % 2 ? 1 : -1;
+  const sx = -dy * side,
+    sy = dx * side;
+  const at = (f, g) => [pos[0] + dx * r * f + sx * r * g, pos[1] + dy * r * f + sy * r * g];
+  return {
+    entrance: at(1.3, 0),
+    lobes: [
+      [...pos, r],
+      [...at(0.8, 0.15), r * 0.68],
+      [...at(-0.55, 0.38), r * 0.6],
+      [...at(-0.05, -0.62), r * 0.48],
+    ],
+  };
+}
+
 function octagon(h, cut) {
   return [
     [-h + cut, h],
@@ -236,7 +292,7 @@ const layout = {
   note: 'Generated by tools/map/make-map-layout.mjs. Edit the script, not this file.',
   size: { width: SIZE, height: SIZE },
   coordinates: 'Game units (1 unit ~ 1 meter). Origin is the south-west corner. x goes east, y goes north.',
-  symmetry: `4-fold rotation around the center (${C}, ${C})`,
+  symmetry: `4-fold rotation around the center (${C}, ${C}); the corner mega camps alternate (2-fold)`,
   border: { width: 8, fill: 'mountains' },
   defaultTerrain: { ground: 'grass', fill: 'forest' },
   heightLevels: { water: -1, ground: 0, high: 1 },
@@ -287,6 +343,25 @@ SECTORS.forEach((sector, k) => {
     });
   }
   for (const a of SECTOR.openAreas) layout.openAreas.push({ ...a, sector, center: p(a.center), radius: r(a.radius) });
+  // Shaped camp pockets. Temple camps stand on the paved temple, which is open anyway.
+  SECTOR.camps.forEach((c, i) => {
+    if (Math.max(Math.abs(c.pos[0]), Math.abs(c.pos[1])) < 36) return;
+    const tier = c.type === 'mega' ? 'mega' : c.type.split('_')[0];
+    const { lobes, entrance } = campLobes(c.pos, tier, i);
+    // A pocket far from any road gets a short forest trail out to it, so it is never cut off.
+    const road = nearestRoadPoint(c.pos);
+    if (road && Math.hypot(road[0] - c.pos[0], road[1] - c.pos[1]) > CAMP_R[tier] * 1.3)
+      layout.roads.push({ tag: 'trail', sector, width: round(4 * ROAD_S), ground: 'rough_dirt', points: [p(c.pos), p(entrance), p(road)] });
+    layout.openAreas.push({
+      tag: 'camp',
+      sector,
+      center: p(c.pos),
+      radius: r(CAMP_R[tier]),
+      ground: tier === 'green' ? 'grass' : 'rough_dirt',
+      rough: 1.2,
+      lobes: lobes.map(([x, y, rr]) => [...p([x, y]), r(rr)]),
+    });
+  });
   for (const h of SECTOR.hills) layout.hills.push({ ...h, sector, center: p(h.center), radius: r(h.radius) });
   for (const rd of SECTOR.roads)
     layout.roads.push({
@@ -300,15 +375,19 @@ SECTORS.forEach((sector, k) => {
     layout.water.push({ ...w, sector, center: p(w.center), radii: w.radii.map(r), rotationDeg: (w.rotationDeg - 90 * k + 360) % 360 });
   for (const rp of SECTOR.ramps)
     layout.ramps.push({ ...rp, sector, from: p(rp.from), to: p(rp.to), width: r(rp.width), toLevel: 1, fromLevel: 0 });
-  SECTOR.camps.forEach((c) =>
+  SECTOR.camps.forEach((c) => {
+    const type = c.bySector?.[sector] ?? c.type;
+    const tier = c.type === 'mega' ? 'mega' : c.type.split('_')[0];
     layout.camps.push({
-      id: `${sector}_${c.type}`,
-      type: c.type,
+      id: `${sector}_${type}`,
+      type,
       sector,
       pos: p(c.pos),
+      // Where the camp opens toward the road (the den props go on the other side).
+      entrance: p(campLobes(c.pos, tier, SECTOR.camps.indexOf(c)).entrance),
       ...(c.guards && { guardsMine: `${sector}_${c.guards}` }),
-    }),
-  );
+    });
+  });
   for (const s of SECTOR.shops) layout.shops.push({ id: `${sector}_${s.type}`, type: s.type, sector, pos: p(s.pos) });
   for (const f of SECTOR.fountains)
     layout.fountains.push({ id: `${sector}_${f.type}`, type: f.type, sector, pos: p(f.pos), radius: f.radius });

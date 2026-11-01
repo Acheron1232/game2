@@ -44,6 +44,8 @@ export const EventType = {
   ItemUse: 20,
   /** a = hero, value = NoticeCode: a message only for the hero's player */
   Notice: 21,
+  /** a = tree index: a cut tree grew back (its walk cells close again) */
+  TreeBack: 22,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 

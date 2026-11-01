@@ -39,6 +39,7 @@ import {
   type SightSource,
   NavBlockers,
   removeTree,
+  restoreTree,
   type NetFactionState,
   type TreeIndex,
   DamageKind,
@@ -64,13 +65,14 @@ import {
 } from '@game/shared';
 import type { GameSocket } from '../net/socket';
 import { AbilityFx, HERO_FX } from '../render/ability-fx';
+import { StatusFx } from '../render/status-fx';
 import { HealthBars, type BarInput } from '../render/health-bars';
 import type { FogGrid } from '../render/fog';
 import type { GameSound } from '../audio/sound';
 import { Projectiles } from '../render/projectiles';
 import { TILT } from '../render/rts-camera';
 import { TEAM_COLORS } from '../render/team-material';
-import { TEAMS, type GameWorld } from '../render/world';
+import { TEAMS, type GameWorld, type Unit } from '../render/world';
 import type { FloatingText } from '../ui/floating-text';
 import { S } from '../ui/strings';
 import { HeroPredictor } from './hero-predictor';
@@ -126,6 +128,14 @@ export interface AbilityInfo {
 const OWN_BAR = '#3fd93a',
   NEUTRAL_BAR = '#f2cc26',
   ENEMY_BAR = '#e6261a';
+/** Heroes look this much bigger than their model (game sizes do not change). */
+const HERO_RENDER_SCALE = 1.12;
+/** How fast drawn units turn to their network facing (1/s): 90% of a turn in about 0.15 s. */
+const TURN_RATE = 15;
+const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+/** Order marks on the ground: green = move, red = attack-move. */
+const ORDER_MOVE_COLOR = '#7dff6a',
+  ORDER_ATTACK_COLOR = '#ff5a3a';
 
 /** After this long dead, hide a hero's body (its death clip is over). */
 const HIDE_DEAD_HERO_MS = 2500;
@@ -141,6 +151,7 @@ export class MatchClient {
   readonly player: NetPlayerState = blankPlayerState();
   /** last server tick we got */
   tick = 0;
+  private revealAll = false;
   snapshots = 0;
   /** true while the server drives the own hero (see the top of this file) */
   serverMode = false;
@@ -178,6 +189,8 @@ export class MatchClient {
   private readonly barInput: BarInput[] = [];
   private readonly projectiles: Projectiles;
   readonly fx: AbilityFx;
+  /** buff markers, aura circles and item glows */
+  readonly status: StatusFx;
   private readonly deadSince = new Map<number, number>();
   private readonly blinkOrigins = new Map<number, { x: number; y: number; valid: boolean }>();
   /** Unit skills on cooldown, from their cast events: entity id → tick each skill (units.json index) is ready. */
@@ -194,6 +207,8 @@ export class MatchClient {
   private readonly trees: TreeIndex;
   private readonly blocked = new Map<number, { x: number; y: number; w: number; h: number }>();
   private readonly cutTrees: number[] = [];
+  /** workers chopping a tree now: their axe swings and the tree shakes with each blow */
+  private readonly chopping = new Map<Unit, { tree: number; until: number; next: number; hitAt: number }>();
   /** workers inside a gold mine (not drawn) */
   private readonly inside = new Set<number>();
   /** Fog of war: the same line-of-sight code as the server, run on our own team's units. */
@@ -216,6 +231,7 @@ export class MatchClient {
     this.bars = new HealthBars(world.scene, TILT);
     this.projectiles = new Projectiles(world.scene);
     this.fx = new AbilityFx(world.scene);
+    this.status = new StatusFx(world.scene);
     this.walkAtStart = world.nav.walk.slice();
     this.blockers = new NavBlockers(world.nav);
     this.trees = buildTreeIndex(world.trees, world.grid);
@@ -262,9 +278,11 @@ export class MatchClient {
   // ---------- commands ----------
 
   /** Right click on the ground (shift = add to the path). */
-  moveTo(x: number, y: number, queue: boolean): void {
+  /** `mark`: show the green ring where the hero goes (not for the repeats while the button is held). */
+  moveTo(x: number, y: number, queue: boolean, mark = false): void {
     const [qx, qy] = quantizePoint(x, y);
     this.send({ type: CommandType.Move, x: qx, y: qy, queue });
+    if (mark) this.fx.orderMark(x, this.world.terrain.heightAt(x, y), -y, ORDER_MOVE_COLOR);
   }
 
   follow(target: NetEntity): void {
@@ -273,11 +291,14 @@ export class MatchClient {
 
   attack(target: NetEntity): void {
     this.send({ type: CommandType.Attack, target: target.id });
+    const u = target.unit;
+    if (u) this.fx.orderMark(u.x, this.world.terrain.heightAt(u.x, u.y), -u.y, ORDER_ATTACK_COLOR);
   }
 
   attackMove(x: number, y: number): void {
     const [qx, qy] = quantizePoint(x, y);
     this.send({ type: CommandType.AttackMove, x: qx, y: qy });
+    this.fx.orderMark(x, this.world.terrain.heightAt(x, y), -y, ORDER_ATTACK_COLOR);
   }
 
   stop(): void {
@@ -566,15 +587,25 @@ export class MatchClient {
       this.groundItems.delete(s.itemGone[i]!);
       this.world.items.remove(s.itemGone[i]!);
     }
+    // Items, skill levels and buffs of heroes in sight (only sent when they change).
+    for (let i = 0; i < s.heroCount; i++) this.entities.get(s.heroes[i]!.id)?.setHeroInfo(s.tick, s.heroes[i]!);
     for (let i = 0; i < s.eventCount; i++) {
       const ev = s.events[i]!;
       // Map changes count at once (prediction needs them now), not on the render timeline.
       if (ev.type === EventType.TreeGone) {
-        this.cutTree(ev.a);
+        this.cutTree(ev.a, ev.b, ev.value);
+        continue;
+      }
+      if (ev.type === EventType.TreeBack) {
+        this.regrowTree(ev.a);
         continue;
       }
       if (ev.type === EventType.MatchOver) {
         this.winnerTeam = ev.a;
+        // The winners' heroes cheer.
+        for (const e of this.entities.values())
+          if (e.unit && isHeroType(e.type) && !(e.state & UnitState.Dead) && this.teamOf(e) === ev.a)
+            this.world.playOnce(e.unit, 'victory');
         this.onMatchOver?.(ev.a);
         continue;
       }
@@ -673,7 +704,11 @@ export class MatchClient {
         this.onCast(ea, a, b, value, kind);
         break;
       case EventType.Chop:
-        if (ea?.unit) this.sound?.play('chop', 'sfx', ea.unit.x, ea.unit.y, 0.6);
+        // The worker swings its axe for the whole chop (the server only says when it starts).
+        if (ea?.unit) {
+          const now = performance.now();
+          this.chopping.set(ea.unit, { tree: b, until: now + gameData.rules.economy.chopTimeSec * 1000 - 300, next: now, hitAt: 0 });
+        }
         break;
       case EventType.AbilityEffect:
         this.onCast(ea, a, b, value, abilityFxIndex(kind) | (abilityFxPoint(kind) ? 128 : 0), true, abilityFxLevel(kind));
@@ -690,6 +725,7 @@ export class MatchClient {
         const r = lv(sp.params['radius'], level) || 1.2;
         this.fx.ring(x, h, -y, r, look.color, 0.6);
         this.fx.burst(x, h + 0.5, -y, look.frames, look.color, look.color2, 45, r * 0.5, 3);
+        this.world.camera.shake(Math.min(0.55, 0.15 + r * 0.07), x, y);
         if (abilityMechanic(sp) === 'inferno_dive') this.fx.disc(x, h, -y, r, look.color, lv(sp.params['burnDuration'], 1));
         break;
       }
@@ -718,6 +754,13 @@ export class MatchClient {
                   ? 'siege'
                   : 'attack';
           this.world.combat.hit(u.x, this.world.unitHeight(u) + u.height * 0.5, -u.y, hk);
+          if (kind !== DamageKind.Miss && kind !== DamageKind.Mana) this.world.hitFlash(u);
+          // The view shakes for siege blows and when the own hero takes a heavy one.
+          if (hk === 'siege') this.world.camera.shake(0.22, u.x, u.y);
+          else if (ea && ea.id === this.player.heroId && value >= ea.maxHp * 0.08) this.world.camera.shake(0.2, u.x, u.y);
+          // A strong blow (5% of health or more) makes the target recoil.
+          if (kind !== DamageKind.Miss && kind !== DamageKind.Mana && ea && !isBuildingType(ea.type) && value >= ea.maxHp * 0.05)
+            this.world.flinch(u);
         }
         this.playHitSound(ea, src, kind, u.x, u.y);
         if (!this.floating) break;
@@ -776,7 +819,9 @@ export class MatchClient {
         if (isBuildingType(ea.type)) {
           this.world.combat.buildingDown(u.x, h, -u.y, footprintOf(ea.type)[0]);
           this.sound?.play('building_fall', 'sfx', u.x, u.y);
+          this.world.camera.shake(Math.min(0.6, 0.2 + footprintOf(ea.type)[0] * 0.06), u.x, u.y);
         } else if (!u.flyHeight) this.world.combat.death(u.x, h, -u.y, Math.max(0.6, u.height * 0.5));
+        if (isHeroType(ea.type)) this.world.camera.shake(0.25, u.x, u.y);
         break;
       }
       case EventType.LevelUp: {
@@ -914,8 +959,10 @@ export class MatchClient {
 
   private show(e: NetEntity): void {
     const typeId = ENTITY_TYPES[e.type] ?? 'swordsman';
-    const [modelId, scale] = MODEL_ALIAS[typeId] ?? [typeId, 1];
+    const [modelId, aliasScale] = MODEL_ALIAS[typeId] ?? [typeId, 1];
     const hero = isHeroType(e.type);
+    // Heroes are drawn a bit bigger than soldiers, so a player finds them in a fight (looks only).
+    const scale = aliasScale * (hero ? HERO_RENDER_SCALE : 1);
     const building = isBuildingType(e.type);
     const k = e.last;
     // Neutral monsters have no team color: their masks are black anyway.
@@ -953,13 +1000,14 @@ export class MatchClient {
     }
   }
 
-  private remove(id: number): void {
+  private remove(id: number, sink = true): void {
     const e = this.entities.get(id);
     if (!e) return;
-    if (e.unit) this.world.removeUnit(e.unit);
+    // The dead go down into the ground; units that only left the view just go.
+    if (e.unit) this.world.removeUnit(e.unit, sink && (e.unit.dead || (e.state & UnitState.Dead) !== 0));
     this.unblock(id);
     this.inside.delete(id);
-    this.fx.clearMarkers(id);
+    this.status.remove(id);
     this.entities.delete(id);
     this.deadSince.delete(id);
     this.blinkOrigins.delete(id);
@@ -977,11 +1025,46 @@ export class MatchClient {
     this.blocked.delete(id);
   }
 
-  /** A tree fell: open its cells now, hide its model with the next batch. */
-  private cutTree(i: number): void {
+  /**
+   * A tree fell: open its cells now. With a cause (quantized position of the worker or spell)
+   * it falls over on screen; without one (a rejoin) it is hidden with the next batch.
+   */
+  private cutTree(i: number, qx = 0, qy = 0): void {
     if (!this.trees.alive[i]) return;
     this.blockers.openCells(removeTree(this.trees, i));
-    this.cutTrees.push(i);
+    if (qx || qy) this.world.fellTree(i, dqPos(qx), dqPos(qy));
+    else this.cutTrees.push(i);
+  }
+
+  /** A cut tree grew back: its cells close again (as on the server) and it grows on screen. */
+  private regrowTree(i: number): void {
+    if (this.trees.alive[i]) return;
+    this.blockers.closeCells(restoreTree(this.trees, i));
+    const k = this.cutTrees.indexOf(i);
+    if (k >= 0) this.cutTrees.splice(k, 1);
+    this.world.growTree(i);
+  }
+
+  /** Axe swings of chopping workers; the tree shakes when the blade lands. */
+  private updateChopping(now: number): void {
+    for (const [u, c] of this.chopping) {
+      if (now > c.until || u.moving || u.dead || !this.trees.alive[c.tree] || !this.world.units.has(u)) {
+        this.chopping.delete(u);
+        continue;
+      }
+      if (c.hitAt && now >= c.hitAt) {
+        c.hitAt = 0;
+        this.world.shakeTree(c.tree, u.x, u.y);
+        if (u.visualVisible) this.sound?.play('chop', 'sfx', u.x, u.y, 0.45);
+      }
+      if (now >= c.next && now >= u.actionUntil) {
+        this.world.playOnce(u, 'attack');
+        const swing = Math.max(300, u.actionUntil - now);
+        // The blade lands a bit before the middle of the clip (wind-up, blow, follow-through).
+        c.hitAt = now + swing * 0.42;
+        c.next = now + swing + 150;
+      }
+    }
   }
 
   private hideCutTrees(): void {
@@ -995,8 +1078,11 @@ export class MatchClient {
   private frame(dt: number): void {
     const p = this.predictor;
     p?.advance(performance.now());
+    this.status.begin();
     const rt = this.clock.renderTick();
     const now = performance.now();
+    const turnStep = 1 - Math.exp(-dt * TURN_RATE);
+    if (this.chopping.size) this.updateChopping(now);
     let bars = 0;
     for (const e of this.entities.values()) {
       const u = e.unit;
@@ -1011,7 +1097,10 @@ export class MatchClient {
         e.sample(rt, this.pose, this.tick);
         u.x = this.pose.x;
         u.y = this.pose.y;
-        u.facing = this.pose.facing;
+        // A new facing comes in one server tick; turn the model over a few frames instead of snapping.
+        // Settle exactly at the end, so the shadow cache (world.ts) sees a still unit again.
+        const turn = wrapAngle(this.pose.facing - u.facing);
+        u.facing = Math.abs(turn) < 0.002 ? this.pose.facing : u.facing + turn * turnStep;
         u.moving = (this.pose.state & UnitState.Moving) !== 0;
       }
       if (e === this.ownHero) u.speed = this.player.moveSpeed / 100;
@@ -1046,10 +1135,17 @@ export class MatchClient {
       // Buff markers and Mountain Form size.
       u.scale = (e.buffs & BuffFlag.Big ? 1.4 : 1) * u.baseScale;
       const visible = this.world.inView(u);
-      if (e.buffs && !dead && visible) {
+      if ((e.buffs || e.heroItems) && !dead && visible) {
         const ground = this.world.unitHeight(u, now);
-        this.fx.setMarkers(e.id, e.buffs, u.x, ground, ground + u.height * u.model.root.scaling.y, -u.y, Math.max(0.8, u.height * 0.45));
-      } else this.fx.clearMarkers(e.id);
+        const top = ground + u.height * u.model.root.scaling.y;
+        if (e.buffs) this.status.setMarkers(e.id, e.buffs, u.x, ground, top, -u.y, Math.max(0.8, u.height * 0.45));
+        else this.status.clearMarkers(e.id);
+        // Heroes: aura circle (learned aura or aura item) and glows of special items, seen by everyone.
+        if (e.heroItems) {
+          const heroId = ENTITY_TYPES[e.type] ?? '';
+          this.status.setHero(e.id, heroId, e.abilityLevels, e.heroItems, HERO_FX[heroId]?.color ?? '#ffe9a0', u.x, ground, top, -u.y);
+        }
+      } else this.status.clearMarkers(e.id);
       if (dead) {
         const since = this.deadSince.get(e.id) ?? now;
         if (isHeroType(e.type) && now - since > HIDE_DEAD_HERO_MS) this.world.hideUnit(u, true);
@@ -1084,13 +1180,21 @@ export class MatchClient {
     this.bars.update(this.barInput, bars);
     this.projectiles.update(dt);
     this.fx.update(dt);
+    this.status.end();
     this.floating?.update(this.projectText);
   }
 
   /** Own team's sight, about 6 times a second (enough for a fog that fades anyway). */
+  /** Test switch "see the map": no fog (the server sends every unit too). */
+  setReveal(on: boolean): void {
+    this.revealAll = on;
+    if (on) this.world.fog.clear();
+    else this.sightAt = 0;
+  }
+
   private updateSight(now: number): void {
     this.sightAt = now + SIGHT_MS;
-    if (this.spectator) return;
+    if (this.spectator || this.revealAll) return;
     const team = this.myTeam;
     let n = 0;
     for (const e of this.entities.values()) {
@@ -1124,7 +1228,8 @@ export class MatchClient {
   dispose(): void {
     this.unsubscribe();
     this.world.beforeFrame = null;
-    for (const id of [...this.entities.keys()]) this.remove(id);
+    for (const id of [...this.entities.keys()]) this.remove(id, false);
+    this.chopping.clear();
     this.groundItems.clear();
     this.world.items.clear();
     this.world.select(null);
@@ -1138,6 +1243,7 @@ export class MatchClient {
     this.bars.dispose();
     this.projectiles.dispose();
     this.fx.dispose();
+    this.status.dispose();
     this.floating?.clear();
   }
 }

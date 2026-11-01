@@ -56,37 +56,40 @@ Screens: Main Menu → Lobby (with loading) → Match (HUD) → End Screen. Plus
 - "AI" column = faction AI difficulty. For a Bot slot the Hero column is the bot's hero and the bot uses the same difficulty.
 - Hero picker: a grid of 8 portraits with name and role; taken heroes are greyed out.
 - Start Game is grey until everyone is ready and at 100%. Hover text says why: "Waiting for Max to load (64%)".
-- **Mode** (host, next to the title): "Free for all (4)" or "Teams of two (8)". In a team room there are 8 rows, two per kingdom (1 · I, 1 · II, 2 · I, ...). Both players of a kingdom share its team, color, Town Hall, army and start spot, so team and color can not be changed. At the start an open second slot of a playing kingdom gets a bot; a closed one stays empty (that kingdom has one hero). To save height the team room shows a smaller chat and only the load bar.
+- **Mode** (host, next to the title): "Free for all (4)", "Teams of two (8)" or "Test mode" (like free for all, plus the test panel for everyone in the match). In a team room there are 8 rows, two per kingdom (1 · I, 1 · II, 2 · I, ...). Both players of a kingdom share its team, color, Town Hall, army and start spot, so team and color can not be changed. At the start an open second slot of a playing kingdom gets a bot; a closed one stays empty (that kingdom has one hero). To save height the team room shows a smaller chat and only the load bar.
 
 ## 3. Match HUD
 
+Changed 2026-10-31 (user: "smaller, like Dota, not one solid bottom bar"). Layout and sizes are in
+`client/src/hud.css`; sizes follow the window height (`vh` clamps), so the HUD takes about the same
+share of a laptop and a 4K screen.
+
 ```
-┌─[⏱ 12:34]──[Team: ■Red Lv7  ■Teal Lv6]──────────────[💰 640]─[Menu]┐
-│ Kill feed (top right): "Andrii killed Max's Stone Golem"              │
-│                                                                       │
-│                         (game view)                                   │
-│                                                                       │
-│ ┌ Your Kingdom ───────────┐                                           │
-│ │ Attacking Blue          │ ← AI status panel (top left, small)       │
-│ │ Army 26 / Tier 2 / 18 wk│                                           │
-│ └─────────────────────────┘                                           │
-├──────────┬──────────────────────────────────────────┬────────────────┤
-│          │ [Portrait]  Blood Witch   Lv 7  ▓▓▓▓▓░ XP │ [it][it][it]   │
-│ MINIMAP  │  HP ███████████░░░ 620 / 810             │ [it][it][it]   │
-│          │  MP ██████░░░░░░░░ 300 / 588             │                │
-│          │  Str 28  Agi 21  Int 40   Dmg 47-53  Arm 4│                │
-│          │  [Q][W][E][R]   (cooldown sweeps, + to learn)│ 1 2 3 / 4 5 6 │
-└──────────┴──────────────────────────────────────────┴────────────────┘
+┌Your Kingdom ⛁25 ⛁40 ⌂6/12 ⚔0 [Tier 1]──[Red][Teal]╭12:34╮[Blue][Purple]──⛁ 640  Ping ◎ ⛶ ⚙ ✕┐
+│┌Gathering gold and wood┐                    ╰─────╯                       Kill feed      │
+││Orders [Auto][Defend]..│                                                                 │
+│└───────────────────────┘                (game view, clickable everywhere)               │
+│ FPS line (when on)                                                                       │
+│                         [buff][buff][debuff]                                             │
+│╭────────╮       ╭──────────────────────────────────────────────────────╮                 │
+││MINIMAP │       │ ⚔72-80 ✊60 │[10]Portrait│ Name Lv 10  [Q][W][E][R]  │ [1][2][3]       │
+││        │       │ ⛨7    ⚡27 │  (+1)     │ HP █████████████ 1350/1350 │ [4][5][6]       │
+││        │       │ ➶2.8  👁44 │  ▓▓▓▓ XP   │ MP ███████░░░░░   453/528  │                 │
+└┴────────┴───────┴──────────────────────────────────────────────────────┴─────────────────┘
 ```
 
-- **Top bar:** game time, ally heroes (portrait, level, health), your gold, Menu button.
-- **AI status panel:** status line, army supply, Town Hall tier, worker count. Click it to move the camera to your base.
-- **Bottom bar:** minimap (left), hero panel (middle), inventory 2 × 3 (right).
-- **Selected other unit:** the middle panel shows its portrait, name, health, armor, damage, and a row of small ability icons. Works for any owner: own, ally, enemy, neutral. Hover an icon: a tooltip above the panel with the text and the numbers of every level. How far a hero has learned an ability is not shown (user's choice: icon and text only). Unit skill names and text are in `shared/data/skills.json`, their numbers on the unit in `units.json`, their icons in `icons_skills` (one Codex sheet).
+- **Top strip (34 px, opaque):** left: "Your Kingdom" (click: camera to the base), kingdom gold, wood, supply (orange when upkeep starts), army, tier. Middle: the clock on a hanging plaque, allied heroes left of it, enemy heroes right of it (portrait, level, health when seen, grey when dead). Right: own gold, ping, icon buttons (capture mouse, full screen, settings, leave).
+- **Kingdom panel** (small, under the strip, left): what the AI does and the order buttons.
+- **Minimap:** its own frame in the bottom-left corner.
+- **Console** (bottom middle, one piece): stats box (damage, armor, move speed; strength, agility, intelligence, the main one bright), portrait with a level badge, a skill point badge and the XP bar, the name line, skills, then health and mana bars under the skills, then the 2 × 3 inventory. Bars and cooldown sweeps move every frame (the numbers come a few times a second).
+- **Buff bar:** above the console, left. Every buff and debuff of the own hero: icon of the ability or item it comes from, green edge = good, red edge = from an enemy, seconds left, a number when it stacks. Hover: name, text, time left.
+- **Selected other unit:** a panel above the console: portrait, name, health, armor, damage, ability icons. Heroes also show how far each skill is learned (level pips, grey = not learned; changed 2026-10-31, user: "I want to see that the enemy already learned an aura"), their 6 items and all their buffs with time left. Army units and monsters show one icon per kind of effect (stunned, slowed, shielded...). Works for any owner.
 - **Own unit skills:** on an own unit (army or hired) the active skills are buttons (gold edge, cooldown sweep, blue when there is no mana). Click: skills around the unit go off at once; one-target skills ask for a target (left click; right click or Esc cancels). The unit must already be in range ("Too far from your unit.").
 - **Hover card:** pointing at a hero or unit in the world (not the own hero, not the selected unit, not buildings) shows a small card next to the mouse: name, level, ally/enemy/neutral and one line per ability (its name and text). Click for the numbers.
-- **Shop / Town Hall panel:** opens above the inventory when the hero is near and the building is selected.
-- **Floating:** health bars (team color for allies, red for enemies, yellow for neutrals), damage numbers, gold pop-ups on last hits, ground markers for aiming.
+- **Shop / Town Hall panel:** the free bottom-right corner (above the console in narrow windows).
+- **Floating:** health bars (team color for allies, red for enemies, yellow for neutrals), damage numbers, gold pop-ups on last hits, ground markers for aiming, a green ring where a move order goes and a red one for attack orders.
+- **In the world (everyone sees them, also on enemies):** buff markers (stars orbit a stunned head, an eye over a marked unit, thorns for a root, frost ring for a slow, a bubble for a shield, a glow for burning...), a turning rune circle under a hero who learned an aura or carries an aura item (as big as the aura), light motes around a hero with a rare or legendary item (frost sparks for Frost Orb, red wisps for Vampire Fang, a golden halo for crowns...). Code: `client/src/render/status-fx.ts`.
+- **Test panel** (test mode only, right side, F7 or "−" folds it): Hero (Level +1, Level max, +1000 / +10k gold, Refresh, Jump), Switches (Can not die, No cooldowns, See the map, speed ×1 ×2 ×4), Enemies (unit kind, count, Place enemies, Place dummy, Remove all; the place is the next left click, Shift keeps placing, right click or Esc cancels), Items (filter box + icon grid, click gives the item). The kill feed moves left of it.
 - **Scoreboard (Tab):** per player: hero, level, kills, deaths, gold, camps, faction army supply, Town Hall tier.
 - **Alerts** (center top, 3 s): "Your base is under attack!", "Ally base is under attack!", "Level up!", "Not enough gold.", "Not enough mana.", "Out of range.", "Ability is not ready.".
 
@@ -137,7 +140,7 @@ Rules: name + hotkey, one line of text, then the numbers. Current level in brack
 - **Graphics:** Quality (Low / Medium / High), Render scale, Shadows (on/off), Effects (Low / High), Show FPS.
 - **Sound:** Master, Music, Effects, Voice alerts.
 - **Controls:** Quick cast (on/off), Item keys (1–6 or Z X C V B N), Edge scroll (on/off), Camera speed, key rebinding list.
-- **Game:** Show damage numbers, Show health bars (always / when hurt).
+- **Game:** Show damage numbers, Screen shake on big hits (siege blows, big spells, a fallen building, a hero's death, a heavy blow on the own hero), Show health bars (always / when hurt).
 
 ## 9. All fixed text strings (first set)
 

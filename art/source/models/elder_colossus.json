@@ -1,0 +1,54 @@
+{
+  "id": "elder_colossus",
+  "triangles": 1650,
+  "bones": 19,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 115,
+      "loop": true
+    },
+    {
+      "name": "walk",
+      "frames": 45,
+      "loop": true
+    },
+    {
+      "name": "attack",
+      "frames": 48,
+      "loop": false
+    },
+    {
+      "name": "attack2",
+      "frames": 48,
+      "loop": false
+    },
+    {
+      "name": "cast",
+      "frames": 58,
+      "loop": false
+    },
+    {
+      "name": "hit",
+      "frames": 22,
+      "loop": false
+    },
+    {
+      "name": "death",
+      "frames": 64,
+      "loop": false
+    },
+    {
+      "name": "victory",
+      "frames": 77,
+      "loop": false
+    }
+  ],
+  "height": 5.312,
+  "sockets": [
+    "core",
+    "eyes",
+    "feet"
+  ],
+  "skin": "elder_colossus_skin"
+}

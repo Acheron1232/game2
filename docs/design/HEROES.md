@@ -107,7 +107,7 @@ Design rules:
 
 <!-- table:abilities-staff_warrior -->
 **Q — Sweep** (active) — Swing the staff in a full circle. Hits and pushes back all enemies around.
-- mana 70; cooldown 10 s; cast time 0.25 s; radius 3; damage 70 / 120 / 170 / 220; knockback 2
+- mana 70; cooldown 10 s; cast time 0.25 s; radius 3; damage 70 / 120 / 170 / 220; knockback 2; breaks trees true
 
 **W — Iron Stance** (active) — Brace yourself. Block most damage for a short time, but move slower.
 - mana 60; cooldown 16 s; duration 3; damage block pct 50 / 65 / 80 / 90; self slow pct 50
@@ -116,7 +116,7 @@ Design rules:
 - chance pct 15 / 20 / 25 / 30
 
 **R — Sky Pillar** (active, target: point) — Leap high on the staff and crash down. Damages and stuns all enemies where you land.
-- range 8; mana 150 / 200; cooldown 90 / 70 s; cast time 0.2 s; leap time 0.6; radius 4; damage 200 / 300; stun duration 2 / 2.5
+- range 8; mana 150 / 200; cooldown 90 / 70 s; cast time 0.2 s; leap time 0.6; radius 4; damage 200 / 300; stun duration 2 / 2.5; breaks trees true
 <!-- /table -->
 
 ## 3. Sky Dragon — flying ranged bruiser
@@ -128,16 +128,16 @@ Flying rules: the dragon hovers about 3 units above the ground, has a clear grou
 
 <!-- table:abilities-sky_dragon -->
 **Q — Fire Breath** (active, target: cone) — Breathe fire in a cone in front of you.
-- range 7; mana 80; cooldown 9 s; cast time 0.3 s; length 7; angle deg 45; damage 85 / 145 / 205 / 265
+- range 7; mana 80; cooldown 9 s; cast time 0.3 s; length 7; angle deg 45; damage 85 / 145 / 205 / 265; breaks trees true
 
 **W — Wing Gust** (active) — Beat your wings. Pushes enemies away and slows them.
-- mana 70; cooldown 13 s; cast time 0.2 s; radius 4; damage 40 / 70 / 100 / 130; knockback 3; slow pct 30; slow duration 2
+- mana 70; cooldown 13 s; cast time 0.2 s; radius 4; damage 40 / 70 / 100 / 130; knockback 3; slow pct 30; slow duration 2; breaks trees true
 
 **E — Dragon Scales** (passive) — Passive. Thick scales give armor and less spell damage taken.
 - bonus armor 2 / 4 / 6 / 8; spell reduction pct 10 / 15 / 20 / 25
 
 **R — Inferno Dive** (active, target: point) — Dive at a point, hit everything there and leave the ground burning.
-- range 10; mana 175 / 225; cooldown 100 / 80 s; cast time 0.2 s; dive time 0.5; radius 4.5; impact damage 120 / 180; burn damage per sec 40 / 60; burn duration 4
+- range 10; mana 175 / 225; cooldown 100 / 80 s; cast time 0.2 s; dive time 0.5; radius 4.5; impact damage 120 / 180; burn damage per sec 40 / 60; burn duration 4; breaks trees true
 <!-- /table -->
 
 ## 4. Stone Golem — tank
@@ -153,7 +153,7 @@ Flying rules: the dragon hovers about 3 units above the ground, has a clear grou
 - mana 75; cooldown 20 s; duration 8; damage reduction pct 20 / 30 / 40 / 50
 
 **E — Tremor** (active) — Slam the ground. Damages and slows enemies around you.
-- mana 80; cooldown 12 s; cast time 0.3 s; radius 4.5; damage 30 / 50 / 70 / 90; slow pct 30 / 40 / 50 / 60; slow duration 3
+- mana 80; cooldown 12 s; cast time 0.3 s; radius 4.5; damage 30 / 50 / 70 / 90; slow pct 30 / 40 / 50 / 60; slow duration 3; breaks trees true
 
 **R — Mountain Form** (active) — Grow huge. Gain a lot of health and force nearby enemies to attack you.
 - mana 150 / 200; cooldown 120 / 95 s; cast time 0.5 s; duration 15 / 20; bonus max hp pct 50 / 75; scale 1.4; taunt radius 6; taunt duration 3 / 3.5
@@ -207,7 +207,7 @@ Flying rules: the dragon hovers about 3 units above the ground, has a clear grou
 - range 9; mana 80; cooldown 10 s; cast time 0.3 s; length 9; width 1.5; damage 80 / 130 / 180 / 230; projectile speed 20; hits first only false
 
 **W — Trample** (active) — Rear up and stomp. Damages and stuns enemies around you.
-- mana 90; cooldown 13 s; cast time 0.3 s; radius 3.5; damage 50 / 80 / 110 / 140; stun duration 1 / 1.25 / 1.5 / 1.75
+- mana 90; cooldown 13 s; cast time 0.3 s; radius 3.5; damage 50 / 80 / 110 / 140; stun duration 1 / 1.25 / 1.5 / 1.75; breaks trees true
 
 **E — Herd Call** (aura) — Aura. Nearby allies move and attack faster.
 - radius 9; move speed pct 6 / 9 / 12 / 15; attack speed pct 5 / 8 / 11 / 14
@@ -282,7 +282,7 @@ A broad walrus fighter. His anchor and wave open a path for a charge.
 - range 7; mana 90; cooldown 11 s; cast time 0.4 s; damage 75 / 125 / 175 / 225; stun duration 1 / 1.5 / 2 / 2.5; projectile speed 12; effect boulder_toss
 
 **W — Breaker Wave** (active, target: cone) — A crashing wave hits enemies in a cone.
-- range 7; mana 80; cooldown 9 s; cast time 0.3 s; length 7; angle deg 45; damage 80 / 135 / 190 / 245; effect fire_breath
+- range 7; mana 80; cooldown 9 s; cast time 0.3 s; length 7; angle deg 45; damage 80 / 135 / 190 / 245; effect fire_breath; breaks trees true
 
 **E — Deep Hide** (passive) — Passive. Gain armor and resist spell damage.
 - bonus armor 2 / 4 / 6 / 8; spell reduction pct 10 / 15 / 20 / 25; effect dragon_scales
@@ -300,7 +300,7 @@ A red panda monk who heals allies, pushes foes away and leads an army with lante
 - range 8; mana 70; cooldown 7 s; cast time 0.3 s; heal 110 / 180 / 250 / 320; effect radiant_touch
 
 **W — Bamboo Sweep** (active) — Sweep the staff around you and push enemies away.
-- mana 70; cooldown 10 s; cast time 0.25 s; radius 3; damage 70 / 120 / 170 / 220; knockback 2; effect sweep
+- mana 70; cooldown 10 s; cast time 0.25 s; radius 3; damage 70 / 120 / 170 / 220; knockback 2; effect sweep; breaks trees true
 
 **E — Guiding Light** (aura) — Aura. Allies move and attack faster.
 - radius 9; move speed pct 6 / 9 / 12 / 15; attack speed pct 5 / 8 / 11 / 14; effect herd_call
@@ -321,10 +321,10 @@ A floating stone construct with a molten core. It slows enemies and crashes into
 - mana 75; cooldown 20 s; duration 8; damage reduction pct 20 / 30 / 40 / 50; effect stone_skin
 
 **E — Furnace Pulse** (active) — A heat pulse damages and slows nearby enemies.
-- mana 80; cooldown 12 s; cast time 0.3 s; radius 4.5; damage 30 / 50 / 70 / 90; slow pct 30 / 40 / 50 / 60; slow duration 3; effect tremor
+- mana 80; cooldown 12 s; cast time 0.3 s; radius 4.5; damage 30 / 50 / 70 / 90; slow pct 30 / 40 / 50 / 60; slow duration 3; effect tremor; breaks trees true
 
 **R — Caldera Drop** (active, target: point) — Crash into the ground and leave a molten field.
-- range 10; mana 175 / 225; cooldown 100 / 80 s; cast time 0.2 s; dive time 0.5; radius 4.5; impact damage 120 / 180; burn damage per sec 40 / 60; burn duration 4; effect inferno_dive
+- range 10; mana 175 / 225; cooldown 100 / 80 s; cast time 0.2 s; dive time 0.5; radius 4.5; impact damage 120 / 180; burn damage per sec 40 / 60; burn duration 4; effect inferno_dive; breaks trees true
 <!-- /table -->
 
 Expansion kits share tested base mechanics through `params.effect`; each has its own numbers, name, owner, cooldown and visual theme. Their balance is a first playable draft.

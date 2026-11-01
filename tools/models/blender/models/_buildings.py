@@ -41,9 +41,10 @@ def cone_roof(m, r, h, z, slot, at=(0, 0), sides=8):
     m.part("cone", (r * 2, r * 2, h), at=(at[0], at[1], z + h / 2), slot=slot, uv="wrap", tint=W, bone="root", segments=sides, smooth=10)
 
 
-def tower(m, r, h, at, slot_wall, slot_roof, roof_h=None, z0=0.0, sides=8, battlements=None):
+def tower(m, r, h, at, slot_wall, slot_roof, roof_h=None, z0=0.0, sides=8, battlements=None, wall_sub=None):
+    """wall_sub: part of the wall cell to use when the cell is a picture, not a wall texture."""
     x, y = at
-    m.part("cylinder", (r * 2, r * 2, h), at=(x, y, z0 + h / 2), slot=slot_wall, uv="wrap", tint=W, bone="root", segments=sides, smooth=10)
+    m.part("cylinder", (r * 2, r * 2, h), at=(x, y, z0 + h / 2), slot=slot_wall, uv="wrap", sub=wall_sub, tint=W, bone="root", segments=sides, smooth=10)
     if battlements:
         m.part("cylinder", (r * 2.3, r * 2.3, 0.35), at=(x, y, z0 + h + 0.17), slot=battlements, uv="wrap", tint=W, bone="root", segments=sides, smooth=10)
         z0 += 0.35

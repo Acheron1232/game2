@@ -127,6 +127,8 @@ Rules:
 | orange_spider_nest | orange | 1× Spider Queen, 2× Rock Spider | 1540 | 81 | 195 | 240 s | 60% (orange) | 4 |
 | red_spider_brood | red | 2× Spider Queen, 3× Rock Spider | 2760 | 144 | 350 | 300 s | 100% (red) | 4 |
 | red_sentinels | red | 2× Stone Sentinel, 2× Rock Spider | 3440 | 171 | 380 | 300 s | 100% (temple) | 4 |
+| horde_warband | horde | 1× Ogre Warlord, 2× Ogre Brute, 2× Forest Troll, 1× Troll Shaman, 2× Alpha Wolf, 3× Grey Wolf, 2× Bandit, 2× Bandit Archer | 6760 | 397 | 885 | 360 s | 100% (horde) | 2 |
+| boss_colossus | boss | 1× Elder Colossus, 2× Cinder Drake | 16200 | 940 | 1680 | 480 s | 100% (boss) | 2 |
 <!-- /table -->
 
 Placement (see [MAP.md](MAP.md)) — every sector has the same set of 10 camps (3 green, 4 orange, 3 red), 40 on the map:
@@ -161,6 +163,8 @@ Orange camps have a total monster level of 9–10 and red ones 16–17, so a sol
 | Ogre Brute | 5 | 1000 | 3 heavy | normal | 35-42 | 1.3 | ground | 2.7 | — | — | — | — | — | 45-55 |
 | Ogre Warlord | 7 | 1600 | 4 heavy | normal | 50-60 | 1.4 | ground | 2.7 | — | — | — | — | — | 70-90 |
 | Stone Sentinel | 6 | 1400 | 6 heavy | normal | 40-50 | 1.4 | ground | 2.5 | — | — | — | — | — | 60-75 |
+| Elder Colossus | 15 | 9000 | 9 heavy | normal | 150-180 | 2.2 | ground | 2.4 | — | — | — | — | — | 450-550 |
+| Cinder Drake | 12 | 3600 | 5 medium | magic | 90-110 | 5 | ground+air | 3.2 | — | — | — | — | — | 200-240 |
 <!-- /table -->
 
 Unit and monster skills (names and text in `skills.json`, numbers on each unit in `units.json`). Units use active skills by themselves in a fight; skills on allies (Mend, Faith Ward) also work out of a fight. The player can press the active skills of own units (army and hired soldiers): select the unit, click the skill button in the panel, then click a target for one-target skills. Times are in seconds.
@@ -207,6 +211,9 @@ Unit and monster skills (names and text in `skills.json`, numbers on each unit i
 | Coalback Porter | mercenary | Stone Guard | passive | Takes less damage from spells. | spell reduction pct 15 |
 | Kite Bomber | faction | Bomb Run | one enemy | Drops a short line of bombs on ground enemies. Cannot hit air. | range 6, radius 1.1, damage 85, cooldown 11 |
 | Healing Lantern | summon | Lantern Light | passive | Nearby allied units regenerate health. Equal lantern auras do not stack. | radius 4, hp regen 7 |
+| Elder Colossus | neutral | Rock Slam | around it | Hits the ground: damages and stuns enemies nearby. | radius 6, damage 260, stun duration 2, cooldown 9 |
+| Elder Colossus | neutral | Stone Guard | passive | Takes less damage from spells. | spell reduction pct 35 |
+| Cinder Drake | neutral | Ember Flare | around it | The wisp flares up and burns enemies around it. | radius 4, damage 150, stun duration 0.5, cooldown 10 |
 <!-- /table -->
 
 ### Drop tables
@@ -218,6 +225,8 @@ Unit and monster skills (names and text in `skills.json`, numbers on each unit i
 | orange | 60% | Healing Potion (15), Tome of Wisdom (15), Scroll of Return (10), Iron Claws (15), Thief Band (8), Giant Belt (8), Sage Cloak (8), Smoke Bomb (6), Frost Orb (8), Vampire Fang (7) |
 | red | 100% | Vampire Fang (20), Frost Orb (20), Storm Hammer (20), Phoenix Feather (15), Royal Circlet (15), Ironwood Shield (10) |
 | temple | 100% | Storm Hammer (25), Phoenix Feather (25), Warblade (20), Temple Crown (15), Vampire Fang (15) |
+| horde | 100% | Storm Hammer (15), Phoenix Feather (12), Royal Circlet (12), Vampire Fang (14), Frost Orb (14), Ironwood Shield (12), Temple Crown (8), Warblade (8), Tome of Wisdom (5) |
+| boss | 100% | Titan Aegis (15), Kingslayer (17), Archmage Scepter (17), Sky Piercer (17), Dawn Relic (17), Crown of Ages (17) |
 <!-- /table -->
 
 One roll per camp when the last monster dies. "Chance" is the chance that anything drops; then one item is picked by weight.

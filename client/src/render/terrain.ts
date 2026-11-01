@@ -7,6 +7,7 @@
 import type { AbstractEngine } from '@babylonjs/core/Engines/abstractEngine';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import { MaterialPluginBase } from '@babylonjs/core/Materials/materialPluginBase';
+import { STATIC_SHADOW_STRENGTH, type StaticShadows } from './static-shadows';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import { RawTexture } from '@babylonjs/core/Materials/Textures/rawTexture';
 import { RawTexture2DArray } from '@babylonjs/core/Materials/Textures/rawTexture2DArray';
@@ -57,14 +58,60 @@ export interface Terrain {
 const GLSL = 0;
 const WGSL = 1;
 
+/** Wind of the cloud shadows (game units per second) and their size. */
+const CLOUD_WIND = [1.6, 0.7];
+const CLOUD_SCALE = 90;
+
+/**
+ * Tileable value noise, 128 x 128: R = big soft patches (ground color variation), G = clouds.
+ * Made in code at start-up, so it needs no file.
+ */
+function makeNoise(scene: Scene): RawTexture {
+  const N = 128;
+  const octave = (seed: number, cells: number, x: number, y: number) => {
+    const fx = (x / N) * cells,
+      fy = (y / N) * cells;
+    const x0 = Math.floor(fx),
+      y0 = Math.floor(fy);
+    const tx = fx - x0,
+      ty = fy - y0;
+    const sx = tx * tx * (3 - 2 * tx),
+      sy = ty * ty * (3 - 2 * ty);
+    const v = (cx: number, cy: number) =>
+      hash2((((cx % cells) + cells) % cells) + seed * 131, (((cy % cells) + cells) % cells) + seed * 71);
+    const a = v(x0, y0) + (v(x0 + 1, y0) - v(x0, y0)) * sx;
+    const b = v(x0, y0 + 1) + (v(x0 + 1, y0 + 1) - v(x0, y0 + 1)) * sx;
+    return a + (b - a) * sy;
+  };
+  const data = new Uint8Array(N * N * 4);
+  for (let y = 0; y < N; y++)
+    for (let x = 0; x < N; x++) {
+      const r = octave(1, 4, x, y) * 0.55 + octave(2, 8, x, y) * 0.3 + octave(3, 16, x, y) * 0.15;
+      const g = octave(4, 4, x, y) * 0.6 + octave(5, 8, x, y) * 0.28 + octave(6, 16, x, y) * 0.12;
+      const o = (y * N + x) * 4;
+      data[o] = Math.round(r * 255);
+      data[o + 1] = Math.round(g * 255);
+      data[o + 2] = 0;
+      data[o + 3] = 255;
+    }
+  const t = new RawTexture(data, N, N, Constants.TEXTUREFORMAT_RGBA, scene, true, false, Texture.TRILINEAR_SAMPLINGMODE);
+  t.wrapU = t.wrapV = Texture.WRAP_ADDRESSMODE;
+  return t;
+}
+
 class TerrainSplatPlugin extends MaterialPluginBase {
   index: RawTexture | null = null;
   tiles: RawTexture2DArray | null = null;
+  noise: RawTexture | null = null;
+  /** baked shadows of trees and decor (static-shadows.ts) */
+  shadow: RawTexture | null = null;
   private reference = import.meta.env.DEV && new URLSearchParams(location.search).has('terrainReference');
 
   // Read inside getCustomCode, which the base constructor already calls: so these are static.
   static cols = 384;
   static cellSize = 0.5;
+  /** game rectangle the static shadow texture covers: from -APRON, this many units */
+  static shadowSpan = 384 * 0.5 + 2 * APRON;
 
   constructor(material: StandardMaterial) {
     super(material, 'TerrainSplat', 150, { TERRAINSPLAT: false, TERRAIN_REFERENCE: false });
@@ -80,18 +127,28 @@ class TerrainSplatPlugin extends MaterialPluginBase {
   }
 
   override prepareDefines(defines: Record<string, unknown>): void {
-    defines['TERRAINSPLAT'] = !!(this.index && this.tiles);
+    defines['TERRAINSPLAT'] = !!(this.index && this.tiles && this.shadow);
     defines['TERRAIN_REFERENCE'] = this.reference;
   }
 
   override getSamplers(samplers: string[]): void {
-    samplers.push('terrainIndexSampler', 'terrainTilesSampler');
+    samplers.push('terrainIndexSampler', 'terrainTilesSampler', 'terrainNoiseSampler', 'terrainShadowSampler');
+  }
+
+  override getUniforms(lang?: number) {
+    return {
+      ubo: [{ name: 'terrainTime', size: 1, type: 'float' }],
+      fragment: lang === WGSL ? '' : '#ifdef TERRAINSPLAT\nuniform float terrainTime;\n#endif',
+    };
   }
 
   override bindForSubMesh(ubo: UniformBuffer, _scene: Scene, _engine: AbstractEngine, _sub: SubMesh): void {
-    if (!this.index || !this.tiles) return;
+    if (!this.index || !this.tiles || !this.noise || !this.shadow) return;
+    ubo.updateFloat('terrainTime', (performance.now() / 1000) % 100000);
     ubo.setTexture('terrainIndexSampler', this.index);
     ubo.setTexture('terrainTilesSampler', this.tiles);
+    ubo.setTexture('terrainNoiseSampler', this.noise);
+    ubo.setTexture('terrainShadowSampler', this.shadow);
   }
 
   override getCustomCode(shaderType: string, lang?: number): Record<string, string> | null {
@@ -99,6 +156,9 @@ class TerrainSplatPlugin extends MaterialPluginBase {
     const n = TerrainSplatPlugin.cols - 1;
     const cs = TerrainSplatPlugin.cellSize.toFixed(4);
     const ts = TILE_SIZE.toFixed(4);
+    const apron = APRON.toFixed(1);
+    const span = TerrainSplatPlugin.shadowSpan.toFixed(1);
+    const shade = STATIC_SHADOW_STRENGTH.toFixed(3);
     if (lang === WGSL) {
       return {
         CUSTOM_FRAGMENT_DEFINITIONS: `#ifdef TERRAINSPLAT
@@ -106,6 +166,10 @@ var terrainIndexSamplerSampler: sampler;
 var terrainIndexSampler: texture_2d<f32>;
 var terrainTilesSamplerSampler: sampler;
 var terrainTilesSampler: texture_2d_array<f32>;
+var terrainNoiseSamplerSampler: sampler;
+var terrainNoiseSampler: texture_2d<f32>;
+var terrainShadowSamplerSampler: sampler;
+var terrainShadowSampler: texture_2d<f32>;
 fn terrainType(c: vec2<i32>) -> i32 {
   if (c.x < -6 || c.y < -6 || c.x > ${n + 6} || c.y > ${n + 6}) { return ${ROCK}; }
   let cc = clamp(c, vec2<i32>(0), vec2<i32>(${n}));
@@ -115,7 +179,9 @@ fn terrainType(c: vec2<i32>) -> i32 {
         CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `#ifdef TERRAINSPLAT
 {
   let gp = vec2<f32>(fragmentInputs.vPositionW.x, -fragmentInputs.vPositionW.z);
-  let cell = gp / ${cs} - vec2<f32>(0.5);
+  // Wobble the borders between ground types a little, so they do not follow the cell grid.
+  let warp = (textureSample(terrainNoiseSampler, terrainNoiseSamplerSampler, gp / 7.0).rg - vec2<f32>(0.5)) * 1.1;
+  let cell = gp / ${cs} - vec2<f32>(0.5) + warp;
   let c0 = vec2<i32>(floor(cell));
   let f = smoothstep(vec2<f32>(0.0), vec2<f32>(1.0), fract(cell));
   let uv = gp / ${ts};
@@ -134,6 +200,15 @@ fn terrainType(c: vec2<i32>) -> i32 {
   if (w.y > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.y, dx, dy).rgb * w.y; }
   if (w.z > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.z, dx, dy).rgb * w.z; }
   if (w.w > 0.0) { ground += textureSampleGrad(terrainTilesSampler, terrainTilesSamplerSampler, uv, t.w, dx, dy).rgb * w.w; }
+  // Big soft patches (warmer and lighter, cooler and darker) hide the tile repeat; clouds drift over.
+  let groundPatch = textureSample(terrainNoiseSampler, terrainNoiseSamplerSampler, gp / 70.0).r * 0.65 + textureSample(terrainNoiseSampler, terrainNoiseSamplerSampler, gp / 19.0).r * 0.35;
+  ground *= mix(vec3<f32>(0.76, 0.85, 0.76), vec3<f32>(1.16, 1.09, 0.92), smoothstep(0.25, 0.75, groundPatch));
+  let cloudUv = (gp - vec2<f32>(${CLOUD_WIND[0]}, ${CLOUD_WIND[1]}) * uniforms.terrainTime) / ${CLOUD_SCALE.toFixed(1)};
+  let cloud = smoothstep(0.5, 0.72, textureSample(terrainNoiseSampler, terrainNoiseSamplerSampler, cloudUv).g);
+  ground *= 1.0 - 0.26 * cloud;
+  // Shadows of trees, rocks and ruins, baked at load.
+  let staticShadow = textureSample(terrainShadowSampler, terrainShadowSamplerSampler, (gp + vec2<f32>(${apron})) / ${span}).r;
+  ground *= 1.0 - ${shade} * staticShadow;
   baseColor = vec4<f32>(baseColor.rgb * ground, baseColor.a);
 }
 #endif`,
@@ -143,6 +218,8 @@ fn terrainType(c: vec2<i32>) -> i32 {
       CUSTOM_FRAGMENT_DEFINITIONS: `#ifdef TERRAINSPLAT
 uniform highp sampler2D terrainIndexSampler;
 uniform highp sampler2DArray terrainTilesSampler;
+uniform sampler2D terrainNoiseSampler;
+uniform sampler2D terrainShadowSampler;
 int terrainType(ivec2 c) {
   if (c.x < -6 || c.y < -6 || c.x > ${n + 6} || c.y > ${n + 6}) return ${ROCK};
   ivec2 cc = clamp(c, ivec2(0), ivec2(${n}));
@@ -152,7 +229,9 @@ int terrainType(ivec2 c) {
       CUSTOM_FRAGMENT_UPDATE_DIFFUSE: `#ifdef TERRAINSPLAT
 {
   vec2 gp = vec2(vPositionW.x, -vPositionW.z);
-  vec2 cell = gp / ${cs} - 0.5;
+  // Wobble the borders between ground types a little, so they do not follow the cell grid.
+  vec2 warp = (texture2D(terrainNoiseSampler, gp / 7.0).rg - 0.5) * 1.1;
+  vec2 cell = gp / ${cs} - 0.5 + warp;
   ivec2 c0 = ivec2(floor(cell));
   vec2 f = smoothstep(vec2(0.0), vec2(1.0), fract(cell));
   vec2 uv = gp / ${ts};
@@ -170,6 +249,15 @@ int terrainType(ivec2 c) {
   if (w.y > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.y)), dx, dy).rgb * w.y;
   if (w.z > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.z)), dx, dy).rgb * w.z;
   if (w.w > 0.0) ground += textureGrad(terrainTilesSampler, vec3(uv, float(t.w)), dx, dy).rgb * w.w;
+  // Big soft patches (warmer and lighter, cooler and darker) hide the tile repeat; clouds drift over.
+  float groundPatch = texture2D(terrainNoiseSampler, gp / 70.0).r * 0.65 + texture2D(terrainNoiseSampler, gp / 19.0).r * 0.35;
+  ground *= mix(vec3(0.76, 0.85, 0.76), vec3(1.16, 1.09, 0.92), smoothstep(0.25, 0.75, groundPatch));
+  vec2 cloudUv = (gp - vec2(${CLOUD_WIND[0]}, ${CLOUD_WIND[1]}) * terrainTime) / ${CLOUD_SCALE.toFixed(1)};
+  float cloud = smoothstep(0.5, 0.72, texture2D(terrainNoiseSampler, cloudUv).g);
+  ground *= 1.0 - 0.26 * cloud;
+  // Shadows of trees, rocks and ruins, baked at load.
+  float staticShadow = texture2D(terrainShadowSampler, (gp + ${apron}) / ${span}).r;
+  ground *= 1.0 - ${shade} * staticShadow;
   baseColor.rgb *= ground;
 }
 #endif`,
@@ -193,7 +281,13 @@ function hash2(x: number, y: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 }
 
-export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: MapLayout, assets: GameAssets): Promise<Terrain> {
+export async function createTerrain(
+  scene: Scene,
+  grid: TerrainGrid,
+  layout: MapLayout,
+  assets: GameAssets,
+  shadows: StaticShadows,
+): Promise<Terrain> {
   const size = grid.cols * grid.cellSize;
 
   // ---- height at vertices (every 1 unit), smoothed from the cell levels. The mesh also covers an
@@ -316,9 +410,12 @@ export async function createTerrain(scene: Scene, grid: TerrainGrid, layout: Map
   material.specularColor = new Color3(0.04, 0.04, 0.04);
   TerrainSplatPlugin.cols = grid.cols;
   TerrainSplatPlugin.cellSize = grid.cellSize;
+  TerrainSplatPlugin.shadowSpan = size + 2 * APRON;
   const splat = new TerrainSplatPlugin(material);
   splat.index = index;
   splat.tiles = tiles;
+  splat.noise = makeNoise(scene);
+  splat.shadow = shadows.texture;
 
   // ---- chunks (the apron chunks are the mountains)
   const chunks: Mesh[] = [];

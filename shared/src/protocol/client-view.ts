@@ -19,6 +19,7 @@ import { itemReadyAt } from '../sim/items';
 import { FACTION_HERO_SLOT, TICK_DT, type MatchSim, type SimEntity } from '../sim/match-sim';
 import type { Vision } from '../sim/vision';
 import type { BinaryWriter } from './binary';
+import { blankHeroInfo, heroInfoOf } from './hero-info';
 import {
   blankFactionState,
   blankPlayerState,
@@ -142,8 +143,13 @@ export class ClientView {
   /** faction blocks by slot, and the last key sent for each */
   private readonly factionState = new Map<number, NetFactionState>();
   private readonly factionKey = new Map<number, string>();
+  /** hero id -> key of the hero block last sent (heroInfoOf) */
+  private readonly heroKey = new Map<number, number>();
+  private readonly heroInfo = blankHeroInfo();
   /** False while the player is offline: nothing is written. */
   active = true;
+  /** test switch "see the map": every unit and item is sent (own faction block only) */
+  reveal = false;
   /** the kingdom (faction slot) of this player: in a team match slot FACTION_HERO_SLOT + k plays for k */
   readonly kingdom: number;
 
@@ -163,6 +169,7 @@ export class ClientView {
     this.full = true;
     this.playerKey = '';
     this.factionKey.clear();
+    this.heroKey.clear();
   }
 
   /** events: this tick's events, or all events since the last snapshot (fast watch mode). */
@@ -183,7 +190,7 @@ export class ClientView {
     for (const e of sim.entities) {
       // Buildings and mines stay known in the fog (like a map), so the client can block their
       // cells for movement prediction. Their changes are only sent while the team sees them.
-      const seen = this.seeAll || vision.sees(this.team, e);
+      const seen = this.seeAll || this.reveal || vision.sees(this.team, e);
       if (!seen && !(e.building && e.alive && this.sent.has(e.id))) continue;
       if (!seen) {
         this.sent.get(e.id)!.seenAt = stamp;
@@ -202,6 +209,7 @@ export class ClientView {
         level = e.heroState?.level ?? e.stats.level,
         buffs = e.alive ? sim.buffFlagsOf(e) : 0,
         progress = progressOf(e);
+      if (e.heroState) this.writeHero(e, sim.tick, sw);
       const s = this.sent.get(e.id);
       if (!s) {
         sw.spawn({
@@ -298,6 +306,7 @@ export class ClientView {
       if (s.seenAt === stamp) continue;
       sw.remove(id);
       this.sent.delete(id);
+      this.heroKey.delete(id);
     }
     this.writeEvents(sim, vision, sw, full, events);
     this.writeGroundItems(sim, vision, sw, stamp);
@@ -307,7 +316,7 @@ export class ClientView {
   /** Items on the ground: new ones in sight, and the ones that went away or out of sight. */
   private writeGroundItems(sim: MatchSim, vision: Vision, sw: SnapshotWriter, stamp: number): void {
     for (const g of sim.groundItems) {
-      if (!this.seeAll && !vision.seesPoint(this.team, g.x, g.y)) continue;
+      if (!this.seeAll && !this.reveal && !vision.seesPoint(this.team, g.x, g.y)) continue;
       if (this.sentItems.has(g.id)) {
         this.sentItems.set(g.id, stamp);
         continue;
@@ -320,6 +329,15 @@ export class ClientView {
       if (!sw.itemRemove(id)) break;
       this.sentItems.delete(id);
     }
+  }
+
+  /** Items, skill levels and buffs of a hero in sight, when they changed. */
+  private writeHero(e: SimEntity, tick: number, sw: SnapshotWriter): void {
+    const hs = e.heroState!;
+    const key = heroInfoOf(e.id, e.team, hs.inventory, hs.abilityLevels, e.alive ? e.buffs : [], tick, this.heroInfo);
+    if (this.heroKey.get(e.id) === key) return;
+    this.heroKey.set(e.id, key);
+    sw.heroInfo(this.heroInfo);
   }
 
   get known(): number {
@@ -421,7 +439,12 @@ export class ClientView {
         continue;
       }
       // Not about one entity: everyone gets them (a = tree index / slot / team).
-      if (e.type === EventType.TreeGone || e.type === EventType.Defeated || e.type === EventType.MatchOver) {
+      if (
+        e.type === EventType.TreeGone ||
+        e.type === EventType.TreeBack ||
+        e.type === EventType.Defeated ||
+        e.type === EventType.MatchOver
+      ) {
         sw.event(e.type, e.a, e.b, e.value, e.kind);
         continue;
       }
@@ -439,7 +462,7 @@ export class ClientView {
       }
       const a = sim.get(e.a),
         b = e.b ? sim.get(e.b) : undefined;
-      if ((a && this.sent.has(a.id)) || (b && (this.seeAll || vision.sees(this.team, b)) && this.sent.has(b.id)))
+      if ((a && this.sent.has(a.id)) || (b && (this.seeAll || this.reveal || vision.sees(this.team, b)) && this.sent.has(b.id)))
         sw.event(e.type, e.a, e.b, e.value, e.kind);
     }
   }

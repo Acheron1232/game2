@@ -55,22 +55,28 @@ def build():
     # a team crystal horn on top. Sits in front of the shoulder line so it reads from the RTS camera.
     hx, hy, hzz = j["head"]
     hc = Vector((0, fy * 0.7 - 0.38, hzz - 0.02))
+    # The head was a small box lost between the shoulders: 1.35x, so the face reads from above.
+    K = 1.35
+
+    def big(points):
+        return [(x * K, y * K, z * K) for x, y, z in points]
+
     c.frame_hull(m, hc, (Vector((1, 0, 0)), Vector((0, -1, 0)), Vector((0, 0, 1))),
-                 [(-0.2, -0.16, -0.16), (0.2, -0.16, -0.16), (-0.22, -0.16, 0.16), (0.22, -0.16, 0.16), (-0.17, 0.18, -0.14), (0.17, 0.18, -0.14), (-0.19, 0.2, 0.12), (0.19, 0.2, 0.12), (0, 0.24, 0.0), (0, -0.05, 0.24)],
+                 big([(-0.2, -0.16, -0.16), (0.2, -0.16, -0.16), (-0.22, -0.16, 0.16), (0.22, -0.16, 0.16), (-0.17, 0.18, -0.14), (0.17, 0.18, -0.14), (-0.19, 0.2, 0.12), (0.19, 0.2, 0.12), (0, 0.24, 0.0), (0, -0.05, 0.24)]),
                  slot="face", uv="front", back="head_back", bone="head", smooth=22)
     # Heavy brow ridge
     c.frame_hull(m, hc, (Vector((1, 0, 0)), Vector((0, -1, 0)), Vector((0, 0, 1))),
-                 [(-0.25, 0.1, 0.06), (0.25, 0.1, 0.06), (-0.25, 0.26, 0.08), (0.25, 0.26, 0.08), (-0.22, 0.1, 0.17), (0.22, 0.1, 0.17), (-0.2, 0.24, 0.15), (0.2, 0.24, 0.15)],
+                 big([(-0.25, 0.1, 0.06), (0.25, 0.1, 0.06), (-0.25, 0.26, 0.08), (0.25, 0.26, 0.08), (-0.22, 0.1, 0.17), (0.22, 0.1, 0.17), (-0.2, 0.24, 0.15), (0.2, 0.24, 0.15)]),
                  slot="weapon_b", bone="head", smooth=22)
     # Jaw block
     c.frame_hull(m, hc, (Vector((1, 0, 0)), Vector((0, -1, 0)), Vector((0, 0, 1))),
-                 [(-0.22, -0.1, -0.12), (0.22, -0.1, -0.12), (-0.24, 0.24, -0.1), (0.24, 0.24, -0.1), (-0.2, -0.05, -0.28), (0.2, -0.05, -0.28), (-0.2, 0.2, -0.27), (0.2, 0.2, -0.27)],
+                 big([(-0.22, -0.1, -0.12), (0.22, -0.1, -0.12), (-0.24, 0.24, -0.1), (0.24, 0.24, -0.1), (-0.2, -0.05, -0.28), (0.2, -0.05, -0.28), (-0.2, 0.2, -0.27), (0.2, 0.2, -0.27)]),
                  slot="weapon_b", sub=(0.0, 1.0, 0.0, 0.6), bone="head", smooth=22)
     for sx in (1, -1):
-        c.blob(m, (sx * 0.09, hc.y - 0.215, hc.z + 0.04), 0.045, "extra_4", "head", squash=(1.2, 0.6, 0.7))
+        c.blob(m, (sx * 0.09 * K, hc.y - 0.215 * K, hc.z + 0.04 * K), 0.045 * K, "extra_4", "head", squash=(1.2, 0.6, 0.7))
         m._material(m.parts[-1][0], "glow")
         m.parts[-1][0].data.materials.pop(index=0)
-    base = hc + Vector((0.06, 0.02, 0.2))
+    base = hc + Vector((0.06, 0.02, 0.2)) * K
     m.part("loft", 1, profile=[(*base, 0.12, 0.12), (*(base + Vector((0.04, 0.05, 0.22))), 0.1, 0.1), (*(base + Vector((0.07, 0.1, 0.4))), 0.005, 0.005)], slot="shoulder", uv="wrap", tint=W, bone="head", segments=4, smooth=10)
 
     # Shoulders: two big boulders with team crystals growing out of them
@@ -113,6 +119,6 @@ def build():
         sp = j[f"upper_arm.{side}"]
         m.socket(f"crystals_{side.lower()}", (sp[0] + sx * 0.12, sp[1], sp[2] + 0.5), f"upper_arm.{side}")
     m.socket("feet", (0, 0, 0.05), "root")
-    m.socket("eyes", tuple(hc + Vector((0, -0.24, 0.04))), "head")
+    m.socket("eyes", tuple(hc + Vector((0, -0.24, 0.04)) * 1.35), "head")
     humanoid.animations(m, style="melee", weight=1.35)
     return m

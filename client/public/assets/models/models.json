@@ -1,8 +1,8 @@
 {
   "alpha_wolf": {
     "skin": "monsters_1_skin",
-    "height": 1.729,
-    "triangles": 414,
+    "height": 1.821,
+    "triangles": 826,
     "sockets": [],
     "clips": [
       "walk",
@@ -17,8 +17,8 @@
   },
   "arcane_huntress": {
     "skin": "arcane_huntress_skin",
-    "height": 1.968,
-    "triangles": 1342,
+    "height": 2.01,
+    "triangles": 1442,
     "sockets": [
       "bow",
       "arrow",
@@ -37,8 +37,8 @@
   },
   "archer": {
     "skin": "units_1_skin",
-    "height": 1.812,
-    "triangles": 1318,
+    "height": 1.885,
+    "triangles": 1334,
     "sockets": [],
     "clips": [
       "idle",
@@ -209,6 +209,15 @@
       "victory"
     ]
   },
+  "bones": {
+    "skin": null,
+    "height": 0.23,
+    "triangles": 202,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "bulwark_golem": {
     "skin": "bulwark_golem_skin",
     "height": 1.866,
@@ -246,10 +255,19 @@
     "sockets": [],
     "clips": []
   },
+  "campfire": {
+    "skin": null,
+    "height": 0.342,
+    "triangles": 414,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "catapult": {
     "skin": "units_4_skin",
     "height": 1.72,
-    "triangles": 696,
+    "triangles": 728,
     "sockets": [
       "stone"
     ],
@@ -267,7 +285,7 @@
   "centaur_raider": {
     "skin": "centaur_raider_skin",
     "height": 2.868,
-    "triangles": 2274,
+    "triangles": 2302,
     "sockets": [
       "hooves",
       "spear",
@@ -324,6 +342,25 @@
       "idle"
     ]
   },
+  "cinder_drake": {
+    "skin": "cinder_drake_skin",
+    "height": 1.617,
+    "triangles": 1502,
+    "sockets": [
+      "mouth",
+      "feet"
+    ],
+    "clips": [
+      "walk",
+      "idle",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
+    ]
+  },
   "cinder_inn": {
     "skin": "golem_foundry_skin",
     "height": 3.715,
@@ -344,8 +381,8 @@
   },
   "cleric": {
     "skin": "units_2_skin",
-    "height": 1.805,
-    "triangles": 1070,
+    "height": 1.878,
+    "triangles": 1086,
     "sockets": [
       "staff"
     ],
@@ -403,6 +440,15 @@
       "idle"
     ]
   },
+  "crystal": {
+    "skin": null,
+    "height": 1.75,
+    "triangles": 316,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "earth_remnant": {
     "skin": "earth_spirit_skin",
     "height": 1.285,
@@ -430,6 +476,26 @@
       "death",
       "victory",
       "roll"
+    ]
+  },
+  "elder_colossus": {
+    "skin": "elder_colossus_skin",
+    "height": 5.312,
+    "triangles": 1650,
+    "sockets": [
+      "core",
+      "eyes",
+      "feet"
+    ],
+    "clips": [
+      "idle",
+      "walk",
+      "attack",
+      "attack2",
+      "cast",
+      "hit",
+      "death",
+      "victory"
     ]
   },
   "ember_wisp": {
@@ -479,7 +545,7 @@
   },
   "forest_troll": {
     "skin": "monsters_2_skin",
-    "height": 1.871,
+    "height": 1.909,
     "triangles": 1138,
     "sockets": [],
     "clips": [
@@ -619,8 +685,8 @@
   },
   "grey_wolf": {
     "skin": "monsters_1_skin",
-    "height": 1.33,
-    "triangles": 378,
+    "height": 1.401,
+    "triangles": 776,
     "sockets": [],
     "clips": [
       "walk",
@@ -635,8 +701,8 @@
   },
   "harpy": {
     "skin": "monsters_2_skin",
-    "height": 1.509,
-    "triangles": 478,
+    "height": 1.51,
+    "triangles": 766,
     "sockets": [],
     "clips": [
       "idle",
@@ -652,7 +718,7 @@
   "harpy_matron": {
     "skin": "monsters_2_skin",
     "height": 1.978,
-    "triangles": 538,
+    "triangles": 826,
     "sockets": [],
     "clips": [
       "idle",
@@ -744,7 +810,7 @@
   "lancer": {
     "skin": "units_3_skin",
     "height": 2.539,
-    "triangles": 1340,
+    "triangles": 1440,
     "sockets": [],
     "clips": [
       "idle",
@@ -755,6 +821,15 @@
       "hit",
       "death",
       "victory"
+    ]
+  },
+  "lantern": {
+    "skin": null,
+    "height": 2.2,
+    "triangles": 440,
+    "sockets": [],
+    "clips": [
+      "idle"
     ]
   },
   "lantern_monk": {
@@ -862,8 +937,8 @@
   },
   "ogre_brute": {
     "skin": "monsters_3_skin",
-    "height": 2.781,
-    "triangles": 1142,
+    "height": 2.786,
+    "triangles": 1184,
     "sockets": [],
     "clips": [
       "idle",
@@ -878,8 +953,8 @@
   },
   "ogre_warlord": {
     "skin": "monsters_3_skin",
-    "height": 3.081,
-    "triangles": 1286,
+    "height": 3.086,
+    "triangles": 1328,
     "sockets": [],
     "clips": [
       "idle",
@@ -1074,6 +1149,15 @@
       "cast"
     ]
   },
+  "rune_stone": {
+    "skin": null,
+    "height": 2.034,
+    "triangles": 172,
+    "sockets": [],
+    "clips": [
+      "idle"
+    ]
+  },
   "shellback_beetle": {
     "skin": "shellback_beetle_skin",
     "height": 2.493,
@@ -1196,7 +1280,7 @@
   },
   "stone_golem": {
     "skin": "stone_golem_skin",
-    "height": 2.071,
+    "height": 2.141,
     "triangles": 888,
     "sockets": [
       "core",
@@ -1263,7 +1347,7 @@
   },
   "swordsman": {
     "skin": "units_1_skin",
-    "height": 1.73,
+    "height": 1.768,
     "triangles": 1224,
     "sockets": [
       "weapon"
@@ -1417,7 +1501,7 @@
   },
   "troll_shaman": {
     "skin": "monsters_2_skin",
-    "height": 2.231,
+    "height": 2.233,
     "triangles": 1170,
     "sockets": [],
     "clips": [

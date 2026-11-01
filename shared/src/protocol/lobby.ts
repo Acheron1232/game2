@@ -7,7 +7,8 @@ import { z } from 'zod';
 export const SLOT_COUNT = 4;
 /** slots of a team room: 4 kingdoms × 2 heroes (slot k and slot 4 + k share kingdom k) */
 export const TEAM_SLOT_COUNT = 8;
-export const ROOM_MODES = ['ffa', 'teams'] as const;
+/** 'test': free for all where every player may use the test panel (levels, gold, items, spawns). */
+export const ROOM_MODES = ['ffa', 'teams', 'test'] as const;
 export type RoomMode = (typeof ROOM_MODES)[number];
 export const SLOT_KINDS = ['open', 'human', 'bot', 'closed'] as const;
 export type SlotKind = (typeof SLOT_KINDS)[number];
@@ -67,6 +68,8 @@ export interface MatchStartInfo {
   rejoin: boolean;
   /** watch mode (dev): every slot is a bot, the players only watch; the game runs this many times faster */
   watch?: number;
+  /** test mode: the test panel is open to every player of this match */
+  sandbox?: boolean;
 }
 
 export interface MatchStats {
@@ -129,14 +132,33 @@ export const clientLobbyMessageSchema = z.discriminatedUnion('type', [
     watch: z.object({ speed: z.number().int().min(1).max(10) }).optional(),
   }),
   z.object({ type: z.literal('matchReady') }),
-  /** dev servers only: give the own hero XP, gold or an item (for testing) */
+  /** test mode matches and dev servers: the test panel (own hero XP, gold, items, spawns, switches) */
   z.object({
     type: z.literal('cheat'),
     xp: z.number().min(0).max(100000).optional(),
+    /** up to the next hero level */
+    levelUp: z.boolean().optional(),
     gold: z.number().min(0).max(100000).optional(),
     item: z.string().max(32).optional(),
     /** put the hero here (game units) */
     pos: z.tuple([z.number().min(0).max(512), z.number().min(0).max(512)]).optional(),
+    /** neutral units that attack everyone, or a training dummy (can not move, attack or die) */
+    spawn: z
+      .object({
+        unit: z.string().max(32),
+        count: z.number().int().min(1).max(20),
+        at: z.tuple([z.number().min(0).max(512), z.number().min(0).max(512)]),
+        dummy: z.boolean().optional(),
+      })
+      .optional(),
+    /** remove every unit made with spawn */
+    clear: z.boolean().optional(),
+    /** switches: the hero can not die / no cooldowns and full mana / see the whole map */
+    god: z.boolean().optional(),
+    freeCasts: z.boolean().optional(),
+    reveal: z.boolean().optional(),
+    /** game speed (the whole match) */
+    speed: z.union([z.literal(1), z.literal(2), z.literal(4)]).optional(),
   }),
   z.object({ type: z.literal('endMatch') }),
 ]);
