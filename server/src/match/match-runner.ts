@@ -23,17 +23,38 @@ import {
   entitySources,
   TeamSight,
   TICK_RATE,
+  ENTITY_TYPES,
+  isBuildingType,
+  isHeroType,
+  isMineType,
+  MAX_LEVEL,
+  NEUTRAL,
+  NEUTRAL_TEAM,
+  xpForLevel,
   type MatchSetup,
   type TreeList,
 } from '@game/shared';
 
-/** What the dev cheat can do (lobby message `cheat`). */
+/** What the test panel can do (lobby message `cheat`): test mode matches and dev servers. */
 export interface Cheat {
   xp?: number;
+  levelUp?: boolean;
   gold?: number;
   item?: string;
   pos?: [number, number];
+  spawn?: { unit: string; count: number; at: [number, number]; dummy?: boolean };
+  clear?: boolean;
+  god?: boolean;
+  freeCasts?: boolean;
+  reveal?: boolean;
+  speed?: 1 | 2 | 4;
 }
+
+/** Buff of the "can not die" switch and of training dummies. */
+const TEST_GOD = 'test_god';
+const TEST_DUMMY = 'test_dummy';
+/** At most this many test units at once (each spawn adds up to 20). */
+const MAX_TEST_UNITS = 200;
 
 /** Commands per second per player. Real play needs far less; the rest is dropped. */
 export const MAX_COMMANDS_PER_SEC = 30;
@@ -61,8 +82,12 @@ export class MatchRunner {
   readonly bytes = new Map<number, number>();
   droppedCommands = 0;
 
-  /** sim steps per network tick (watch mode runs the game faster) */
-  readonly speed: number;
+  /** sim steps per network tick (watch mode and the test speed switch run the game faster) */
+  speed: number;
+  /** test switch: these slots have no cooldowns and full mana */
+  private readonly freeCasts = new Set<number>();
+  /** units made by the test panel */
+  private readonly testUnits = new Set<number>();
   /** watch mode: all events of the steps since the last snapshot */
   private readonly events = new EventList();
 
@@ -119,10 +144,44 @@ export class MatchRunner {
     else this.sim.sendHome(slot);
   }
 
-  /** Dev servers only (the lobby checks): XP, gold, an item, a new place, full health and mana, cooldowns ready. */
+  /**
+   * Test panel (the lobby allows it in test mode and on dev servers): XP, gold, an item, a new
+   * place, spawns and switches. Every call also gives full health and mana and ready cooldowns.
+   */
   cheat(slot: number, c: Cheat): void {
     const hero = this.sim.heroes[slot];
     if (!hero?.heroState) return;
+    if (c.spawn) this.spawnTest(c.spawn);
+    if (c.clear) {
+      for (const id of this.testUnits) {
+        const e = this.sim.get(id);
+        if (e?.alive) this.sim.kill(e, { id: e.id, owner: e.owner, team: e.team });
+      }
+      this.testUnits.clear();
+    }
+    if (c.god !== undefined) {
+      if (c.god)
+        this.sim.addBuff(hero, {
+          id: TEST_GOD,
+          sourceId: hero.id,
+          sourceOwner: hero.owner,
+          sourceTeam: hero.team,
+          until: Infinity,
+          flags: 0,
+          minHp: 1,
+        });
+      else this.sim.removeBuff(hero, TEST_GOD);
+    }
+    if (c.freeCasts !== undefined) {
+      if (c.freeCasts) this.freeCasts.add(slot);
+      else this.freeCasts.delete(slot);
+    }
+    if (c.reveal !== undefined) {
+      const view = this.views.get(slot);
+      if (view) view.reveal = c.reveal;
+    }
+    if (c.speed) this.speed = c.speed;
+    if (c.levelUp && hero.heroState.level < MAX_LEVEL) this.sim.addXp(hero, xpForLevel(hero.heroState.level + 1) - hero.heroState.xp);
     if (c.xp) this.sim.addXp(hero, c.xp);
     if (c.gold) this.sim.addGold(hero, c.gold);
     const it = c.item ? itemIndex(c.item) : -1;
@@ -135,6 +194,34 @@ export class MatchRunner {
       hero.mana = hero.stats.maxMana;
       hero.cooldowns.fill(0);
       hero.heroState.itemCooldowns.clear();
+    }
+  }
+
+  /** Test units around a point: neutral (they attack everyone), or dummies that only stand and take hits. */
+  private spawnTest(s: NonNullable<Cheat['spawn']>): void {
+    const type = ENTITY_TYPES.indexOf(s.unit);
+    if (type < 0 || isHeroType(type) || isBuildingType(type) || isMineType(type)) return;
+    for (const id of this.testUnits) if (!this.sim.get(id)?.alive) this.testUnits.delete(id);
+    const count = Math.min(s.count, MAX_TEST_UNITS - this.testUnits.size);
+    for (let i = 0; i < count; i++) {
+      // A small ring around the point, so a group does not stand on one spot.
+      const a = (i / Math.max(1, count)) * Math.PI * 2;
+      const r = count > 1 ? 1.2 + 0.25 * count : 0;
+      const p = nearestWalkable(this.sim.nav, s.at[0] + Math.cos(a) * r, s.at[1] + Math.sin(a) * r, 16);
+      if (!p) continue;
+      const e = this.sim.spawn(type, NEUTRAL, NEUTRAL_TEAM, 255, p[0], p[1]);
+      this.testUnits.add(e.id);
+      if (s.dummy)
+        this.sim.addBuff(e, {
+          id: TEST_DUMMY,
+          sourceId: e.id,
+          sourceOwner: NEUTRAL,
+          sourceTeam: NEUTRAL_TEAM,
+          until: Infinity,
+          flags: 0,
+          stun: true,
+          minHp: 1,
+        });
     }
   }
 
@@ -161,6 +248,13 @@ export class MatchRunner {
   tick(): MatchPacket[] {
     this.events.clear();
     for (let k = 0; k < this.speed; k++) {
+      for (const slot of this.freeCasts) {
+        const h = this.sim.heroes[slot];
+        if (!h?.alive || !h.heroState) continue;
+        h.cooldowns.fill(0);
+        h.mana = h.stats.maxMana;
+        h.heroState.itemCooldowns.clear();
+      }
       this.sim.step();
       if (this.speed > 1) for (let i = 0; i < this.sim.events.count; i++) copyEvent(this.events, this.sim.events.items[i]!);
       if (this.sim.tick % TICK_RATE === 0) this.commandCount.clear();

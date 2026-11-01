@@ -2147,6 +2147,92 @@
       ],
       "sight": 0,
       "collisionRadius": 0
+    },
+    {
+      "id": "elder_colossus",
+      "name": "Elder Colossus",
+      "group": "neutral",
+      "level": 15,
+      "hp": 9000,
+      "mana": 0,
+      "armor": 9,
+      "armorType": "heavy",
+      "attackType": "normal",
+      "damage": [
+        150,
+        180
+      ],
+      "attackCooldown": 2.4,
+      "attackRange": 2.2,
+      "projectileSpeed": 0,
+      "canHit": [
+        "ground"
+      ],
+      "moveSpeed": 2.4,
+      "movementLayer": "ground",
+      "sight": 14,
+      "collisionRadius": 2.3,
+      "bounty": [
+        450,
+        550
+      ],
+      "skills": [
+        {
+          "id": "ground_slam",
+          "autoCast": true,
+          "radius": 6,
+          "damage": 260,
+          "stunDuration": 2,
+          "cooldown": 9
+        },
+        {
+          "id": "stone_guard",
+          "passive": true,
+          "spellReductionPct": 35
+        }
+      ],
+      "look": "A 5 m titan of black basalt that walks on its fists: a lava fissure in its chest, obsidian horns and spikes, red-hot crystals on its shoulders. Boss of the two boss camps."
+    },
+    {
+      "id": "cinder_drake",
+      "name": "Cinder Drake",
+      "group": "neutral",
+      "level": 12,
+      "hp": 3600,
+      "mana": 0,
+      "armor": 5,
+      "armorType": "medium",
+      "attackType": "magic",
+      "damage": [
+        90,
+        110
+      ],
+      "attackCooldown": 1.7,
+      "attackRange": 5,
+      "projectileSpeed": 14,
+      "canHit": [
+        "ground",
+        "air"
+      ],
+      "moveSpeed": 3.2,
+      "movementLayer": "ground",
+      "sight": 14,
+      "collisionRadius": 1.1,
+      "bounty": [
+        200,
+        240
+      ],
+      "skills": [
+        {
+          "id": "ember_flare",
+          "autoCast": true,
+          "radius": 4,
+          "damage": 150,
+          "stunDuration": 0.5,
+          "cooldown": 10
+        }
+      ],
+      "look": "A long, low magma salamander-drake on four splayed legs: black scales with lava glowing between them, a heavy crocodile head with swept-back horns and a fiery mouth, red spines down the back. Guards the Elder Colossus and spits fire."
     }
   ]
 }

@@ -67,7 +67,24 @@ export class NavBlockers {
     return free;
   }
 
-  /** Chopped tree: its forest cells become open ground for good. */
+  /** Does a building cover any of these cells? */
+  anyCovered(cells: readonly number[]): boolean {
+    for (const i of cells) if (this.cover[i]! > 0) return true;
+    return false;
+  }
+
+  /** A tree grew back: its forest cells close again. */
+  closeCells(cells: readonly number[]): void {
+    if (!cells.length) return;
+    for (const i of cells) {
+      this.base[i] = 0;
+      this.nav.walk[i] = 0;
+    }
+    this.closeVersion++;
+    this.changed();
+  }
+
+  /** Chopped tree: its forest cells become open ground (until the tree grows back). */
   openCells(cells: readonly number[]): void {
     if (!cells.length) return;
     for (const i of cells) {

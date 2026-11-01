@@ -168,7 +168,8 @@
           170,
           220
         ],
-        "knockback": 2
+        "knockback": 2,
+        "breaksTrees": true
       }
     },
     {
@@ -257,7 +258,8 @@
         "stunDuration": [
           2,
           2.5
-        ]
+        ],
+        "breaksTrees": true
       }
     },
     {
@@ -287,7 +289,8 @@
           145,
           205,
           265
-        ]
+        ],
+        "breaksTrees": true
       }
     },
     {
@@ -318,7 +321,8 @@
         ],
         "knockback": 3,
         "slowPct": 30,
-        "slowDuration": 2
+        "slowDuration": 2,
+        "breaksTrees": true
       }
     },
     {
@@ -387,7 +391,8 @@
           40,
           60
         ],
-        "burnDuration": 4
+        "burnDuration": 4,
+        "breaksTrees": true
       }
     },
     {
@@ -483,7 +488,8 @@
           50,
           60
         ],
-        "slowDuration": 3
+        "slowDuration": 3,
+        "breaksTrees": true
       }
     },
     {
@@ -846,7 +852,8 @@
           1.25,
           1.5,
           1.75
-        ]
+        ],
+        "breaksTrees": true
       }
     },
     {
@@ -1388,7 +1395,8 @@
           190,
           245
         ],
-        "effect": "fire_breath"
+        "effect": "fire_breath",
+        "breaksTrees": true
       }
     },
     {
@@ -1519,7 +1527,8 @@
           220
         ],
         "knockback": 2,
-        "effect": "sweep"
+        "effect": "sweep",
+        "breaksTrees": true
       }
     },
     {
@@ -1691,7 +1700,8 @@
           60
         ],
         "slowDuration": 3,
-        "effect": "tremor"
+        "effect": "tremor",
+        "breaksTrees": true
       }
     },
     {
@@ -1730,7 +1740,8 @@
           60
         ],
         "burnDuration": 4,
-        "effect": "inferno_dive"
+        "effect": "inferno_dive",
+        "breaksTrees": true
       }
     },
     {

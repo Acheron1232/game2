@@ -1,0 +1,15 @@
+{
+  "id": "bones",
+  "triangles": 202,
+  "bones": 1,
+  "clips": [
+    {
+      "name": "idle",
+      "frames": 30,
+      "loop": true
+    }
+  ],
+  "height": 0.23,
+  "sockets": [],
+  "skin": null
+}

@@ -3,6 +3,7 @@ export * from './protocol/messages';
 export * from './protocol/game';
 export * from './protocol/lobby';
 export * from './protocol/client-view';
+export * from './protocol/hero-info';
 export * from './data/index';
 export * from './map/terrain';
 export * from './nav/nav-grid';

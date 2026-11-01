@@ -1,6 +1,6 @@
 {
   "id": "alpha_wolf",
-  "triangles": 414,
+  "triangles": 826,
   "bones": 18,
   "clips": [
     {
@@ -44,7 +44,7 @@
       "loop": false
     }
   ],
-  "height": 1.729,
+  "height": 1.821,
   "sockets": [],
   "skin": "monsters_1_skin"
 }

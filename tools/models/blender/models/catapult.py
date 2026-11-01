@@ -18,13 +18,13 @@ def build():
         m.part("box", (0.16, 1.9, 0.18), at=(sx * 0.42, 0, 0.42), slot=s.body, uv="box", tint=W, bone="root", bevel=0.1)
         m.part("box", (0.14, 0.14, 0.9), at=(sx * 0.42, 0.25, 0.85), rot=(-15, 0, 0), slot=s.face, tint=W, bone="root", bevel=0.1)
         for y in (-0.65, 0.65):
-            m.part("cylinder", (0.62, 0.62, 0.12), at=(sx * 0.58, y, 0.31), rot=(0, 90, 0), slot=s.legs, uv="front", back=s.legs, tint=W, bone="root", segments=10)
+            m.part("cylinder", (0.62, 0.62, 0.12), at=(sx * 0.58, y, 0.31), rot=(0, 90, 0), slot=s.legs, uv="box", tint=W, bone="root", segments=12, smooth=40)
     for y in (-0.8, 0.0, 0.8):
         m.part("box", (0.95, 0.14, 0.14), at=(0, y, 0.45), slot=s.body, tint=W, bone="root", bevel=0.1)
     m.part("box", (1.0, 0.18, 0.18), at=(0, 0.25, 1.28), slot=s.face, tint=W, bone="root", bevel=0.1)
     # Winch with rope, iron plates, team banner
     m.part("cylinder", (0.18, 0.7, 0.18), at=(0, 0.7, 0.62), rot=(0, 0, 90), slot=s.foot_hand, uv="wrap", tint=W, bone="root", segments=8)
-    m.part("box", (0.04, 0.32, 0.5), at=(0.5, 0.75, 1.05), slot=s.team, uv="front", tint=W, bone="root", bevel=0.05)
+    m.part("box", (0.04, 0.32, 0.5), at=(0.5, 0.75, 1.05), slot=s.team, uv="side", tint=W, bone="root", bevel=0.05)
     m.part("box", (0.04, 0.04, 0.9), at=(0.5, 0.9, 0.9), slot=s.body, tint=W, bone="root", bevel=0.1)
     # Throwing arm with the stone cup and a stone
     c.limb(m, (0, 0.25, 0.85), (0, -0.9, 1.35), [(0, 0.16, 0.16), (1, 0.12, 0.12)], slot=s.arm, uv="wrap", bone="arm", segments=6)

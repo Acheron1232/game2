@@ -581,10 +581,16 @@ function placeWard(sim: MatchSim, e: SimEntity, x: number, y: number, sight: num
 /** One roll on the camp's drop table when the whole camp is dead. */
 export function rollCampDrop(sim: MatchSim, camp: CampState): void {
   const type = gameData.camps.campTypes.find((t) => t.id === camp.type);
-  const table = type ? gameData.camps.dropTables[type.dropTable] : undefined;
-  if (!table) return;
-  const item = rollDropTable(sim, table);
-  if (item >= 0) sim.dropOnGround(item, newCharges(item), camp.lastDeathX, camp.lastDeathY);
+  if (!type) return;
+  // Big camps roll more tables; their items lie a step apart, not in one heap.
+  [type.dropTable, ...(type.extraDrops ?? [])].forEach((name, k) => {
+    const table = gameData.camps.dropTables[name];
+    const item = table ? rollDropTable(sim, table) : -1;
+    if (item < 0) return;
+    const a = k * 2.4;
+    const r = k ? 1.2 : 0;
+    sim.dropOnGround(item, newCharges(item), camp.lastDeathX + Math.cos(a) * r, camp.lastDeathY + Math.sin(a) * r);
+  });
 }
 
 /** Item index from a drop table, or -1 when nothing drops. */

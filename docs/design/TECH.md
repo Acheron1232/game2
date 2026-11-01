@@ -131,7 +131,7 @@ The server keeps a session token per player. The tab keeps its own token in sess
 - Phase 9 target: 1-unit cells (256 × 256) per team, updated every 2 ticks (10 Hz).
 - Each unit marks cells inside its sight radius. Line of sight is blocked by trees and by higher ground (simple height check along the ray; precomputed per cell height).
 - The server sends the client a compressed vision bit map (only changed rows) for the fog render, plus spawn/despawn of entities.
-- The client renders fog as a low-res texture, blurred and blended over terrain, and on the minimap.
+- The client renders fog as a low-res texture, blurred and blended over terrain, and on the minimap. Built (2026-10-31): the 2-unit cell grid is blurred (1-4-6-4-1 each way) every time sight changes, so the edge of sight is a soft gradient of a few units; cells ease toward their new light (about 0.5 s, no linear steps); the shader wobbles the edge a little so it is not a polygon of cells. Additive light on the ground (lantern and crystal pools) shows only where the player sees now.
 
 ## 7. AI
 

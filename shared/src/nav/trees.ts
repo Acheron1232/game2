@@ -182,6 +182,35 @@ function standCell(nav: NavGrid, treeX: number, treeY: number, workerX: number, 
   return bestCell;
 }
 
+/** A cut tree grows back with full wood. Returns the cells it closes again (see treeCells). Idempotent. */
+export function restoreTree(index: TreeIndex, i: number): number[] {
+  if (i < 0 || i >= index.count || index.alive[i]) return [];
+  index.alive[i] = 1;
+  index.wood[i] = TREE_WOOD;
+  return treeCells(index, i);
+}
+
+/** Standing trees whose middle is within r of (x, y), in index order (the same on every machine). */
+export function treesInCircle(index: TreeIndex, x: number, y: number, r: number): number[] {
+  const data = treePrivate.get(index);
+  const found: number[] = [];
+  if (!data || !(r > 0)) return found;
+  const { bucketCols, bucketRows, bucketHead, bucketNext } = data;
+  const c0 = clamp(Math.floor((x - r) / BUCKET_SIZE), 0, bucketCols - 1);
+  const c1 = clamp(Math.floor((x + r) / BUCKET_SIZE), 0, bucketCols - 1);
+  const r0 = clamp(Math.floor((y - r) / BUCKET_SIZE), 0, bucketRows - 1);
+  const r1 = clamp(Math.floor((y + r) / BUCKET_SIZE), 0, bucketRows - 1);
+  for (let row = r0; row <= r1; row++)
+    for (let col = c0; col <= c1; col++)
+      for (let tree = bucketHead[row * bucketCols + col]!; tree !== -1; tree = bucketNext[tree]!) {
+        if (!index.alive[tree]) continue;
+        const dx = index.x[tree]! - x,
+          dy = index.y[tree]! - y;
+        if (dx * dx + dy * dy <= r * r) found.push(tree);
+      }
+  return found.sort((a, b) => a - b);
+}
+
 /** Nearest standing tree in range that has a walkable cell next to it. */
 export function nearestChoppableTree(
   index: TreeIndex,

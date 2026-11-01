@@ -15,6 +15,8 @@ W = "#ffffff"
 
 def build():
     m = Model("forest_elf", skin="forest_elf_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.25, head=1.1)
     humanoid.skeleton(m, height=1.95, shoulders=0.22, hips=0.12, leg_len=1.08, arm_len=1.05, hunch=0.3, arm_spread=0.35, knee_bend=0.25, elbow_bend=0.6)
     j = m.joints
     hz = j["hips"][2]
@@ -57,7 +59,7 @@ def build():
         m.part("hull", 1, profile=[tuple(base + Vector((-math.sin(a) * 0.07, math.cos(a) * 0.07, 0))), tuple(base + Vector((math.sin(a) * 0.07, -math.cos(a) * 0.07, 0))), tuple(tip), tuple((base + tip) / 2 + Vector((math.cos(a) * 0.03, math.sin(a) * 0.03, 0)))],
                slot="extra_1", tint=W, bone="hips", smooth=10)
     for side in ("L", "R"):
-        c.leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0.17, 0.16, 0.1), shin=(0.12, 0.13, 0.09), band="trim", boot=0.8)
+        c.leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0.2, 0.19, 0.12), shin=(0.14, 0.15, 0.11), band="trim", boot=1.05)
 
     # Quiver on the back
     qa, qb = Vector((0.14, fy + 0.22, top - 0.55)), Vector((-0.1, fy + 0.26, top + 0.05))

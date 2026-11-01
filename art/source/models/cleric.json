@@ -1,11 +1,11 @@
 {
   "id": "cleric",
-  "triangles": 1070,
+  "triangles": 1086,
   "bones": 19,
   "clips": [
     {
       "name": "idle",
-      "frames": 58,
+      "frames": 69,
       "loop": true
     },
     {
@@ -15,12 +15,12 @@
     },
     {
       "name": "attack",
-      "frames": 27,
+      "frames": 29,
       "loop": false
     },
     {
       "name": "attack2",
-      "frames": 27,
+      "frames": 29,
       "loop": false
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "name": "hit",
-      "frames": 12,
+      "frames": 13,
       "loop": false
     },
     {
@@ -44,7 +44,7 @@
       "loop": false
     }
   ],
-  "height": 1.805,
+  "height": 1.878,
   "sockets": [
     "staff"
   ],

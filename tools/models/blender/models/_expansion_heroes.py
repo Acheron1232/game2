@@ -142,7 +142,8 @@ def thorn_marshal():
     # Long deer muzzle, paired ears, branching antlers.
     orb(m,(0,hy-.15,hz+.065),(.25,.35,.20),"face","head",segments=14,rings=7,sub=(.15,.85,.02,.44))
     for sx in (-1,1):
-        orb(m,(sx*.19,hy+.015,hz+.23),(.14,.11,.31),"head_back","head",segments=10,rings=6)
+        # Narrow deer ears tilted out (they were wide flat ovals that read as round mouse ears).
+        m.part("sphere",(.075,.05,.22),at=(sx*.21,hy+.02,hz+.27),rot=(0,sx*38,0),slot="head_back",bone="head",segments=10,rings=6,smooth=60)
         points=[(sx*.12,hy+.02,hz+.31),(sx*.25,hy+.01,hz+.57),(sx*.35,hy+.04,hz+.83),(sx*.47,hy+.06,hz+.97)]
         for a,b in zip(points,points[1:]): rod(m,a,b,.031,"weapon_b","head",segments=7)
         for i,p in enumerate(points[1:]):

@@ -258,3 +258,17 @@ Seven built-in image_gen calls. Thorn Marshal was the first test: processed and 
 - Prompt: `tools/art/prompts/selected-batch2-4.md`; guide: `art/source/uv/selected-batch2-4.png`; output: `art/raw/selected-batch2-4.png`; models: badger_mercenary, fox_trailshot.
 - Prompt: `tools/art/prompts/selected-batch2-5.md`; guide: `art/source/uv/selected-batch2-5.png`; output: `art/raw/selected-batch2-5.png`; models: coalback_porter, kite_bomber.
 - Boar/rider test sheet inspected first. Two 16-cell cavalry skins (separate rider and mount panels); six 8-cell skins packed two per sheet. Split/processed with `selected-skins.ts --batch2`, plus team masks. Hooves/horns, wood/steel spear surfaces, boots/gloves and equipment/fur use explicit sub-rectangles. Buildings reuse golem_foundry_skin materials.
+
+## 2026-11-01 08:53 UTC — skin_bosses
+- Output: `art/raw/skin_bosses.png` (3132 KB, 99 s)
+- Prompt file: `tools/art/prompts/skin_bosses.md`
+- Input images: `art/source/uv/elder_colossus_guide.png`, `art/source/uv/cinder_drake_guide.png`
+
+## 2026-11-01 — Elder Temple / Living Ruins concept (built-in image_gen, 1 call)
+
+- Output: `art/concepts/2026-11-01/elder-temple-living-ruins.png` (1536×1024; three views: map, forest camp, temple courts).
+- Full prompt: `tools/art/prompts/elder-temple-living-ruins-concept.md`.
+- Input: user-provided top-down map image from the chat, used as a structural and palette reference.
+- Original output: `~/.codex/generated_images/01a1964f-a36c-7f72-ad33-f6d00c0bd10b/exec-423679c5-2838-4c93-8e98-9fabd36bacb6.png`; copied into the project without replacing existing art.
+- Visual review: useful camp scale and temple court mood. Full map is a density study; four base construction areas, exact topology and center proportions require measured greybox work. No runtime map changes.
+- Design proposal and starting greybox dimensions: `art/concepts/2026-11-01/README.md`.

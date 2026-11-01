@@ -5,6 +5,7 @@ import '@fontsource/alegreya-sans/400.css';
 import '@fontsource/alegreya-sans/700.css';
 import './styles.css';
 import './ui-skin.css';
+import './hud.css';
 import {
   BuffFlag,
   abilityMechanic,
@@ -20,6 +21,8 @@ import {
   isMineType,
   gameData,
   isHeroType,
+  ABILITIES,
+  abilityIndex,
   itemIndex,
   ITEMS,
   buyPlan,
@@ -78,6 +81,7 @@ import {
   createMenuScreen,
   showFatalError,
   toggleFullScreen,
+  type HeroStatsView,
   type ItemDrop,
   type OrderEnemy,
   type ShopView,
@@ -86,6 +90,8 @@ import {
 import { S } from './ui/strings';
 import { abilityDetails } from './ui/ability-details';
 import { inspectAbilities } from './ui/inspect';
+import { flagBuffViews, heroBuffViews, heroItemViews } from './ui/buff-view';
+import { createTestPanel, placeLabel, type TestPanel, type TestPlace } from './ui/test-panel';
 import { isTextEntry } from './render/rts-camera';
 import { abilityBlockReason } from './ui/ability-feedback';
 import { createGpuHint } from './ui/gpu-hint';
@@ -109,6 +115,10 @@ const saveName = (n: string) => {
 };
 
 const TEAM_HEX = ['#D42A2A', '#2A5BD4', '#1FB5A8', '#7B2FBF'];
+/** Right button held: at most one new move order this often (about 7 a second, well under the upload budget). */
+const STEER_MS = 140;
+/** ... and only when the mouse moved at least this far (CSS pixels). */
+const STEER_MIN_PX = 6;
 
 async function main(): Promise<void> {
   const canvas = document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -248,17 +258,28 @@ async function main(): Promise<void> {
       net.send({ type: 'start', watch: { speed: watchSpeed } });
     } else net.send({ type: 'start' });
   };
+  /** Test mode: the test panel and a place it waits for (made once the assets are loaded). */
+  let testPanel: TestPanel | null = null;
+  let testPlace: TestPlace | null = null;
+  const endTestPlace = () => {
+    testPlace = null;
+    testPanel?.setPlacing(null);
+  };
   const endMatch = () => {
     sound.stopMusic();
     match?.dispose();
     match = null;
     pendingMatch = null;
+    testPanel?.setVisible(false);
+    endTestPlace();
   };
   const startMatchIfReady = () => {
     if (!world || !pendingMatch) return;
     match?.dispose();
     const m = new MatchClient(world, net, pendingMatch, floating);
     match = m;
+    testPanel?.setVisible(!!m.info.sandbox);
+    endTestPlace();
     m.allBars = settings.healthBars === 'always';
     m.sound = sound;
     sound.playMusic('battle');
@@ -455,6 +476,7 @@ async function main(): Promise<void> {
     w.camera.edgeScroll = settings.edgeScroll;
     w.camera.speedScale = settings.cameraSpeed;
     floating.damageNumbers = settings.damageNumbers;
+    w.camera.shakeEnabled = settings.screenShake;
     w.combat.setQuality(settings.effects);
     sound.setVolumes(settings.master, settings.music, settings.sfx, settings.voice);
     if (match) match.allBars = settings.healthBars === 'always';
@@ -513,6 +535,30 @@ async function main(): Promise<void> {
 
   // ---- items and shops
   const itemIcon = (d: ItemDef) => (assets.has(`icons/${d.id}.webp`) ? assets.url(`icons/${d.id}.webp`) : null);
+
+  // ---- test mode: the test panel (levels, gold, items, enemies, switches)
+  const TIER_ORDER = ['consumable', 'basic', 'advanced', 'rare', 'legendary'];
+  const testPanelRef: TestPanel = createTestPanel(
+    {
+      send: (c) => {
+        net.send({ type: 'cheat', ...c });
+        if (c.reveal !== undefined) match?.setReveal(c.reveal);
+      },
+      place: (p) => {
+        testPlace = p;
+        const unit = p.kind === 'teleport' ? '' : (gameData.units.find((u) => u.id === p.unit)?.name ?? p.unit);
+        testPanelRef.setPlacing(placeLabel(p, unit));
+      },
+    },
+    [...ITEMS]
+      .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || (a.cost ?? 9999) - (b.cost ?? 9999))
+      .map((d) => ({ id: d.id, name: d.name, icon: itemIcon(d), tier: d.tier })),
+    gameData.units.map((u) => ({ id: u.id, name: u.name, group: u.group })),
+    xpForLevel(MAX_LEVEL),
+  );
+  game.root.append(testPanelRef.root);
+  testPanel = testPanelRef;
+  testPanelRef.setVisible(!!(match as MatchClient | null)?.info.sandbox);
   const itemTooltip = (d: ItemDef, st: ItemStack | null, slot = -1, price = d.cost ?? 0): string[] => {
     const numbers = [
       st?.charges ? `${S.charges} ${st.charges}` : '',
@@ -760,15 +806,24 @@ async function main(): Promise<void> {
   };
 
   /** The hero's attributes, damage and armor with its items (same math as the server). */
-  const heroStatsLine = (def: HeroDef, level: number): string => {
+  const heroStatsView = (def: HeroDef, level: number): HeroStatsView => {
     const bonus = itemBonus(myInventory());
     const base = heroAttributes(def, level);
     const st = heroStats(def, level, bonus);
-    const str = base.strength + (bonus.strength ?? 0),
-      agi = base.agility + (bonus.agility ?? 0),
-      int = base.intelligence + (bonus.intelligence ?? 0);
-    return `${S.strShort} ${str} · ${S.agiShort} ${agi} · ${S.intShort} ${int} · ${S.damageShort} ${Math.round(st.damageMin)}-${Math.round(st.damageMax)} · ${S.armor} ${Math.round(st.armor)}`;
+    return {
+      strength: base.strength + (bonus.strength ?? 0),
+      agility: base.agility + (bonus.agility ?? 0),
+      intelligence: base.intelligence + (bonus.intelligence ?? 0),
+      main: def.mainStat,
+      damageMin: st.damageMin,
+      damageMax: st.damageMax,
+      armor: st.armor,
+      // The server's number: slows and speed buffs included.
+      moveSpeed: match?.player.moveSpeed ? match.player.moveSpeed / 100 : st.moveSpeed,
+    };
   };
+  const heroStatsLine = (s: HeroStatsView): string =>
+    `${S.strShort} ${s.strength} · ${S.agiShort} ${s.agility} · ${S.intShort} ${s.intelligence} · ${S.damageShort} ${Math.round(s.damageMin)}-${Math.round(s.damageMax)} · ${S.armor} ${Math.round(s.armor)}`;
   // Hero panel and the info line of a selected unit, a few times per second.
   const unitName = (e: NetEntity) => {
     const id = ENTITY_TYPES[e.type] ?? '';
@@ -848,28 +903,34 @@ async function main(): Promise<void> {
         game.alert(S.baseAttacked);
       }
     }
-    // Allied heroes in the top bar: level from the scoreboard, health from what we see.
+    // Heroes in the top bar: allies left of the clock, enemies right. Level from the scoreboard
+    // (everyone sees it), health only from what we see now.
     const allies: TeamHeroView[] = [];
+    const enemies: TeamHeroView[] = [];
+    const myTeam = match.info.slots.find((x) => x.index === match!.slot)?.team;
     for (const s of match.info.slots) {
-      if (s.index === match.slot || match.info.slots.find((x) => x.index === match!.slot)?.team !== s.team) continue;
+      if (s.index === match.slot || !s.hero) continue;
       const hero = match.playerHero(s.index);
       const row = scores.find((r) => r.slot === s.index);
       const def = gameData.heroes.find((h) => h.id === s.hero);
-      allies.push({
+      const dead = !!hero && (hero.state & UnitState.Dead) !== 0;
+      (s.team === myTeam ? allies : enemies).push({
         name: s.name,
         color: TEAM_HEX[s.color] ?? '#fff',
         level: row?.level ?? hero?.level ?? 1,
-        hp: hero && hero.maxHp ? hero.hp / hero.maxHp : -1,
+        hp: hero && hero.maxHp && !dead ? hero.hp / hero.maxHp : -1,
+        dead,
         portrait: def && assets.has(`portraits/${def.id}.webp`) ? assets.url(`portraits/${def.id}.webp`) : null,
       });
     }
-    game.setTeam(allies);
+    game.setTeam(allies, match.spectator ? [] : enemies);
     if (aim && own && own.state & UnitState.Dead) setAim(null);
     const p = match.player;
     const def = gameData.heroes.find((h) => h.id === ENTITY_TYPES[own?.type ?? -1]);
     if (own && def) {
       const prev = xpForLevel(p.level),
         next = p.level >= MAX_LEVEL ? prev : xpForLevel(p.level + 1);
+      const stats = heroStatsView(def, p.level);
       game.setHero({
         name: def.name,
         portrait: assets.has(`portraits/${def.id}.webp`) ? assets.url(`portraits/${def.id}.webp`) : null,
@@ -882,7 +943,8 @@ async function main(): Promise<void> {
         gold: p.gold,
         respawn: Math.ceil(p.respawnTicks / 20),
         skillPoints: p.skillPoints,
-        statsLine: heroStatsLine(def, p.level),
+        statsLine: heroStatsLine(stats),
+        stats,
       });
     }
     game.setAbilities(
@@ -1000,10 +1062,27 @@ async function main(): Promise<void> {
               cooldownLeft: left,
               cooldownFrac: left / ((skill?.['cooldown'] as number | undefined) || 1),
               noMana: !!skill && sel.mana < ((skill['manaCost'] as number | undefined) ?? 0),
+              // Heroes: how far each skill is learned (an aura or a passive shows it is there).
+              ...(isHeroType(sel.type) && sel.heroItems
+                ? {
+                    level: sel.abilityLevels[index] ?? 0,
+                    maxLevel: ABILITIES[abilityIndex(gameData.heroes[sel.type]!.abilities[index]!)]?.maxLevel,
+                  }
+                : {}),
             };
           })
         : undefined,
+      sel && sel !== own
+        ? {
+            buffs:
+              isHeroType(sel.type) && sel.heroItems
+                ? heroBuffViews(sel.buffList, match.clock.serverTick(), assets)
+                : flagBuffViews(sel.state & UnitState.Dead ? 0 : sel.buffs, assets),
+            items: sel.heroItems ? heroItemViews(sel.heroItems, assets) : undefined,
+          }
+        : undefined,
     );
+    game.setBuffs(own && !(own.state & UnitState.Dead) ? heroBuffViews(own.buffList, match.clock.serverTick(), assets) : []);
     // The card next to the mouse: any unit or hero under it, except the own hero and the selected one.
     const hov = pointer.inCanvas && !aim && !w.camera.dragging ? match.pick(cursor.x, cursor.y) : null;
     hoverLines = hov && hov !== own && hov !== sel && !isBuildingType(hov.type) && !isMineType(hov.type) ? hoverCardLines(hov) : null;
@@ -1225,17 +1304,38 @@ async function main(): Promise<void> {
     pointer.inCanvas = true;
     // Content changes a few times per second (HUD timer); the card follows the mouse at once.
     if (hoverLines) game.setHoverCard(hoverLines, pointer.x, pointer.y);
+    steerTo(e);
   });
   canvas.addEventListener('pointerleave', () => {
     pointer.inCanvas = false;
     hoverLines = null;
     game.setHoverCard(null);
   });
+  // Holding the right button on the ground keeps the hero walking toward the mouse, a few
+  // orders a second (only when the mouse really moved), so steering feels direct.
+  let steer: { x: number; y: number; at: number } | null = null;
+  const steerTo = (e: PointerEvent) => {
+    if (!steer || !match) return;
+    if (!(e.buttons & 2) || router.screen !== 'game') return void (steer = null);
+    const now = performance.now();
+    if (now - steer.at < STEER_MS || Math.hypot(e.offsetX - steer.x, e.offsetY - steer.y) < STEER_MIN_PX) return;
+    const p = w.pickGround(e.offsetX, e.offsetY);
+    if (!p) return;
+    steer = { x: e.offsetX, y: e.offsetY, at: now };
+    match.moveTo(p.x, p.y, false);
+  };
+  const stopSteer = (e: PointerEvent) => {
+    if (e.button === 2 || e.type === 'pointercancel') steer = null;
+  };
+  window.addEventListener('pointerup', stopSteer);
+  window.addEventListener('pointercancel', stopSteer);
+  window.addEventListener('blur', () => (steer = null));
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
     if (router.screen !== 'game' || !match || w.camera.dragging || e.altKey || e.button === 1) return;
     const hit = match.pick(e.offsetX, e.offsetY);
     if (e.button === 2) {
+      if (testPlace) return endTestPlace();
       if (aim) return setAim(null);
       if (hit && match.isEnemy(hit)) return match.attack(hit);
       if (hit && hit !== match.ownHero && !isBuildingType(hit.type)) {
@@ -1249,11 +1349,22 @@ async function main(): Promise<void> {
       }
       const p = w.pickGround(e.offsetX, e.offsetY);
       const hero = match.ownHero?.unit;
-      if (p && hero && !hero.dead) {
-        match.moveTo(p.x, p.y, e.shiftKey);
-        moveMarker.show(p.x, p.y, w.terrain.heightAt(p.x, p.y));
-      }
+      if (!p || !hero || hero.dead) return;
+      match.moveTo(p.x, p.y, e.shiftKey);
+      moveMarker.show(p.x, p.y, w.terrain.heightAt(p.x, p.y));
+      // Queued waypoints stay single clicks; a held RMB keeps the remote steering behavior.
+      steer = e.shiftKey ? null : { x: e.offsetX, y: e.offsetY, at: performance.now() };
     } else if (e.button === 0) {
+      if (testPlace) {
+        const p = w.pickGround(e.offsetX, e.offsetY);
+        if (!p) return;
+        const at: [number, number] = [p.x, p.y];
+        if (testPlace.kind === 'teleport') net.send({ type: 'cheat', pos: at });
+        else net.send({ type: 'cheat', spawn: { unit: testPlace.unit, count: testPlace.count, at, dummy: testPlace.kind === 'dummy' } });
+        // Shift keeps placing the same thing.
+        if (!e.shiftKey) endTestPlace();
+        return;
+      }
       if (aim) return fireAim(e.offsetX, e.offsetY, hit);
       selectedItem = 0;
       if (!hit) {
@@ -1299,7 +1410,8 @@ async function main(): Promise<void> {
     }
     if (action === 'attack') setAim({ kind: 'attack' });
     if (e.key === 'Escape') {
-      if (aim) setAim(null);
+      if (testPlace) endTestPlace();
+      else if (aim) setAim(null);
       else closeShop();
     }
     if (action === 'stop') match.stop();
@@ -1308,7 +1420,7 @@ async function main(): Promise<void> {
       e.preventDefault();
       w.toggleStress(300);
     }
-    if (import.meta.env.DEV && e.key === 'F6') {
+    if ((import.meta.env.DEV || match.info.sandbox) && e.key === 'F6') {
       e.preventDefault();
       net.send({ type: 'cheat', xp: xpForLevel(MAX_LEVEL) });
       game.alert(`Test: level ${MAX_LEVEL}, health, mana and cooldowns restored.`);
@@ -1382,6 +1494,7 @@ async function main(): Promise<void> {
     const poses = now - lastPoseUpdate >= ANIMATION_MIN_STEP_MS;
     if (poses) lastPoseUpdate = now;
     w.scene.render(true, !poses);
+    if (router.screen === 'game') game.animate(now);
   });
 }
 

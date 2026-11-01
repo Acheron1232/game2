@@ -21,6 +21,8 @@ export function scatterInstances(
   chunk = INSTANCE_CHUNK,
   /** told where copy i ended up (mesh, thin instance index, the mesh's matrix buffer), for later changes */
   placed?: (i: number, mesh: Mesh, slot: number, data: Float32Array) => void,
+  /** color of copy i (RGBA at `out[at..at+3]`, multiplied with the model's colors; over 1 brightens) */
+  tint?: (i: number, out: Float32Array, at: number) => void,
 ): Mesh[] {
   const local = mesh.computeWorldMatrix(true).clone();
   mesh.parent = null;
@@ -50,14 +52,17 @@ export function scatterInstances(
   lists.forEach((list, k) => {
     const target = meshes[k]!;
     const buf = new Float32Array(list.length * 16);
+    const colors = tint ? new Float32Array(list.length * 4) : null;
     list.forEach((i, j) => {
       compose(i, m);
       local.multiplyToRef(m, out);
       out.copyToArray(buf, j * 16);
       placed?.(i, target, j, buf);
+      if (colors) tint!(i, colors, j * 4);
     });
     // A buffer that may change later (chopped trees) must not be static.
     target.thinInstanceSetBuffer('matrix', buf, 16, !placed);
+    if (colors) target.thinInstanceSetBuffer('color', colors, 4, true);
     target.thinInstanceRefreshBoundingInfo(false);
     target.alwaysSelectAsActiveMesh = false;
     target.isPickable = false;

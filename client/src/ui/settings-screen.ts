@@ -283,6 +283,13 @@ export function createSettingsScreen(settings: Settings, onChange: (s: Settings)
               ),
             ),
             row(
+              S.screenShake,
+              toggle(
+                () => settings.screenShake,
+                (v) => (settings.screenShake = v),
+              ),
+            ),
+            row(
               S.healthBars,
               select(
                 [

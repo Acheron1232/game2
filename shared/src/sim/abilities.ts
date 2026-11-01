@@ -252,6 +252,14 @@ function updateChannel(sim: MatchSim, e: SimEntity, a: AbilityDef, level: number
 
 type Effect = (sim: MatchSim, e: SimEntity, a: AbilityDef, level: number, target: CastTarget, t: SimEntity | undefined) => boolean | void;
 
+/**
+ * Big physical blows break the trees in their area, like a real forest would (abilities.json
+ * `breaksTrees: true`). The paths through the forest that open are the same on every machine.
+ */
+function breakTrees(sim: MatchSim, a: AbilityDef, x: number, y: number, r: number, keep?: (tx: number, ty: number) => boolean): void {
+  if (a.params['breaksTrees'] === true) sim.factions?.breakTrees(x, y, r, keep);
+}
+
 function src(e: SimEntity): DamageSource {
   return { id: e.id, owner: e.owner, team: e.team };
 }
@@ -356,6 +364,7 @@ export const EFFECTS: Record<string, Effect> = {
   },
   // Staff Warrior
   sweep: (sim, e, a, level) => {
+    breakTrees(sim, a, e.mover.x, e.mover.y, param(a, 'radius', level));
     forEnemies(
       sim,
       e,
@@ -380,6 +389,7 @@ export const EFFECTS: Record<string, Effect> = {
     const [x, y] = landing(sim, e, ...clampPoint(e, tg.x, tg.y, lv(a.castRange, level)));
     sim.forceMove(e, x, y, param(a, 'leapTime', level), 'leap', () => {
       sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityFxKind(abilityIndex(a.id), level));
+      breakTrees(sim, a, x, y, param(a, 'radius', level));
       forEnemies(
         sim,
         e,
@@ -400,6 +410,10 @@ export const EFFECTS: Record<string, Effect> = {
       half = (param(a, 'angleDeg', level) * Math.PI) / 360;
     const dir = Math.atan2(tg.y - e.mover.y, tg.x - e.mover.x);
     e.mover.facing = Math.atan2(-(tg.x - e.mover.x), tg.y - e.mover.y);
+    breakTrees(sim, a, e.mover.x, e.mover.y, len, (tx, ty) => {
+      const ang = Math.atan2(ty - e.mover.y, tx - e.mover.x);
+      return Math.abs(Math.atan2(Math.sin(ang - dir), Math.cos(ang - dir))) > half;
+    });
     forEnemies(sim, e, e.mover.x, e.mover.y, len, (t) => {
       const ang = Math.atan2(t.mover.y - e.mover.y, t.mover.x - e.mover.x);
       const diff = Math.abs(Math.atan2(Math.sin(ang - dir), Math.cos(ang - dir)));
@@ -407,6 +421,7 @@ export const EFFECTS: Record<string, Effect> = {
     });
   },
   wing_gust: (sim, e, a, level) => {
+    breakTrees(sim, a, e.mover.x, e.mover.y, param(a, 'radius', level));
     forEnemies(
       sim,
       e,
@@ -426,6 +441,7 @@ export const EFFECTS: Record<string, Effect> = {
     sim.forceMove(e, x, y, param(a, 'diveTime', level), 'dive', () => {
       const r = param(a, 'radius', level);
       sim.events.push(EventType.Impact, e.id, qPos(x), qPos(y), abilityFxKind(abilityIndex(a.id), level));
+      breakTrees(sim, a, x, y, r);
       forEnemies(sim, e, x, y, r, (t) => sim.spellHit(t, param(a, 'impactDamage', level), e), false);
       sim.addZone(e, x, y, r, param(a, 'burnDuration', level), abilityIndex(a.id), (z) =>
         forEnemies(sim, e, z.x, z.y, z.radius, (t) => sim.spellHit(t, param(a, 'burnDamagePerSec', level) * 0.5, e), false),
@@ -447,6 +463,7 @@ export const EFFECTS: Record<string, Effect> = {
     });
   },
   tremor: (sim, e, a, level) => {
+    breakTrees(sim, a, e.mover.x, e.mover.y, param(a, 'radius', level));
     forEnemies(
       sim,
       e,
@@ -549,6 +566,7 @@ export const EFFECTS: Record<string, Effect> = {
     );
   },
   trample: (sim, e, a, level) => {
+    breakTrees(sim, a, e.mover.x, e.mover.y, param(a, 'radius', level));
     forEnemies(
       sim,
       e,

@@ -13,6 +13,8 @@ from mathutils import Vector
 
 def build():
     m = Model("blood_witch", skin="blood_witch_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.15, head=1.08)
     humanoid.skeleton(m, height=1.92, shoulders=0.23, hips=0.11, leg_len=1.0, arm_len=1.1, hunch=0.5, arm_spread=0.45, knee_bend=0.0, elbow_bend=0.85)
     j = m.joints
     hz = j["hips"][2]

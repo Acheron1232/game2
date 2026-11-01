@@ -184,7 +184,10 @@ export class GameCursor {
     this.cursor.hidden = !this.locked;
     const button = document.querySelector<HTMLButtonElement>('.capture-mouse');
     if (button) {
-      button.textContent = this.locked ? 'Release mouse' : 'Capture mouse';
+      // An icon button in the HUD: the label lives in aria-label and the tooltip.
+      const label = this.locked ? 'Release mouse' : 'Capture mouse';
+      button.setAttribute('aria-label', label);
+      button.title = `${label}. Esc: release.`;
       button.setAttribute('aria-pressed', String(this.locked));
     }
     if (this.locked) {

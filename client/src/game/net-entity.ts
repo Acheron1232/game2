@@ -2,7 +2,18 @@
 // Between two keys we blend; after the last key we keep moving on its velocity for a moment
 // (the server only sends a new key when that guess would be wrong).
 
-import { dqFacing, dqPos, dqVel, Field, TICK_DT, type NetEntityState, type NetUpdate } from '@game/shared';
+import {
+  BUFF_ENDLESS,
+  BUFF_HARMFUL,
+  dqFacing,
+  dqPos,
+  dqVel,
+  Field,
+  TICK_DT,
+  type NetEntityState,
+  type NetHeroInfo,
+  type NetUpdate,
+} from '@game/shared';
 import type { Unit } from '../render/world';
 
 interface Key {
@@ -20,6 +31,15 @@ const MAX_KEYS = 24;
 const MAX_EXTRAPOLATE_TICKS = 10;
 
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+
+export interface HeroBuff {
+  /** index in BUFF_KINDS */
+  kind: number;
+  /** an enemy put it there */
+  harmful: boolean;
+  /** server tick it ends, Infinity = no end (auras) */
+  end: number;
+}
 
 export interface Pose {
   x: number;
@@ -42,6 +62,12 @@ export class NetEntity {
   buffs: number;
   /** buildings: construction / training / upgrade, 0..255 */
   progress: number;
+  /** Heroes: 6 item slots (item index + 1, 0 = empty), or null before the first hero block. */
+  heroItems: number[] | null = null;
+  /** Heroes: level of each skill (Q W E R ...). */
+  abilityLevels: number[] = [];
+  /** Heroes: buffs with the server tick they end (Infinity = no end), newest list from the server. */
+  buffList: HeroBuff[] = [];
   unit: Unit | null = null;
   /** for full snapshots: was it in the last one */
   mark = 0;
@@ -60,6 +86,21 @@ export class NetEntity {
     this.buffs = s.buffs;
     this.progress = s.progress;
     this.keys.push({ tick, x: dqPos(s.x), y: dqPos(s.y), vx: dqVel(s.vx), vy: dqVel(s.vy), facing: dqFacing(s.facing), state: s.state });
+  }
+
+  setHeroInfo(tick: number, h: NetHeroInfo): void {
+    this.heroItems = h.items.slice(0, 6);
+    this.abilityLevels = h.abilityLevels.slice();
+    this.buffList.length = 0;
+    for (let i = 0; i + 1 < h.buffs.length; i += 2) {
+      const code = h.buffs[i]!,
+        left = h.buffs[i + 1]!;
+      this.buffList.push({
+        kind: code & ~BUFF_HARMFUL,
+        harmful: (code & BUFF_HARMFUL) !== 0,
+        end: left === BUFF_ENDLESS ? Infinity : tick + left,
+      });
+    }
   }
 
   get last(): Key {

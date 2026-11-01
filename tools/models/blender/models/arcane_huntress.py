@@ -16,6 +16,8 @@ W = "#ffffff"
 
 def build():
     m = Model("arcane_huntress", skin="arcane_huntress_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.25, head=1.1)
     humanoid.skeleton(m, height=1.85, shoulders=0.22, hips=0.12, leg_len=1.06, arm_len=1.05, hunch=0.35, arm_spread=0.35, knee_bend=0.3, elbow_bend=0.6)
     j = m.joints
     hz = j["hips"][2]
@@ -30,6 +32,12 @@ def build():
     tail = [(0, hy + 0.12, hzz + 0.2), (0, hy + 0.22, hzz + 0.15), (0, hy + 0.3, hzz - 0.05), (0, hy + 0.28, hzz - 0.35), (0, hy + 0.24, hzz - 0.55)]
     m.part("loft", 1, profile=[(*p, w, w * 0.8) for p, w in zip(tail, (0.12, 0.13, 0.11, 0.08, 0.02))], slot="extra_3", uv="wrap", tint=W, bone="head", segments=5, smooth=c.FACET)
     m.part("loft", 1, profile=[(0, hy + 0.15, hzz + 0.18, 0.12, 0.1), (0, hy + 0.17, hzz + 0.21, 0.12, 0.1)], slot="trim", uv="wrap", tint=W, bone="head", segments=6)
+    # Hair over the top and back of the head: from the RTS camera the crown is what you see most
+    # (before, the bare skin of the face cell showed there).
+    hs = c.HEAD_SCALE
+    hw, hd = 0.2 * hs, 0.21 * hs
+    m.part("loft", 1, profile=[(0, hy + 0.025, hzz + 0.1, hw * 1.08, hd * 1.08), (0, hy + 0.03, hzz + 0.18, hw * 1.04, hd * 1.02), (0, hy + 0.035, hzz + 0.25, hw * 0.78, hd * 0.8), (0, hy + 0.04, hzz + 0.29, hw * 0.3, hd * 0.3)],
+           slot="extra_3", uv="wrap", tint=W, bone="head", segments=8, smooth=60)
 
     # Arms with silver vambraces, gloves
     for side in ("L", "R"):
@@ -37,7 +45,7 @@ def build():
         c.blob(m, s, 0.1, "arm", f"upper_arm.{side}")
         c.limb(m, s, e, [(0.0, 0.14, 0.13), (0.5, 0.12, 0.11), (1.0, 0.1, 0.1)], slot="arm", uv="wrap", bone=f"upper_arm.{side}", segments=6)
         c.limb(m, e, w, [(0.0, 0.1, 0.1), (0.5, 0.14, 0.13), (1.0, 0.12, 0.11)], slot="forearm", uv="wrap", bone=f"forearm.{side}", segments=6)
-        c.shoulder_pad(m, side, slot="shoulder", size=0.62, spikes=1, spike_slot="weapon_b")
+        c.shoulder_pad(m, side, slot="shoulder", size=0.72, spikes=2, spike_slot="weapon_b")
     c.fist(m, "L", slot="hand", size=0.06)
     c.open_hand(m, "R", slot="hand", size=0.065)
 
@@ -47,7 +55,7 @@ def build():
         m.part("hull", 1, profile=[(sx * 0.13 + dx, -0.12 + dy, hz - 0.08 + dz) for dx in (-0.05, 0.05) for dy in (-0.03, 0.05) for dz in (0, 0.1)], slot="belt", sub=(0.0, 0.35, 0.0, 0.45), tint=W, bone="hips", smooth=c.FACET)
     c.cape(m, slot="cloth", length=0.8, width=0.42)
     for side in ("L", "R"):
-        c.leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0.17, 0.16, 0.1), shin=(0.12, 0.13, 0.09), band="trim", boot=0.8)
+        c.leg(m, side, thigh_slot="legs", shin_slot="shin", foot_slot="foot", thigh=(0.2, 0.19, 0.12), shin=(0.14, 0.15, 0.11), band="trim", boot=1.05)
 
     # Quiver on the back with glowing arrows sticking out
     qa = Vector((0.12, fy + 0.2, top - 0.5))

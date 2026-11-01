@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "totalBytes": 31095191,
+  "totalBytes": 30974098,
   "files": [
     {
       "path": "audio/audio.json",
@@ -1426,14 +1426,14 @@
     },
     {
       "path": "models/alpha_wolf.glb",
-      "bytes": 110820,
-      "hash": "cc959e68d8",
+      "bytes": 129968,
+      "hash": "0bf82f51e5",
       "group": "Units"
     },
     {
       "path": "models/arcane_huntress.glb",
-      "bytes": 196580,
-      "hash": "3d7ababf00",
+      "bytes": 217556,
+      "hash": "c1d33c8229",
       "group": "Units"
     },
     {
@@ -1444,8 +1444,8 @@
     },
     {
       "path": "models/arcane_huntress_skin.webp",
-      "bytes": 236144,
-      "hash": "9ce66202c0",
+      "bytes": 221454,
+      "hash": "accb8a0127",
       "group": "Units"
     },
     {
@@ -1456,20 +1456,20 @@
     },
     {
       "path": "models/archer.glb",
-      "bytes": 196872,
-      "hash": "f011def065",
+      "bytes": 210768,
+      "hash": "31965b2fd1",
       "group": "Units"
     },
     {
       "path": "models/archery_range.glb",
       "bytes": 31540,
-      "hash": "5e12be2fdf",
+      "hash": "707c04887e",
       "group": "Units"
     },
     {
       "path": "models/badger_mercenary.glb",
-      "bytes": 215620,
-      "hash": "beaf82182f",
+      "bytes": 228152,
+      "hash": "02ae950d26",
       "group": "Units"
     },
     {
@@ -1480,8 +1480,8 @@
     },
     {
       "path": "models/badger_mercenary_skin.webp",
-      "bytes": 241122,
-      "hash": "2e2a5367a0",
+      "bytes": 189734,
+      "hash": "3b84933336",
       "group": "Units"
     },
     {
@@ -1492,20 +1492,20 @@
     },
     {
       "path": "models/bandit.glb",
-      "bytes": 189024,
-      "hash": "00e4d7d6ca",
+      "bytes": 209200,
+      "hash": "32362f921f",
       "group": "Units"
     },
     {
       "path": "models/bandit_archer.glb",
-      "bytes": 190728,
-      "hash": "0eb53641ab",
+      "bytes": 203720,
+      "hash": "1b7f125d66",
       "group": "Units"
     },
     {
       "path": "models/banner_captain.glb",
-      "bytes": 195728,
-      "hash": "f3701d1191",
+      "bytes": 207092,
+      "hash": "cd41ddd3dd",
       "group": "Units"
     },
     {
@@ -1516,8 +1516,8 @@
     },
     {
       "path": "models/banner_captain_skin.webp",
-      "bytes": 181718,
-      "hash": "289a0309e9",
+      "bytes": 145518,
+      "hash": "e8fc12016b",
       "group": "Units"
     },
     {
@@ -1528,26 +1528,26 @@
     },
     {
       "path": "models/barracks.glb",
-      "bytes": 24408,
-      "hash": "0561898387",
+      "bytes": 24280,
+      "hash": "c89977ea84",
       "group": "Units"
     },
     {
       "path": "models/barrel.glb",
       "bytes": 11032,
-      "hash": "89e58188b2",
+      "hash": "c954417662",
       "group": "Units"
     },
     {
       "path": "models/bell_ward.glb",
       "bytes": 25148,
-      "hash": "e9d3a3eb0c",
+      "hash": "dad5b14b96",
       "group": "Units"
     },
     {
       "path": "models/blood_witch.glb",
-      "bytes": 185320,
-      "hash": "b9545bf59a",
+      "bytes": 199564,
+      "hash": "24a7af47dc",
       "group": "Units"
     },
     {
@@ -1558,8 +1558,8 @@
     },
     {
       "path": "models/blood_witch_skin.webp",
-      "bytes": 244624,
-      "hash": "16999770c7",
+      "bytes": 235906,
+      "hash": "6f67964f1e",
       "group": "Units"
     },
     {
@@ -1570,8 +1570,8 @@
     },
     {
       "path": "models/boar_lancer.glb",
-      "bytes": 251724,
-      "hash": "0247355e7a",
+      "bytes": 261084,
+      "hash": "0b70e77bea",
       "group": "Units"
     },
     {
@@ -1582,8 +1582,8 @@
     },
     {
       "path": "models/boar_lancer_skin.webp",
-      "bytes": 437858,
-      "hash": "69a27c1b21",
+      "bytes": 338748,
+      "hash": "a15d5c79bc",
       "group": "Units"
     },
     {
@@ -1594,8 +1594,8 @@
     },
     {
       "path": "models/bolt_cart.glb",
-      "bytes": 61256,
-      "hash": "2160c02d1d",
+      "bytes": 61128,
+      "hash": "c29fdd87f6",
       "group": "Units"
     },
     {
@@ -1606,14 +1606,20 @@
     },
     {
       "path": "models/bolt_cart_skin.webp",
-      "bytes": 222692,
-      "hash": "7827219808",
+      "bytes": 182744,
+      "hash": "dd00447498",
       "group": "Units"
     },
     {
       "path": "models/bolt_cart_skin_team.webp",
       "bytes": 760,
       "hash": "7ebf5bf962",
+      "group": "Units"
+    },
+    {
+      "path": "models/bones.glb",
+      "bytes": 14700,
+      "hash": "edd60dc6c1",
       "group": "Units"
     },
     {
@@ -1624,8 +1630,8 @@
     },
     {
       "path": "models/buildings_1_skin.webp",
-      "bytes": 249980,
-      "hash": "dba23423bf",
+      "bytes": 241162,
+      "hash": "0b3dd00b1f",
       "group": "Units"
     },
     {
@@ -1642,8 +1648,8 @@
     },
     {
       "path": "models/buildings_2_skin.webp",
-      "bytes": 284576,
-      "hash": "85c95b0731",
+      "bytes": 278114,
+      "hash": "1f1f9fbd31",
       "group": "Units"
     },
     {
@@ -1660,8 +1666,8 @@
     },
     {
       "path": "models/buildings_3_skin.webp",
-      "bytes": 264590,
-      "hash": "c99aee02ce",
+      "bytes": 253788,
+      "hash": "6f99f0a217",
       "group": "Units"
     },
     {
@@ -1672,8 +1678,8 @@
     },
     {
       "path": "models/bulwark_golem.glb",
-      "bytes": 225700,
-      "hash": "2ebe466327",
+      "bytes": 254280,
+      "hash": "0d1d3747a2",
       "group": "Units"
     },
     {
@@ -1684,8 +1690,8 @@
     },
     {
       "path": "models/bulwark_golem_skin.webp",
-      "bytes": 192280,
-      "hash": "abf1e19b76",
+      "bytes": 154038,
+      "hash": "7ac7a852a6",
       "group": "Units"
     },
     {
@@ -1697,25 +1703,31 @@
     {
       "path": "models/bulwark_hall.glb",
       "bytes": 63040,
-      "hash": "62a990bb64",
+      "hash": "f02a3bfc6c",
       "group": "Units"
     },
     {
       "path": "models/bush.glb",
       "bytes": 9076,
-      "hash": "14f23d850b",
+      "hash": "52c024def9",
+      "group": "Units"
+    },
+    {
+      "path": "models/campfire.glb",
+      "bytes": 34332,
+      "hash": "162fad3453",
       "group": "Units"
     },
     {
       "path": "models/catapult.glb",
-      "bytes": 63500,
-      "hash": "36579caeb1",
+      "bytes": 63916,
+      "hash": "dc05400cf5",
       "group": "Units"
     },
     {
       "path": "models/centaur_raider.glb",
-      "bytes": 296176,
-      "hash": "52cdd86a8f",
+      "bytes": 311208,
+      "hash": "0d393b9483",
       "group": "Units"
     },
     {
@@ -1726,26 +1738,26 @@
     },
     {
       "path": "models/centaur_raider_skin.webp",
-      "bytes": 250360,
-      "hash": "ae158c7359",
+      "bytes": 236244,
+      "hash": "db960ffb41",
       "group": "Units"
     },
     {
       "path": "models/centaur_raider_skin_team.webp",
-      "bytes": 15322,
-      "hash": "0746a480b0",
+      "bytes": 16638,
+      "hash": "36faa344ad",
       "group": "Units"
     },
     {
       "path": "models/chain_spire.glb",
       "bytes": 23824,
-      "hash": "d4729ac450",
+      "hash": "e3f9f7ac0c",
       "group": "Units"
     },
     {
       "path": "models/chainbreaker.glb",
-      "bytes": 220316,
-      "hash": "71ad1de894",
+      "bytes": 233456,
+      "hash": "b42c320c83",
       "group": "Units"
     },
     {
@@ -1756,8 +1768,8 @@
     },
     {
       "path": "models/chainbreaker_skin.webp",
-      "bytes": 208410,
-      "hash": "70a1d9a989",
+      "bytes": 166028,
+      "hash": "a00b629122",
       "group": "Units"
     },
     {
@@ -1768,32 +1780,56 @@
     },
     {
       "path": "models/chapel.glb",
-      "bytes": 22368,
-      "hash": "867e32241a",
+      "bytes": 22208,
+      "hash": "74572a2a3e",
+      "group": "Units"
+    },
+    {
+      "path": "models/cinder_drake.glb",
+      "bytes": 178180,
+      "hash": "3073bf5422",
+      "group": "Units"
+    },
+    {
+      "path": "models/cinder_drake_skin.json",
+      "bytes": 1160,
+      "hash": "8920afce86",
+      "group": "Units"
+    },
+    {
+      "path": "models/cinder_drake_skin.webp",
+      "bytes": 169462,
+      "hash": "00c8de8ed8",
+      "group": "Units"
+    },
+    {
+      "path": "models/cinder_drake_skin_team.webp",
+      "bytes": 994,
+      "hash": "2061e30244",
       "group": "Units"
     },
     {
       "path": "models/cinder_inn.glb",
-      "bytes": 83892,
-      "hash": "3f915a0548",
+      "bytes": 81300,
+      "hash": "98447555ac",
       "group": "Units"
     },
     {
       "path": "models/citadel.glb",
-      "bytes": 45080,
-      "hash": "91f2baec2f",
+      "bytes": 44792,
+      "hash": "0b351073e9",
       "group": "Units"
     },
     {
       "path": "models/cleric.glb",
-      "bytes": 181628,
-      "hash": "6278bef2de",
+      "bytes": 195152,
+      "hash": "3607179e91",
       "group": "Units"
     },
     {
       "path": "models/coalback_porter.glb",
-      "bytes": 230128,
-      "hash": "3b37d7e21e",
+      "bytes": 241636,
+      "hash": "8f6bf3ca7d",
       "group": "Units"
     },
     {
@@ -1804,8 +1840,8 @@
     },
     {
       "path": "models/coalback_porter_skin.webp",
-      "bytes": 214056,
-      "hash": "a615c34322",
+      "bytes": 170678,
+      "hash": "e89860881a",
       "group": "Units"
     },
     {
@@ -1816,8 +1852,8 @@
     },
     {
       "path": "models/covered_ram.glb",
-      "bytes": 95160,
-      "hash": "7e24f1648b",
+      "bytes": 95032,
+      "hash": "40285826db",
       "group": "Units"
     },
     {
@@ -1828,8 +1864,8 @@
     },
     {
       "path": "models/covered_ram_skin.webp",
-      "bytes": 227544,
-      "hash": "39c255c955",
+      "bytes": 179350,
+      "hash": "f911442570",
       "group": "Units"
     },
     {
@@ -1841,19 +1877,25 @@
     {
       "path": "models/crate.glb",
       "bytes": 9308,
-      "hash": "35c0d1e162",
+      "hash": "c1c68e30cc",
+      "group": "Units"
+    },
+    {
+      "path": "models/crystal.glb",
+      "bytes": 26168,
+      "hash": "8a3b9d7806",
       "group": "Units"
     },
     {
       "path": "models/earth_remnant.glb",
       "bytes": 37180,
-      "hash": "73fd27e322",
+      "hash": "f089aa94ba",
       "group": "Units"
     },
     {
       "path": "models/earth_spirit.glb",
-      "bytes": 456256,
-      "hash": "59baf60abd",
+      "bytes": 481220,
+      "hash": "af15d0a541",
       "group": "Units"
     },
     {
@@ -1864,8 +1906,8 @@
     },
     {
       "path": "models/earth_spirit_skin.webp",
-      "bytes": 312370,
-      "hash": "54891a5bdd",
+      "bytes": 226252,
+      "hash": "541a7b0915",
       "group": "Units"
     },
     {
@@ -1875,9 +1917,33 @@
       "group": "Units"
     },
     {
+      "path": "models/elder_colossus.glb",
+      "bytes": 270236,
+      "hash": "ec6c183659",
+      "group": "Units"
+    },
+    {
+      "path": "models/elder_colossus_skin.json",
+      "bytes": 1178,
+      "hash": "96a7c5c930",
+      "group": "Units"
+    },
+    {
+      "path": "models/elder_colossus_skin.webp",
+      "bytes": 175742,
+      "hash": "0b5f7fd679",
+      "group": "Units"
+    },
+    {
+      "path": "models/elder_colossus_skin_team.webp",
+      "bytes": 994,
+      "hash": "2061e30244",
+      "group": "Units"
+    },
+    {
       "path": "models/ember_wisp.glb",
-      "bytes": 61968,
-      "hash": "00fe068ad5",
+      "bytes": 60752,
+      "hash": "58967fb0e0",
       "group": "Units"
     },
     {
@@ -1888,8 +1954,8 @@
     },
     {
       "path": "models/ember_wisp_skin.webp",
-      "bytes": 142544,
-      "hash": "9a429f650f",
+      "bytes": 135018,
+      "hash": "6380e7cd6a",
       "group": "Units"
     },
     {
@@ -1901,13 +1967,13 @@
     {
       "path": "models/fence.glb",
       "bytes": 15984,
-      "hash": "5ed44db2ec",
+      "hash": "0592b7ae17",
       "group": "Units"
     },
     {
       "path": "models/forest_elf.glb",
-      "bytes": 195756,
-      "hash": "a0751cb3f7",
+      "bytes": 210008,
+      "hash": "5cfe8d4d7f",
       "group": "Units"
     },
     {
@@ -1918,8 +1984,8 @@
     },
     {
       "path": "models/forest_elf_skin.webp",
-      "bytes": 324810,
-      "hash": "95f12faa7b",
+      "bytes": 313424,
+      "hash": "67b7510dc8",
       "group": "Units"
     },
     {
@@ -1930,20 +1996,20 @@
     },
     {
       "path": "models/forest_troll.glb",
-      "bytes": 188464,
-      "hash": "1e761706ef",
+      "bytes": 209068,
+      "hash": "fc64343245",
       "group": "Units"
     },
     {
       "path": "models/forge.glb",
       "bytes": 27268,
-      "hash": "5214aa0de4",
+      "hash": "73ce4c0360",
       "group": "Units"
     },
     {
       "path": "models/foundry_golem.glb",
-      "bytes": 212144,
-      "hash": "a0edaf81a1",
+      "bytes": 240340,
+      "hash": "7d851223a3",
       "group": "Units"
     },
     {
@@ -1954,8 +2020,8 @@
     },
     {
       "path": "models/foundry_golem_skin.webp",
-      "bytes": 215398,
-      "hash": "beb4db5940",
+      "bytes": 171296,
+      "hash": "e50442e776",
       "group": "Units"
     },
     {
@@ -1967,13 +2033,13 @@
     {
       "path": "models/fountain_of_life.glb",
       "bytes": 13568,
-      "hash": "932330705f",
+      "hash": "a269ddfb47",
       "group": "Units"
     },
     {
       "path": "models/fox_trailshot.glb",
-      "bytes": 200976,
-      "hash": "8c1407abde",
+      "bytes": 210164,
+      "hash": "ff4ed8e6ca",
       "group": "Units"
     },
     {
@@ -1984,8 +2050,8 @@
     },
     {
       "path": "models/fox_trailshot_skin.webp",
-      "bytes": 215184,
-      "hash": "e215f581e8",
+      "bytes": 170508,
+      "hash": "1e2f9c74ea",
       "group": "Units"
     },
     {
@@ -1996,8 +2062,8 @@
     },
     {
       "path": "models/frost_adept.glb",
-      "bytes": 213516,
-      "hash": "9d4ca95a97",
+      "bytes": 223200,
+      "hash": "c1dfc5a9d4",
       "group": "Units"
     },
     {
@@ -2008,8 +2074,8 @@
     },
     {
       "path": "models/frost_adept_skin.webp",
-      "bytes": 183730,
-      "hash": "05dbfa8f8e",
+      "bytes": 139920,
+      "hash": "49f710aa60",
       "group": "Units"
     },
     {
@@ -2021,19 +2087,19 @@
     {
       "path": "models/frost_obelisk.glb",
       "bytes": 20012,
-      "hash": "67124de2a3",
+      "hash": "6ab6634d95",
       "group": "Units"
     },
     {
       "path": "models/gold_mine.glb",
-      "bytes": 37096,
-      "hash": "5bc372e828",
+      "bytes": 37072,
+      "hash": "eddad8b5da",
       "group": "Units"
     },
     {
       "path": "models/golem_foundry.glb",
-      "bytes": 138588,
-      "hash": "cb283a3f3a",
+      "bytes": 137532,
+      "hash": "b06a09f8b7",
       "group": "Units"
     },
     {
@@ -2044,8 +2110,8 @@
     },
     {
       "path": "models/golem_foundry_skin.webp",
-      "bytes": 443020,
-      "hash": "7fb8a2ada0",
+      "bytes": 353884,
+      "hash": "cd7803a9c6",
       "group": "Units"
     },
     {
@@ -2056,8 +2122,8 @@
     },
     {
       "path": "models/grave_bellkeeper.glb",
-      "bytes": 306036,
-      "hash": "9579927eda",
+      "bytes": 320648,
+      "hash": "4876d92538",
       "group": "Units"
     },
     {
@@ -2068,8 +2134,8 @@
     },
     {
       "path": "models/grave_bellkeeper_skin.webp",
-      "bytes": 419342,
-      "hash": "02ffa29ae9",
+      "bytes": 319470,
+      "hash": "06b4155a94",
       "group": "Units"
     },
     {
@@ -2080,56 +2146,56 @@
     },
     {
       "path": "models/grey_wolf.glb",
-      "bytes": 106476,
-      "hash": "fdb6593c50",
+      "bytes": 127524,
+      "hash": "01f11171f6",
       "group": "Units"
     },
     {
       "path": "models/harpy.glb",
-      "bytes": 129956,
-      "hash": "7e193e0031",
+      "bytes": 162436,
+      "hash": "2ce9dda6b4",
       "group": "Units"
     },
     {
       "path": "models/harpy_matron.glb",
-      "bytes": 133900,
-      "hash": "96a5e7a526",
+      "bytes": 166756,
+      "hash": "8e1eaec8b9",
       "group": "Units"
     },
     {
       "path": "models/hawk_rider.glb",
-      "bytes": 133312,
-      "hash": "1f05ef4c2b",
+      "bytes": 132544,
+      "hash": "1169b72d27",
       "group": "Units"
     },
     {
       "path": "models/hawk_roost.glb",
       "bytes": 29200,
-      "hash": "4f2aec127a",
+      "hash": "3e0c831e74",
       "group": "Units"
     },
     {
       "path": "models/healing_lantern.glb",
       "bytes": 30008,
-      "hash": "36b5782a81",
+      "hash": "354c2123be",
       "group": "Units"
     },
     {
       "path": "models/hero_shrine.glb",
-      "bytes": 42444,
-      "hash": "59c59e4e5a",
+      "bytes": 42380,
+      "hash": "71c9a4bef2",
       "group": "Units"
     },
     {
       "path": "models/house.glb",
-      "bytes": 20952,
-      "hash": "822e05049f",
+      "bytes": 20824,
+      "hash": "8d7efb73ec",
       "group": "Units"
     },
     {
       "path": "models/kite_bomber.glb",
-      "bytes": 200392,
-      "hash": "aa7a6bb431",
+      "bytes": 198960,
+      "hash": "f345b691ab",
       "group": "Units"
     },
     {
@@ -2140,8 +2206,8 @@
     },
     {
       "path": "models/kite_bomber_skin.webp",
-      "bytes": 227986,
-      "hash": "81ea727e15",
+      "bytes": 178328,
+      "hash": "8ef4da39fe",
       "group": "Units"
     },
     {
@@ -2152,14 +2218,20 @@
     },
     {
       "path": "models/lancer.glb",
-      "bytes": 222192,
-      "hash": "875e11c48e",
+      "bytes": 242488,
+      "hash": "da9db4cf14",
+      "group": "Units"
+    },
+    {
+      "path": "models/lantern.glb",
+      "bytes": 34484,
+      "hash": "3dcbfec480",
       "group": "Units"
     },
     {
       "path": "models/lantern_monk.glb",
-      "bytes": 353136,
-      "hash": "dbec3ccf0a",
+      "bytes": 371072,
+      "hash": "91f91d4122",
       "group": "Units"
     },
     {
@@ -2170,8 +2242,8 @@
     },
     {
       "path": "models/lantern_monk_skin.webp",
-      "bytes": 440246,
-      "hash": "01351bd5c9",
+      "bytes": 348678,
+      "hash": "fb3dd25f10",
       "group": "Units"
     },
     {
@@ -2182,8 +2254,8 @@
     },
     {
       "path": "models/lantern_novice.glb",
-      "bytes": 195856,
-      "hash": "80a6cb4f2e",
+      "bytes": 208668,
+      "hash": "de8e1a1fab",
       "group": "Units"
     },
     {
@@ -2194,8 +2266,8 @@
     },
     {
       "path": "models/lantern_novice_skin.webp",
-      "bytes": 182906,
-      "hash": "253f8c86e5",
+      "bytes": 144944,
+      "hash": "bd8ff6b359",
       "group": "Units"
     },
     {
@@ -2206,8 +2278,8 @@
     },
     {
       "path": "models/light_healer.glb",
-      "bytes": 194884,
-      "hash": "aa41756091",
+      "bytes": 210140,
+      "hash": "504d542ae1",
       "group": "Units"
     },
     {
@@ -2218,26 +2290,26 @@
     },
     {
       "path": "models/light_healer_skin.webp",
-      "bytes": 259312,
-      "hash": "b754d68a2f",
+      "bytes": 246770,
+      "hash": "0bff7dbc68",
       "group": "Units"
     },
     {
       "path": "models/light_healer_skin_team.webp",
-      "bytes": 13514,
-      "hash": "f3ebb52d8a",
+      "bytes": 16620,
+      "hash": "acaffbc3d6",
       "group": "Units"
     },
     {
       "path": "models/log.glb",
       "bytes": 6656,
-      "hash": "408f288b15",
+      "hash": "567040bd18",
       "group": "Units"
     },
     {
       "path": "models/models.json",
-      "bytes": 23870,
-      "hash": "929099703a",
+      "bytes": 25143,
+      "hash": "f756e1b027",
       "group": "Units"
     },
     {
@@ -2248,8 +2320,8 @@
     },
     {
       "path": "models/monsters_1_skin.webp",
-      "bytes": 212820,
-      "hash": "939887729d",
+      "bytes": 198064,
+      "hash": "4c843f0c69",
       "group": "Units"
     },
     {
@@ -2266,8 +2338,8 @@
     },
     {
       "path": "models/monsters_2_skin.webp",
-      "bytes": 245520,
-      "hash": "e822974933",
+      "bytes": 226886,
+      "hash": "144d371085",
       "group": "Units"
     },
     {
@@ -2284,8 +2356,8 @@
     },
     {
       "path": "models/monsters_3_skin.webp",
-      "bytes": 272674,
-      "hash": "5a2fc58125",
+      "bytes": 261744,
+      "hash": "c625e5bd9e",
       "group": "Units"
     },
     {
@@ -2302,8 +2374,8 @@
     },
     {
       "path": "models/monsters_4_skin.webp",
-      "bytes": 317414,
-      "hash": "1aeb96adb1",
+      "bytes": 306764,
+      "hash": "4876e22ea4",
       "group": "Units"
     },
     {
@@ -2314,8 +2386,8 @@
     },
     {
       "path": "models/null_warden.glb",
-      "bytes": 194516,
-      "hash": "4908cb53ee",
+      "bytes": 207104,
+      "hash": "b87f3ff10f",
       "group": "Units"
     },
     {
@@ -2326,8 +2398,8 @@
     },
     {
       "path": "models/null_warden_skin.webp",
-      "bytes": 190460,
-      "hash": "a5071fe900",
+      "bytes": 159772,
+      "hash": "0e2447ee1c",
       "group": "Units"
     },
     {
@@ -2338,8 +2410,8 @@
     },
     {
       "path": "models/obsidian_heart.glb",
-      "bytes": 284636,
-      "hash": "ea1cae6330",
+      "bytes": 281400,
+      "hash": "afd52c1711",
       "group": "Units"
     },
     {
@@ -2350,8 +2422,8 @@
     },
     {
       "path": "models/obsidian_heart_skin.webp",
-      "bytes": 467780,
-      "hash": "c897066dcd",
+      "bytes": 348564,
+      "hash": "df3ea83bcd",
       "group": "Units"
     },
     {
@@ -2362,14 +2434,14 @@
     },
     {
       "path": "models/ogre_brute.glb",
-      "bytes": 198392,
-      "hash": "48a7c766f7",
+      "bytes": 228400,
+      "hash": "d00300d663",
       "group": "Units"
     },
     {
       "path": "models/ogre_warlord.glb",
-      "bytes": 211584,
-      "hash": "46df12f8e7",
+      "bytes": 243952,
+      "hash": "470b82d847",
       "group": "Units"
     },
     {
@@ -2386,8 +2458,8 @@
     },
     {
       "path": "models/pike_warden.glb",
-      "bytes": 197084,
-      "hash": "816fa57624",
+      "bytes": 211484,
+      "hash": "023a1c92c9",
       "group": "Units"
     },
     {
@@ -2398,8 +2470,8 @@
     },
     {
       "path": "models/pike_warden_skin.webp",
-      "bytes": 223196,
-      "hash": "87c5f1307a",
+      "bytes": 172242,
+      "hash": "a79acb8622",
       "group": "Units"
     },
     {
@@ -2411,19 +2483,19 @@
     {
       "path": "models/pitch_basin.glb",
       "bytes": 28608,
-      "hash": "0719ec2058",
+      "hash": "e3da5ca5a0",
       "group": "Units"
     },
     {
       "path": "models/rally_bastion.glb",
       "bytes": 36348,
-      "hash": "cb75672495",
+      "hash": "a1a7b089e5",
       "group": "Units"
     },
     {
       "path": "models/ram_drummer.glb",
-      "bytes": 322372,
-      "hash": "770beff5e5",
+      "bytes": 330088,
+      "hash": "62f5baa870",
       "group": "Units"
     },
     {
@@ -2434,8 +2506,8 @@
     },
     {
       "path": "models/ram_drummer_skin.webp",
-      "bytes": 404494,
-      "hash": "8bd1f6cfdf",
+      "bytes": 319304,
+      "hash": "fed6b9a84a",
       "group": "Units"
     },
     {
@@ -2446,8 +2518,8 @@
     },
     {
       "path": "models/ratling_cutthroat.glb",
-      "bytes": 199380,
-      "hash": "44e458f1e4",
+      "bytes": 218320,
+      "hash": "cd68f9c0b3",
       "group": "Units"
     },
     {
@@ -2458,8 +2530,8 @@
     },
     {
       "path": "models/ratling_cutthroat_skin.webp",
-      "bytes": 159280,
-      "hash": "5b714ca2fa",
+      "bytes": 153678,
+      "hash": "d7fd1663b7",
       "group": "Units"
     },
     {
@@ -2471,13 +2543,13 @@
     {
       "path": "models/reinforced_wall.glb",
       "bytes": 45316,
-      "hash": "ff8877a6b8",
+      "hash": "3cdd962e5b",
       "group": "Units"
     },
     {
       "path": "models/reliquary_guard.glb",
-      "bytes": 210304,
-      "hash": "8202d3b8eb",
+      "bytes": 221956,
+      "hash": "41e363ec99",
       "group": "Units"
     },
     {
@@ -2488,8 +2560,8 @@
     },
     {
       "path": "models/reliquary_guard_skin.webp",
-      "bytes": 205636,
-      "hash": "82016f8856",
+      "bytes": 167526,
+      "hash": "034efd0a6c",
       "group": "Units"
     },
     {
@@ -2501,43 +2573,43 @@
     {
       "path": "models/repair_post.glb",
       "bytes": 49692,
-      "hash": "e3683ba2cf",
+      "hash": "b40f97e3df",
       "group": "Units"
     },
     {
       "path": "models/rock_big.glb",
-      "bytes": 9868,
-      "hash": "bc2f0372fe",
+      "bytes": 9260,
+      "hash": "99d1196105",
       "group": "Units"
     },
     {
       "path": "models/rock_small.glb",
-      "bytes": 7160,
-      "hash": "5f547e5833",
+      "bytes": 7000,
+      "hash": "8d40d914ef",
       "group": "Units"
     },
     {
       "path": "models/rock_spider.glb",
-      "bytes": 103172,
-      "hash": "b76cbb541a",
+      "bytes": 102084,
+      "hash": "a77690f8b5",
       "group": "Units"
     },
     {
       "path": "models/ruin_block.glb",
       "bytes": 9328,
-      "hash": "bcd5f43981",
+      "hash": "19f3c6875d",
       "group": "Units"
     },
     {
       "path": "models/ruin_pillar.glb",
       "bytes": 10808,
-      "hash": "63ecda6665",
+      "hash": "a89dd2a883",
       "group": "Units"
     },
     {
       "path": "models/rune_gunner.glb",
-      "bytes": 196300,
-      "hash": "c08287d336",
+      "bytes": 206388,
+      "hash": "c399f98128",
       "group": "Units"
     },
     {
@@ -2548,8 +2620,8 @@
     },
     {
       "path": "models/rune_gunner_skin.webp",
-      "bytes": 212946,
-      "hash": "b731104cbb",
+      "bytes": 171786,
+      "hash": "fec04410aa",
       "group": "Units"
     },
     {
@@ -2559,9 +2631,15 @@
       "group": "Units"
     },
     {
+      "path": "models/rune_stone.glb",
+      "bytes": 17208,
+      "hash": "3007553e57",
+      "group": "Units"
+    },
+    {
       "path": "models/shellback_beetle.glb",
-      "bytes": 94636,
-      "hash": "e5a9522baf",
+      "bytes": 93100,
+      "hash": "bc7aee21ab",
       "group": "Units"
     },
     {
@@ -2572,8 +2650,8 @@
     },
     {
       "path": "models/shellback_beetle_skin.webp",
-      "bytes": 150198,
-      "hash": "1ffd95895e",
+      "bytes": 139646,
+      "hash": "bde6dd55c2",
       "group": "Units"
     },
     {
@@ -2585,19 +2663,19 @@
     {
       "path": "models/shield_pylon.glb",
       "bytes": 23108,
-      "hash": "2633cdf4dc",
+      "hash": "5ab1051b1f",
       "group": "Units"
     },
     {
       "path": "models/side_shop.glb",
-      "bytes": 18316,
-      "hash": "85104f2d90",
+      "bytes": 18284,
+      "hash": "fbe96c77fb",
       "group": "Units"
     },
     {
       "path": "models/siege_golem.glb",
-      "bytes": 239508,
-      "hash": "282336a938",
+      "bytes": 254248,
+      "hash": "613c9cb88d",
       "group": "Units"
     },
     {
@@ -2608,8 +2686,8 @@
     },
     {
       "path": "models/siege_golem_skin.webp",
-      "bytes": 203636,
-      "hash": "a0de7be271",
+      "bytes": 168638,
+      "hash": "5cc00d05e9",
       "group": "Units"
     },
     {
@@ -2620,8 +2698,8 @@
     },
     {
       "path": "models/sky_dragon.glb",
-      "bytes": 185988,
-      "hash": "176bf83e40",
+      "bytes": 184612,
+      "hash": "98590f8844",
       "group": "Units"
     },
     {
@@ -2632,8 +2710,8 @@
     },
     {
       "path": "models/sky_dragon_skin.webp",
-      "bytes": 276736,
-      "hash": "cb412094b0",
+      "bytes": 261572,
+      "hash": "182561ad7d",
       "group": "Units"
     },
     {
@@ -2644,14 +2722,14 @@
     },
     {
       "path": "models/spider_queen.glb",
-      "bytes": 107108,
-      "hash": "5f2ffa06b2",
+      "bytes": 105988,
+      "hash": "c4f85aba3b",
       "group": "Units"
     },
     {
       "path": "models/staff_warrior.glb",
-      "bytes": 266244,
-      "hash": "cb27959b65",
+      "bytes": 285264,
+      "hash": "2f470b87d9",
       "group": "Units"
     },
     {
@@ -2662,26 +2740,26 @@
     },
     {
       "path": "models/staff_warrior_skin.webp",
-      "bytes": 298266,
-      "hash": "bb4bb3dbb9",
+      "bytes": 286332,
+      "hash": "de49a8e6a4",
       "group": "Units"
     },
     {
       "path": "models/staff_warrior_skin_team.webp",
-      "bytes": 21144,
-      "hash": "eb5a7f0440",
+      "bytes": 22736,
+      "hash": "61ae594552",
       "group": "Units"
     },
     {
       "path": "models/statue.glb",
-      "bytes": 13780,
-      "hash": "adaa8099b3",
+      "bytes": 13364,
+      "hash": "22befdf15c",
       "group": "Units"
     },
     {
       "path": "models/stone_golem.glb",
-      "bytes": 181596,
-      "hash": "bcf1446827",
+      "bytes": 210024,
+      "hash": "0198dcf358",
       "group": "Units"
     },
     {
@@ -2692,62 +2770,62 @@
     },
     {
       "path": "models/stone_golem_skin.webp",
-      "bytes": 358292,
-      "hash": "c98f2cdb86",
+      "bytes": 341086,
+      "hash": "869042c191",
       "group": "Units"
     },
     {
       "path": "models/stone_golem_skin_team.webp",
-      "bytes": 16038,
-      "hash": "b3c2ff2a45",
+      "bytes": 16756,
+      "hash": "5cec959621",
       "group": "Units"
     },
     {
       "path": "models/stone_sentinel.glb",
-      "bytes": 193792,
-      "hash": "cbf688bf8b",
+      "bytes": 218104,
+      "hash": "3a05818dce",
       "group": "Units"
     },
     {
       "path": "models/stone_wall.glb",
       "bytes": 28608,
-      "hash": "d3aa874a29",
+      "hash": "485e9255eb",
       "group": "Units"
     },
     {
       "path": "models/stronghold.glb",
-      "bytes": 34536,
-      "hash": "8880ce58be",
+      "bytes": 34312,
+      "hash": "60fb779b37",
       "group": "Units"
     },
     {
       "path": "models/stump.glb",
       "bytes": 11540,
-      "hash": "cda89fb847",
+      "hash": "700a4c52da",
       "group": "Units"
     },
     {
       "path": "models/swordsman.glb",
-      "bytes": 195292,
-      "hash": "c08a51668f",
+      "bytes": 216436,
+      "hash": "76eaee1f65",
       "group": "Units"
     },
     {
       "path": "models/tavern.glb",
-      "bytes": 48040,
-      "hash": "b5780bcf34",
+      "bytes": 47912,
+      "hash": "9f1f8e944f",
       "group": "Units"
     },
     {
       "path": "models/temple_market.glb",
       "bytes": 27628,
-      "hash": "9593fd39a3",
+      "hash": "1770a0789e",
       "group": "Units"
     },
     {
       "path": "models/thorn_marshal.glb",
-      "bytes": 325544,
-      "hash": "538547e860",
+      "bytes": 339816,
+      "hash": "3e4b5dfa2d",
       "group": "Units"
     },
     {
@@ -2758,8 +2836,8 @@
     },
     {
       "path": "models/thorn_marshal_skin.webp",
-      "bytes": 454228,
-      "hash": "f53dab4ac0",
+      "bytes": 341916,
+      "hash": "77b2cff7fe",
       "group": "Units"
     },
     {
@@ -2770,8 +2848,8 @@
     },
     {
       "path": "models/tidebreaker.glb",
-      "bytes": 309488,
-      "hash": "6b320b9413",
+      "bytes": 332588,
+      "hash": "e02c8f5411",
       "group": "Units"
     },
     {
@@ -2782,8 +2860,8 @@
     },
     {
       "path": "models/tidebreaker_skin.webp",
-      "bytes": 468456,
-      "hash": "9b517a9007",
+      "bytes": 342110,
+      "hash": "f70d69d293",
       "group": "Units"
     },
     {
@@ -2795,13 +2873,13 @@
     {
       "path": "models/timber_wall.glb",
       "bytes": 42772,
-      "hash": "a7e4968a0f",
+      "hash": "303014d5c1",
       "group": "Units"
     },
     {
       "path": "models/toadfolk_mystic.glb",
-      "bytes": 195576,
-      "hash": "36567f5102",
+      "bytes": 214352,
+      "hash": "a729158729",
       "group": "Units"
     },
     {
@@ -2812,8 +2890,8 @@
     },
     {
       "path": "models/toadfolk_mystic_skin.webp",
-      "bytes": 184406,
-      "hash": "c216e50fec",
+      "bytes": 176698,
+      "hash": "8178defb77",
       "group": "Units"
     },
     {
@@ -2824,44 +2902,44 @@
     },
     {
       "path": "models/town_hall.glb",
-      "bytes": 29808,
-      "hash": "0426835302",
+      "bytes": 29584,
+      "hash": "1213531a48",
       "group": "Units"
     },
     {
       "path": "models/tree_dead.glb",
       "bytes": 5984,
-      "hash": "530ed1b8c7",
+      "hash": "c1619c3332",
       "group": "Units"
     },
     {
       "path": "models/tree_guardian.glb",
-      "bytes": 184736,
-      "hash": "1fb19da7d8",
+      "bytes": 210624,
+      "hash": "e865d55606",
       "group": "Units"
     },
     {
       "path": "models/tree_oak.glb",
       "bytes": 19812,
-      "hash": "fe491abc87",
+      "hash": "43fb88ebc7",
       "group": "Units"
     },
     {
       "path": "models/tree_pine.glb",
       "bytes": 6112,
-      "hash": "13f8b5767e",
+      "hash": "6aa3ed6af2",
       "group": "Units"
     },
     {
       "path": "models/troll_shaman.glb",
-      "bytes": 189500,
-      "hash": "5c2cf30583",
+      "bytes": 209328,
+      "hash": "c07fd02864",
       "group": "Units"
     },
     {
       "path": "models/tusk_lodge.glb",
-      "bytes": 58388,
-      "hash": "c6c7c0f2c7",
+      "bytes": 58036,
+      "hash": "46a2e05e61",
       "group": "Units"
     },
     {
@@ -2872,8 +2950,8 @@
     },
     {
       "path": "models/units_1_skin.webp",
-      "bytes": 218002,
-      "hash": "16038edcdf",
+      "bytes": 203620,
+      "hash": "7619b2ba6a",
       "group": "Units"
     },
     {
@@ -2890,8 +2968,8 @@
     },
     {
       "path": "models/units_2_skin.webp",
-      "bytes": 236106,
-      "hash": "8d25f34490",
+      "bytes": 223294,
+      "hash": "e3e2d92940",
       "group": "Units"
     },
     {
@@ -2908,8 +2986,8 @@
     },
     {
       "path": "models/units_3_skin.webp",
-      "bytes": 251114,
-      "hash": "62ce429ec3",
+      "bytes": 247728,
+      "hash": "674015fbdc",
       "group": "Units"
     },
     {
@@ -2926,8 +3004,8 @@
     },
     {
       "path": "models/units_4_skin.webp",
-      "bytes": 317784,
-      "hash": "de03c8608b",
+      "bytes": 306258,
+      "hash": "7230e9a6ab",
       "group": "Units"
     },
     {
@@ -2938,8 +3016,8 @@
     },
     {
       "path": "models/veil_sister.glb",
-      "bytes": 190628,
-      "hash": "5f5d20717a",
+      "bytes": 203664,
+      "hash": "872f0d36f3",
       "group": "Units"
     },
     {
@@ -2950,8 +3028,8 @@
     },
     {
       "path": "models/veil_sister_skin.webp",
-      "bytes": 167026,
-      "hash": "a35d03f8c3",
+      "bytes": 134212,
+      "hash": "1a381b9d77",
       "group": "Units"
     },
     {
@@ -2963,31 +3041,31 @@
     {
       "path": "models/watchtower.glb",
       "bytes": 25540,
-      "hash": "99dcba203c",
+      "hash": "efb7918923",
       "group": "Units"
     },
     {
       "path": "models/wayfarer_inn.glb",
-      "bytes": 66452,
-      "hash": "899f2e0028",
+      "bytes": 66260,
+      "hash": "426eddc1c3",
       "group": "Units"
     },
     {
       "path": "models/wind_totem.glb",
       "bytes": 31944,
-      "hash": "311f861bfa",
+      "hash": "ef5f0063c7",
       "group": "Units"
     },
     {
       "path": "models/worker.glb",
-      "bytes": 198132,
-      "hash": "81b7aa6ded",
+      "bytes": 221760,
+      "hash": "b8203f5aa7",
       "group": "Units"
     },
     {
       "path": "models/workshop.glb",
       "bytes": 25208,
-      "hash": "b4b835f204",
+      "hash": "9c85f057ea",
       "group": "Units"
     },
     {
@@ -3063,6 +3141,12 @@
       "group": "Interface"
     },
     {
+      "path": "portraits/cinder_drake.webp",
+      "bytes": 2526,
+      "hash": "8817378f5f",
+      "group": "Interface"
+    },
+    {
       "path": "portraits/cleric.webp",
       "bytes": 5192,
       "hash": "b984f1669c",
@@ -3090,6 +3174,12 @@
       "path": "portraits/earth_spirit.webp",
       "bytes": 3714,
       "hash": "979e98af81",
+      "group": "Interface"
+    },
+    {
+      "path": "portraits/elder_colossus.webp",
+      "bytes": 5172,
+      "hash": "fc4e9be547",
       "group": "Interface"
     },
     {

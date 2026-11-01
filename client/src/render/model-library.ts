@@ -19,7 +19,7 @@ import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { Scene } from '@babylonjs/core/scene';
 import type { GameAssets } from '../loader/assets';
 import type { BakedClip } from './baked-animation';
-import { createModelMaterials, loadTexturePair, type ModelMaterials } from './team-material';
+import { createModelMaterials, HIT_FLASH, loadTexturePair, type ModelMaterials } from './team-material';
 
 /** Clips army units play. Others (hit, victory) are not baked. */
 const BAKED_CLIPS = ['idle', 'walk', 'attack', 'attack2', 'cast', 'death'];
@@ -101,16 +101,21 @@ export class ModelLibrary {
     const key = `${skin ?? 'palette'}|${team}`;
     let mats = this.materials.get(key);
     if (!mats) {
-      let tex = this.textures.get(skin ?? 'palette');
-      if (!tex) {
-        const base = skin ?? 'palette';
-        tex = loadTexturePair(this.scene, this.assets.url(`models/${base}.webp`), this.assets.url(`models/${base}_team.webp`));
-        this.textures.set(skin ?? 'palette', tex);
-      }
-      mats = createModelMaterials(this.scene, tex.palette, tex.teamMask, team);
+      mats = this.ownMaterials(id, team);
       this.materials.set(key, mats);
     }
     return mats;
+  }
+
+  /** A new material set with the model's textures, not shared (for a material plugin of its own, like wind). */
+  ownMaterials(id: string, team = 'red'): ModelMaterials {
+    const base = this.assets.models[id]?.skin ?? 'palette';
+    let tex = this.textures.get(base);
+    if (!tex) {
+      tex = loadTexturePair(this.scene, this.assets.url(`models/${base}.webp`), this.assets.url(`models/${base}_team.webp`));
+      this.textures.set(base, tex);
+    }
+    return createModelMaterials(this.scene, tex.palette, tex.teamMask, team);
   }
 
   /**
@@ -249,6 +254,9 @@ export class ModelLibrary {
       mesh.bakedVertexAnimationManager = model.manager;
       mesh.registerInstancedBuffer(VAT_SETTINGS, 4);
       mesh.instancedBuffers[VAT_SETTINGS] = new Vector4(0, 1, 0, 0);
+      // Per-copy hit flash (team-material.ts).
+      mesh.registerInstancedBuffer(HIT_FLASH, 1);
+      mesh.instancedBuffers[HIT_FLASH] = 0;
       // Only its instances are drawn. It keeps the skeleton only for the bone attributes in the
       // shader; the bone nodes and clips go, so nothing of it is posed or updated per frame.
       mesh.isVisible = false;
@@ -273,6 +281,7 @@ export class ModelLibrary {
       inst.parent = root;
       local.decompose(inst.scaling, (inst.rotationQuaternion ??= new Quaternion()), inst.position);
       inst.instancedBuffers[VAT_SETTINGS] = settings;
+      inst.instancedBuffers[HIT_FLASH] = 0;
       inst.isPickable = false;
       // The rest-pose box does not hold every animated pose; GameWorld culls units itself.
       inst.alwaysSelectAsActiveMesh = true;

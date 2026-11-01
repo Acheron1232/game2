@@ -11,6 +11,8 @@ from mathutils import Vector
 
 def build():
     m = Model("staff_warrior", skin="staff_warrior_skin")
+    # Heroic bulk: thicker limbs, hands, pads and weapons so the hero reads from the RTS camera.
+    c.set_bulk(1.06, head=1.05)
     humanoid.skeleton(m, height=1.85, shoulders=0.34, hips=0.14, leg_len=0.85, arm_len=1.1, hunch=1.0, arm_spread=0.55, knee_bend=0.4, elbow_bend=0.7)
     j = m.joints
 

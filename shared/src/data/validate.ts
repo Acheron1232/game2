@@ -169,6 +169,7 @@ export function validateGameData(d: GameData): string[] {
       else if (u.group !== 'neutral') fail(`camp ${c.id}: ${uid} is not a neutral unit`);
     }
     if (!d.camps.dropTables[c.dropTable]) fail(`camp ${c.id}: unknown drop table ${c.dropTable}`);
+    for (const t of c.extraDrops ?? []) if (!d.camps.dropTables[t]) fail(`camp ${c.id}: unknown extra drop table ${t}`);
   }
   for (const [name, t] of Object.entries(d.camps.dropTables)) {
     for (const [iid] of t.items) if (!itemById.has(iid)) fail(`drop table ${name}: unknown item ${iid}`);

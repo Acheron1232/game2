@@ -27,7 +27,7 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   await expect(capture).toBeVisible({ timeout: 45_000 });
   // Use the real browser lock API. The older headless-shell binary rejects it on
   // macOS, so this file uses full Chromium's current headless mode instead.
-  await page.getByRole('button', { name: '⛶', exact: true }).click();
+  await page.getByRole('button', { name: 'Full screen', exact: true }).click();
   await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(true);
   let mouseX = 0;
   let mouseY = 0;
@@ -64,7 +64,9 @@ test('captured mouse routes hover and HUD clicks and releases for settings, chat
   await page.mouse.move(viewport.width - 1, viewport.height - 1);
   mouseX = mouseY = 0;
   await page.mouse.move(mouseX, mouseY);
-  await expect.poll(async () => (await page.locator('.game-cursor').boundingBox())!.y).toBe(-3);
+  await expect
+    .poll(() => page.locator('.game-cursor').evaluate((node) => node.getBoundingClientRect().y - parseFloat(getComputedStyle(node).top)))
+    .toBe(0);
   await moveTo('.ability');
   await expect(page.locator('.tooltip')).toBeVisible();
   await moveTo('.ability .learn');

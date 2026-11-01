@@ -178,7 +178,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
     return el('tr', { class: cls }, ...[label, who, type, team, color, hero, ai, load].map((c) => el('td', {}, c)));
   };
 
-  const modeNames: Record<RoomMode, string> = { ffa: S.modeFfa, teams: S.modeTeams };
+  const modeNames: Record<RoomMode, string> = { ffa: S.modeFfa, teams: S.modeTeams, test: S.modeTest };
 
   const render = () => {
     if (!room) return;
@@ -220,7 +220,7 @@ export function createLobbyScreen(send: (msg: ClientLobbyMessage) => void): Lobb
           : modeNames[room.mode],
       );
     modeKey = nextModeKey;
-    modeBox.title = teams ? S.modeTeamsHint : '';
+    modeBox.title = teams ? S.modeTeamsHint : room.mode === 'test' ? S.modeTestHint : '';
     const own = room.slots.find((s) => s.playerId === me);
     const isHost = room.hostId === me;
     readyBtn.hidden = isHost;

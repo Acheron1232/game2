@@ -51,6 +51,8 @@ export interface Settings {
   /** 0.5 .. 2 */
   cameraSpeed: number;
   damageNumbers: boolean;
+  /** the view shakes a little on big blows */
+  screenShake: boolean;
   healthBars: 'always' | 'hurt';
   /** action -> KeyboardEvent.code */
   keys: Record<Action, string>;
@@ -99,6 +101,7 @@ export function defaultSettings(): Settings {
     edgeScroll: true,
     cameraSpeed: 1,
     damageNumbers: true,
+    screenShake: true,
     healthBars: 'hurt',
     keys: { ...DEFAULT_KEYS },
   };
@@ -137,6 +140,7 @@ export function parseSettings(raw: unknown): Settings {
     edgeScroll: bool(r['edgeScroll'], d.edgeScroll),
     cameraSpeed: clamp(r['cameraSpeed'], 0.5, 2, d.cameraSpeed),
     damageNumbers: bool(r['damageNumbers'], d.damageNumbers),
+    screenShake: bool(r['screenShake'], d.screenShake),
     healthBars: pick(r['healthBars'], ['always', 'hurt'], d.healthBars),
     keys,
   };

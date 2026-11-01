@@ -70,6 +70,8 @@ export const rulesSchema = z.looseObject({
     woodPerTrip: num,
     mineTimeSec: num,
     chopTimeSec: num,
+    /** a cut or broken tree grows back after this long (when nothing stands in its place) */
+    treeRegrowSec: num,
     maxWorkersPerMine: num,
     supplyCap: num,
     upkeep: z.looseObject({ steps: z.array(z.strictObject({ fromSupply: num, goldPct: num, name: z.string() })).min(1) }),
@@ -309,7 +311,22 @@ export const shopsSchema = z.looseObject({
 export const campsSchema = z.looseObject({
   version: num,
   campTypes: z.array(
-    z.looseObject({ id, tier: z.enum(['green', 'orange', 'red']), respawnSec: num, monsters: z.array(z.tuple([id, num])), dropTable: id }),
+    z.looseObject({
+      id,
+      tier: z.enum(['green', 'orange', 'red', 'horde', 'boss']),
+      respawnSec: num,
+      monsters: z.array(z.tuple([id, num])),
+      dropTable: id,
+      /** more rolls, one on each of these tables (big camps give more than one item) */
+      extraDrops: z.array(id).optional(),
+      /** big camps: how far they chase and how close one must come before they wake (else rules.neutrals) */
+      leashRange: num.optional(),
+      aggroRange: num.optional(),
+      /** distance between the rings the monsters stand on (big camps) */
+      spread: num.optional(),
+      /** the first monster stands in the middle (a boss with its guards around it) */
+      center: z.boolean().optional(),
+    }),
   ),
   dropTables: z.record(z.string(), z.looseObject({ dropChancePct: num, items: z.array(z.tuple([id, num])) })),
 });

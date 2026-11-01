@@ -74,23 +74,27 @@ export class UnitGroundMarks {
   private readonly teams = new Map<string, GroundLayer>();
   constructor(private readonly scene: Scene) {
     const makeTexture = (name: string, shadow: boolean) => {
-      const texture = new DynamicTexture(name, 64, scene, true);
+      const size = shadow ? 64 : 128;
+      const m = size / 2;
+      const texture = new DynamicTexture(name, size, scene, true);
       texture.hasAlpha = true;
       const ctx = texture.getContext();
-      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      const gradient = ctx.createRadialGradient(m, m, 0, m, m, m);
       if (shadow) {
         gradient.addColorStop(0, 'rgba(255,255,255,0.65)');
         gradient.addColorStop(0.4, 'rgba(255,255,255,0.42)');
         gradient.addColorStop(1, 'rgba(255,255,255,0)');
       } else {
-        gradient.addColorStop(0, 'rgba(255,255,255,0.10)');
-        gradient.addColorStop(0.55, 'rgba(255,255,255,0.22)');
-        gradient.addColorStop(0.78, 'rgba(255,255,255,0.65)');
-        gradient.addColorStop(0.9, 'rgba(255,255,255,0.28)');
+        // A thin crisp team ring with a faint inside, not a big colored blot.
+        gradient.addColorStop(0, 'rgba(255,255,255,0.03)');
+        gradient.addColorStop(0.68, 'rgba(255,255,255,0.08)');
+        gradient.addColorStop(0.8, 'rgba(255,255,255,0.3)');
+        gradient.addColorStop(0.86, 'rgba(255,255,255,0.95)');
+        gradient.addColorStop(0.91, 'rgba(255,255,255,0.35)');
         gradient.addColorStop(1, 'rgba(255,255,255,0)');
       }
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 64, 64);
+      ctx.fillRect(0, 0, size, size);
       texture.update();
       return texture;
     };

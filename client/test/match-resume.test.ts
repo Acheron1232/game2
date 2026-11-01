@@ -12,6 +12,15 @@ vi.mock('../src/render/ability-fx', () => ({
     dispose() {}
   },
 }));
+vi.mock('../src/render/status-fx', () => ({
+  StatusFx: class {
+    begin() {}
+    end() {}
+    remove() {}
+    clearMarkers() {}
+    dispose() {}
+  },
+}));
 vi.mock('../src/render/health-bars', () => ({
   HealthBars: class {
     dispose() {}
@@ -34,7 +43,15 @@ describe('joining a match already in motion', () => {
       },
       sendBinary: send,
     } as unknown as GameSocket;
-    const unit = { x: 20, y: 20, facing: 0, moving: true, dead: false } as Unit;
+    const unit = {
+      x: 20,
+      y: 20,
+      facing: 0,
+      moving: true,
+      dead: false,
+      height: 2,
+      model: { root: { scaling: { setAll: vi.fn() } } },
+    } as unknown as Unit;
     const world = {
       scene: {},
       nav: { cols: 64, rows: 64, cellSize: 1, walk: new Uint8Array(64 * 64).fill(1), region: new Int32Array(64 * 64) } as NavGrid,

@@ -73,9 +73,9 @@ Base hero values: 150 HP, 0 mana, 0.25 HP regen, 0.1 mana regen, 6 item slots, s
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Total XP needed | 0 | 200 | 500 | 900 | 1400 | 2000 | 2700 | 3500 | 4400 | 5400 | 6500 | 7700 | 9000 | 10400 | 11900 |
-| XP for killing a unit of this level | 25 | 40 | 60 | 85 | 115 | 150 | 190 | 235 | 285 | 340 |
+| XP for killing a unit of this level | 25 | 40 | 60 | 85 | 115 | 150 | 190 | 235 | 285 | 340 | 400 | 470 | 550 | 640 | 740 |
 | XP for killing a hero of this level | 100 | 150 | 200 | 250 | 300 | 350 | 400 | 450 | 500 | 550 | 600 | 650 | 700 | 750 | 800 |
-| Respawn time (s) | 8 | 11 | 14 | 17 | 20 | 23 | 26 | 29 | 32 | 35 | 38 | 41 | 44 | 47 | 50 |
+| Respawn time (s) | 12 | 16 | 20 | 24 | 28 | 32 | 36 | 40 | 44 | 48 | 52 | 56 | 60 | 64 | 68 |
 <!-- /table -->
 
 ## 7. Gold
@@ -92,7 +92,7 @@ Base hero values: 150 HP, 0 mana, 0.25 HP regen, 0.1 mana regen, 6 item slots, s
 
 ## 8. Death and respawn
 
-- Respawn time: 5 + 3 × level seconds (8 s at level 1, 35 s at level 10, 50 s at level 15).
+- Respawn time: 8 + 4 × level seconds (12 s at level 1, 48 s at level 10, 68 s at level 15). Raised from 5 + 3 × level on 2026-10-31: deaths should cost a little more time.
 - You come back at your start spot. If your main Town Hall is gone, at the nearest Town Hall you still have.
 - Items stay in your inventory. Buffs end.
 
@@ -136,6 +136,10 @@ Spell damage ignores armor and damage types. Heroes take 75% spell damage. Spell
 - When the **whole camp** dies, there is one roll on its drop table. The item drops where the last monster died. Anyone can pick it up.
 - A camp comes back after its respawn time, but only when no hero is within 15 units.
 - Faction armies also fight camps that block their way or their expansion. The XP still goes to heroes nearby, gold to the last hitter.
+- **Mega camps** (2026-11-01) in the four map corners, each between two neighbor bases, two kinds on the two diagonals:
+  - **Horde** (NE and SW): 15 monsters of all strengths (an Ogre Warlord in the middle, ogres, trolls, wolves, bandits) in rings. They wake within 6 units and chase up to 22. Two item rolls (a rare-tier table and an orange one). Back after 360 s.
+  - **Boss** (NW and SE): the **Elder Colossus** (level 15, 9000 health, armor 9, Rock Slam: 260 damage and a 2 s stun around it, 35% less spell damage) with two **Cinder Drakes** (level 12, fire spit from 5 units, Ember Flare). A guaranteed **legendary** item plus a rare one, about 950 gold in bounties, a lot of XP. Back after 480 s.
+  - Their own models and textures: `elder_colossus`, `cinder_drake` (model-first skins painted by Codex, sheet `skin_bosses`).
 - Full lists: [ITEMS_AND_CAMPS.md](ITEMS_AND_CAMPS.md).
 
 ## 11. Items and shops

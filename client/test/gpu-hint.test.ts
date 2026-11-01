@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isWindowsBuiltInGpu, windowsLauncherScript } from '../src/ui/gpu-hint';
+import { builtInGpuSystem, isWindowsBuiltInGpu, linuxLauncherScript, windowsLauncherScript } from '../src/ui/gpu-hint';
 
 const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
 const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+const ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Mobile Safari/537.36';
 
 describe('Windows built-in graphics hint', () => {
   it('finds Intel and AMD built-in graphics on Windows only', () => {
@@ -36,5 +38,28 @@ describe('Windows built-in graphics hint', () => {
     expect(() => windowsLauncherScript('https://x.com/" & calc & "')).toThrow();
     expect(() => windowsLauncherScript('https://x.com/%PATH%')).toThrow();
     expect(() => windowsLauncherScript('javascript:alert(1)')).toThrow();
+  });
+
+  it('finds built-in graphics on desktop Linux too, not on Android or Mac', () => {
+    expect(builtInGpuSystem('Mesa Intel(R) UHD Graphics 620 (KBL GT2)', LINUX)).toBe('linux');
+    expect(builtInGpuSystem('AMD Radeon Graphics (radeonsi, renoir, LLVM 17.0.6, DRM 3.54)', LINUX)).toBe('linux');
+    expect(builtInGpuSystem('NVIDIA GeForce RTX 3060/PCIe/SSE2', LINUX)).toBe(null);
+    expect(builtInGpuSystem('intel / gen-12lp', ANDROID)).toBe(null);
+    expect(builtInGpuSystem('intel / gen-12lp', MAC)).toBe(null);
+    expect(builtInGpuSystem('intel / gen-12lp', WIN)).toBe('windows');
+  });
+
+  it('writes a Linux launcher with the PRIME switches, its own profile and an app window', () => {
+    const script = linuxLauncherScript('https://game.example.com/?from=launcher');
+    expect(script.startsWith('#!/bin/sh\n')).toBe(true);
+    expect(script).toContain("URL='https://game.example.com/?from=launcher'");
+    expect(script).toContain('export DRI_PRIME=1');
+    expect(script).toContain('__NV_PRIME_RENDER_OFFLOAD=1');
+    expect(script).toContain('--app="$URL"');
+    expect(script).toContain('--user-data-dir="$PROFILE"');
+    expect(script).not.toContain('\r');
+    expect(() => linuxLauncherScript("https://x.com/'; rm -rf ~; '")).toThrow();
+    expect(() => linuxLauncherScript('https://x.com/$(id)')).toThrow();
+    expect(() => linuxLauncherScript('https://x.com/`id`')).toThrow();
   });
 });
