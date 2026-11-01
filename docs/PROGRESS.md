@@ -1,5 +1,7 @@
 # Progress
 
+- **Live release `release-94f22e2`** (2026-11-01, user: "deploy"): this session's work committed on branch `claude/graphics-camps-bosses` (not merged into `main`, not pushed). Same VPS, Caddy + Cloudflare Quick Tunnel, URL unchanged: https://render-telecom-pending-elizabeth.trycloudflare.com/ . Before: data:check, 353 tests, lint and build passed; client package 38.6 MB (609 assets). After: `/health` reports the release through the tunnel, server container healthy, a real `?play` match started over WSS (WebGPU, 120 FPS, ping 85 ms) with no console errors. Previous release `release-92037d8` kept for rollback (`sudo sh ~/temple-wars/releases/release-92037d8/remote-start.sh ~/temple-wars/releases/release-92037d8 localhost quick`).
+
 - **Camp pockets** (2026-11-01, user, with a concept image and a design proposal: "the camps are too big and take too much space, and they are all round"). Not committed.
   - Each camp has its own pocket of four overlapping lobes with a rough edge instead of a round lawn: green about 12 units across, orange 15, red 18, mega 26 (`campLobes` in `make-map-layout.mjs`; the baker reads `openAreas[].lobes` and `rough`). Den props (rocks, a log, a stump; crates and barrels by people camps) on the far side from the entrance. Pockets far from a road get a short trail. Forest went from 28% to 34% of the map.
   - The battle field in front of each base is smaller (radius 9) and the Green Bandits moved off it.
